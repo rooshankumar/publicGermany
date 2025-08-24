@@ -14,16 +14,388 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_notes: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          note: string
+          student_id: string
+          visibility: Database["public"]["Enums"]["admin_note_visibility"]
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          note: string
+          student_id: string
+          visibility?: Database["public"]["Enums"]["admin_note_visibility"]
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          student_id?: string
+          visibility?: Database["public"]["Enums"]["admin_note_visibility"]
+        }
+        Relationships: []
+      }
+      applications: {
+        Row: {
+          application_method: string | null
+          created_at: string
+          end_date: string | null
+          fees_eur: number | null
+          german_requirement: string | null
+          id: string
+          ielts_requirement: string | null
+          notes: string | null
+          portal_link: string | null
+          program_name: string
+          required_tests: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          university_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_method?: string | null
+          created_at?: string
+          end_date?: string | null
+          fees_eur?: number | null
+          german_requirement?: string | null
+          id?: string
+          ielts_requirement?: string | null
+          notes?: string | null
+          portal_link?: string | null
+          program_name: string
+          required_tests?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          university_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_method?: string | null
+          created_at?: string
+          end_date?: string | null
+          fees_eur?: number | null
+          german_requirement?: string | null
+          id?: string
+          ielts_requirement?: string | null
+          notes?: string | null
+          portal_link?: string | null
+          program_name?: string
+          required_tests?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          university_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      checklist_items: {
+        Row: {
+          created_at: string
+          file_id: string | null
+          id: string
+          item_name: string
+          module: string
+          notes: string | null
+          status: Database["public"]["Enums"]["checklist_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          item_name: string
+          module: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          item_name?: string
+          module?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          mime_type: string | null
+          module: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          mime_type?: string | null
+          module?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          mime_type?: string | null
+          module?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          aps_pathway: Database["public"]["Enums"]["aps_pathway"] | null
+          bachelor_cgpa_percentage: string | null
+          bachelor_credits_ects: number | null
+          bachelor_degree_name: string | null
+          bachelor_duration_years: number | null
+          bachelor_field: string | null
+          class_10_marks: string | null
+          class_12_marks: string | null
+          class_12_stream: string | null
+          country_of_education: string | null
+          created_at: string
+          date_of_birth: string | null
+          full_name: string | null
+          german_level: Database["public"]["Enums"]["german_level"] | null
+          id: string
+          ielts_toefl_score: string | null
+          master_cgpa_percentage: string | null
+          master_degree_name: string | null
+          master_field: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+          work_experience_field: string | null
+          work_experience_years: number | null
+        }
+        Insert: {
+          aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
+          bachelor_cgpa_percentage?: string | null
+          bachelor_credits_ects?: number | null
+          bachelor_degree_name?: string | null
+          bachelor_duration_years?: number | null
+          bachelor_field?: string | null
+          class_10_marks?: string | null
+          class_12_marks?: string | null
+          class_12_stream?: string | null
+          country_of_education?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string | null
+          german_level?: Database["public"]["Enums"]["german_level"] | null
+          id?: string
+          ielts_toefl_score?: string | null
+          master_cgpa_percentage?: string | null
+          master_degree_name?: string | null
+          master_field?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+          work_experience_field?: string | null
+          work_experience_years?: number | null
+        }
+        Update: {
+          aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
+          bachelor_cgpa_percentage?: string | null
+          bachelor_credits_ects?: number | null
+          bachelor_degree_name?: string | null
+          bachelor_duration_years?: number | null
+          bachelor_field?: string | null
+          class_10_marks?: string | null
+          class_12_marks?: string | null
+          class_12_stream?: string | null
+          country_of_education?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string | null
+          german_level?: Database["public"]["Enums"]["german_level"] | null
+          id?: string
+          ielts_toefl_score?: string | null
+          master_cgpa_percentage?: string | null
+          master_degree_name?: string | null
+          master_field?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+          work_experience_field?: string | null
+          work_experience_years?: number | null
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          id: string
+          payment_reference: string | null
+          preferred_timeline: string | null
+          request_details: string | null
+          service_currency: string | null
+          service_price: number | null
+          service_type: string
+          status: Database["public"]["Enums"]["service_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          payment_reference?: string | null
+          preferred_timeline?: string | null
+          request_details?: string | null
+          service_currency?: string | null
+          service_price?: number | null
+          service_type: string
+          status?: Database["public"]["Enums"]["service_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          payment_reference?: string | null
+          preferred_timeline?: string | null
+          request_details?: string | null
+          service_currency?: string | null
+          service_price?: number | null
+          service_type?: string
+          status?: Database["public"]["Enums"]["service_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      universities: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          fields: string[] | null
+          has_tuition_fees: boolean | null
+          id: string
+          is_public: boolean | null
+          languages: string[] | null
+          name: string
+          website_url: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          fields?: string[] | null
+          has_tuition_fees?: boolean | null
+          id?: string
+          is_public?: boolean | null
+          languages?: string[] | null
+          name: string
+          website_url?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          fields?: string[] | null
+          has_tuition_fees?: boolean | null
+          id?: string
+          is_public?: boolean | null
+          languages?: string[] | null
+          name?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      admin_note_visibility: "admin_only" | "shared"
+      app_role: "student" | "admin"
+      application_status:
+        | "draft"
+        | "submitted"
+        | "interview"
+        | "offer"
+        | "rejected"
+      aps_pathway: "stk" | "bachelor_2_semesters" | "master_applicants"
+      checklist_status: "not_started" | "in_progress" | "completed"
+      german_level: "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2"
+      service_request_status:
+        | "new"
+        | "in_review"
+        | "payment_pending"
+        | "in_progress"
+        | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +522,26 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_note_visibility: ["admin_only", "shared"],
+      app_role: ["student", "admin"],
+      application_status: [
+        "draft",
+        "submitted",
+        "interview",
+        "offer",
+        "rejected",
+      ],
+      aps_pathway: ["stk", "bachelor_2_semesters", "master_applicants"],
+      checklist_status: ["not_started", "in_progress", "completed"],
+      german_level: ["none", "a1", "a2", "b1", "b2", "c1", "c2"],
+      service_request_status: [
+        "new",
+        "in_review",
+        "payment_pending",
+        "in_progress",
+        "completed",
+      ],
+    },
   },
 } as const
