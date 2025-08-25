@@ -8,9 +8,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import Services from "./pages/Services";
-import Universities from "./pages/Universities";
 import Resources from "./pages/Resources";
 import Contact from "./pages/Contact";
+import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -41,15 +41,15 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/universities" element={
-        <ProtectedRoute>
-          <Universities />
-        </ProtectedRoute>
-      } />
-      
       <Route path="/applications" element={
         <ProtectedRoute>
           <Applications />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       } />
       

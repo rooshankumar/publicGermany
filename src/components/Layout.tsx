@@ -29,8 +29,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/universities', label: 'Universities', icon: GraduationCap },
-    { href: '/applications', label: 'Applications', icon: FileText },
+    { href: '/applications', label: 'University Application', icon: FileText },
+    { href: '/profile', label: 'Profile', icon: Settings },
     { href: '/services', label: 'Services', icon: HeadphonesIcon },
     { href: '/resources', label: 'Resources', icon: BookOpen },
     { href: '/contact', label: 'Contact', icon: MessageSquare },

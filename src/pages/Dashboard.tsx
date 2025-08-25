@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Calendar, FileText, BookOpen, Phone, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Circle, Calendar, FileText, BookOpen, Phone, ExternalLink, User, Settings } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import APSPathwaySelector from '@/components/APSPathwaySelector';
 
 interface ChecklistItem {
   id: string;
@@ -22,6 +24,7 @@ const Dashboard = () => {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [selectedPathway, setSelectedPathway] = useState<string>('');
 
   const modules = [
     { key: 'aps', name: 'APS Documents', icon: FileText },
@@ -36,6 +39,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchChecklistItems();
+    
+    // Set selected pathway from profile
+    if (profile?.aps_pathway) {
+      setSelectedPathway(profile.aps_pathway);
+    }
     
     // Show profile completion dialog if profile is incomplete
     if (profile && !profile.country_of_education && !showProfileDialog) {
@@ -75,6 +83,11 @@ const Dashboard = () => {
     return modules.filter(module => getModuleProgress(module.key) === 100).length;
   };
 
+  const handlePathwaySelect = (pathwayId: string) => {
+    setSelectedPathway(pathwayId);
+    // You can add logic here to update the profile with selected pathway
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -103,7 +116,7 @@ const Dashboard = () => {
         {/* Journey Progress */}
         <Card>
           <CardHeader>
-            <CardTitle>Journey Progress</CardTitle>
+            <CardTitle>Your Journey Progress</CardTitle>
             <CardDescription>
               {getCompletedSteps()} of {modules.length} steps completed
             </CardDescription>
@@ -112,11 +125,17 @@ const Dashboard = () => {
             <div className="space-y-2">
               <Progress value={getOverallProgress()} className="h-3" />
               <p className="text-sm text-muted-foreground text-right">
-                {getOverallProgress()}% Complete
+                {getOverallProgress()}%
               </p>
             </div>
           </CardContent>
         </Card>
+
+        {/* APS Pathway Selection */}
+        <APSPathwaySelector 
+          selectedPathway={selectedPathway}
+          onSelectPathway={handlePathwaySelect}
+        />
 
         {/* Quick Checklist Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -158,42 +177,62 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold">📚 Resources</h3>
-                  <p className="text-sm text-muted-foreground">Study guides & tips</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Link to="/resources">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <BookOpen className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-semibold">📚 Resources</h3>
+                    <p className="text-sm text-muted-foreground">Organized guides for every stage</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold">📅 Book 1:1 Call</h3>
-                  <p className="text-sm text-muted-foreground">Get personalized help</p>
+          <Link to="/services">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-semibold">📅 Book 1:1 Call</h3>
+                    <p className="text-sm text-muted-foreground">Get personalized guidance</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <Phone className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold">💬 Support</h3>
-                  <p className="text-sm text-muted-foreground">Contact our team</p>
+          <Link to="/contact">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <Phone className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-semibold">💬 Support</h3>
+                    <p className="text-sm text-muted-foreground">Get help & connect</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/profile">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <User className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-semibold">👤 Profile</h3>
+                    <p className="text-sm text-muted-foreground">Update your details</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Profile Completion Dialog */}
@@ -215,9 +254,11 @@ const Dashboard = () => {
                 <li>• Provide personalized guidance</li>
               </ul>
               <div className="flex space-x-2">
-                <Button onClick={() => setShowProfileDialog(false)} className="flex-1">
-                  Complete Profile Later
-                </Button>
+                <Link to="/profile" className="flex-1">
+                  <Button onClick={() => setShowProfileDialog(false)} className="w-full">
+                    Complete Profile Now
+                  </Button>
+                </Link>
                 <Button variant="outline" onClick={() => setShowProfileDialog(false)} className="flex-1">
                   Maybe Later
                 </Button>
