@@ -1,5 +1,5 @@
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ContactForm } from '@/components/ContactForm';
 
 const Contact = () => {
   return (
@@ -10,19 +10,7 @@ const Contact = () => {
           <p className="text-muted-foreground">Get in touch with our team</p>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-            <CardDescription>
-              Coming soon - Multiple ways to get support
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This page will include contact forms, support channels, and FAQ.
-            </p>
-          </CardContent>
-        </Card>
+        <ContactForm />
       </div>
     </Layout>
   );

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Globe, ExternalLink, Clock, BookOpen } from 'lucide-react';
 
 interface FetchedResource {
@@ -47,9 +47,12 @@ export const ResourceFetcher = () => {
   const fetchResource = async (url: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/fetch-resource', {
+      const response = await fetch('https://rzbnrlfujjxyrypbafdp.supabase.co/functions/v1/fetch-resource', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6Ym5ybGZ1amp4eXJ5cGJhZmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMjM5MzAsImV4cCI6MjA3MTU5OTkzMH0.hX9mqiIt4mBjyvk8Y5HrM6b5VvPQwRbA4ZvsCqyQ05o`
+        },
         body: JSON.stringify({ url })
       });
 

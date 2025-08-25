@@ -15,6 +15,7 @@ import {
   LogOut 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logo from '@/assets/logo.png';
 
 interface LayoutProps {
   children: ReactNode;
@@ -49,8 +50,13 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Sidebar */}
       <div className="w-64 bg-card border-r border-border flex flex-col">
         <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-bold text-foreground">germanyhelp</h1>
-          <p className="text-sm text-muted-foreground">Study in Germany</p>
+          <div className="flex items-center space-x-3">
+            <img src={logo} alt="GermanyHelp" className="w-8 h-8" />
+            <div>
+              <h1 className="text-xl font-bold text-foreground">GermanyHelp</h1>
+              <p className="text-sm text-muted-foreground">Study in Germany</p>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 p-4">
