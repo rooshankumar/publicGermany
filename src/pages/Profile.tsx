@@ -7,13 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { User, GraduationCap, Globe, Award, Briefcase } from 'lucide-react';
+import { User, GraduationCap, Globe, Award, Briefcase, Upload, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
+import { DocumentUpload } from '@/components/DocumentUpload';
 
 const Profile = () => {
   const { profile, refetchProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     date_of_birth: '',
@@ -34,6 +38,32 @@ const Profile = () => {
     ielts_toefl_score: '',
     german_level: '',
     aps_pathway: ''
+  });
+
+  // Auto-save functionality
+  const { saveStatus } = useAutoSave(formData, 'profiles', {
+    enabled: true,
+    delay: 3000,
+    onSave: async (data) => {
+      const updateData = {
+        ...data,
+        bachelor_credits_ects: data.bachelor_credits_ects ? parseInt(data.bachelor_credits_ects) : null,
+        bachelor_duration_years: data.bachelor_duration_years ? parseInt(data.bachelor_duration_years) : null,
+        work_experience_years: data.work_experience_years ? parseInt(data.work_experience_years) : null,
+        aps_pathway: data.aps_pathway === '' ? null : data.aps_pathway,
+        german_level: data.german_level === '' ? null : data.german_level,
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', profile?.user_id);
+
+      if (error) throw error;
+      
+      setLastSaved(new Date());
+      await refetchProfile();
+    }
   });
 
   useEffect(() => {
@@ -107,10 +137,23 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg border">
-          <h1 className="text-2xl font-bold text-foreground mb-1">Profile Settings</h1>
-          <p className="text-foreground">Manage your personal information and academic details</p>
+      <div className="container-mobile space-y-6">
+        {/* Auto-save indicator */}
+        <AutoSaveIndicator status={saveStatus} />
+        
+        <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Profile Settings</h1>
+              <p className="text-sm md:text-base text-foreground">Manage your personal information and academic details</p>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Save className="h-4 w-4" />
+              <span>
+                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Auto-save enabled'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -124,7 +167,7 @@ const Profile = () => {
               <CardDescription>Your basic personal details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input
@@ -166,7 +209,7 @@ const Profile = () => {
               <CardDescription>Your educational background details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="class_10_marks">Class 10 Marks (%)</Label>
                   <Input
@@ -200,7 +243,7 @@ const Profile = () => {
                 </Select>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bachelor_degree_name">Bachelor's Degree</Label>
                   <Input
@@ -221,7 +264,7 @@ const Profile = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bachelor_cgpa_percentage">CGPA/Percentage</Label>
                   <Input
@@ -265,7 +308,7 @@ const Profile = () => {
               <CardDescription>Your language test scores and proficiency</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="ielts_toefl_score">IELTS/TOEFL Score</Label>
                   <Input
@@ -306,7 +349,7 @@ const Profile = () => {
               <CardDescription>Your professional background</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="work_experience_years">Years of Experience</Label>
                   <Input
@@ -356,9 +399,47 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading} className="min-w-32">
-              {loading ? 'Saving...' : 'Save Changes'}
+          {/* Document Upload Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Upload className="h-5 w-5 text-primary" />
+                <CardTitle>Document Upload</CardTitle>
+              </div>
+              <CardDescription>Upload your important documents for easy access</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-3">Academic Documents</h4>
+                  <DocumentUpload
+                    category="academic"
+                    maxFiles={10}
+                    acceptedTypes={['application/pdf', 'image/*', '.doc', '.docx']}
+                  />
+                </div>
+                <div>
+                  <h4 className="font-medium mb-3">Identity Documents</h4>
+                  <DocumentUpload
+                    category="identity"
+                    maxFiles={5}
+                    acceptedTypes={['application/pdf', 'image/*']}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {saveStatus === 'saved' && lastSaved && (
+                <span>✓ All changes saved automatically at {lastSaved.toLocaleTimeString()}</span>
+              )}
+              {saveStatus === 'saving' && <span>💾 Saving changes...</span>}
+              {saveStatus === 'error' && <span className="text-destructive">⚠ Auto-save failed</span>}
+            </div>
+            <Button type="submit" disabled={loading} className="min-w-32 w-full sm:w-auto">
+              {loading ? 'Saving...' : 'Save Changes Now'}
             </Button>
           </div>
         </form>

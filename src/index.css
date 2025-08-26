@@ -8,33 +8,45 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Modern vibrant color scheme for international students */
+    --background: 240 100% 99%;
+    --foreground: 226 71% 14%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 240 100% 99%;
+    --card-foreground: 226 71% 14%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 100% 99%;
+    --popover-foreground: 226 71% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep blue primary inspired by German flag and education */
+    --primary: 221 83% 53%;
+    --primary-foreground: 240 100% 99%;
+    --primary-soft: 221 83% 96%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm secondary colors */
+    --secondary: 213 27% 96%;
+    --secondary-foreground: 226 71% 14%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 213 27% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Vibrant accent for CTAs and highlights */
+    --accent: 142 76% 36%;
+    --accent-foreground: 240 100% 99%;
+    --accent-soft: 142 76% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Success and error states */
+    --success: 142 76% 36%;
+    --success-foreground: 240 100% 99%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 240 100% 99%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 240 100% 99%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* UI elements */
+    --border: 213 27% 92%;
+    --input: 213 27% 92%;
+    --ring: 221 83% 53%;
 
     --radius: 0.5rem;
 
@@ -56,33 +68,39 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 226 71% 6%;
+    --foreground: 240 100% 99%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 226 71% 8%;
+    --card-foreground: 240 100% 99%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 226 71% 8%;
+    --popover-foreground: 240 100% 99%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 221 83% 63%;
+    --primary-foreground: 226 71% 6%;
+    --primary-soft: 221 83% 15%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 32% 18%;
+    --secondary-foreground: 240 100% 99%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 32% 18%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 142 76% 46%;
+    --accent-foreground: 226 71% 6%;
+    --accent-soft: 142 76% 15%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 46%;
+    --success-foreground: 226 71% 6%;
+    --warning: 45 93% 57%;
+    --warning-foreground: 226 71% 6%;
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 226 71% 6%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 215 32% 18%;
+    --input: 215 32% 18%;
+    --ring: 221 83% 63%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +118,53 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Mobile-first responsive utilities */
+  .container-mobile {
+    @apply px-4 mx-auto max-w-screen-xl;
+  }
+
+  /* Auto-save indicator */
+  .auto-save-indicator {
+    @apply fixed top-4 right-4 z-50 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md shadow-lg transition-all duration-300;
+  }
+
+  .auto-save-indicator.saving {
+    @apply bg-warning text-warning-foreground;
+  }
+
+  .auto-save-indicator.saved {
+    @apply bg-success text-success-foreground;
+  }
+
+  .auto-save-indicator.error {
+    @apply bg-destructive text-destructive-foreground;
+  }
+
+  /* Progress tracking animations */
+  .progress-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .progress-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Document upload zone */
+  .upload-zone {
+    @apply border-2 border-dashed border-border hover:border-primary/50 transition-colors duration-200;
+  }
+
+  .upload-zone.dragover {
+    @apply border-primary bg-primary/5;
   }
 }
