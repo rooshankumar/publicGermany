@@ -57,7 +57,7 @@ export const ProgressTracker = ({ showDetailed = false, className = '' }: Progre
         status: item.status as any,
         category: item.module,
         weight: 1, // Equal weight for now
-        deadline: item.deadline
+        deadline: undefined // Remove this line since checklist_items doesn't have deadline
       }));
 
       setSteps(progressSteps);

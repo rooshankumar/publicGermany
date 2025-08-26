@@ -8,18 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface Reminder {
+interface SimpleReminder {
   id: string;
   title: string;
-  description?: string;
-  due_date: string;
+  dueDate: string;
   priority: 'low' | 'medium' | 'high';
   category: string;
-  status: 'active' | 'completed' | 'dismissed';
-  user_id: string;
 }
 
 interface ReminderSystemProps {
@@ -30,13 +26,12 @@ interface ReminderSystemProps {
 export const ReminderSystem = ({ showCompact = false, className = '' }: ReminderSystemProps) => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<SimpleReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewReminder, setShowNewReminder] = useState(false);
   const [newReminder, setNewReminder] = useState({
     title: '',
-    description: '',
-    due_date: '',
+    dueDate: '',
     priority: 'medium' as const,
     category: 'general'
   });
@@ -51,87 +46,68 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
   ];
 
   useEffect(() => {
-    fetchReminders();
+    // For now, we'll use localStorage for reminders until the database types are updated
+    loadReminders();
   }, [profile]);
 
-  const fetchReminders = async () => {
-    if (!profile?.user_id) return;
-
+  const loadReminders = () => {
     try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .eq('user_id', profile.user_id)
-        .neq('status', 'dismissed')
-        .order('due_date', { ascending: true });
-
-      if (error) throw error;
-      setReminders(data || []);
+      const stored = localStorage.getItem(`reminders_${profile?.user_id}`);
+      if (stored) {
+        setReminders(JSON.parse(stored));
+      }
     } catch (error) {
-      console.error('Error fetching reminders:', error);
+      console.error('Error loading reminders:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const createReminder = async () => {
-    if (!profile?.user_id || !newReminder.title || !newReminder.due_date) return;
-
+  const saveReminders = (newReminders: SimpleReminder[]) => {
     try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .insert({
-          ...newReminder,
-          user_id: profile.user_id,
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setReminders([...reminders, data]);
-      setNewReminder({
-        title: '',
-        description: '',
-        due_date: '',
-        priority: 'medium',
-        category: 'general'
-      });
-      setShowNewReminder(false);
-
-      toast({
-        title: "Reminder created",
-        description: "Your reminder has been added successfully.",
-      });
+      localStorage.setItem(`reminders_${profile?.user_id}`, JSON.stringify(newReminders));
+      setReminders(newReminders);
     } catch (error) {
-      console.error('Error creating reminder:', error);
-      toast({
-        title: "Error creating reminder",
-        description: "Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error saving reminders:', error);
     }
   };
 
-  const updateReminderStatus = async (reminderId: string, status: 'completed' | 'dismissed') => {
-    try {
-      const { error } = await supabase
-        .from('reminders')
-        .update({ status })
-        .eq('id', reminderId);
+  const createReminder = () => {
+    if (!profile?.user_id || !newReminder.title || !newReminder.dueDate) return;
 
-      if (error) throw error;
+    const reminder: SimpleReminder = {
+      id: `reminder_${Date.now()}`,
+      title: newReminder.title,
+      dueDate: newReminder.dueDate,
+      priority: newReminder.priority,
+      category: newReminder.category
+    };
 
-      setReminders(reminders.filter(r => r.id !== reminderId));
-      
-      toast({
-        title: status === 'completed' ? "Reminder completed" : "Reminder dismissed",
-        description: "Your reminder has been updated.",
-      });
-    } catch (error) {
-      console.error('Error updating reminder:', error);
-    }
+    const newReminders = [...reminders, reminder];
+    saveReminders(newReminders);
+    
+    setNewReminder({
+      title: '',
+      dueDate: '',
+      priority: 'medium',
+      category: 'general'
+    });
+    setShowNewReminder(false);
+
+    toast({
+      title: "Reminder created",
+      description: "Your reminder has been added successfully.",
+    });
+  };
+
+  const removeReminder = (reminderId: string) => {
+    const newReminders = reminders.filter(r => r.id !== reminderId);
+    saveReminders(newReminders);
+    
+    toast({
+      title: "Reminder removed",
+      description: "Your reminder has been removed.",
+    });
   };
 
   const getTimeUntilDue = (dueDate: string) => {
@@ -156,9 +132,8 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
     }
   };
 
-  const activeReminders = reminders.filter(r => r.status === 'active');
-  const urgentReminders = activeReminders.filter(r => {
-    const dueDate = new Date(r.due_date);
+  const urgentReminders = reminders.filter(r => {
+    const dueDate = new Date(r.dueDate);
     const now = new Date();
     const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays <= 3 || r.priority === 'high';
@@ -184,7 +159,7 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
         {urgentReminders.length > 0 && (
           <div className="space-y-2">
             {urgentReminders.slice(0, 3).map((reminder) => {
-              const timeLeft = getTimeUntilDue(reminder.due_date);
+              const timeLeft = getTimeUntilDue(reminder.dueDate);
               return (
                 <div
                   key={reminder.id}
@@ -200,7 +175,7 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => updateReminderStatus(reminder.id, 'completed')}
+                    onClick={() => removeReminder(reminder.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -250,24 +225,14 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description (Optional)</Label>
-                    <Input
-                      id="description"
-                      value={newReminder.description}
-                      onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
-                      placeholder="Additional details..."
-                    />
-                  </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="due_date">Due Date</Label>
+                      <Label htmlFor="dueDate">Due Date</Label>
                       <Input
-                        id="due_date"
+                        id="dueDate"
                         type="datetime-local"
-                        value={newReminder.due_date}
-                        onChange={(e) => setNewReminder({ ...newReminder, due_date: e.target.value })}
+                        value={newReminder.dueDate}
+                        onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })}
                       />
                     </div>
                     
@@ -322,7 +287,7 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
           </div>
         </CardHeader>
         <CardContent>
-          {activeReminders.length === 0 ? (
+          {reminders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No active reminders</p>
@@ -330,8 +295,8 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
             </div>
           ) : (
             <div className="space-y-3">
-              {activeReminders.map((reminder) => {
-                const timeLeft = getTimeUntilDue(reminder.due_date);
+              {reminders.map((reminder) => {
+                const timeLeft = getTimeUntilDue(reminder.dueDate);
                 const category = categories.find(c => c.value === reminder.category)?.label || 'General';
                 
                 return (
@@ -349,31 +314,19 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
                           </Badge>
                           <Badge variant="outline">{category}</Badge>
                         </div>
-                        {reminder.description && (
-                          <p className="text-sm text-muted-foreground mb-1">{reminder.description}</p>
-                        )}
                         <p className={`text-sm ${timeLeft.color}`}>
-                          {new Date(reminder.due_date).toLocaleDateString()} • {timeLeft.text}
+                          {new Date(reminder.dueDate).toLocaleDateString()} • {timeLeft.text}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateReminderStatus(reminder.id, 'completed')}
-                      >
-                        Complete
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => updateReminderStatus(reminder.id, 'dismissed')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeReminder(reminder.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 );
               })}

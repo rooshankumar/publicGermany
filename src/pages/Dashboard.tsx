@@ -103,14 +103,14 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="container-mobile space-y-6">
         {/* Header with Greeting */}
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg border">
-          <h1 className="text-2xl font-bold text-foreground mb-1">Study in Germany</h1>
-          <p className="text-sm text-muted-foreground mb-2">
+        <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Study in Germany</h1>
+          <p className="text-xs md:text-sm text-muted-foreground mb-2">
             {profile?.full_name ? `Welcome, ${profile.full_name.split(' ')[0]}! 😊` : 'Welcome! 😊'}
           </p>
-          <p className="text-foreground">Your personalized checklist for studying in Germany</p>
+          <p className="text-sm md:text-base text-foreground">Your personalized checklist for studying in Germany</p>
         </div>
 
         {/* Journey Progress */}
@@ -180,12 +180,12 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link to="/resources">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3">
-                  <BookOpen className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">📚 Resources</h3>
-                    <p className="text-sm text-muted-foreground">Organized guides for every stage</p>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                  <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                  <div className="text-center sm:text-left">
+                    <h3 className="font-semibold text-sm md:text-base">📚 Resources</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">Organized guides for every stage</p>
                   </div>
                 </div>
               </CardContent>
@@ -194,12 +194,12 @@ const Dashboard = () => {
 
           <Link to="/services">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">📅 Book 1:1 Call</h3>
-                    <p className="text-sm text-muted-foreground">Get personalized guidance</p>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                  <Calendar className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                  <div className="text-center sm:text-left">
+                    <h3 className="font-semibold text-sm md:text-base">📅 Book 1:1 Call</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">Get personalized guidance</p>
                   </div>
                 </div>
               </CardContent>
@@ -208,12 +208,12 @@ const Dashboard = () => {
 
           <Link to="/contact">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">💬 Support</h3>
-                    <p className="text-sm text-muted-foreground">Get help & connect</p>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                  <Phone className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                  <div className="text-center sm:text-left">
+                    <h3 className="font-semibold text-sm md:text-base">💬 Support</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">Get help & connect</p>
                   </div>
                 </div>
               </CardContent>
@@ -222,12 +222,12 @@ const Dashboard = () => {
 
           <Link to="/profile">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3">
-                  <User className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">👤 Profile</h3>
-                    <p className="text-sm text-muted-foreground">Update your details</p>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                  <User className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                  <div className="text-center sm:text-left">
+                    <h3 className="font-semibold text-sm md:text-base">👤 Profile</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">Update your details</p>
                   </div>
                 </div>
               </CardContent>

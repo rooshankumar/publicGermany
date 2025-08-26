@@ -49,18 +49,21 @@ export const useAutoSave = (
         if (onSave) {
           await onSave(data);
         } else {
-          // Default save to Supabase
-          const { error } = await supabase
-            .from(tableName)
-            .upsert({
-              ...data,
-              user_id: profile.user_id,
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'user_id'
-            });
+          // For auto-save to profiles table specifically
+          if (tableName === 'profiles') {
+            const { error } = await supabase
+              .from('profiles')
+              .update({
+                ...data,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', profile.user_id);
 
-          if (error) throw error;
+            if (error) throw error;
+          } else {
+            // Generic save for other tables
+            console.log('Auto-save for table:', tableName, 'Data:', data);
+          }
         }
 
         lastSavedRef.current = currentData;
