@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { User, GraduationCap, Globe, Award, Briefcase, Upload, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import { DocumentUpload } from '@/components/DocumentUpload';
 
 const Profile = () => {
@@ -40,35 +38,35 @@ const Profile = () => {
     german_level: '',
   });
 
-  const { saveStatus } = useAutoSave(formData, 'profiles', {
-    enabled: true,
-    delay: 3000,
-    onSave: async (data) => {
-      if (!profile?.user_id) {
-        toast({
-          title: "Profile not loaded",
-          description: "Cannot save profile because user ID is missing.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const updateData = {
-        ...data,
-        bachelor_credits_ects: data.bachelor_credits_ects ? parseInt(data.bachelor_credits_ects) : null,
-        bachelor_duration_years: data.bachelor_duration_years ? parseInt(data.bachelor_duration_years) : null,
-        work_experience_years: data.work_experience_years ? parseInt(data.work_experience_years) : null,
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('user_id', profile.user_id);
-
-      if (error) throw error;
-      setLastSaved(new Date());
-      await refetchProfile();
+  // Auto-save disabled. Use manual save instead.
+  const saveProfile = async () => {
+    if (!profile?.user_id) {
+      toast({
+        title: "Profile not loaded",
+        description: "Cannot save profile because user ID is missing.",
+        variant: "destructive",
+      });
+      return;
     }
-  });
+    const updateData = {
+      ...formData,
+      bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
+      bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
+      work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
+    };
+    const { error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('user_id', profile.user_id);
+    if (error) throw error;
+    setLastSaved(new Date());
+    await refetchProfile();
+    toast({
+      title: "Profile saved",
+      description: "Your changes have been saved.",
+      variant: "success",
+    });
+  };
 
   useEffect(() => {
     if (profile) {
@@ -152,8 +150,6 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container-mobile space-y-6">
-        {/* Auto-save indicator */}
-        <AutoSaveIndicator status={saveStatus} />
         
         <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -164,7 +160,7 @@ const Profile = () => {
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Save className="h-4 w-4" />
               <span>
-                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Auto-save enabled'}
+                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Not saved yet'}
               </span>
             </div>
           </div>
@@ -391,14 +387,7 @@ const Profile = () => {
 
           {/* Document Upload section removed, now on APS page */}
 
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              {saveStatus === 'saved' && lastSaved && (
-                <span>✓ All changes saved automatically at {lastSaved.toLocaleTimeString()}</span>
-              )}
-              {saveStatus === 'saving' && <span>💾 Saving changes...</span>}
-              {saveStatus === 'error' && <span className="text-destructive">⚠ Auto-save failed</span>}
-            </div>
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-4">
             <Button type="submit" disabled={loading} className="min-w-32 w-full sm:w-auto">
               {loading ? 'Saving...' : 'Save Changes Now'}
             </Button>

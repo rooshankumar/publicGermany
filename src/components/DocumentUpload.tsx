@@ -51,13 +51,15 @@ export const DocumentUpload = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    handleFileUpload(files);
+    if (uploadedFiles.length === 0) {
+      const files = Array.from(e.dataTransfer.files).slice(0, 1);
+      handleFileUpload(files);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
+    if (e.target.files && uploadedFiles.length === 0) {
+      const files = Array.from(e.target.files).slice(0, 1);
       handleFileUpload(files);
     }
   };
@@ -72,10 +74,10 @@ export const DocumentUpload = ({
       return;
     }
 
-    if (uploadedFiles.length + files.length > maxFiles) {
+    if (uploadedFiles.length + files.length > 1) {
       toast({
         title: "Too many files",
-        description: `Maximum ${maxFiles} files allowed.`,
+        description: `Only 1 file allowed (Passport Copy).`,
         variant: "destructive",
       });
       return;
@@ -196,84 +198,71 @@ export const DocumentUpload = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Upload Zone */}
-      <div
-        className={`upload-zone p-8 rounded-lg text-center cursor-pointer transition-colors ${
-          dragOver ? 'dragover' : ''
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-semibold mb-2">
-          {dragOver ? 'Drop files here' : 'Upload Documents'}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Drag & drop files here or click to browse
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Accepted: PDF, DOC, DOCX, Images • Max {maxFiles} files
-        </p>
-        
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={acceptedTypes.join(',')}
-          onChange={handleFileSelect}
-          className="hidden"
-        />
+      <div className="font-semibold text-base flex items-center gap-2">
+        <span role="img" aria-label="passport">📄</span> Passport Copy
       </div>
 
-      {/* Upload Progress */}
-      {uploading && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Uploading...</span>
-            <span>{Math.round(uploadProgress)}%</span>
-          </div>
-          <Progress value={uploadProgress} className="progress-glow" />
-        </div>
-      )}
-
-      {/* Uploaded Files */}
-      {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="font-medium">Uploaded Files</h4>
-          {uploadedFiles.map((file) => {
-            const IconComponent = getFileIcon(file.type);
-            return (
-              <div
-                key={file.id}
-                className="flex items-center justify-between p-3 bg-secondary rounded-lg"
+      {/* If file is uploaded, show file info with View/Delete */}
+      {uploadedFiles.length > 0 ? (
+        <div className="border rounded-lg divide-y bg-secondary">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <span className="font-medium">{uploadedFiles[0].name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onClick={() => window.open(uploadedFiles[0].url, '_blank', 'noopener,noreferrer')}
               >
-                <div className="flex items-center space-x-3">
-                  <IconComponent className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <a href={file.url} target="_blank" rel="noopener noreferrer" className="mr-2">
-                    <Button variant="outline" size="sm">View</Button>
-                  </a>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeFile(file.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+                View
+              </button>
+              <Button variant="ghost" size="sm" onClick={() => removeFile(uploadedFiles[0].id)}>
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
+      ) : (
+        <>
+          {/* Upload Zone */}
+          <div
+            className={`upload-zone p-8 rounded-lg text-center cursor-pointer transition-colors ${dragOver ? 'dragover' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">
+              {dragOver ? 'Drop file here' : 'Upload Passport Copy'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Drag & drop or click to browse
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Accepted: PDF, DOC, DOCX, Images • Max 1 file
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={acceptedTypes.join(',')}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
+          {/* Upload Progress */}
+          {uploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Uploading...</span>
+                <span>{Math.round(uploadProgress)}%</span>
+              </div>
+              <Progress value={uploadProgress} className="progress-glow" />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

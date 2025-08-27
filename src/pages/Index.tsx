@@ -1,12 +1,46 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import LandingHero from "@/components/LandingHero";
+import LandingFeatures from "@/components/LandingFeatures";
+import LandingHowItWorks from "@/components/LandingHowItWorks";
+import LandingFooter from "@/components/LandingFooter";
+import LandingFAQ from "@/components/LandingFAQ";
+import { useNavigate } from "react-router-dom";
+
+function Navbar() {
+  return (
+    <nav className="w-full py-4 px-6 flex items-center justify-between bg-background/80 border-b sticky top-0 z-20">
+      <div className="flex items-center gap-2">
+        <img src={require('@/assets/germany-help-logo.png')} alt="GermanyHelp Logo" className="h-8" />
+        <span className="font-bold text-lg">GermanyHelp</span>
+      </div>
+      <div className="flex gap-6 text-sm font-medium">
+        <a href="#" className="hover:text-primary">Home</a>
+        <a href="#features" className="hover:text-primary">Features</a>
+        <a href="#faq" className="hover:text-primary">FAQ</a>
+        <a href="#contact" className="hover:text-primary">Contact</a>
+        <a href="/auth" className="hover:text-primary">Sign In</a>
+      </div>
+    </nav>
+  );
+}
 
 const Index = () => {
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-1">
+        <LandingHero
+          onGetStarted={() => navigate('/auth')}
+          onSignIn={() => navigate('/auth')}
+        />
+        <div id="features">
+          <LandingFeatures />
+        </div>
+  <LandingHowItWorks />
+  <LandingFAQ />
+      </main>
+      <LandingFooter />
     </div>
   );
 };

@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Save, Upload } from 'lucide-react';
 import Layout from '@/components/Layout';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import APSRequiredDocuments from '@/components/APSRequiredDocuments';
 
 const APS = () => {
@@ -24,33 +22,34 @@ const APS = () => {
     ielts_toefl_score: '',
   });
 
-  // Auto-save functionality
-  const { saveStatus } = useAutoSave(formData, 'profiles', {
-    enabled: true,
-    delay: 3000,
-    onSave: async (data) => {
-      if (!profile?.user_id) {
-        toast({
-          title: "Profile not loaded",
-          description: "Cannot save APS details because user ID is missing.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const updateData = {
-        ...data,
-        aps_pathway: data.aps_pathway === '' ? null : data.aps_pathway as 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null,
-        german_level: data.german_level === '' ? null : data.german_level as 'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2' | null,
-      };
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('user_id', profile.user_id);
-      if (error) throw error;
-      setLastSaved(new Date());
-      await refetchProfile();
+  // Auto-save disabled. Use manual save instead.
+  const saveAPS = async () => {
+    if (!profile?.user_id) {
+      toast({
+        title: "Profile not loaded",
+        description: "Cannot save APS details because user ID is missing.",
+        variant: "destructive",
+      });
+      return;
     }
-  });
+    const updateData = {
+      ...formData,
+      aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway,
+      german_level: formData.german_level === '' ? null : formData.german_level,
+    };
+    const { error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('user_id', profile.user_id);
+    if (error) throw error;
+    setLastSaved(new Date());
+    await refetchProfile();
+    toast({
+      title: "APS details saved",
+      description: "Your changes have been saved.",
+      variant: "success",
+    });
+  };
 
   useEffect(() => {
     if (profile) {
@@ -108,7 +107,6 @@ const APS = () => {
   return (
     <Layout>
       <div className="container-mobile space-y-6">
-        <AutoSaveIndicator status={saveStatus} />
         <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -118,7 +116,7 @@ const APS = () => {
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Save className="h-4 w-4" />
               <span>
-                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Auto-save enabled'}
+                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Not saved yet'}
               </span>
             </div>
           </div>

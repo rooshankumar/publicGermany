@@ -154,50 +154,99 @@ const Dashboard = () => {
     );
   }
 
+  // --- Modern Dashboard Layout ---
   return (
     <Layout>
-      <div className="container-mobile max-w-xl mx-auto py-10 space-y-8">
-        {/* Minimal Hero Header */}
-        <div className="bg-gradient-to-r from-primary to-primary-glow rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
-              {profile?.full_name ? `Welcome back, ${profile.full_name.split(' ')[0]}! 🎓` : 'Welcome to GermanyHelp! 🎓'}
-            </h1>
-            <p className="text-primary-foreground/90 text-lg mb-4">
-              Your journey to studying in Germany, simplified.
-            </p>
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{getOverallProgress()}%</div>
-                  <div className="text-sm text-primary-foreground/80">Complete</div>
-                </div>
-              </div>
-              <Progress value={getOverallProgress()} className="h-3 w-32 progress-glow" />
+      <div className="container mx-auto py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left/Main Column */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Progress Overview Card */}
+          <div className="p-6 flex flex-col items-center text-center bg-white rounded-xl shadow mb-4">
+            <div className="relative mb-2">
+              <Progress value={getOverallProgress()} className="w-32 h-6 rounded-full border-4 border-primary" />
+              <span className="absolute inset-0 flex items-center justify-center text-3xl font-bold">{getOverallProgress()}%</span>
+            </div>
+            <div className="flex gap-4 justify-center mb-2">
+              {modules.map((m, i) => (
+                <span key={i} className={`flex items-center gap-1 text-xs ${getModuleProgress(m.key) === 100 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  {getModuleProgress(m.key) === 100 ? '✅' : '❌'} {m.name}
+                </span>
+              ))}
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-l from-white/10 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+
+          {/* Next Steps / To-Do List */}
+          <div className="p-4 bg-accent/30 rounded-xl mb-4">
+            <h3 className="font-semibold mb-3">Next Steps</h3>
+            <div className="flex flex-col gap-3">
+              {getNextActions().map((step, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-2xl">{i === 0 ? '📑' : i === 1 ? '🎓' : '🏠'}</span>
+                  <span className="flex-1">{step.title}</span>
+                  <Button size="sm" asChild><Link to={step.actionLink}>{step.title.includes('Upload') ? 'Upload' : step.title.includes('Research') ? 'Start' : 'Explore'}</Link></Button>
+                  {/* Checkmark if done logic can be added here */}
+                </div>
+              ))}
+              {getNextActions().length === 0 && <span className="text-muted-foreground text-sm">You're all caught up! 🎉</span>}
+            </div>
+          </div>
+
+          {/* Services Quick Access */}
+          <div className="flex gap-3 overflow-x-auto py-2 mb-4">
+            {/* Example icons, replace with real navigation/actions */}
+            <div className="flex flex-col items-center justify-center p-4 min-w-[120px] rounded-xl shadow-sm bg-white">
+              <span className="text-primary mb-2 text-2xl">📝</span>
+              <span className="text-sm font-medium text-center">University Applications</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 min-w-[120px] rounded-xl shadow-sm bg-white">
+              <span className="text-primary mb-2 text-2xl">🏢</span>
+              <span className="text-sm font-medium text-center">APS Services</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 min-w-[120px] rounded-xl shadow-sm bg-white">
+              <span className="text-primary mb-2 text-2xl">💳</span>
+              <span className="text-sm font-medium text-center">Finances</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 min-w-[120px] rounded-xl shadow-sm bg-white">
+              <span className="text-primary mb-2 text-2xl">📬</span>
+              <span className="text-sm font-medium text-center">Embassy / Visa</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 min-w-[120px] rounded-xl shadow-sm bg-white">
+              <span className="text-primary mb-2 text-2xl">📚</span>
+              <span className="text-sm font-medium text-center">Language Learning</span>
+            </div>
+          </div>
         </div>
 
-        {/* Next Steps */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Next Steps</h2>
-          <ul className="space-y-4">
-            {getNextActions().slice(0, 2).map(action => (
-              <li key={action.id} className="bg-muted rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="font-medium text-base">{action.title}</div>
-                  <div className="text-sm text-muted-foreground">{action.description}</div>
-                </div>
-                <Link to={action.actionLink} className="mt-2 md:mt-0">
-                  <Button size="sm">Go</Button>
-                </Link>
-              </li>
-            ))}
-            {getNextActions().length === 0 && (
-              <li className="text-muted-foreground text-sm">You're all caught up! 🎉</li>
-            )}
-          </ul>
+        {/* Right Column */}
+        <div className="flex flex-col gap-4">
+          {/* Timeline / Deadlines Widget */}
+          <div className="p-4 bg-white rounded-xl shadow mb-4">
+            <h3 className="font-semibold mb-3">Timeline & Deadlines</h3>
+            <div className="space-y-2">
+              {/* Example timeline, replace with real data if available */}
+              <div className="flex items-center gap-2 text-green-600"><span>✅</span> APS applied <span className="text-xs text-muted-foreground ml-auto">15 Aug</span></div>
+              <div className="flex items-center gap-2 text-orange-500"><span>⏳</span> APS result expected <span className="text-xs text-muted-foreground ml-auto">10 Nov</span></div>
+              <div className="flex items-center gap-2 text-orange-500"><span>📅</span> University application deadline <span className="text-xs text-muted-foreground ml-auto">2 Sep</span></div>
+              <div className="flex items-center gap-2 text-red-600"><span>📅</span> Visa appointment <span className="text-xs text-muted-foreground ml-auto">TBD</span></div>
+            </div>
+          </div>
+
+          {/* Document Hub (Mini Preview) */}
+          <div className="p-4 bg-accent/20 rounded-xl mb-4">
+            <h3 className="font-semibold mb-3">Uploaded Docs</h3>
+            <div className="space-y-2">
+              {/* Example docs, replace with real data if available */}
+              <div className="flex items-center gap-2"><span>📄</span> Passport.pdf <Button size="xs" variant="outline">View</Button> <Button size="xs" variant="ghost">Delete</Button> <span className="text-green-600">✅</span></div>
+              <div className="flex items-center gap-2"><span>📄</span> IELTS.pdf <Button size="xs" variant="outline">View</Button> <Button size="xs" variant="ghost">Delete</Button> <span className="text-green-600">✅</span></div>
+            </div>
+            <Button variant="link" className="mt-2">Go to Full Documents →</Button>
+          </div>
+
+          {/* Motivation / Tips Box */}
+          <div className="p-4 bg-white rounded-xl shadow">
+            <h3 className="font-semibold mb-2">Motivation & Tips</h3>
+            <div className="text-sm text-muted-foreground">💡 Did you know? Most German universities don’t charge tuition fees!</div>
+          </div>
         </div>
 
         {/* Profile Completion Dialog (unchanged) */}
