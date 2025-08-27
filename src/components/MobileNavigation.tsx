@@ -30,11 +30,10 @@ const MobileNavigation = () => {
 
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/applications', label: 'Applications', icon: FileText },
-    { href: '/profile', label: 'Profile & APS', icon: Settings },
     { href: '/services', label: 'Services', icon: HeadphonesIcon },
-    { href: '/resources', label: 'Resources', icon: BookOpen },
-    { href: '/contact', label: 'Contact', icon: MessageSquare },
+    { href: '/applications', label: 'University Applications', icon: FileText },
+    { href: '/aps', label: 'APS', icon: Settings },
+    { href: '/profile', label: 'Profile', icon: Settings },
   ];
 
   const adminNavItems = [

@@ -35,7 +35,9 @@ const Profile = () => {
     master_cgpa_percentage: '',
     work_experience_years: '',
     work_experience_field: '',
-    ielts_toefl_score: ''
+    ielts_toefl_score: '',
+    aps_pathway: '',
+    german_level: '',
   });
 
   const { saveStatus } = useAutoSave(formData, 'profiles', {
@@ -88,7 +90,8 @@ const Profile = () => {
         work_experience_years: profile.work_experience_years?.toString() || '',
         work_experience_field: profile.work_experience_field || '',
         ielts_toefl_score: profile.ielts_toefl_score || '',
-  // ...existing code...
+        aps_pathway: profile.aps_pathway || '',
+        german_level: profile.german_level || '',
       });
     }
   }, [profile]);
@@ -117,8 +120,8 @@ const Profile = () => {
         bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
         bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
         work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
-        aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as any,
-        german_level: formData.german_level === '' ? null : formData.german_level as any,
+        aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null,
+        german_level: formData.german_level === '' ? null : formData.german_level as 'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2' | null,
       };
 
       const { error } = await supabase

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, DragEvent } from 'react';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -36,20 +37,22 @@ export default function APSRequiredDocuments() {
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+
+  const fetchDocs = async () => {
+    if (!profile?.user_id) return;
+    const { data } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', profile.user_id);
+    const docMap: Record<string, DocumentMeta | null> = {};
+    DOCUMENTS.forEach(doc => {
+      docMap[doc.key] = data?.find((d: any) => d.category === doc.key) || null;
+    });
+    setDocs(docMap);
+  };
 
   useEffect(() => {
-    if (!profile?.user_id) return;
-    const fetchDocs = async () => {
-      const { data } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', profile.user_id);
-      const docMap: Record<string, DocumentMeta | null> = {};
-      DOCUMENTS.forEach(doc => {
-        docMap[doc.key] = data?.find((d: any) => d.category === doc.key) || null;
-      });
-      setDocs(docMap);
-    };
     fetchDocs();
   }, [profile?.user_id]);
 
@@ -74,7 +77,7 @@ export default function APSRequiredDocuments() {
       upload_path: filePath,
     }).select().single();
     if (!error && data) {
-      setDocs(prev => ({ ...prev, [key]: data }));
+      await fetchDocs();
     }
     setLoading(null);
   };
@@ -86,69 +89,67 @@ export default function APSRequiredDocuments() {
     const filePath = docs[key]!.file_url.split('/documents/')[1];
     await supabase.storage.from('documents').remove([filePath]);
     // Remove from db
-    await supabase.from('documents').delete().eq('id', docs[key]!.id);
-    setDocs(prev => ({ ...prev, [key]: null }));
-    setLoading(null);
+  await supabase.from('documents').delete().eq('id', docs[key]!.id);
+  await fetchDocs();
+  setLoading(null);
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-card rounded-xl shadow p-4 md:p-6">
-        <h2 className="text-lg md:text-xl font-semibold mb-4">APS Required Documents</h2>
-        <div className="divide-y divide-border">
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-semibold mb-6">Document Upload</h2>
+        <div className="flex flex-col gap-4">
           {DOCUMENTS.map(doc => (
             <div
               key={doc.key}
-              className="flex flex-col md:flex-row md:items-center py-3 gap-2 md:gap-0"
+              className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border border-gray-100 shadow-sm bg-gray-50"
             >
-              <div className="flex-1 text-sm md:text-base font-medium">{doc.label}</div>
-              <div className="flex flex-col items-start md:items-center gap-1 md:gap-2 mt-2 md:mt-0">
-                <div className="text-xs text-muted-foreground mb-1">Drag & drop files here or click to browse</div>
-                <div className="text-xs text-muted-foreground mb-1">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</div>
+              <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium">
+                <span>{doc.label}</span>
+                <span className="text-xs text-muted-foreground mt-1">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</span>
+              </div>
+              <div className="w-full md:w-2/3 flex flex-col gap-1">
                 {docs[doc.key] ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="text-green-500 h-5 w-5" />
-                    <a
-                      href={docs[doc.key]!.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-1" /> View
+                  <div className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-green-500 h-5 w-5" />
+                      <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <a
+                        href={docs[doc.key]!.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button size="sm" variant="outline" className="px-2">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </a>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(doc.key)}
+                        disabled={loading === doc.key}
+                        className="px-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </a>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(doc.key)}
-                      disabled={loading === doc.key}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="application/pdf,image/*,.doc,.docx"
-                      className="hidden"
-                      ref={el => (fileInputs.current[doc.key] = el)}
-                      onChange={e => {
-                        if (e.target.files && e.target.files[0]) {
-                          handleUpload(doc.key, e.target.files[0]);
-                        }
-                      }}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="px-3"
-                      onClick={() => fileInputs.current[doc.key]?.click()}
-                      disabled={loading === doc.key}
-                    >
-                      <Upload className="h-4 w-4 mr-1" /> Upload
-                    </Button>
-                  </div>
+                  <DocumentDropZone
+                    docKey={doc.key}
+                    onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
+                    onUpload={() => {
+                      if (selectedFiles[doc.key]) {
+                        handleUpload(doc.key, selectedFiles[doc.key]!);
+                        setSelectedFiles(prev => ({ ...prev, [doc.key]: null }));
+                      }
+                    }}
+                    selectedFile={selectedFiles[doc.key]}
+                    loading={loading === doc.key}
+                    maxFiles={doc.maxFiles}
+                  />
                 )}
               </div>
             </div>
@@ -157,4 +158,94 @@ export default function APSRequiredDocuments() {
       </div>
     </div>
   );
+
+// Minimal drag-and-drop upload box for each document row
+
+type DropZoneProps = {
+  docKey: string;
+  onFileSelect: (file: File) => void;
+  onUpload: () => void;
+  selectedFile: File | null;
+  loading: boolean;
+  maxFiles: number;
+};
+
+function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loading, maxFiles }: DropZoneProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      {!selectedFile ? (
+        <div
+          className={
+            'flex items-center border-2 border-dashed rounded-md p-1 transition-colors ' +
+            (dragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white')
+          }
+          onDragOver={e => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={e => {
+            e.preventDefault();
+            setDragActive(false);
+          }}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          style={{ cursor: 'pointer', minHeight: 36, maxWidth: 260 }}
+        >
+          <span className="text-xs text-gray-500">Drag & drop or <span className="text-blue-600 underline">click to upload</span></span>
+          <Upload className="h-4 w-4 text-gray-400 ml-2" />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,image/*,.doc,.docx"
+            className="hidden"
+            onChange={e => {
+              if (e.target.files && e.target.files[0]) {
+                onFileSelect(e.target.files[0]);
+              }
+            }}
+            disabled={loading}
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 mt-1">
+          <span className="truncate max-w-[180px] text-sm font-medium text-blue-700">{selectedFile.name}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={e => {
+              e.stopPropagation();
+              onFileSelect(null as any);
+            }}
+            className="px-2"
+          >
+            Remove
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={e => {
+              e.stopPropagation();
+              onUpload();
+            }}
+            disabled={loading}
+            className="px-2"
+          >
+            Upload
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 }

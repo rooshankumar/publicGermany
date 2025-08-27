@@ -11,7 +11,7 @@ import { Save, Upload } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
-import { DocumentUpload } from '@/components/DocumentUpload';
+import APSRequiredDocuments from '@/components/APSRequiredDocuments';
 
 const APS = () => {
   const { profile, refetchProfile } = useAuth();
@@ -39,8 +39,8 @@ const APS = () => {
       }
       const updateData = {
         ...data,
-        aps_pathway: data.aps_pathway === '' ? null : data.aps_pathway,
-        german_level: data.german_level === '' ? null : data.german_level,
+        aps_pathway: data.aps_pathway === '' ? null : data.aps_pathway as 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null,
+        german_level: data.german_level === '' ? null : data.german_level as 'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2' | null,
       };
       const { error } = await supabase
         .from('profiles')
@@ -188,17 +188,7 @@ const APS = () => {
               <CardDescription>Upload your important documents for easy access</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <DocumentUpload category="passport" maxFiles={1} />
-              <DocumentUpload category="aps_certificate" maxFiles={1} />
-              <DocumentUpload category="class_x" maxFiles={2} />
-              <DocumentUpload category="class_xii" maxFiles={2} />
-              <DocumentUpload category="bachelor_marksheets" maxFiles={10} />
-              <DocumentUpload category="bachelor_degree" maxFiles={2} />
-              <DocumentUpload category="master_degree" maxFiles={2} />
-              <DocumentUpload category="language_certificate" maxFiles={2} />
-              <DocumentUpload category="cv" maxFiles={1} />
-              <DocumentUpload category="lom" maxFiles={1} />
-              <DocumentUpload category="lor" maxFiles={3} />
+              <APSRequiredDocuments />
             </CardContent>
           </Card>
           <Button type="submit" disabled={loading}>
