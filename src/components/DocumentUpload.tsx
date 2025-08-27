@@ -258,13 +258,18 @@ export const DocumentUpload = ({
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFile(file.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center">
+                  <a href={file.url} target="_blank" rel="noopener noreferrer" className="mr-2">
+                    <Button variant="outline" size="sm">View</Button>
+                  </a>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(file.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             );
           })}

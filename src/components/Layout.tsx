@@ -30,12 +30,11 @@ const Layout = ({ children }: LayoutProps) => {
   const isAdmin = profile?.role === 'admin';
 
   const studentNavItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/applications', label: 'Applications', icon: FileText },
-    { href: '/profile', label: 'Profile & APS', icon: Settings },
-    { href: '/services', label: 'Services', icon: HeadphonesIcon },
-    { href: '/resources', label: 'Resources', icon: BookOpen },
-    { href: '/contact', label: 'Contact', icon: MessageSquare },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/services', label: 'Services', icon: HeadphonesIcon },
+  { href: '/applications', label: 'University Applications', icon: FileText },
+  { href: '/aps', label: 'APS', icon: Settings },
+  { href: '/profile', label: 'Profile', icon: Settings },
   ];
 
   const adminNavItems = [
@@ -50,7 +49,7 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Desktop Layout */}
       <div className="hidden md:flex min-h-screen">
         {/* Desktop Sidebar */}
-        <div className="w-72 bg-card border-r border-border flex flex-col">
+  <div className="w-72 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
           {/* Logo Header */}
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <Link to="/dashboard" className="flex items-center space-x-3 group">

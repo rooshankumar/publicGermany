@@ -35,32 +35,34 @@ const Profile = () => {
     master_cgpa_percentage: '',
     work_experience_years: '',
     work_experience_field: '',
-    ielts_toefl_score: '',
-    german_level: '',
-    aps_pathway: ''
+    ielts_toefl_score: ''
   });
 
-  // Auto-save functionality
   const { saveStatus } = useAutoSave(formData, 'profiles', {
     enabled: true,
     delay: 3000,
     onSave: async (data) => {
+      if (!profile?.user_id) {
+        toast({
+          title: "Profile not loaded",
+          description: "Cannot save profile because user ID is missing.",
+          variant: "destructive",
+        });
+        return;
+      }
       const updateData = {
         ...data,
         bachelor_credits_ects: data.bachelor_credits_ects ? parseInt(data.bachelor_credits_ects) : null,
         bachelor_duration_years: data.bachelor_duration_years ? parseInt(data.bachelor_duration_years) : null,
         work_experience_years: data.work_experience_years ? parseInt(data.work_experience_years) : null,
-        aps_pathway: data.aps_pathway === '' ? null : data.aps_pathway,
-        german_level: data.german_level === '' ? null : data.german_level,
       };
 
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('user_id', profile?.user_id);
+        .eq('user_id', profile.user_id);
 
       if (error) throw error;
-      
       setLastSaved(new Date());
       await refetchProfile();
     }
@@ -86,8 +88,7 @@ const Profile = () => {
         work_experience_years: profile.work_experience_years?.toString() || '',
         work_experience_field: profile.work_experience_field || '',
         ielts_toefl_score: profile.ielts_toefl_score || '',
-        german_level: profile.german_level || '',
-        aps_pathway: profile.aps_pathway || ''
+  // ...existing code...
       });
     }
   }, [profile]);
@@ -99,6 +100,16 @@ const Profile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!profile?.user_id) {
+      toast({
+        title: "Profile not loaded",
+        description: "Cannot save profile because user ID is missing.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       const updateData = {
@@ -113,7 +124,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('user_id', profile?.user_id);
+        .eq('user_id', profile.user_id);
 
       if (error) throw error;
 
@@ -373,62 +384,9 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* APS Pathway */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Award className="h-5 w-5 text-primary" />
-                <CardTitle>APS Pathway</CardTitle>
-              </div>
-              <CardDescription>Your recommended APS evaluation pathway</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="aps_pathway">APS Pathway</Label>
-                <Select value={formData.aps_pathway} onValueChange={(value) => handleInputChange('aps_pathway', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select APS pathway" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="stk">STK (Studienkolleg) - For XII Grade</SelectItem>
-                    <SelectItem value="bachelor_2_semesters">Bachelor with 2 Semesters</SelectItem>
-                    <SelectItem value="master_applicants">Master - For Graduates</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          {/* APS Pathway section removed, now on APS page */}
 
-          {/* Document Upload Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Upload className="h-5 w-5 text-primary" />
-                <CardTitle>Document Upload</CardTitle>
-              </div>
-              <CardDescription>Upload your important documents for easy access</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-3">Academic Documents</h4>
-                  <DocumentUpload
-                    category="academic"
-                    maxFiles={10}
-                    acceptedTypes={['application/pdf', 'image/*', '.doc', '.docx']}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-3">Identity Documents</h4>
-                  <DocumentUpload
-                    category="identity"
-                    maxFiles={5}
-                    acceptedTypes={['application/pdf', 'image/*']}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Document Upload section removed, now on APS page */}
 
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">

@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import APS from "./pages/APS";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,12 @@ const AppRoutes = () => {
       <Route path="/admin" element={
         <ProtectedRoute requiredRole="admin">
           <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/aps" element={
+        <ProtectedRoute>
+          <APS />
         </ProtectedRoute>
       } />
 

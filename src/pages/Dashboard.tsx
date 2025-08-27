@@ -1,31 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  FileText, 
-  BookOpen, 
-  Phone, 
-  User, 
-  Calendar,
-  FileCheck,
-  GraduationCap,
-  Globe,
-  CreditCard,
-  Plane,
-  Shield,
-  Home,
-  Target,
-  TrendingUp
-} from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import APSPathwaySelector from '@/components/APSPathwaySelector';
-import NextActionCard from '@/components/NextActionCard';
-import ModuleProgressGrid from '@/components/ModuleProgressGrid';
 
 interface ChecklistItem {
   id: string;
@@ -42,63 +22,16 @@ const Dashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedPathway, setSelectedPathway] = useState<string>('');
 
+  // Minimal modules for progress calculation
   const modules = [
-    { 
-      key: 'aps', 
-      name: 'APS Documents', 
-      icon: FileCheck,
-      link: '/profile',
-      description: 'Academic evaluation & document verification'
-    },
-    { 
-      key: 'university_applications', 
-      name: 'University Applications', 
-      icon: GraduationCap,
-      link: '/applications',
-      description: 'Apply to German universities'
-    },
-    { 
-      key: 'ielts', 
-      name: 'Language Proficiency', 
-      icon: Globe,
-      link: '/profile',
-      description: 'IELTS/TOEFL & German language'
-    },
-    { 
-      key: 'sop_cv', 
-      name: 'Documents (SOP/CV)', 
-      icon: FileText,
-      link: '/services',
-      description: 'Statement of Purpose & CV preparation'
-    },
-    { 
-      key: 'blocked_account', 
-      name: 'Blocked Account', 
-      icon: CreditCard,
-      link: '/services',
-      description: 'Financial proof for visa'
-    },
-    { 
-      key: 'visa', 
-      name: 'Visa Process', 
-      icon: Plane,
-      link: '/services',
-      description: 'German student visa application'
-    },
-    { 
-      key: 'health_insurance', 
-      name: 'Health Insurance', 
-      icon: Shield,
-      link: '/services',
-      description: 'Student health coverage'
-    },
-    { 
-      key: 'accommodation', 
-      name: 'Accommodation', 
-      icon: Home,
-      link: '/resources',
-      description: 'Student housing arrangements'
-    },
+    { key: 'aps', name: 'APS Documents' },
+    { key: 'university_applications', name: 'University Applications' },
+    { key: 'ielts', name: 'Language Proficiency' },
+    { key: 'sop_cv', name: 'Documents (SOP/CV)' },
+    { key: 'blocked_account', name: 'Blocked Account' },
+    { key: 'visa', name: 'Visa Process' },
+    { key: 'health_insurance', name: 'Health Insurance' },
+    { key: 'accommodation', name: 'Accommodation' },
   ];
 
   useEffect(() => {
@@ -205,40 +138,7 @@ const Dashboard = () => {
     return actions.slice(0, 3); // Return top 3 actions
   };
 
-  // Generate module data for the grid
-  const getModuleData = () => {
-    return modules.map(module => {
-      const progress = getModuleProgress(module.key);
-      const moduleItems = checklistItems.filter(item => item.module === module.key);
-      const completedCount = moduleItems.filter(item => item.status === 'completed').length;
-      const totalCount = moduleItems.length || 1;
-      
-      let status: 'completed' | 'in_progress' | 'pending' | 'needs_attention' = 'pending';
-      let nextAction = '';
-      
-      if (progress === 100) {
-        status = 'completed';
-      } else if (progress > 0) {
-        status = 'in_progress';
-        nextAction = `${Math.ceil((totalCount - completedCount) / 2)} tasks remaining`;
-      } else {
-        status = 'pending';
-        nextAction = 'Get started';
-      }
-
-      return {
-        key: module.key,
-        name: module.name,
-        icon: module.icon,
-        progress,
-        completedTasks: completedCount,
-        totalTasks: totalCount,
-        status,
-        nextAction,
-        link: module.link
-      };
-    });
-  };
+  // ...existing code...
 
   if (loading) {
     return (
@@ -256,143 +156,51 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="container-mobile space-y-8">
-        {/* Modern Hero Header */}
+      <div className="container-mobile max-w-xl mx-auto py-10 space-y-8">
+        {/* Minimal Hero Header */}
         <div className="bg-gradient-to-r from-primary to-primary-glow rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                  {profile?.full_name ? `Welcome back, ${profile.full_name.split(' ')[0]}! 🎓` : 'Welcome to GermanyHelp! 🎓'}
-                </h1>
-                <p className="text-primary-foreground/90 text-lg">
-                  Your personalized journey to studying in Germany
-                </p>
-              </div>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              {profile?.full_name ? `Welcome back, ${profile.full_name.split(' ')[0]}! 🎓` : 'Welcome to GermanyHelp! 🎓'}
+            </h1>
+            <p className="text-primary-foreground/90 text-lg mb-4">
+              Your journey to studying in Germany, simplified.
+            </p>
+            <div className="flex items-center space-x-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="text-center">
                   <div className="text-3xl font-bold">{getOverallProgress()}%</div>
                   <div className="text-sm text-primary-foreground/80">Complete</div>
                 </div>
               </div>
+              <Progress value={getOverallProgress()} className="h-3 w-32 progress-glow" />
             </div>
           </div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-l from-white/10 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Next Actions */}
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Target className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Priority Actions</h2>
-              </div>
-              <NextActionCard actions={getNextActions()} />
-            </div>
-
-            {/* Module Progress Grid */}
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Your Progress</h2>
-              </div>
-              <ModuleProgressGrid modules={getModuleData()} />
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Journey Overview */}
-            <Card className="bg-gradient-to-br from-card to-muted/20">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <span>Journey Overview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Overall Progress</span>
-                    <span className="font-medium">{getOverallProgress()}%</span>
-                  </div>
-                  <Progress value={getOverallProgress()} className="h-3 progress-glow" />
+        {/* Next Steps */}
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Next Steps</h2>
+          <ul className="space-y-4">
+            {getNextActions().slice(0, 2).map(action => (
+              <li key={action.id} className="bg-muted rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="font-medium text-base">{action.title}</div>
+                  <div className="text-sm text-muted-foreground">{action.description}</div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-success">{getCompletedSteps()}</div>
-                    <div className="text-xs text-muted-foreground">Completed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-warning">{modules.length - getCompletedSteps()}</div>
-                    <div className="text-xs text-muted-foreground">Remaining</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* APS Pathway */}
-            <APSPathwaySelector 
-              selectedPathway={selectedPathway}
-              onSelectPathway={handlePathwaySelect}
-            />
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Essential tools and resources</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Link to="/resources">
-                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
-                    <BookOpen className="mr-3 h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <div className="font-medium">📚 Resources</div>
-                      <div className="text-xs text-muted-foreground">Guides & materials</div>
-                    </div>
-                  </Button>
+                <Link to={action.actionLink} className="mt-2 md:mt-0">
+                  <Button size="sm">Go</Button>
                 </Link>
-
-                <Link to="/services">
-                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
-                    <Calendar className="mr-3 h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <div className="font-medium">📅 Book Consultation</div>
-                      <div className="text-xs text-muted-foreground">Expert guidance</div>
-                    </div>
-                  </Button>
-                </Link>
-
-                <Link to="/contact">
-                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
-                    <Phone className="mr-3 h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <div className="font-medium">💬 Support</div>
-                      <div className="text-xs text-muted-foreground">Get help</div>
-                    </div>
-                  </Button>
-                </Link>
-
-                <Link to="/profile">
-                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
-                    <User className="mr-3 h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <div className="font-medium">👤 Profile</div>
-                      <div className="text-xs text-muted-foreground">Update details</div>
-                    </div>
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
+              </li>
+            ))}
+            {getNextActions().length === 0 && (
+              <li className="text-muted-foreground text-sm">You're all caught up! 🎉</li>
+            )}
+          </ul>
         </div>
 
-
-        {/* Profile Completion Dialog */}
+        {/* Profile Completion Dialog (unchanged) */}
         <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
           <DialogContent>
             <DialogHeader>
