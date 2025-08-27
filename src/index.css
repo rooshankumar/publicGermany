@@ -58,6 +58,34 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Minimalist & Professional */
+    --color-min-primary: #00246B;
+    --color-min-neutral-bg: #FCF6F5;
+    --color-min-neutral-text: #101820;
+    --color-min-accent: #408EC6;
+    --color-min-accent-alt: #97BC62;
+
+    /* Vibrant & Energetic */
+    --color-vib-primary: #FF4081; /* Example magenta */
+    --color-vib-secondary: #FFD600; /* Example yellow */
+    --color-vib-neutral-bg: #fff;
+    --color-vib-neutral-text: #222;
+    --color-vib-accent: #FF6F00; /* Example orange */
+
+    /* Earthy & Calming */
+    --color-earth-primary: #B85042;
+    --color-earth-secondary: #A7BEAE;
+    --color-earth-neutral-bg: #E7E8D1;
+    --color-earth-neutral-text: #2C5F2D;
+    --color-earth-accent: #F6DFEB; /* Soft pastel */
+
+    /* Playful & Creative */
+    --color-play-primary: #EA738D;
+    --color-play-secondary: #89ABE3;
+    --color-play-neutral-bg: #fff;
+    --color-play-neutral-text: #22223B;
+    --color-play-accent: #3A1772; /* Deep plum */
   }
 
   .dark {
