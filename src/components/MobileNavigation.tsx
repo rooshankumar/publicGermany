@@ -1,31 +1,30 @@
-import { ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
+  Menu,
+  X,
   LayoutDashboard, 
   FileText, 
+  Settings,
   HeadphonesIcon, 
   BookOpen, 
   MessageSquare,
-  Settings,
   Users,
   FileBarChart,
   LogOut,
-  Bell
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import MobileNavigation from './MobileNavigation';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import logo from '@/assets/germany-help-logo.png';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-const Layout = ({ children }: LayoutProps) => {
+const MobileNavigation = () => {
   const { profile, signOut } = useAuth();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -45,21 +44,33 @@ const Layout = ({ children }: LayoutProps) => {
 
   const navItems = isAdmin ? [...studentNavItems, ...adminNavItems] : studentNavItems;
 
+  const handleLinkClick = () => {
+    setIsOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop Layout */}
-      <div className="hidden md:flex min-h-screen">
-        {/* Desktop Sidebar */}
-        <div className="w-72 bg-card border-r border-border flex flex-col">
-          {/* Logo Header */}
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-6 w-6" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-80 p-0">
+        <div className="flex flex-col h-full">
+          {/* Header */}
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
-            <Link to="/dashboard" className="flex items-center space-x-3 group">
-              <img src={logo} alt="GermanyHelp" className="w-10 h-10 rounded-lg transition-transform group-hover:scale-105" />
-              <div>
-                <h1 className="text-xl font-bold text-foreground">GermanyHelp</h1>
-                <p className="text-sm text-muted-foreground">Study in Germany Platform</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <img src={logo} alt="GermanyHelp" className="w-10 h-10 rounded-lg" />
+                <div>
+                  <h1 className="text-lg font-bold text-foreground">GermanyHelp</h1>
+                  <p className="text-sm text-muted-foreground">Study in Germany</p>
+                </div>
               </div>
-            </Link>
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -73,11 +84,12 @@ const Layout = ({ children }: LayoutProps) => {
                   <li key={item.href}>
                     <Link
                       to={item.href}
+                      onClick={handleLinkClick}
                       className={cn(
                         "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                         isActive 
                           ? "bg-primary text-primary-foreground shadow-lg" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:translate-x-1"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                       )}
                     >
                       <Icon className="h-5 w-5" />
@@ -89,11 +101,11 @@ const Layout = ({ children }: LayoutProps) => {
             </ul>
           </nav>
 
-          {/* User Profile Section */}
+          {/* User Section */}
           <div className="p-4 border-t border-border bg-muted/30">
             <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-background">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -108,60 +120,21 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
             
             <Button 
-              onClick={signOut} 
+              onClick={() => {
+                signOut();
+                setIsOpen(false);
+              }}
               variant="outline" 
-              size="sm" 
-              className="w-full justify-start hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+              className="w-full justify-start"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
           </div>
         </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-
-      {/* Mobile Layout */}
-      <div className="md:hidden">
-        {/* Mobile Header */}
-        <header className="bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <MobileNavigation />
-              <Link to="/dashboard" className="flex items-center space-x-2">
-                <img src={logo} alt="GermanyHelp" className="w-8 h-8 rounded-lg" />
-                <div>
-                  <h1 className="text-lg font-bold text-foreground">GermanyHelp</h1>
-                </div>
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
-        </header>
-
-        {/* Mobile Main Content */}
-        <main className="p-4">
-          {children}
-        </main>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
-export default Layout;
+export default MobileNavigation;

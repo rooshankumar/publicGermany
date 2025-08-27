@@ -8,47 +8,40 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern vibrant color scheme for international students */
-    --background: 240 100% 99%;
-    --foreground: 226 71% 14%;
-
-    --card: 240 100% 99%;
-    --card-foreground: 226 71% 14%;
-
-    --popover: 240 100% 99%;
-    --popover-foreground: 226 71% 14%;
-
-    /* Deep blue primary inspired by German flag and education */
-    --primary: 221 83% 53%;
-    --primary-foreground: 240 100% 99%;
-    --primary-soft: 221 83% 96%;
-
-    /* Warm secondary colors */
-    --secondary: 213 27% 96%;
-    --secondary-foreground: 226 71% 14%;
-
-    --muted: 213 27% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    /* Vibrant accent for CTAs and highlights */
-    --accent: 142 76% 36%;
-    --accent-foreground: 240 100% 99%;
-    --accent-soft: 142 76% 95%;
-
-    /* Success and error states */
-    --success: 142 76% 36%;
-    --success-foreground: 240 100% 99%;
-    --warning: 45 93% 47%;
-    --warning-foreground: 240 100% 99%;
+    /* Modern professional design system */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    /* Success-focused primary (emerald green) */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 160 84% 49%;
+    
+    /* Professional secondary */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 240 10% 3.9%;
+    
+    --muted: 210 40% 96%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 240 5.9% 10%;
+    
+    /* Status colors */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 240 100% 99%;
-
-    /* UI elements */
-    --border: 213 27% 92%;
-    --input: 213 27% 92%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 160 84% 39%;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 

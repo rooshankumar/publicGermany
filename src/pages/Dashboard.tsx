@@ -4,12 +4,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Calendar, FileText, BookOpen, Phone, ExternalLink, User, Settings } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  FileText, 
+  BookOpen, 
+  Phone, 
+  User, 
+  Calendar,
+  FileCheck,
+  GraduationCap,
+  Globe,
+  CreditCard,
+  Plane,
+  Shield,
+  Home,
+  Target,
+  TrendingUp
+} from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import APSPathwaySelector from '@/components/APSPathwaySelector';
+import NextActionCard from '@/components/NextActionCard';
+import ModuleProgressGrid from '@/components/ModuleProgressGrid';
 
 interface ChecklistItem {
   id: string;
@@ -27,14 +43,62 @@ const Dashboard = () => {
   const [selectedPathway, setSelectedPathway] = useState<string>('');
 
   const modules = [
-    { key: 'aps', name: 'APS Documents', icon: FileText },
-    { key: 'university_applications', name: 'University Applications', icon: BookOpen },
-    { key: 'ielts', name: 'IELTS Preparation', icon: BookOpen },
-    { key: 'sop_cv', name: 'Prepare SOP / CV', icon: FileText },
-    { key: 'blocked_account', name: 'Blocked Account', icon: FileText },
-    { key: 'visa', name: 'Visa Process', icon: FileText },
-    { key: 'health_insurance', name: 'Health Insurance', icon: FileText },
-    { key: 'accommodation', name: 'Accommodation', icon: FileText },
+    { 
+      key: 'aps', 
+      name: 'APS Documents', 
+      icon: FileCheck,
+      link: '/profile',
+      description: 'Academic evaluation & document verification'
+    },
+    { 
+      key: 'university_applications', 
+      name: 'University Applications', 
+      icon: GraduationCap,
+      link: '/applications',
+      description: 'Apply to German universities'
+    },
+    { 
+      key: 'ielts', 
+      name: 'Language Proficiency', 
+      icon: Globe,
+      link: '/profile',
+      description: 'IELTS/TOEFL & German language'
+    },
+    { 
+      key: 'sop_cv', 
+      name: 'Documents (SOP/CV)', 
+      icon: FileText,
+      link: '/services',
+      description: 'Statement of Purpose & CV preparation'
+    },
+    { 
+      key: 'blocked_account', 
+      name: 'Blocked Account', 
+      icon: CreditCard,
+      link: '/services',
+      description: 'Financial proof for visa'
+    },
+    { 
+      key: 'visa', 
+      name: 'Visa Process', 
+      icon: Plane,
+      link: '/services',
+      description: 'German student visa application'
+    },
+    { 
+      key: 'health_insurance', 
+      name: 'Health Insurance', 
+      icon: Shield,
+      link: '/services',
+      description: 'Student health coverage'
+    },
+    { 
+      key: 'accommodation', 
+      name: 'Accommodation', 
+      icon: Home,
+      link: '/resources',
+      description: 'Student housing arrangements'
+    },
   ];
 
   useEffect(() => {
@@ -85,16 +149,105 @@ const Dashboard = () => {
 
   const handlePathwaySelect = (pathwayId: string) => {
     setSelectedPathway(pathwayId);
-    // You can add logic here to update the profile with selected pathway
+    // Update profile with selected pathway
+    if (profile?.user_id) {
+      supabase
+        .from('profiles')
+        .update({ aps_pathway: pathwayId as any })
+        .eq('user_id', profile.user_id)
+        .then(() => console.log('Pathway updated'));
+    }
+  };
+
+  // Generate next actions based on current progress
+  const getNextActions = () => {
+    const actions = [];
+    
+    // Check profile completion
+    if (!profile?.country_of_education || !profile?.aps_pathway) {
+      actions.push({
+        id: 'complete_profile',
+        title: 'Complete Your Profile',
+        description: 'Add your academic background and select APS pathway',
+        priority: 'high' as const,
+        category: 'Profile',
+        actionLink: '/profile'
+      });
+    }
+
+    // Check APS documents
+    const apsProgress = getModuleProgress('aps');
+    if (apsProgress < 100 && profile?.aps_pathway) {
+      actions.push({
+        id: 'aps_documents',
+        title: 'Upload APS Documents',
+        description: 'Complete your APS document submission',
+        priority: 'high' as const,
+        category: 'APS',
+        actionLink: '/profile',
+        dueDate: 'ASAP'
+      });
+    }
+
+    // Check university applications
+    const uniProgress = getModuleProgress('university_applications');
+    if (uniProgress < 50) {
+      actions.push({
+        id: 'university_research',
+        title: 'Research Universities',
+        description: 'Start exploring German universities for your field',
+        priority: 'medium' as const,
+        category: 'Universities',
+        actionLink: '/applications'
+      });
+    }
+
+    return actions.slice(0, 3); // Return top 3 actions
+  };
+
+  // Generate module data for the grid
+  const getModuleData = () => {
+    return modules.map(module => {
+      const progress = getModuleProgress(module.key);
+      const moduleItems = checklistItems.filter(item => item.module === module.key);
+      const completedCount = moduleItems.filter(item => item.status === 'completed').length;
+      const totalCount = moduleItems.length || 1;
+      
+      let status: 'completed' | 'in_progress' | 'pending' | 'needs_attention' = 'pending';
+      let nextAction = '';
+      
+      if (progress === 100) {
+        status = 'completed';
+      } else if (progress > 0) {
+        status = 'in_progress';
+        nextAction = `${Math.ceil((totalCount - completedCount) / 2)} tasks remaining`;
+      } else {
+        status = 'pending';
+        nextAction = 'Get started';
+      }
+
+      return {
+        key: module.key,
+        name: module.name,
+        icon: module.icon,
+        progress,
+        completedTasks: completedCount,
+        totalTasks: totalCount,
+        status,
+        nextAction,
+        link: module.link
+      };
+    });
   };
 
   if (loading) {
     return (
       <Layout>
         <div className="space-y-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-1/3"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="skeleton-modern h-32"></div>
+            ))}
           </div>
         </div>
       </Layout>
@@ -103,137 +256,141 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="container-mobile space-y-6">
-        {/* Header with Greeting */}
-        <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Study in Germany</h1>
-          <p className="text-xs md:text-sm text-muted-foreground mb-2">
-            {profile?.full_name ? `Welcome, ${profile.full_name.split(' ')[0]}! 😊` : 'Welcome! 😊'}
-          </p>
-          <p className="text-sm md:text-base text-foreground">Your personalized checklist for studying in Germany</p>
-        </div>
-
-        {/* Journey Progress */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Journey Progress</CardTitle>
-            <CardDescription>
-              {getCompletedSteps()} of {modules.length} steps completed
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Progress value={getOverallProgress()} className="h-3" />
-              <p className="text-sm text-muted-foreground text-right">
-                {getOverallProgress()}%
-              </p>
+      <div className="container-mobile space-y-8">
+        {/* Modern Hero Header */}
+        <div className="bg-gradient-to-r from-primary to-primary-glow rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">
+                  {profile?.full_name ? `Welcome back, ${profile.full_name.split(' ')[0]}! 🎓` : 'Welcome to GermanyHelp! 🎓'}
+                </h1>
+                <p className="text-primary-foreground/90 text-lg">
+                  Your personalized journey to studying in Germany
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="text-center">
+                  <div className="text-3xl font-bold">{getOverallProgress()}%</div>
+                  <div className="text-sm text-primary-foreground/80">Complete</div>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* APS Pathway Selection */}
-        <APSPathwaySelector 
-          selectedPathway={selectedPathway}
-          onSelectPathway={handlePathwaySelect}
-        />
-
-        {/* Quick Checklist Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {modules.map((module) => {
-            const Icon = module.icon;
-            const progress = getModuleProgress(module.key);
-            const moduleItems = checklistItems.filter(item => item.module === module.key);
-            const completedCount = moduleItems.filter(item => item.status === 'completed').length;
-            
-            return (
-              <Card key={module.key} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-base">{module.name}</CardTitle>
-                    </div>
-                    {progress === 100 && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        Complete
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {completedCount} / {moduleItems.length || 1} tasks
-                      </span>
-                      <span className="font-medium">{progress}%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-l from-white/10 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/resources">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-semibold text-sm md:text-base">📚 Resources</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">Organized guides for every stage</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Next Actions */}
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <Target className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">Priority Actions</h2>
+              </div>
+              <NextActionCard actions={getNextActions()} />
+            </div>
 
-          <Link to="/services">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <Calendar className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-semibold text-sm md:text-base">📅 Book 1:1 Call</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">Get personalized guidance</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+            {/* Module Progress Grid */}
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">Your Progress</h2>
+              </div>
+              <ModuleProgressGrid modules={getModuleData()} />
+            </div>
+          </div>
 
-          <Link to="/contact">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <Phone className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-semibold text-sm md:text-base">💬 Support</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">Get help & connect</p>
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Journey Overview */}
+            <Card className="bg-gradient-to-br from-card to-muted/20">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <span>Journey Overview</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Overall Progress</span>
+                    <span className="font-medium">{getOverallProgress()}%</span>
+                  </div>
+                  <Progress value={getOverallProgress()} className="h-3 progress-glow" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-success">{getCompletedSteps()}</div>
+                    <div className="text-xs text-muted-foreground">Completed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-warning">{modules.length - getCompletedSteps()}</div>
+                    <div className="text-xs text-muted-foreground">Remaining</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </Link>
 
-          <Link to="/profile">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <User className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-semibold text-sm md:text-base">👤 Profile</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">Update your details</p>
-                  </div>
-                </div>
+            {/* APS Pathway */}
+            <APSPathwaySelector 
+              selectedPathway={selectedPathway}
+              onSelectPathway={handlePathwaySelect}
+            />
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Essential tools and resources</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link to="/resources">
+                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                    <BookOpen className="mr-3 h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <div className="font-medium">📚 Resources</div>
+                      <div className="text-xs text-muted-foreground">Guides & materials</div>
+                    </div>
+                  </Button>
+                </Link>
+
+                <Link to="/services">
+                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                    <Calendar className="mr-3 h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <div className="font-medium">📅 Book Consultation</div>
+                      <div className="text-xs text-muted-foreground">Expert guidance</div>
+                    </div>
+                  </Button>
+                </Link>
+
+                <Link to="/contact">
+                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                    <Phone className="mr-3 h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <div className="font-medium">💬 Support</div>
+                      <div className="text-xs text-muted-foreground">Get help</div>
+                    </div>
+                  </Button>
+                </Link>
+
+                <Link to="/profile">
+                  <Button variant="outline" className="w-full justify-start h-12" size="lg">
+                    <User className="mr-3 h-5 w-5 text-primary" />
+                    <div className="text-left">
+                      <div className="font-medium">👤 Profile</div>
+                      <div className="text-xs text-muted-foreground">Update details</div>
+                    </div>
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
-          </Link>
+          </div>
         </div>
+
 
         {/* Profile Completion Dialog */}
         <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
