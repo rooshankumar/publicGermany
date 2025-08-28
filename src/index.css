@@ -188,7 +188,12 @@ All colors MUST be HSL.
 
   /* Card hover effects */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-medium hover:scale-[1.02];
+    @apply transition-all duration-300 hover:scale-[1.02];
+    box-shadow: 0 4px 12px hsl(215 20% 20% / 0.08);
+  }
+  
+  .card-hover:hover {
+    box-shadow: 0 8px 25px hsl(215 20% 20% / 0.12);
   }
 
   /* Progress tracking animations */
