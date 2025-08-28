@@ -33,9 +33,9 @@ const APS = () => {
       return;
     }
     const updateData = {
-      ...formData,
-      aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway,
-      german_level: formData.german_level === '' ? null : formData.german_level,
+      aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
+      german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
+      ielts_toefl_score: formData.ielts_toefl_score,
     };
     const { error } = await supabase
       .from('profiles')
@@ -47,7 +47,6 @@ const APS = () => {
     toast({
       title: "APS details saved",
       description: "Your changes have been saved.",
-      variant: "success",
     });
   };
 
@@ -79,9 +78,9 @@ const APS = () => {
     }
     try {
       const updateData = {
-        ...formData,
-        aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway,
-        german_level: formData.german_level === '' ? null : formData.german_level,
+        aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
+        german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
+        ielts_toefl_score: formData.ielts_toefl_score,
       };
       const { error } = await supabase
         .from('profiles')

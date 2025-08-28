@@ -8,40 +8,56 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern professional design system */
+    /* Germany-focused professional design system */
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 220 15% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 15% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 220 15% 15%;
     
-    /* Success-focused primary (emerald green) */
-    --primary: 160 84% 39%;
+    /* German-inspired primary (Deep Blue) */
+    --primary: 215 84% 35%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 160 84% 49%;
+    --primary-glow: 215 84% 45%;
     
-    /* Professional secondary */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 240 10% 3.9%;
+    /* Professional secondary (Warm Gray) */
+    --secondary: 210 15% 96%;
+    --secondary-foreground: 220 15% 15%;
     
-    --muted: 210 40% 96%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 210 40% 94%;
-    --accent-foreground: 240 5.9% 10%;
+    --muted: 210 15% 96%;
+    --muted-foreground: 220 8% 46%;
+    --accent: 215 20% 94%;
+    --accent-foreground: 220 15% 15%;
     
-    /* Status colors */
-    --success: 160 84% 39%;
+    /* Trust & Success colors */
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 160 84% 39%;
-    --radius: 0.75rem;
+    --border: 215 20% 88%;
+    --input: 215 20% 92%;
+    --ring: 215 84% 35%;
+    --radius: 0.5rem;
+    
+    /* Germany-themed gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%), hsl(142 76% 36%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(215 20% 98%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    
+    /* Trust indicators */
+    --trust-blue: 215 84% 35%;
+    --trust-green: 142 76% 36%;
+    --trust-gold: 45 93% 47%;
+    
+    /* Modern shadows */
+    --shadow-soft: 0 4px 12px hsl(215 20% 20% / 0.08);
+    --shadow-medium: 0 8px 25px hsl(215 20% 20% / 0.12);
+    --shadow-strong: 0 16px 40px hsl(215 20% 20% / 0.16);
 
     --sidebar-background: 0 0% 98%;
 
@@ -89,47 +105,48 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 226 71% 6%;
-    --foreground: 240 100% 99%;
+    --background: 220 20% 8%;
+    --foreground: 210 15% 95%;
 
-    --card: 226 71% 8%;
-    --card-foreground: 240 100% 99%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 226 71% 8%;
-    --popover-foreground: 240 100% 99%;
+    --popover: 220 20% 10%;
+    --popover-foreground: 210 15% 95%;
 
-    --primary: 221 83% 63%;
-    --primary-foreground: 226 71% 6%;
-    --primary-soft: 221 83% 15%;
+    --primary: 215 84% 55%;
+    --primary-foreground: 220 20% 8%;
+    --primary-glow: 215 84% 65%;
 
-    --secondary: 215 32% 18%;
-    --secondary-foreground: 240 100% 99%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 15% 95%;
 
-    --muted: 215 32% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 8% 65%;
 
-    --accent: 142 76% 46%;
-    --accent-foreground: 226 71% 6%;
-    --accent-soft: 142 76% 15%;
+    --accent: 215 20% 16%;
+    --accent-foreground: 210 15% 95%;
 
     --success: 142 76% 46%;
-    --success-foreground: 226 71% 6%;
+    --success-foreground: 220 20% 8%;
     --warning: 45 93% 57%;
-    --warning-foreground: 226 71% 6%;
+    --warning-foreground: 220 20% 8%;
     --destructive: 0 84% 70%;
-    --destructive-foreground: 226 71% 6%;
+    --destructive-foreground: 220 20% 8%;
 
-    --border: 215 32% 18%;
-    --input: 215 32% 18%;
-    --ring: 221 83% 63%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 220 15% 20%;
+    --input: 220 15% 18%;
+    --ring: 215 84% 55%;
+    
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 84% 45%), hsl(215 84% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%), hsl(142 76% 36%));
+    --gradient-card: linear-gradient(145deg, hsl(220 20% 10%), hsl(220 15% 12%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    
+    --shadow-soft: 0 4px 12px hsl(220 20% 2% / 0.3);
+    --shadow-medium: 0 8px 25px hsl(220 20% 2% / 0.4);
+    --shadow-strong: 0 16px 40px hsl(220 20% 2% / 0.5);
   }
 }
 
@@ -164,6 +181,16 @@ All colors MUST be HSL.
     @apply bg-destructive text-destructive-foreground;
   }
 
+  /* Trust & Success indicators */
+  .success-indicator {
+    @apply bg-gradient-to-r from-success/10 to-success/20 text-success border-success/30;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-medium hover:scale-[1.02];
+  }
+
   /* Progress tracking animations */
   .progress-glow {
     @apply relative overflow-hidden;
@@ -171,13 +198,23 @@ All colors MUST be HSL.
 
   .progress-glow::before {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-success/30 to-transparent;
     animation: shimmer 2s infinite;
   }
 
   @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
+  }
+
+  /* Germany-themed animations */
+  @keyframes trust-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  }
+
+  .trust-pulse {
+    animation: trust-pulse 3s ease-in-out infinite;
   }
 
   /* Document upload zone */

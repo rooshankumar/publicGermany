@@ -53,6 +53,8 @@ const Profile = () => {
       bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
       bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
       work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
+      aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
+      german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
     };
     const { error } = await supabase
       .from('profiles')
@@ -64,7 +66,6 @@ const Profile = () => {
     toast({
       title: "Profile saved",
       description: "Your changes have been saved.",
-      variant: "success",
     });
   };
 
