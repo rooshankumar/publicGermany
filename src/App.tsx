@@ -14,6 +14,11 @@ const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const Requests = lazy(() => import("./pages/admin/Requests"));
+const Students = lazy(() => import("./pages/admin/Students"));
+const ApplicationsAdmin = lazy(() => import("./pages/admin/Applications"));
+const Payments = lazy(() => import("./pages/admin/Payments"));
+const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const APS = lazy(() => import("./pages/APS"));
@@ -78,6 +83,31 @@ const AppRoutes = () => {
         <Route path="/admin" element={
           <ProtectedRoute requiredRole="admin">
             <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/requests" element={
+          <ProtectedRoute requiredRole="admin">
+            <Requests />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/students" element={
+          <ProtectedRoute requiredRole="admin">
+            <Students />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/applications" element={
+          <ProtectedRoute requiredRole="admin">
+            <ApplicationsAdmin />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/payments" element={
+          <ProtectedRoute requiredRole="admin">
+            <Payments />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/student-profile" element={
+          <ProtectedRoute requiredRole="admin">
+            <StudentProfile />
           </ProtectedRoute>
         } />
         <Route path="/aps" element={

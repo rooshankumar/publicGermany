@@ -202,7 +202,7 @@ export const DocumentUpload = ({
         <span role="img" aria-label="passport">📄</span> Passport Copy
       </div>
 
-      {/* If file is uploaded, show file info with View/Delete */}
+  {/* If file is uploaded, show file info with Download/Delete */}
       {uploadedFiles.length > 0 ? (
         <div className="border rounded-lg divide-y bg-secondary">
           <div className="flex items-center justify-between px-4 py-3">
@@ -211,13 +211,13 @@ export const DocumentUpload = ({
               <span className="font-medium">{uploadedFiles[0].name}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <a
+                href={uploadedFiles[0].url}
+                download={uploadedFiles[0].name}
                 className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                onClick={() => window.open(uploadedFiles[0].url, '_blank', 'noopener,noreferrer')}
               >
-                View
-              </button>
+                Download
+              </a>
               <Button variant="ghost" size="sm" onClick={() => removeFile(uploadedFiles[0].id)}>
                 Delete
               </Button>

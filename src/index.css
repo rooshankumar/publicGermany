@@ -172,7 +172,11 @@ All colors MUST be HSL.
 
   /* Professional button styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary text-primary-foreground shadow-soft hover:shadow-medium transition-all duration-300;
+    @apply bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft hover:shadow-medium transition-all duration-300;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(90deg, hsl(var(--primary-glow)), hsl(var(--primary)));
   }
 
   .btn-success {
@@ -296,5 +300,12 @@ All colors MUST be HSL.
 
   .upload-zone.dragover {
     @apply border-primary bg-primary/5;
+  }
+}
+
+@layer utilities {
+  .to-primary-glow {
+    box-shadow: 0 0 16px 0 hsl(var(--primary-glow) / 0.7), 0 0 2px 0 hsl(var(--primary-glow) / 0.5);
+    /* You can adjust the shadow as needed */
   }
 }

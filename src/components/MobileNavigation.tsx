@@ -3,19 +3,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { 
+import {
   Menu,
   X,
-  LayoutDashboard, 
-  FileText, 
+  Home,
+  Briefcase,
+  GraduationCap,
+  FileText,
+  User,
   Settings,
-  HeadphonesIcon, 
-  BookOpen, 
-  MessageSquare,
   Users,
   FileBarChart,
-  LogOut,
-  User
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -29,11 +28,11 @@ const MobileNavigation = () => {
   const isAdmin = profile?.role === 'admin';
 
   const studentNavItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/services', label: 'Services', icon: HeadphonesIcon },
-    { href: '/applications', label: 'University Applications', icon: FileText },
-    { href: '/aps', label: 'APS', icon: Settings },
-    { href: '/profile', label: 'Profile', icon: Settings },
+    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/services', label: 'Services', icon: Briefcase },
+    { href: '/applications', label: 'University Applications', icon: GraduationCap },
+    { href: '/aps', label: 'APS', icon: FileText },
+    { href: '/profile', label: 'Profile', icon: User },
   ];
 
   const adminNavItems = [
@@ -41,7 +40,7 @@ const MobileNavigation = () => {
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
   ];
 
-  const navItems = isAdmin ? [...studentNavItems, ...adminNavItems] : studentNavItems;
+  const navItems = isAdmin ? adminNavItems : studentNavItems;
 
   const handleLinkClick = () => {
     setIsOpen(false);

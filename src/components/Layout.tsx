@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  HeadphonesIcon, 
-  BookOpen, 
-  MessageSquare,
+import {
+  Home,
+  Briefcase,
+  GraduationCap,
+  FileText,
+  User,
   Settings,
   Users,
   FileBarChart,
@@ -30,19 +30,22 @@ const Layout = ({ children }: LayoutProps) => {
   const isAdmin = profile?.role === 'admin';
 
   const studentNavItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/services', label: 'Services', icon: HeadphonesIcon },
-  { href: '/applications', label: 'University Applications', icon: FileText },
-  { href: '/aps', label: 'APS', icon: Settings },
-  { href: '/profile', label: 'Profile', icon: Settings },
+    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/services', label: 'Services', icon: Briefcase },
+    { href: '/applications', label: 'University Applications', icon: GraduationCap },
+    { href: '/aps', label: 'APS', icon: FileText },
+    { href: '/profile', label: 'Profile', icon: User },
   ];
 
   const adminNavItems = [
-    { href: '/admin', label: 'Admin Panel', icon: Users },
+    { href: '/admin', label: 'Dashboard', icon: Users },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
+    { href: '/admin/students', label: 'Students', icon: Users },
+    { href: '/admin/applications', label: 'Applications', icon: FileText },
+    { href: '/admin/payments', label: 'Payments', icon: FileBarChart },
   ];
 
-  const navItems = isAdmin ? [...studentNavItems, ...adminNavItems] : studentNavItems;
+  const navItems = isAdmin ? adminNavItems : studentNavItems;
 
   return (
     <div className="min-h-screen bg-background">
