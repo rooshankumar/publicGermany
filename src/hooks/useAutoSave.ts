@@ -1,100 +1,115 @@
-import { useEffect, useRef, useState } from 'react';
-import { useAuth } from './useAuth';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
-interface AutoSaveOptions {
-  enabled?: boolean;
+export type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+interface UseAutoSaveOptions {
   delay?: number;
-  onSave?: (data: any) => Promise<void>;
-  showIndicator?: boolean;
+  tableName: string;
+  userId?: string;
+  onSuccess?: () => void;
+  onError?: (error: any) => void;
 }
 
-export const useAutoSave = (
-  data: any,
-  tableName: string,
-  options: AutoSaveOptions = {}
-) => {
-  const { profile } = useAuth();
+export function useAutoSave({
+  delay = 3000, // 3 seconds default
+  tableName,
+  userId,
+  onSuccess,
+  onError
+}: UseAutoSaveOptions) {
+  const [status, setStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const { toast } = useToast();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const timeoutRef = useRef<NodeJS.Timeout>();
-  const lastSavedRef = useRef<string>('');
-  
-  const {
-    enabled = true,
-    delay = 2000,
-    onSave,
-    showIndicator = true
-  } = options;
+  const dataRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (!enabled || !profile?.user_id || !data) return;
+  const save = useCallback(async (data: any) => {
+    if (!userId) {
+      console.warn('Cannot auto-save: userId is missing');
+      return;
+    }
 
-    const currentData = JSON.stringify(data);
-    
-    // Skip if data hasn't changed
-    if (currentData === lastSavedRef.current) return;
+    try {
+      setStatus('saving');
+      
+      const { error } = await supabase
+        .from(tableName as any)
+        .update(data)
+        .eq('user_id', userId);
 
+      if (error) throw error;
+
+      setStatus('saved');
+      setLastSaved(new Date());
+      onSuccess?.();
+      
+      toast({
+        title: "Changes saved",
+        description: "Your information has been automatically saved.",
+        duration: 2000,
+      });
+
+      // Reset to idle after 3 seconds
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      setStatus('error');
+      onError?.(error);
+      
+      toast({
+        title: "Save failed",
+        description: "Unable to save changes. Please try again.",
+        variant: "destructive",
+        duration: 4000,
+      });
+
+      // Reset to idle after 5 seconds
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  }, [userId, tableName, onSuccess, onError, toast]);
+
+  const debouncedSave = useCallback((data: any) => {
     // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout for auto-save
-    timeoutRef.current = setTimeout(async () => {
-      try {
-        setSaveStatus('saving');
-        
-        if (onSave) {
-          await onSave(data);
-        } else {
-          // For auto-save to profiles table specifically
-          if (tableName === 'profiles') {
-            const { error } = await supabase
-              .from('profiles')
-              .update({
-                ...data,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', profile.user_id);
+    // Store the latest data
+    dataRef.current = data;
 
-            if (error) throw error;
-          } else {
-            // Generic save for other tables
-            console.log('Auto-save for table:', tableName, 'Data:', data);
-          }
-        }
-
-        lastSavedRef.current = currentData;
-        setSaveStatus('saved');
-        
-        // Reset status after showing success
-        setTimeout(() => setSaveStatus('idle'), 2000);
-        
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        setSaveStatus('error');
-        
-        if (showIndicator) {
-          toast({
-            title: "Auto-save failed",
-            description: "Please save manually to avoid losing your changes.",
-            variant: "destructive",
-          });
-        }
-        
-        // Reset error status
-        setTimeout(() => setSaveStatus('idle'), 3000);
+    // Set new timeout
+    timeoutRef.current = setTimeout(() => {
+      if (dataRef.current) {
+        save(dataRef.current);
       }
     }, delay);
+  }, [save, delay]);
 
+  const saveNow = useCallback((data: any) => {
+    // Clear any pending save
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Save immediately
+    save(data);
+  }, [save]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [data, enabled, delay, profile?.user_id, tableName, onSave, showIndicator, toast]);
+  }, []);
 
-  return { saveStatus };
-};
+  return {
+    status,
+    lastSaved,
+    debouncedSave,
+    saveNow
+  };
+}

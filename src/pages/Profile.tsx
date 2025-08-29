@@ -10,12 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { User, GraduationCap, Globe, Award, Briefcase, Upload, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { DocumentUpload } from '@/components/DocumentUpload';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 
 const Profile = () => {
   const { profile, refetchProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     date_of_birth: '',
@@ -38,6 +39,15 @@ const Profile = () => {
     german_level: '',
   });
 
+  // Initialize auto-save
+  const autoSave = useAutoSave({
+    tableName: 'profiles',
+    userId: profile?.user_id,
+    onSuccess: () => {
+      refetchProfile();
+    }
+  });
+
   // Auto-save disabled. Use manual save instead.
   const saveProfile = async () => {
     if (!profile?.user_id) {
@@ -55,18 +65,17 @@ const Profile = () => {
       work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
       aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
       german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
-    };
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('user_id', profile.user_id);
-    if (error) throw error;
-    setLastSaved(new Date());
-    await refetchProfile();
-    toast({
-      title: "Profile saved",
-      description: "Your changes have been saved.",
-    });
+      };
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', profile.user_id);
+      if (error) throw error;
+      await refetchProfile();
+      toast({
+        title: "Profile saved",
+        description: "Your changes have been saved.",
+      });
   };
 
   useEffect(() => {
@@ -96,7 +105,20 @@ const Profile = () => {
   }, [profile]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    
+    // Trigger auto-save with processed data
+    const updateData = {
+      ...newData,
+      bachelor_credits_ects: newData.bachelor_credits_ects ? parseInt(newData.bachelor_credits_ects) : null,
+      bachelor_duration_years: newData.bachelor_duration_years ? parseInt(newData.bachelor_duration_years) : null,
+      work_experience_years: newData.work_experience_years ? parseInt(newData.work_experience_years) : null,
+      aps_pathway: newData.aps_pathway === '' ? null : newData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
+      german_level: newData.german_level === '' ? null : newData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
+    };
+    
+    autoSave.debouncedSave(updateData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,12 +180,10 @@ const Profile = () => {
               <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Profile Settings</h1>
               <p className="text-sm md:text-base text-foreground">Manage your personal information and academic details</p>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Save className="h-4 w-4" />
-              <span>
-                {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Not saved yet'}
-              </span>
-            </div>
+            <AutoSaveIndicator 
+              status={autoSave.status} 
+              lastSaved={autoSave.lastSaved}
+            />
           </div>
         </div>
 

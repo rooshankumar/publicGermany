@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen } from 'lucide-react';
+import logo from '@/assets/germany-help-logo.png';
 
 const Auth = () => {
   const { signIn, signUp, loading } = useAuth();
@@ -67,154 +69,234 @@ const Auth = () => {
     }
   };
 
+  const features = [
+    { icon: GraduationCap, text: "APS Certification Guidance" },
+    { icon: Globe, text: "University Application Support" },
+    { icon: BookOpen, text: "Document Preparation Help" },
+    { icon: Users, text: "Expert Consultations" }
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Study in Germany</h1>
-          <p className="text-muted-foreground mt-2">Your personalized checklist for studying in Germany</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-primary/5">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
+      }}></div>
+
+      <div className="relative flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          
+          {/* Left Side - Branding & Features */}
+          <div className="space-y-8 text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+              <img src={logo} alt="GermanyHelp Logo" className="h-12 w-12" />
+              <span className="font-bold text-2xl text-foreground">GermanyHelp</span>
+              <Badge className="trust-badge">
+                <Shield className="w-3 h-3" />
+                Trusted
+              </Badge>
+            </div>
+
+            <div className="space-y-4">
+              <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+                Your Gateway to 
+                <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent"> German Education</span>
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Join thousands of students who have successfully navigated their way to German universities 
+                with our comprehensive guidance and expert support.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-3 p-4 bg-card/50 backdrop-blur-sm rounded-lg border">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <feature.icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">{feature.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center lg:justify-start gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">1000+</div>
+                <div className="text-xs text-muted-foreground">Students Guided</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-success">98%</div>
+                <div className="text-xs text-muted-foreground">Success Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-warning">15+</div>
+                <div className="text-xs text-muted-foreground">Years Experience</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Auth Forms */}
+          <div className="w-full max-w-md mx-auto">
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="text-sm">Create Account</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="signin">
+                <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
+                  <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Welcome Back</CardTitle>
+                    <CardDescription>
+                      Continue your German education journey
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-email">Email Address</Label>
+                        <Input 
+                          id="signin-email" 
+                          name="email" 
+                          type="email" 
+                          placeholder="your@email.com"
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <Input 
+                          id="signin-password" 
+                          name="password" 
+                          type="password" 
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+                      
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {message && (
+                        <Alert>
+                          <AlertDescription>{message}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      <Button type="submit" className="w-full h-11 btn-primary" disabled={loading}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Signing in...
+                          </>
+                        ) : (
+                          <>
+                            <GraduationCap className="mr-2 h-4 w-4" />
+                            Sign In to Dashboard
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
+                  <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Start Your Journey</CardTitle>
+                    <CardDescription>
+                      Begin your path to German universities
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-fullName">Full Name</Label>
+                        <Input 
+                          id="signup-fullName" 
+                          name="fullName" 
+                          type="text" 
+                          placeholder="John Doe"
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email Address</Label>
+                        <Input 
+                          id="signup-email" 
+                          name="email" 
+                          type="email" 
+                          placeholder="your@email.com"
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Password</Label>
+                        <Input 
+                          id="signup-password" 
+                          name="password" 
+                          type="password" 
+                          placeholder="Minimum 6 characters"
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-confirmPassword">Confirm Password</Label>
+                        <Input 
+                          id="signup-confirmPassword" 
+                          name="confirmPassword" 
+                          type="password" 
+                          required 
+                          className="h-11"
+                        />
+                      </div>
+
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {message && (
+                        <Alert className="border-success/20 bg-success/10">
+                          <AlertDescription className="text-success">{message}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      <Button type="submit" className="w-full h-11 btn-success" disabled={loading}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          <>
+                            <Star className="mr-2 h-4 w-4" />
+                            Create Free Account
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Trusted by <span className="font-semibold text-primary">1000+</span> students worldwide
+              </p>
+            </div>
+          </div>
         </div>
-
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="signin">
-            <Card>
-              <CardHeader>
-                <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>
-                  Sign in to your account to continue your Germany study journey
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input 
-                      id="signin-email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="your@email.com"
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input 
-                      id="signin-password" 
-                      name="password" 
-                      type="password" 
-                      required 
-                    />
-                  </div>
-                  
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  {message && (
-                    <Alert>
-                      <AlertDescription>{message}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="signup">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create Account</CardTitle>
-                <CardDescription>
-                  Start your journey to study in Germany
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-fullName">Full Name</Label>
-                    <Input 
-                      id="signup-fullName" 
-                      name="fullName" 
-                      type="text" 
-                      placeholder="John Doe"
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input 
-                      id="signup-email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="your@email.com"
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input 
-                      id="signup-password" 
-                      name="password" 
-                      type="password" 
-                      placeholder="At least 6 characters"
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirmPassword">Confirm Password</Label>
-                    <Input 
-                      id="signup-confirmPassword" 
-                      name="confirmPassword" 
-                      type="password" 
-                      required 
-                    />
-                  </div>
-
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  {message && (
-                    <Alert>
-                      <AlertDescription>{message}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );
