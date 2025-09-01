@@ -23,11 +23,7 @@ export default function StudentProfile() {
     if (id) fetchStudent();
   }, [id]);
 
-  const togglePayment = async () => {
-    if (!student) return;
-    const { error } = await supabase.from('payments').update({ complete: !student.payments?.complete }).eq('student_id', id);
-    if (!error) setStudent({ ...student, payments: { ...student.payments, complete: !student.payments?.complete } });
-  };
+  // Removed payment toggle functionality as it's not needed for this view
 
   return (
     <Layout>
