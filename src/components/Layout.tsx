@@ -38,11 +38,12 @@ const Layout = ({ children }: LayoutProps) => {
   ];
 
   const adminNavItems = [
-    { href: '/admin', label: 'Dashboard', icon: Users },
-    { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
+    { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
-    { href: '/admin/applications', label: 'Applications', icon: FileText },
-    { href: '/admin/payments', label: 'Payments', icon: FileBarChart },
+    { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
+    { href: '/admin/applications', label: 'Applications', icon: GraduationCap },
+    { href: '/admin/payments', label: 'Payments', icon: FileText },
+    { href: '/admin/exports', label: 'Exports', icon: Settings },
   ];
 
   const navItems = isAdmin ? adminNavItems : studentNavItems;

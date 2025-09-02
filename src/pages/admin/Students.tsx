@@ -19,19 +19,13 @@ import {
   Eye,
   Edit3
 } from 'lucide-react';
+import { Database } from '@/integrations/supabase/types';
 
-interface StudentProfile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  aps_pathway: string | null;
-  german_level: string | null;
-  role: string;
-  created_at: string;
-  applications?: any[];
-  documents?: any[];
-  service_requests?: any[];
-}
+type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
+  applications?: Database['public']['Tables']['applications']['Row'][];
+  documents?: Database['public']['Tables']['documents']['Row'][];
+  service_requests?: Database['public']['Tables']['service_requests']['Row'][];
+};
 
 export default function Students() {
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -69,16 +63,24 @@ export default function Students() {
         .from('profiles')
         .select(`
           *,
-          applications(id, status, university_name),
-          documents(id, category, file_name),
-          service_requests(id, status, service_type)
+          applications!user_id(id, status, university_name),
+          documents!user_id(id, category, file_name),
+          service_requests!user_id(id, status, service_type)
         `)
         .eq('role', 'student')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setStudents(data || []);
+      // Safely set the data with proper type handling
+      const studentsData = data?.map(student => ({
+        ...student,
+        applications: Array.isArray(student.applications) ? student.applications : [],
+        documents: Array.isArray(student.documents) ? student.documents : [],
+        service_requests: Array.isArray(student.service_requests) ? student.service_requests : []
+      })) || [];
+
+      setStudents(studentsData as StudentProfile[]);
     } catch (error: any) {
       toast({
         title: "Error fetching students",
@@ -116,7 +118,7 @@ export default function Students() {
     setFilteredStudents(filtered);
   };
 
-  const updateStudentProfile = async (studentId: string, updates: Partial<StudentProfile>) => {
+  const updateStudentProfile = async (studentId: string, updates: Database['public']['Tables']['profiles']['Update']) => {
     try {
       const { error } = await supabase
         .from('profiles')
