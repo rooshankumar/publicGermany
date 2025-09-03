@@ -63,9 +63,9 @@ export default function Students() {
         .from('profiles')
         .select(`
           *,
-          applications!user_id(id, status, university_name),
-          documents!user_id(id, category, file_name),
-          service_requests!user_id(id, status, service_type)
+          applications!applications_user_id_fkey(id, status, university_name),
+          documents!documents_user_id_fkey(id, category, file_name),
+          service_requests!service_requests_user_id_fkey(id, status, service_type)
         `)
         .eq('role', 'student')
         .order('created_at', { ascending: false });
@@ -142,11 +142,11 @@ export default function Students() {
     }
   };
 
-  const getAPSStatusColor = (pathway: string) => {
+  const getAPSStatusColor = (pathway: string | null) => {
     switch (pathway) {
-      case 'direct': return 'bg-success/10 text-success';
-      case 'studienkolleg': return 'bg-warning/10 text-warning';
-      case 'foundation': return 'bg-secondary/10 text-secondary';
+      case 'stk': return 'bg-success/10 text-success';
+      case 'bachelor_2_semesters': return 'bg-warning/10 text-warning';
+      case 'master_applicants': return 'bg-secondary/10 text-secondary';
       default: return 'bg-muted/10 text-muted-foreground';
     }
   };
@@ -206,9 +206,9 @@ export default function Students() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All APS Status</SelectItem>
-                  <SelectItem value="direct">Direct</SelectItem>
-                  <SelectItem value="studienkolleg">Studienkolleg</SelectItem>
-                  <SelectItem value="foundation">Foundation</SelectItem>
+                  <SelectItem value="stk">STK</SelectItem>
+                  <SelectItem value="bachelor_2_semesters">Bachelor 2 Semesters</SelectItem>
+                  <SelectItem value="master_applicants">Master Applicants</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={germanFilter} onValueChange={setGermanFilter}>
@@ -290,7 +290,7 @@ export default function Students() {
                           </td>
                           <td className="p-3">
                             <Badge className={getAPSStatusColor(student.aps_pathway)}>
-                              {student.aps_pathway || 'Not Set'}
+                              {student.aps_pathway?.replace('_', ' ').toUpperCase() || 'Not Set'}
                             </Badge>
                           </td>
                           <td className="p-3">
