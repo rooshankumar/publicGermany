@@ -38,9 +38,9 @@ export default function Exports() {
             .from('profiles')
             .select(`
               *, 
-              applications!user_id(id, status, university_name, program_name, created_at),
-              documents!user_id(id, category, file_name),
-              service_requests!user_id(id, status, service_type)
+              applications!applications_user_id_fkey(id, status, university_name, program_name, created_at),
+              documents!documents_user_id_fkey(id, category, file_name),
+              service_requests!service_requests_user_id_fkey(id, status, service_type)
             `)
             .eq('role', 'student');
           
@@ -63,7 +63,7 @@ export default function Exports() {
             .from('applications')
             .select(`
               *, 
-              profiles!inner(full_name, user_id)
+              profiles!applications_user_id_fkey(full_name, user_id)
             `)
             .gte('created_at', dateRange.from)
             .lte('created_at', dateRange.to);
@@ -86,7 +86,7 @@ export default function Exports() {
             .from('service_requests')
             .select(`
               *, 
-              profiles!inner(full_name, user_id)
+              profiles!service_requests_user_id_fkey(full_name, user_id)
             `)
             .gte('created_at', dateRange.from)
             .lte('created_at', dateRange.to);

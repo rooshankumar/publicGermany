@@ -20,6 +20,7 @@ const ApplicationsAdmin = lazy(() => import("./pages/admin/Applications"));
 const Payments = lazy(() => import("./pages/admin/Payments"));
 const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const Exports = lazy(() => import("./pages/admin/Exports"));
+const Universities = lazy(() => import("./pages/admin/Universities"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const APS = lazy(() => import("./pages/APS"));
@@ -114,6 +115,11 @@ const AppRoutes = () => {
         <Route path="/admin/exports" element={
           <ProtectedRoute requiredRole="admin">
             <Exports />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/universities" element={
+          <ProtectedRoute requiredRole="admin">
+            <Universities />
           </ProtectedRoute>
         } />
         <Route path="/aps" element={
