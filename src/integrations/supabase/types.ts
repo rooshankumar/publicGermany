@@ -39,14 +39,32 @@ export type Database = {
           student_id?: string
           visibility?: Database["public"]["Enums"]["admin_note_visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_notes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "admin_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       applications: {
         Row: {
+          application_end_date: string | null
           application_method: string | null
+          application_start_date: string | null
           created_at: string
           end_date: string | null
           fees_eur: number | null
+          fees_eur_per_semester: number | null
           german_requirement: string | null
           id: string
           ielts_requirement: string | null
@@ -61,10 +79,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          application_end_date?: string | null
           application_method?: string | null
+          application_start_date?: string | null
           created_at?: string
           end_date?: string | null
           fees_eur?: number | null
+          fees_eur_per_semester?: number | null
           german_requirement?: string | null
           id?: string
           ielts_requirement?: string | null
@@ -79,10 +100,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          application_end_date?: string | null
           application_method?: string | null
+          application_start_date?: string | null
           created_at?: string
           end_date?: string | null
           fees_eur?: number | null
+          fees_eur_per_semester?: number | null
           german_requirement?: string | null
           id?: string
           ielts_requirement?: string | null
@@ -96,7 +120,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       checklist_items: {
         Row: {
@@ -132,7 +164,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       contact_submissions: {
         Row: {
@@ -207,7 +247,15 @@ export type Database = {
           upload_path?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -276,7 +324,50 @@ export type Database = {
           module?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "files_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          status: string | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -396,7 +487,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       service_requests: {
         Row: {
@@ -441,7 +540,51 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      student_favorites: {
+        Row: {
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          student_id: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          student_id?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_favorites_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_favorites_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       universities: {
         Row: {
