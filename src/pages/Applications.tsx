@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, ExternalLink, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import useRealTimeSync from '@/hooks/useRealTimeSync';
 
 interface Application {
   id: string;
@@ -34,10 +36,18 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  // Set up real-time sync
+  useRealTimeSync({
+    table: 'applications',
+    callback: fetchApplications,
+    filter: { column: 'user_id', value: profile?.user_id || null }
+  });
 
   const fetchApplications = async () => {
     try {

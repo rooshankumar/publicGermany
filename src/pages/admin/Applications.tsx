@@ -22,6 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import useRealTimeSync from '@/hooks/useRealTimeSync';
 
 type Application = Database['public']['Tables']['applications']['Row'] & {
   profiles?: any;
@@ -38,21 +39,11 @@ export default function Applications() {
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchApplications();
-    
-    // Real-time subscription
-    const channel = supabase
-      .channel('applications-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-        fetchApplications();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  // Set up real-time sync for admin applications
+  useRealTimeSync({
+    table: 'applications',
+    callback: fetchApplications
+  });
 
   useEffect(() => {
     filterApplications();
@@ -65,7 +56,7 @@ export default function Applications() {
         .from('applications')
         .select(`
           *,
-          profiles!applications_user_id_fkey(full_name, user_id)
+          profiles(full_name, user_id)
         `)
         .order('created_at', { ascending: false });
 

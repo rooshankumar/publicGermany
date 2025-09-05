@@ -63,9 +63,9 @@ export default function Students() {
         .from('profiles')
         .select(`
           *,
-          applications!applications_user_id_fkey(id, status, university_name),
-          documents!documents_user_id_fkey(id, category, file_name),
-          service_requests!service_requests_user_id_fkey(id, status, service_type)
+          applications(id, status, university_name),
+          documents(id, category, file_name),
+          service_requests(id, status, service_type)
         `)
         .eq('role', 'student')
         .order('created_at', { ascending: false });

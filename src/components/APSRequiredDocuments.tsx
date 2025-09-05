@@ -30,6 +30,7 @@ interface DocumentMeta {
   category: string;
   file_url: string;
   file_name: string;
+  upload_path?: string;
 }
 
 export default function APSRequiredDocuments() {
@@ -85,13 +86,20 @@ export default function APSRequiredDocuments() {
   const handleDelete = async (key: string) => {
     if (!profile?.user_id || !docs[key]) return;
     setLoading(key);
-    // Remove from storage
-    const filePath = docs[key]!.file_url.split('/documents/')[1];
-    await supabase.storage.from('documents').remove([filePath]);
-    // Remove from db
-  await supabase.from('documents').delete().eq('id', docs[key]!.id);
-  await fetchDocs();
-  setLoading(null);
+    try {
+      // Remove from storage - handle potential path issues
+      const doc = docs[key]!;
+      if (doc.upload_path) {
+        await supabase.storage.from('documents').remove([doc.upload_path]);
+      }
+      // Remove from db
+      await supabase.from('documents').delete().eq('id', doc.id);
+      await fetchDocs();
+    } catch (error: any) {
+      console.error('Error deleting document:', error);
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -116,15 +124,27 @@ export default function APSRequiredDocuments() {
                       <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
                     </div>
                     <div className="flex items-center gap-1 ml-auto">
-                      <a
-                        href={docs[doc.key]!.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="px-2"
+                        onClick={async () => {
+                          try {
+                            const { data } = await supabase.storage
+                              .from('documents')
+                              .createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
+                            if (data?.signedUrl) {
+                              window.open(data.signedUrl, '_blank');
+                            } else {
+                              window.open(docs[doc.key]!.file_url, '_blank');
+                            }
+                          } catch (error) {
+                            window.open(docs[doc.key]!.file_url, '_blank');
+                          }
+                        }}
                       >
-                        <Button size="sm" variant="outline" className="px-2">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </a>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -248,4 +268,5 @@ function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loadin
     </div>
   );
 }
-}
+
+export default APSRequiredDocuments;
