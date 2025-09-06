@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Home,
   Briefcase,
@@ -13,7 +13,8 @@ import {
   Users,
   FileBarChart,
   LogOut,
-  Bell
+  Bell,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MobileNavigation from './MobileNavigation';
@@ -33,7 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'University Applications', icon: GraduationCap },
-    { href: '/aps', label: 'APS', icon: FileText },
+    { href: '/documents', label: 'Documents', icon: FileText },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -96,6 +97,7 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="p-4 border-t border-border bg-muted/30">
             <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-background">
               <Avatar className="h-10 w-10">
+                <AvatarImage src={(profile as any)?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
@@ -150,6 +152,7 @@ const Layout = ({ children }: LayoutProps) => {
                 <Bell className="h-5 w-5" />
               </Button>
               <Avatar className="h-8 w-8">
+                <AvatarImage src={(profile as any)?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>

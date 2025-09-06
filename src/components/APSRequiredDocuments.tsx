@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Upload, Trash2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const DOCUMENTS = [
+export const DOCUMENTS = [
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
   { key: 'admission_letter', label: '📄 Admission Letter', maxFiles: 1 },
   { key: 'aps_certificate', label: '📄 APS Certificate', maxFiles: 2 },
@@ -33,7 +33,11 @@ interface DocumentMeta {
   upload_path?: string;
 }
 
-function APSRequiredDocuments() {
+interface APSProps {
+  displayName?: string;
+}
+
+function APSRequiredDocuments({ displayName }: APSProps) {
   const { profile } = useAuth();
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
   const [loading, setLoading] = useState<string | null>(null);
@@ -42,15 +46,40 @@ function APSRequiredDocuments() {
 
   const fetchDocs = async () => {
     if (!profile?.user_id) return;
-    const { data } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('user_id', profile.user_id);
-    const docMap: Record<string, DocumentMeta | null> = {};
-    DOCUMENTS.forEach(doc => {
-      docMap[doc.key] = data?.find((d: any) => d.category === doc.key) || null;
-    });
-    setDocs(docMap);
+    
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', profile.user_id);
+      
+      if (error) throw error;
+      
+      // Initialize docMap with all document keys set to null first
+      const docMap: Record<string, DocumentMeta | null> = {};
+      DOCUMENTS.forEach(doc => {
+        docMap[doc.key] = null; // Initialize all to null first
+      });
+      
+      // Then update with any existing documents
+      if (data && data.length > 0) {
+        data.forEach((doc: any) => {
+          if (doc.category in docMap) {
+            docMap[doc.category] = doc;
+          }
+        });
+      }
+      
+      setDocs(docMap);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      // Initialize with null values if there's an error
+      const docMap: Record<string, null> = {};
+      DOCUMENTS.forEach(doc => {
+        docMap[doc.key] = null;
+      });
+      setDocs(docMap);
+    }
   };
 
   useEffect(() => {
@@ -58,45 +87,131 @@ function APSRequiredDocuments() {
   }, [profile?.user_id]);
 
   const handleUpload = async (key: string, file: File) => {
-    if (!profile?.user_id) return;
+    if (!profile?.user_id) {
+      alert('User not authenticated');
+      return;
+    }
+    
     setLoading(key);
-    const filePath = `${profile.user_id}/${key}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
-    if (uploadError) {
-      setLoading(null);
-      return alert('Upload failed');
-    }
-    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
-    // Save metadata
-    const { data, error } = await supabase.from('documents').upsert({
-      user_id: profile.user_id,
-      category: key,
-      file_url: publicUrl,
-      file_name: file.name,
-      file_size: file.size,
-      file_type: file.type,
-      upload_path: filePath,
-    }).select().single();
-    if (!error && data) {
+    
+    try {
+      // Generate a unique file path
+      const originalExt = (() => {
+        const dot = file.name.lastIndexOf('.');
+        return dot >= 0 ? file.name.slice(dot) : '';
+      })();
+      const safeBaseName = (displayName && displayName.trim().length > 0)
+        ? displayName.trim().replace(/[^a-zA-Z0-9-_ ]/g, '')
+        : file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_ ]/g, '');
+      const storedFileName = `${safeBaseName}${originalExt || ''}`;
+      const fileName = `${Date.now()}-${storedFileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const filePath = `${profile.user_id}/${key}/${fileName}`;
+      
+      // Upload the file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, { 
+          upsert: true,
+          cacheControl: '3600',
+        });
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error('Failed to upload file to storage');
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath);
+      
+      if (!publicUrl) {
+        throw new Error('Failed to generate public URL');
+      }
+      
+      // Upsert document metadata in the database
+      const { data, error: dbError } = await supabase
+        .from('documents')
+        .upsert({
+          user_id: profile.user_id,
+          category: key,
+          file_url: publicUrl,
+          file_name: storedFileName,
+          file_size: file.size,
+          file_type: file.type,
+          upload_path: filePath,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw new Error('Failed to save document metadata');
+      }
+      
+      // Refresh the documents list
       await fetchDocs();
+      
+    } catch (error) {
+      console.error('Error in handleUpload:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const handleDelete = async (key: string) => {
-    if (!profile?.user_id || !docs[key]) return;
+    if (!profile?.user_id || !docs[key]) {
+      alert('User not authenticated or document not found');
+      return;
+    }
+    
+    // Confirm before deletion
+    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+      return;
+    }
+    
     setLoading(key);
+    
     try {
-      // Remove from storage - handle potential path issues
       const doc = docs[key]!;
+      
+      // Remove from storage if upload_path exists
       if (doc.upload_path) {
-        await supabase.storage.from('documents').remove([doc.upload_path]);
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([doc.upload_path]);
+          
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+          // Continue with database deletion even if storage deletion fails
+        }
       }
-      // Remove from db
-      await supabase.from('documents').delete().eq('id', doc.id);
+      
+      // Remove from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', doc.id);
+        
+      if (dbError) {
+        console.error('Database deletion error:', dbError);
+        throw new Error('Failed to remove document from database');
+      }
+      
+      // Update local state immediately for better UX
+      setDocs(prev => ({
+        ...prev,
+        [key]: null
+      }));
+      
+      // Refresh the documents list
       await fetchDocs();
-    } catch (error: any) {
-      console.error('Error deleting document:', error);
+      
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert(`Failed to delete document: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(null);
     }

@@ -23,7 +23,8 @@ const Exports = lazy(() => import("./pages/admin/Exports"));
 const Universities = lazy(() => import("./pages/admin/Universities"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const APS = lazy(() => import("./pages/APS"));
+const Documents = lazy(() => import("./pages/Documents"));
+const Reviews = lazy(() => import("./pages/Reviews"));
 
 const queryClient = new QueryClient();
 
@@ -127,10 +128,19 @@ const AppRoutes = () => {
             <Universities />
           </ProtectedRoute>
         } />
-        <Route path="/aps" element={
+        <Route path="/documents" element={
           <ProtectedRoute>
-            <APS />
+            <Documents />
           </ProtectedRoute>
+        } />
+        <Route path="/reviews" element={
+          <ProtectedRoute>
+            <Reviews />
+          </ProtectedRoute>
+        } />
+        {/* Redirect old /aps path to /documents for backward compatibility */}
+        <Route path="/aps" element={
+          <Navigate to="/documents" replace />
         } />
         <Route path="/" element={
           user ? <Navigate to="/dashboard" replace /> : <Index />

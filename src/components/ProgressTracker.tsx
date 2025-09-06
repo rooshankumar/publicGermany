@@ -27,7 +27,7 @@ export const ProgressTracker = ({ showDetailed = false, className = '' }: Progre
   const [loading, setLoading] = useState(true);
 
   const categories = [
-    { key: 'aps', name: 'APS Documents', color: 'bg-blue-100 text-blue-800' },
+    { key: 'documents', name: 'Documents', color: 'bg-blue-100 text-blue-800' },
     { key: 'university', name: 'University Applications', color: 'bg-green-100 text-green-800' },
     { key: 'visa', name: 'Visa Process', color: 'bg-purple-100 text-purple-800' },
     { key: 'preparation', name: 'Preparation', color: 'bg-orange-100 text-orange-800' },

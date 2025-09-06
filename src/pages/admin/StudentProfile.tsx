@@ -44,14 +44,20 @@ export default function StudentProfile() {
         .select(`
           *,
           applications(*),
-          documents(*),
           service_requests(*)
         `)
         .eq('user_id', studentId)
         .single();
 
       if (error) throw error;
-      setStudent(data);
+
+      // Fetch documents separately by user_id to avoid embed issues
+      const { data: docsData } = await supabase
+        .from('documents' as any)
+        .select('id,user_id,category,file_name,file_url,created_at')
+        .eq('user_id', studentId);
+
+      setStudent({ ...(data as any), documents: docsData || [] });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -69,39 +75,58 @@ export default function StudentProfile() {
 
   const downloadDocument = async (doc: any) => {
     try {
-      const { data } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.upload_path || doc.file_url, 60);
-      
-      if (data?.signedUrl) {
+      // If we have a public URL, use it directly
+      if (doc.file_url && typeof doc.file_url === 'string') {
         const link = document.createElement('a');
-        link.href = data.signedUrl;
-        link.download = doc.file_name;
+        link.href = doc.file_url;
+        link.download = doc.file_name || 'document';
         link.click();
+        return;
       }
+
+      // Fallback: try to create a signed URL if upload_path exists
+      if (doc.upload_path) {
+        const { data } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(doc.upload_path, 300);
+        if (data?.signedUrl) {
+          const link = document.createElement('a');
+          link.href = data.signedUrl;
+          link.download = doc.file_name || 'document';
+          link.click();
+          return;
+        }
+      }
+
+      toast({ title: 'Unavailable', description: 'No downloadable link for this file', variant: 'destructive' });
     } catch (error) {
       console.error('Download error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to download document",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to download document', variant: 'destructive' });
     }
   };
 
   const viewDocument = async (doc: any) => {
     try {
-      const { data } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.upload_path || doc.file_url, 60);
-      
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
-      } else {
+      // Prefer public URL if present
+      if (doc.file_url && typeof doc.file_url === 'string') {
         window.open(doc.file_url, '_blank');
+        return;
       }
+
+      // Fallback to signed URL from storage path if available
+      if (doc.upload_path) {
+        const { data } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(doc.upload_path, 300);
+        if (data?.signedUrl) {
+          window.open(data.signedUrl, '_blank');
+          return;
+        }
+      }
+
+      toast({ title: 'Unavailable', description: 'No viewable link for this file', variant: 'destructive' });
     } catch (error) {
-      window.open(doc.file_url, '_blank');
+      if (doc.file_url) window.open(doc.file_url, '_blank');
     }
   };
 

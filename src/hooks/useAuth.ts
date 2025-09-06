@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface Document {
+  id: string;
+  user_id: string;
+  category: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  upload_path: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -27,6 +40,7 @@ export interface Profile {
   aps_pathway: 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null;
   created_at: string;
   updated_at: string;
+  documents?: Document[];
 }
 
 export const useAuth = () => {
@@ -37,14 +51,29 @@ export const useAuth = () => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // First, fetch the profile
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
       
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) throw profileError;
+      
+      // Then, fetch the user's documents
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (documentsError) throw documentsError;
+      
+      // Combine profile and documents data
+      setProfile({
+        ...profileData,
+        documents: documentsData || []
+      });
+      
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -136,13 +165,29 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut({ scope: 'global' });
+      // Clear local state first
       setUser(null);
       setSession(null);
       setProfile(null);
-      window.location.href = '/auth';
+      
+      // Clear any stored data in localStorage
+      localStorage.clear();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        throw error;
+      }
+      
+      // Redirect to home page after successful sign out
+      window.location.href = '/';
+      
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('Error during sign out:', error);
+      // Even if there's an error, still try to redirect to home page
+      window.location.href = '/';
     }
   };
 

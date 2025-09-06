@@ -37,7 +37,7 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
   });
 
   const categories = [
-    { value: 'aps', label: 'APS Documents' },
+    { value: 'documents', label: 'Documents' },
     { value: 'university', label: 'University Applications' },
     { value: 'visa', label: 'Visa Process' },
     { value: 'language', label: 'Language Tests' },
@@ -221,7 +221,7 @@ export const ReminderSystem = ({ showCompact = false, className = '' }: Reminder
                       id="title"
                       value={newReminder.title}
                       onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
-                      placeholder="e.g., Submit APS documents"
+                      placeholder="e.g., Submit required documents"
                     />
                   </div>
                   

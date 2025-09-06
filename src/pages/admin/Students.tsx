@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,8 @@ export default function Students() {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [docsOpen, setDocsOpen] = useState(false);
+  const [docsForStudent, setDocsForStudent] = useState<{full_name?: string|null; documents: any[]} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [apsFilter, setApsFilter] = useState('all');
   const [germanFilter, setGermanFilter] = useState('all');
@@ -64,7 +67,6 @@ export default function Students() {
         .select(`
           *,
           applications(id, status, university_name),
-          documents(id, category, file_name),
           service_requests(id, status, service_type)
         `)
         .eq('role', 'student')
@@ -72,13 +74,27 @@ export default function Students() {
 
       if (error) throw error;
 
-      // Safely set the data with proper type handling
-      const studentsData = data?.map(student => ({
+      // Fetch documents in bulk by user_id to avoid ambiguous relationships
+      const userIds = (data || []).map((s: any) => s.user_id).filter(Boolean);
+      let docsByUser: Record<string, any[]> = {};
+      if (userIds.length > 0) {
+        const { data: docsData } = await supabase
+          .from('documents' as any)
+          .select('id,user_id,category,file_name,file_url,created_at')
+          .in('user_id', userIds);
+        (docsData || []).forEach((d: any) => {
+          if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
+          docsByUser[d.user_id].push(d);
+        });
+      }
+
+      // Safely set the data with proper type handling and attach documents
+      const studentsData = (data || []).map((student: any) => ({
         ...student,
         applications: Array.isArray(student.applications) ? student.applications : [],
-        documents: Array.isArray(student.documents) ? student.documents : [],
+        documents: docsByUser[student.user_id] || [],
         service_requests: Array.isArray(student.service_requests) ? student.service_requests : []
-      })) || [];
+      }));
 
       setStudents(studentsData as StudentProfile[]);
     } catch (error: any) {
@@ -257,13 +273,13 @@ export default function Students() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-3 font-medium">Student</th>
-                      <th className="text-left p-3 font-medium">Student ID</th>
-                      <th className="text-left p-3 font-medium">APS Pathway</th>
-                      <th className="text-left p-3 font-medium">German Level</th>
-                      <th className="text-left p-3 font-medium">Progress</th>
-                      <th className="text-left p-3 font-medium">Applications</th>
+                      <th className="text-left p-3 font-medium hidden sm:table-cell">Student ID</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">APS Pathway</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">German Level</th>
+                      <th className="text-left p-3 font-medium hidden lg:table-cell">Progress</th>
+                      <th className="text-left p-3 font-medium hidden lg:table-cell">Applications</th>
                       <th className="text-left p-3 font-medium">Documents</th>
-                      <th className="text-left p-3 font-medium">Joined</th>
+                      <th className="text-left p-3 font-medium hidden sm:table-cell">Joined</th>
                       <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -283,22 +299,22 @@ export default function Students() {
                               </div>
                             </div>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden sm:table-cell">
                             <Badge variant="outline" className="font-mono">
                               {generateStudentId(students.indexOf(student) + 1)}
                             </Badge>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden md:table-cell">
                             <Badge className={getAPSStatusColor(student.aps_pathway)}>
                               {student.aps_pathway?.replace('_', ' ').toUpperCase() || 'Not Set'}
                             </Badge>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden md:table-cell">
                             <Badge className={getGermanLevelColor(student.german_level)}>
                               {student.german_level?.toUpperCase() || 'None'}
                             </Badge>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden lg:table-cell">
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-muted rounded-full h-2">
                                 <div 
@@ -309,19 +325,25 @@ export default function Students() {
                               <span className="text-sm text-muted-foreground">{progress}%</span>
                             </div>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden lg:table-cell">
                             <div className="flex items-center gap-1">
                               <FileText className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">{student.applications?.length || 0}</span>
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2">
                               <GraduationCap className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">{student.documents?.length || 0}</span>
+                              {student.documents && student.documents.length > 0 && (
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setDocsForStudent({ full_name: student.full_name, documents: student.documents as any });
+                                  setDocsOpen(true);
+                                }}>View</Button>
+                              )}
                             </div>
                           </td>
-                          <td className="p-3">
+                          <td className="p-3 hidden sm:table-cell">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">
@@ -362,6 +384,38 @@ export default function Students() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Documents Dialog */}
+      <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
+              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+            )}
+            {docsForStudent?.documents?.map((doc: any) => {
+              const url = doc.file_url || null;
+              return (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium text-sm">{doc.file_name || 'Document'}</p>
+                    <p className="text-xs text-muted-foreground">{doc.category || 'uncategorized'}</p>
+                  </div>
+                  {url ? (
+                    <a href={url} target="_blank" rel="noreferrer">
+                      <Button size="sm" variant="outline">Open</Button>
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No link available</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

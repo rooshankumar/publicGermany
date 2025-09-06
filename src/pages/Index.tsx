@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import logo from '@/assets/germany-help-logo.png';
 import { 
   GraduationCap, 
@@ -19,7 +22,9 @@ import {
   FileCheck,
   Building,
   MapPin,
-  Calendar
+  Calendar,
+  StarHalf,
+  StarOff
 } from 'lucide-react';
 
 // Simple error boundary for Navbar
@@ -40,6 +45,54 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
     }
     return this.props.children;
   }
+}
+
+function FreeVsPaidSection() {
+  return (
+    <section id="free-vs-paid" className="py-20 bg-background">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-10 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2 md:mb-3">What’s Free vs Paid</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">GermanyHelp is free to use. You only pay if you request personalized, one‑on‑one help.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="border-success/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-success">
+                <Shield className="w-5 h-5" /> Free (Forever)
+              </CardTitle>
+              <CardDescription>Everything you need to get started and stay on track.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Create profile and get personalized checklist</li>
+                <li>Track progress across APS, documents, and applications</li>
+                <li>Access resources, FAQs, and guides</li>
+                <li>Upload/manage documents</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Users className="w-5 h-5" /> Personalized Help (Paid)
+              </CardTitle>
+              <CardDescription>Optional one‑on‑one services to maximize results.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>APS guidance and review</li>
+                <li>University shortlisting tailored to your profile</li>
+                <li>SOP/CV/LOR editing and feedback</li>
+                <li>Visa file review and interview prep</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function Navbar() {
@@ -117,23 +170,23 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
       <div className="relative max-w-7xl mx-auto px-6">
         <div className="text-center">
           {/* Trust indicators */}
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8">
             <Badge className="trust-badge">
               <Award className="w-3 h-3" />
-              1000+ Students Guided
+              50+ Students Guided
             </Badge>
             <Badge className="trust-badge">
               <Star className="w-3 h-3" />
-              98% Success Rate
+              Trusted Support
             </Badge>
           </div>
 
-          <h1 className="text-hero mb-6 animate-fade-in">
+          <h1 className="text-hero mb-4 md:mb-6 animate-fade-in">
             Your Complete Guide to 
             <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent"> Study in Germany</span>
           </h1>
           
-          <p className="text-lead max-w-3xl mx-auto mb-8 animate-slide-up">
+          <p className="text-lead max-w-3xl mx-auto mb-6 md:mb-8 animate-slide-up">
             Navigate APS certification, university applications, and visa processes with our comprehensive 
             checklist and expert guidance. Start your German education journey today.
           </p>
@@ -149,22 +202,22 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </a>
             </Button>
+            <div className="w-full text-center">
+              <p className="mt-3 text-sm text-muted-foreground">Free app. Pay only if you need personalized help.</p>
+            </div>
           </div>
 
           {/* Social proof */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2">1000+</div>
+              <div className="text-3xl font-bold text-primary mb-2">50+</div>
               <div className="text-sm text-muted-foreground">Students Guided Successfully</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-success mb-2">15+</div>
+              <div className="text-3xl font-bold text-success mb-2">1.5+</div>
               <div className="text-sm text-muted-foreground">Years of Experience</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-warning mb-2">50+</div>
-              <div className="text-sm text-muted-foreground">Partner Universities</div>
-            </div>
+            {/* Removed Partner Universities until verified */}
           </div>
         </div>
       </div>
@@ -302,57 +355,175 @@ function HowItWorksSection() {
   );
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  review_text: string;
+  service_type: string;
+  created_at: string;
+  profiles: {
+    full_name: string;
+    avatar_url?: string;
+  } | null;
+}
+
 function TestimonialsSection() {
-  const testimonials = [
-    {
-      name: "Priya Sharma",
-      university: "TU Munich",
-      text: "GermanyHelp made my APS process so much easier. The step-by-step guidance was invaluable!",
-      rating: 5
-    },
-    {
-      name: "Rahul Patel", 
-      university: "RWTH Aachen",
-      text: "I got into my dream university thanks to their expert guidance on documents and applications.",
-      rating: 5
-    },
-    {
-      name: "Anita Gupta",
-      university: "University of Stuttgart", 
-      text: "The personalized checklist kept me organized throughout the entire application process.",
-      rating: 5
+  const { data: reviews, isLoading, error } = useQuery<Review[]>({
+    queryKey: ['featured-reviews'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('reviews')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('is_approved', true)
+        .eq('is_featured', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      return data as unknown as Review[];
     }
-  ];
+  });
+
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<StarHalf key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
+      } else {
+        stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
+      }
+    }
+
+    return stars;
+  };
+
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  if (error) {
+    return (
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <p className="text-destructive">Failed to load testimonials. Please try again later.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <Skeleton className="h-6 w-24 mx-auto mb-4" />
+            <Skeleton className="h-8 w-64 mx-auto mb-4" />
+            <Skeleton className="h-4 w-96 mx-auto" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="h-full">
+                <CardContent className="p-6 h-full flex flex-col">
+                  <Skeleton className="h-5 w-32 mb-4" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-5/6 mb-2" />
+                  <Skeleton className="h-4 w-2/3 mb-6 flex-grow" />
+                  <div>
+                    <Skeleton className="h-5 w-36 mb-1" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <section className="py-16 bg-muted/50">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+            <StarOff className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">No Featured Reviews Yet</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+            Check back later to see what our students are saying about their experience.
+          </p>
+          <Button variant="outline">
+            Share Your Experience
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section id="testimonials" className="py-20 bg-muted/30">
+    <section className="py-16 bg-muted/50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Success Stories from Our Students
-          </h2>
-          <p className="text-lead max-w-2xl mx-auto">
-            Join thousands of students who have successfully started their German education journey with our help.
+        <div className="text-center mb-12">
+          <Badge variant="outline" className="mb-4">Testimonials</Badge>
+          <h2 className="text-3xl font-bold tracking-tight mb-4">What Our Students Say</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Hear from students who have successfully navigated their journey to studying in Germany with our help.
           </p>
         </div>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <Card key={index} className="card-hover">
-              <CardContent className="pt-6">
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-warning text-warning" />
-                  ))}
+          {reviews.map((review) => (
+            <Card key={review.id} className="h-full">
+              <CardContent className="p-6 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex">
+                    {renderStars(review.rating)}
+                  </div>
+                  {review.service_type && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                      {review.service_type}
+                    </span>
+                  )}
                 </div>
-                <p className="text-muted-foreground mb-4">"{testimonial.text}"</p>
-                <div>
-                  <div className="font-semibold text-foreground">{testimonial.name}</div>
-                  <div className="text-sm text-muted-foreground">{testimonial.university}</div>
+                <p className="text-muted-foreground mb-6 flex-grow">"{review.review_text}"</p>
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium mr-3">
+                    {review.profiles?.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <p className="font-medium">{review.profiles?.full_name || 'Anonymous'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(review.created_at)}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+        
+        <div className="text-center mt-12">
+          <Button variant="outline" className="mx-auto">
+            Read All Reviews
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </div>
     </section>
@@ -403,7 +574,7 @@ function Footer() {
             <div className="flex items-center gap-2">
               <Badge className="trust-badge">
                 <Shield className="w-3 h-3" />
-                Trusted by 1000+ Students
+                Trusted by 50+ Students
               </Badge>
             </div>
           </div>
@@ -430,7 +601,7 @@ function Footer() {
         </div>
         
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 GermanyHelp. All rights reserved. Made with ❤️ for aspiring German students.</p>
+          <p>&copy; 2025 GermanyHelp. All rights reserved. Made with ❤️ for aspiring German students.</p>
         </div>
       </div>
     </footer>
@@ -453,6 +624,7 @@ const Index = () => {
         <HeroSection onGetStarted={handleGetStarted} />
         <FeaturesSection />
         <HowItWorksSection />
+        <FreeVsPaidSection />
         <TestimonialsSection />
         <CTASection onGetStarted={handleGetStarted} />
       </main>

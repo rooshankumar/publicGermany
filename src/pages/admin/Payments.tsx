@@ -18,10 +18,10 @@ export default function Payments() {
   useEffect(() => {
     fetchPayments();
     
-    // Set up real-time subscription
+    // Set up real-time subscription (service_payments table)
     const channel = supabase
-      .channel('payments-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+      .channel('service-payments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
         fetchPayments();
       })
       .subscribe();
@@ -34,7 +34,7 @@ export default function Payments() {
   const fetchPayments = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('payments' as any)
+      .from('service_payments' as any)
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -52,7 +52,7 @@ export default function Payments() {
 
   const updatePaymentStatus = async (paymentId: string, newStatus: string) => {
     const { error } = await supabase
-      .from('payments' as any)
+      .from('service_payments' as any)
       .update({ status: newStatus })
       .eq('id', paymentId);
 
@@ -72,8 +72,9 @@ export default function Payments() {
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.student_id?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payment.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (payment.user_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (payment.service_id || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -142,8 +143,10 @@ export default function Payments() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-3 font-medium">Payment ID</th>
-                      <th className="text-left p-3 font-medium">Student ID</th>
+                      <th className="text-left p-3 font-medium">User</th>
+                      <th className="text-left p-3 font-medium">Service</th>
                       <th className="text-left p-3 font-medium">Amount</th>
+                      <th className="text-left p-3 font-medium">Proof</th>
                       <th className="text-left p-3 font-medium">Status</th>
                       <th className="text-left p-3 font-medium">Created</th>
                       <th className="text-left p-3 font-medium">Actions</th>
@@ -153,8 +156,10 @@ export default function Payments() {
                     {filteredPayments.map((payment) => (
                       <tr key={payment.id} className="border-b hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-mono text-sm">{payment.id}</td>
-                        <td className="p-3">{payment.student_id || 'N/A'}</td>
-                        <td className="p-3">₹{payment.amount?.toLocaleString()}</td>
+                        <td className="p-3">{payment.user_id || 'N/A'}</td>
+                        <td className="p-3 capitalize">{(payment.service_id || '').replaceAll('_',' ')}</td>
+                        <td className="p-3">₹{payment.amount?.toLocaleString()} {payment.currency || ''}</td>
+                        <td className="p-3"><a href={payment.proof_url} className="underline" target="_blank" rel="noreferrer">View</a></td>
                         <td className="p-3">
                           <Badge className={getStatusColor(payment.status)}>
                             {payment.status}
@@ -162,22 +167,22 @@ export default function Payments() {
                         </td>
                         <td className="p-3">{new Date(payment.created_at).toLocaleDateString()}</td>
                         <td className="p-3 space-x-2">
-                          {payment.status !== 'paid' && (
+                          {payment.status !== 'approved' && (
                             <Button
                               size="sm"
-                              onClick={() => updatePaymentStatus(payment.id, 'paid')}
+                              onClick={() => updatePaymentStatus(payment.id, 'approved')}
                               className="bg-success hover:bg-success/90"
                             >
-                              Mark Paid
+                              Approve
                             </Button>
                           )}
-                          {payment.status === 'Pending' && (
+                          {payment.status === 'pending' && (
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => updatePaymentStatus(payment.id, 'failed')}
+                              onClick={() => updatePaymentStatus(payment.id, 'rejected')}
                             >
-                              Mark Failed
+                              Reject
                             </Button>
                           )}
                         </td>
