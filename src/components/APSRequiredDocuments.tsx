@@ -33,7 +33,7 @@ interface DocumentMeta {
   upload_path?: string;
 }
 
-export default function APSRequiredDocuments() {
+function APSRequiredDocuments() {
   const { profile } = useAuth();
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
   const [loading, setLoading] = useState<string | null>(null);
@@ -178,6 +178,7 @@ export default function APSRequiredDocuments() {
       </div>
     </div>
   );
+}
 
 // Minimal drag-and-drop upload box for each document row
 

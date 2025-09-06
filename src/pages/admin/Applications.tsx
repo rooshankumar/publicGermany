@@ -39,16 +39,6 @@ export default function Applications() {
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
 
-  // Set up real-time sync for admin applications
-  useRealTimeSync({
-    table: 'applications',
-    callback: fetchApplications
-  });
-
-  useEffect(() => {
-    filterApplications();
-  }, [applications, searchTerm, statusFilter, universityFilter]);
-
   const fetchApplications = async () => {
     setLoading(true);
     try {
@@ -72,6 +62,16 @@ export default function Applications() {
       setLoading(false);
     }
   };
+
+  // Set up real-time sync for admin applications
+  useRealTimeSync({
+    table: 'applications',
+    callback: fetchApplications
+  });
+
+  useEffect(() => {
+    filterApplications();
+  }, [applications, searchTerm, statusFilter, universityFilter]);
 
   const filterApplications = () => {
     let filtered = applications;

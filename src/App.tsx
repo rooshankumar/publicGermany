@@ -97,6 +97,11 @@ const AppRoutes = () => {
             <Students />
           </ProtectedRoute>
         } />
+        <Route path="/admin/students/:studentId" element={
+          <ProtectedRoute requiredRole="admin">
+            <StudentProfile />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/applications" element={
           <ProtectedRoute requiredRole="admin">
             <ApplicationsAdmin />

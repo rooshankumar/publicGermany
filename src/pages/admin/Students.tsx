@@ -332,8 +332,9 @@ export default function Students() {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               <Button size="sm" variant="outline" asChild>
-                                <Link to={`/admin/student-profile?id=${student.id}`}>
-                                  <Eye className="h-4 w-4" />
+                                <Link to={`/admin/students/${student.user_id}`}>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View Profile
                                 </Link>
                               </Button>
                               <Button 

@@ -369,6 +369,24 @@ export default function Requests() {
                       onChange={(e) => setAdminResponse(e.target.value)}
                       className="min-h-[100px]"
                     />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Final Document (Optional)</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Handle file upload for final document
+                            console.log('Final document selected:', file);
+                          }
+                        }}
+                        className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload a final document that the student can access after completion
+                      </p>
+                    </div>
                     <div className="flex gap-2">
                       <Button 
                         onClick={() => updateRequestStatus(selectedRequest.id, selectedRequest.status, adminResponse)}

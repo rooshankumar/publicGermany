@@ -38,17 +38,6 @@ const Applications = () => {
   const { toast } = useToast();
   const { profile } = useAuth();
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
-
-  // Set up real-time sync
-  useRealTimeSync({
-    table: 'applications',
-    callback: fetchApplications,
-    filter: { column: 'user_id', value: profile?.user_id || null }
-  });
-
   const fetchApplications = async () => {
     try {
       const { data, error } = await supabase
@@ -69,6 +58,17 @@ const Applications = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  // Set up real-time sync
+  useRealTimeSync({
+    table: 'applications',
+    callback: fetchApplications,
+    filter: { column: 'user_id', value: profile?.user_id || null }
+  });
 
   const handleAddApplication = async (e: React.FormEvent) => {
     e.preventDefault();

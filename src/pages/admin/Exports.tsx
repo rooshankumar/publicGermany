@@ -221,36 +221,36 @@ export default function Exports() {
         </Card>
 
         {/* Export Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {exportOptions.map((option) => {
             const Icon = option.icon;
             return (
               <Card key={option.type} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <Icon className={`h-6 w-6 ${option.color}`} />
-                    {option.title}
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-base md:text-lg">
+                    <Icon className={`h-5 w-5 md:h-6 md:w-6 ${option.color}`} />
+                    <span className="truncate">{option.title}</span>
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">{option.description}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">{option.description}</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => exportData(option.type, 'csv')}
                       disabled={loading}
-                      className="flex-1"
+                      className="flex-1 text-xs md:text-sm"
                       variant="outline"
                     >
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      <FileSpreadsheet className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Export CSV
                     </Button>
                     <Button
                       onClick={() => exportData(option.type, 'json')}
                       disabled={loading}
-                      className="flex-1"
+                      className="flex-1 text-xs md:text-sm"
                       variant="outline"
                     >
-                      <FileText className="h-4 w-4 mr-2" />
+                      <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                       Export JSON
                     </Button>
                   </div>
