@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import React, { Suspense, lazy } from "react";
 const Auth = lazy(() => import("./pages/Auth"));
+const AuthCallback = lazy(() => import("./components/AuthCallback"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Applications = lazy(() => import("./pages/Applications"));
 const Services = lazy(() => import("./pages/Services"));
@@ -53,6 +54,7 @@ const AppRoutes = () => {
     }>
       <Routes>
         <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
