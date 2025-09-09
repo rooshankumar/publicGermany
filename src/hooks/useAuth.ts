@@ -163,6 +163,25 @@ export const useAuth = () => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+      
+      if (error) throw error;
+      
+      return { error: null };
+    } catch (error: any) {
+      setLoading(false);
+      return { error: error.message };
+    }
+  };
+
   const signOut = async () => {
     try {
       // Clear local state first
@@ -217,6 +236,7 @@ export const useAuth = () => {
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     updateProfile,
     refetchProfile: () => user && fetchProfile(user.id),
