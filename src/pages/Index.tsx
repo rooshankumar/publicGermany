@@ -26,6 +26,7 @@ import {
   StarHalf,
   StarOff
 } from 'lucide-react';
+import LandingFAQ from '@/components/LandingFAQ';
 
 // Simple error boundary for Navbar
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
@@ -49,22 +50,22 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 
 function FreeVsPaidSection() {
   return (
-    <section id="free-vs-paid" className="py-12 md:py-20 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2 md:mb-3">What’s Free vs Paid</h2>
+    <section id="free-vs-paid" className="py-16 md:py-24 bg-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-10 md:mb-14">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3">What’s Free vs Paid</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">GermanyHelp is free to use. You only pay if you request personalized, one‑on‑one help.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <Card className="border-success/30">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+          <Card className="border-success/30 shadow-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-success">
+              <CardTitle className="flex items-center gap-2 text-success text-xl">
                 <Shield className="w-5 h-5" /> Free (Forever)
               </CardTitle>
               <CardDescription>Everything you need to get started and stay on track.</CardDescription>
             </CardHeader>
             <CardContent className="text-sm">
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-5 space-y-2">
                 <li>Create profile and get personalized checklist</li>
                 <li>Track progress across APS, documents, and applications</li>
                 <li>Access resources, FAQs, and guides</li>
@@ -73,15 +74,15 @@ function FreeVsPaidSection() {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/30">
+          <Card className="border-primary/30 shadow-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
+              <CardTitle className="flex items-center gap-2 text-primary text-xl">
                 <Users className="w-5 h-5" /> Personalized Help (Paid)
               </CardTitle>
               <CardDescription>Optional one‑on‑one services to maximize results.</CardDescription>
             </CardHeader>
             <CardContent className="text-sm">
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-5 space-y-2">
                 <li>APS guidance and review</li>
                 <li>University shortlisting tailored to your profile</li>
                 <li>SOP/CV/LOR editing and feedback</li>
@@ -100,11 +101,11 @@ function Navbar() {
   
   return (
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="GermanyHelp Logo" className="h-10 w-10" />
-          <span className="font-bold text-xl text-foreground">GermanyHelp</span>
-          <Badge className="trust-badge">
+          <span className="font-bold text-xl text-foreground tracking-tight">GermanyHelp</span>
+          <Badge className="trust-badge hidden sm:inline-flex">
             <Shield className="w-3 h-3" />
             Trusted
           </Badge>
@@ -119,7 +120,7 @@ function Navbar() {
           <Button variant="outline" asChild>
             <a href="/auth">Sign In</a>
           </Button>
-          <Button asChild className="btn-primary">
+          <Button asChild className="btn-cta">
             <a href="/auth">Get Started Free</a>
           </Button>
         </div>
@@ -145,7 +146,7 @@ function Navbar() {
               <Button variant="outline" asChild className="w-full">
                 <a href="/auth">Sign In</a>
               </Button>
-              <Button asChild className="w-full btn-primary">
+              <Button asChild className="w-full btn-cta">
                 <a href="/auth">Get Started Free</a>
               </Button>
             </div>
@@ -158,7 +159,7 @@ function Navbar() {
 
 function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="relative py-12 md:py-16 lg:py-28 overflow-hidden">
+    <section className="relative py-16 md:py-24 lg:py-28 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-success/5"></div>
       
@@ -167,48 +168,66 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
       }}></div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center">
           {/* Trust indicators */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 md:mb-8">
-            <Badge className="trust-badge">
+            <Badge className="trust-badge animate-fade-in">
               <Award className="w-3 h-3" />
               50+ Students Guided
             </Badge>
-            <Badge className="trust-badge">
+            <Badge className="trust-badge animate-fade-in">
               <Star className="w-3 h-3" />
               Trusted Support
             </Badge>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 md:mb-6 animate-fade-in">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4 md:mb-6 animate-fade-in-up">
             Your Complete Guide to 
-            <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent"> Study in Germany</span>
+            <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent"> Study in Germany</span>
           </h1>
           
-          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-5 md:mb-8 animate-slide-up">
+          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-5 md:mb-8 animate-fade-in">
             Navigate APS certification, university applications, and visa processes with our comprehensive 
             checklist and expert guidance. Start your German education journey today.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-12 animate-scale-in">
-            <Button size="lg" onClick={onGetStarted} className="btn-primary text-base md:text-lg px-5 py-3 md:px-8 md:py-4">
+          {/* Simple illustrative SVG */}
+          <div className="max-w-md mx-auto mb-8 animate-fade-in hidden sm:block">
+            <svg viewBox="0 0 300 120" className="w-full h-auto">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(210 29% 24%)" />
+                  <stop offset="100%" stopColor="hsl(24 100% 50%)" />
+                </linearGradient>
+              </defs>
+              <rect x="10" y="20" rx="12" ry="12" width="280" height="80" fill="url(#grad)" opacity="0.12" />
+              <g fill="none" stroke="hsl(210 29% 24% / 0.4)" strokeWidth="2">
+                <rect x="40" y="40" width="60" height="40" rx="6" />
+                <rect x="120" y="40" width="140" height="20" rx="6" />
+                <rect x="120" y="66" width="100" height="10" rx="5" />
+              </g>
+            </svg>
+          </div>
+
+          <div className="max-w-md mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-12 animate-scale-in">
+            <Button size="lg" onClick={onGetStarted} className="btn-cta w-full sm:w-auto text-base md:text-lg px-5 py-3 md:px-8 md:py-4">
               <GraduationCap className="mr-2 w-5 h-5" />
               Start Your Journey Free
             </Button>
-            <Button size="lg" variant="outline" className="text-base md:text-lg px-5 py-3 md:px-8 md:py-4" asChild>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base md:text-lg px-5 py-3 md:px-8 md:py-4" asChild>
               <a href="#how-it-works">
                 See How It Works
                 <ArrowRight className="ml-2 w-5 h-5" />
               </a>
             </Button>
-            <div className="w-full text-center">
+          </div>
+          <div className="w-full text-center">
               <p className="mt-2 text-sm text-muted-foreground">Free app. Pay only if you need personalized help.</p>
             </div>
-          </div>
 
           {/* Social proof */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto place-items-center text-center animate-fade-in">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary mb-2">50+</div>
               <div className="text-sm text-muted-foreground">Students Guided Successfully</div>
@@ -260,21 +279,22 @@ function FeaturesSection() {
   ];
 
   return (
-    <section id="features" className="py-12 md:py-20 bg-muted/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 md:mb-16">
+    <section id="features" className="py-16 md:py-24 bg-muted/30">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Everything You Need for German Education
           </h2>
+          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
           <p className="text-lead max-w-2xl mx-auto">
             From APS certification to university admission, we provide comprehensive support 
             for your entire study abroad journey.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="card-hover border-border/50 bg-card/50 backdrop-blur-sm">
+            <Card key={index} className="card-hover border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
               <CardHeader>
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                   <feature.icon className="w-6 h-6 text-primary" />
@@ -323,20 +343,21 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section id="how-it-works" className="py-20">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
+    <section id="how-it-works" className="py-16 md:py-24 bg-accent/30">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             How GermanyHelp Works
           </h2>
+          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
           <p className="text-lead max-w-2xl mx-auto">
             Our proven 4-step process has helped thousands of students achieve their German education dreams.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {steps.map((step, index) => (
-            <div key={index} className="text-center">
+            <div key={index} className="text-center animate-fade-in">
               <div className="relative mb-6">
                 <div className="w-16 h-16 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4">
                   <step.icon className="w-8 h-8 text-primary-foreground" />
@@ -442,7 +463,7 @@ function TestimonialsSection() {
   if (isLoading) {
     return (
       <section className="py-16 bg-muted/50">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <Skeleton className="h-6 w-24 mx-auto mb-4" />
             <Skeleton className="h-8 w-64 mx-auto mb-4" />
@@ -473,7 +494,7 @@ function TestimonialsSection() {
   if (!reviews || reviews.length === 0) {
     return (
       <section className="py-16 bg-muted/50">
-        <div className="max-w-7xl mx-auto px-6 text-center">
+        <div className="max-w-6xl mx-auto px-6 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <StarOff className="h-8 w-8 text-primary" />
           </div>
@@ -489,28 +510,26 @@ function TestimonialsSection() {
   }
 
   return (
-    <section className="py-16 bg-muted/50">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="testimonials" className="py-16 bg-muted/50">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4">Testimonials</Badge>
           <h2 className="text-3xl font-bold tracking-tight mb-4">What Our Students Say</h2>
+          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Hear from students who have successfully navigated their journey to studying in Germany with our help.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Mobile slider */}
+        <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory space-x-4 flex">
           {reviews.map((review) => (
-            <Card key={review.id} className="h-full">
+            <Card key={review.id} className="min-w-[85%] snap-center hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
               <CardContent className="p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex">
-                    {renderStars(review.rating)}
-                  </div>
+                  <div className="flex">{renderStars(review.rating)}</div>
                   {review.service_type && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                      {review.service_type}
-                    </span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{review.service_type}</span>
                   )}
                 </div>
                 <p className="text-muted-foreground mb-6 flex-grow">"{review.review_text}"</p>
@@ -520,9 +539,33 @@ function TestimonialsSection() {
                   </div>
                   <div>
                     <p className="font-medium">{review.profiles?.full_name || 'Anonymous'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(review.created_at)}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-8">
+          {reviews.map((review) => (
+            <Card key={review.id} className="h-full hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
+              <CardContent className="p-6 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex">{renderStars(review.rating)}</div>
+                  {review.service_type && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{review.service_type}</span>
+                  )}
+                </div>
+                <p className="text-muted-foreground mb-6 flex-grow">"{review.review_text}"</p>
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium mr-3">
+                    {review.profiles?.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <p className="font-medium">{review.profiles?.full_name || 'Anonymous'}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -543,12 +586,12 @@ function TestimonialsSection() {
 
 function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="py-20 bg-gradient-to-r from-primary to-success relative overflow-hidden">
+    <section className="py-20 md:py-24 bg-gradient-to-r from-primary to-success relative overflow-hidden animate-fade-in-up">
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
       }}></div>
       
-      <div className="relative max-w-7xl mx-auto px-6 text-center">
+      <div className="relative max-w-6xl mx-auto px-6 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
           Ready to Start Your German Education Journey?
         </h2>
@@ -558,7 +601,7 @@ function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
         <Button 
           size="lg" 
           onClick={onGetStarted}
-          className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-4"
+          className="btn-cta text-lg px-8 py-4"
         >
           <GraduationCap className="mr-2 w-5 h-5" />
           Get Started Free Today
@@ -571,7 +614,7 @@ function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
 function Footer() {
   return (
     <footer className="bg-card border-t py-12">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
@@ -619,6 +662,18 @@ function Footer() {
   );
 }
 
+function GermanyFlagBar() {
+  return (
+    <div className="w-full h-1">
+      <div className="max-w-6xl mx-auto flex h-full">
+        <div className="flex-1 bg-black" />
+        <div className="flex-1 bg-red-600" />
+        <div className="flex-1 bg-yellow-400" />
+      </div>
+    </div>
+  );
+}
+
 const Index = () => {
   const navigate = useNavigate();
   
@@ -631,12 +686,18 @@ const Index = () => {
       <ErrorBoundary>
         <Navbar />
       </ErrorBoundary>
+      <GermanyFlagBar />
       <main className="flex-1">
         <HeroSection onGetStarted={handleGetStarted} />
         <FeaturesSection />
+        <div className="border-t border-border" />
         <HowItWorksSection />
+        <div className="border-t border-border" />
         <FreeVsPaidSection />
+        <div className="border-t border-border" />
         <TestimonialsSection />
+        <div className="border-t border-border" />
+        <LandingFAQ />
         <CTASection onGetStarted={handleGetStarted} />
       </main>
       <Footer />

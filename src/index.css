@@ -8,18 +8,19 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Germany-focused professional design system */
+    /* Modern palette: Deep Blue (primary), Orange CTA, Trust Green */
     --background: 0 0% 100%;
     --foreground: 220 15% 15%;
+    
     --card: 0 0% 100%;
     --card-foreground: 220 15% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 15%;
     
-    /* German-inspired primary (Deep Blue) */
-    --primary: 215 84% 35%;
+    /* Primary: Deep Blue #2C3E50 */
+    --primary: 210 29% 24%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 215 84% 45%;
+    --primary-glow: 210 29% 34%;
     
     /* Professional secondary (Warm Gray) */
     --secondary: 210 15% 96%;
@@ -31,10 +32,11 @@ All colors MUST be HSL.
     --accent-foreground: 220 15% 15%;
     
     /* Trust & Success colors */
-    --success: 142 76% 36%;
+    --success: 134 61% 41%; /* #28A745 */
     --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
+    --warning: 24 100% 50%; /* #FF6600 */
+    --warning-foreground: 0 0% 100%;
+    
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     
@@ -43,9 +45,10 @@ All colors MUST be HSL.
     --ring: 215 84% 35%;
     --radius: 0.5rem;
     
-    /* Germany-themed gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%), hsl(142 76% 36%));
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 29% 24%), hsl(210 29% 34%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 29% 24%), hsl(210 29% 34%), hsl(24 100% 50%));
+    
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(215 20% 98%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
     
@@ -171,12 +174,24 @@ All colors MUST be HSL.
   }
 
   /* Professional button styles */
+  /* Primary button (kept for app-wide defaults) */
   .btn-primary {
     @apply bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft hover:shadow-medium transition-all duration-300;
   }
 
   .btn-primary:hover {
     background: linear-gradient(90deg, hsl(var(--primary-glow)), hsl(var(--primary)));
+  }
+
+  /* CTA button in orange */
+  .btn-cta {
+    @apply text-white shadow-soft hover:shadow-medium transition-all duration-300;
+    background: linear-gradient(90deg, hsl(var(--warning)), hsl(24 100% 56%));
+  }
+
+  .btn-cta:hover {
+    background: linear-gradient(90deg, hsl(24 100% 56%), hsl(var(--warning)));
+    transform: translateY(-1px);
   }
 
   .btn-success {
