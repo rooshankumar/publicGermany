@@ -369,24 +369,37 @@ interface Review {
 
 function TestimonialsSection() {
   const { data: reviews, isLoading, error } = useQuery<Review[]>({
-    queryKey: ['featured-reviews'],
+    queryKey: ['approved-reviews-home'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      // 1) Fetch approved reviews
+      const { data: base, error: baseErr } = await (supabase as any)
         .from('reviews')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('is_approved', true)
-        .eq('is_featured', true)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(6);
+      if (baseErr) throw baseErr;
 
-      if (error) throw error;
-      return data as unknown as Review[];
+      const arr = (base || []) as any[];
+      if (arr.length === 0) return [] as Review[];
+
+      // 2) Fetch profiles for display names
+      const userIds = Array.from(new Set(arr.map(r => r.user_id)));
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data: p } = await (supabase as any)
+          .from('profiles')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', userIds);
+        profiles = p || [];
+      }
+
+      // 3) Attach profiles
+      const withProfiles: Review[] = arr.map(r => ({
+        ...r,
+        profiles: profiles.find(pr => pr.user_id === r.user_id) || null,
+      }));
+      return withProfiles;
     }
   });
 
@@ -464,10 +477,8 @@ function TestimonialsSection() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <StarOff className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">No Featured Reviews Yet</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-            Check back later to see what our students are saying about their experience.
-          </p>
+          <h2 className="text-2xl font-bold mb-2">No Reviews Yet</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">Check back later to see what our students are saying about their experience.</p>
           <Button variant="outline">
             Share Your Experience
             <ArrowRight className="ml-2 h-4 w-4" />

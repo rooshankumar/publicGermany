@@ -7,9 +7,15 @@ import { Input } from '@/components/ui/input';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Database } from '@/integrations/supabase/types';
-
-type Review = Database['public']['Tables']['reviews']['Row'] & {
+type Review = {
+  id: string;
+  user_id: string;
+  rating: number;
+  review_text: string;
+  service_type: string | null;
+  is_approved: boolean;
+  is_featured: boolean | null;
+  created_at: string;
   profile?: {
     full_name?: string | null;
     avatar_url?: string | null;
@@ -95,6 +101,20 @@ export default function AdminReviews() {
     }
   };
 
+  const hide = async (id: string) => {
+    try {
+      const { error } = await (supabase as any)
+        .from('reviews')
+        .update({ is_approved: false, is_featured: false })
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Hidden', description: 'Review is now hidden from public pages.' });
+      fetchReviews();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'Failed to hide review', variant: 'destructive' });
+    }
+  };
+
   const toggleFeatured = async (id: string, is_featured: boolean | null) => {
     try {
       const { error } = await (supabase as any)
@@ -177,9 +197,12 @@ export default function AdminReviews() {
                   </div>
                 )}
                 <p className="text-sm">"{r.review_text}"</p>
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   {!r.is_approved && (
                     <Button size="sm" onClick={() => approve(r.id)}>Approve</Button>
+                  )}
+                  {r.is_approved && (
+                    <Button size="sm" variant="secondary" onClick={() => hide(r.id)}>Hide</Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => toggleFeatured(r.id, r.is_featured || false)}>
                     {r.is_featured ? 'Unfeature' : 'Feature'}

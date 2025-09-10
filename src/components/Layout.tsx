@@ -45,6 +45,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/admin/applications', label: 'Applications', icon: GraduationCap },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
+    { href: '/admin/reviews', label: 'Reviews', icon: Star },
   ];
 
   const navItems = isAdmin ? adminNavItems : studentNavItems;
@@ -57,7 +58,7 @@ const Layout = ({ children }: LayoutProps) => {
   <div className="w-72 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
           {/* Logo Header */}
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
-            <Link to="/dashboard" className="flex items-center space-x-3 group">
+            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-3 group">
               <img src={logo} alt="GermanyHelp" className="w-10 h-10 rounded-lg transition-transform group-hover:scale-105" />
               <div>
                 <h1 className="text-xl font-bold text-foreground">GermanyHelp</h1>
@@ -139,7 +140,7 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <MobileNavigation />
-              <Link to="/dashboard" className="flex items-center space-x-2">
+              <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
                 <img src={logo} alt="GermanyHelp" className="w-8 h-8 rounded-lg" />
                 <div>
                   <h1 className="text-lg font-bold text-foreground">GermanyHelp</h1>

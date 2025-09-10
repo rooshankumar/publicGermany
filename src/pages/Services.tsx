@@ -653,57 +653,7 @@ const Services = () => {
           </Card>
         </div>
 
-        {/* Reviews Section */}
-        <div className="space-y-6 mt-12">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Student Reviews</h2>
-              <p className="text-muted-foreground">What our students say about our services</p>
-            </div>
-            <Button onClick={() => setShowReviewDialog(true)}>Write a Review</Button>
-          </div>
-          
-          {reviews.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {reviews.slice(0, 4).map((review) => (
-                <Card key={review.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-medium">
-                            {review.profile?.full_name?.charAt(0) || 'U'}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{review.profile?.full_name || 'Anonymous'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex">
-                        {renderStars(review.rating)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">"{review.review_text}"</p>
-                    {review.service_type !== 'general' && (
-                      <Badge variant="outline" className="mt-3">
-                        {review.service_type}
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 border rounded-lg">
-              <p className="text-muted-foreground">No reviews yet. Be the first to share your experience!</p>
-            </div>
-          )}
-        </div>
+        {/* Reviews Section removed on Services page: Only show the user's own reviews below */}
 
         {/* Your Reviews Section */}
         <div className="space-y-6">
