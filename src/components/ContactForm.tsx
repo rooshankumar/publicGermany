@@ -150,7 +150,7 @@ export const ContactForm = () => {
               </div>
               <div>
                 <p className="font-medium">Email</p>
-                <p className="text-muted-foreground">support@germanyhelp.com</p>
+                <p className="text-muted-foreground">support@publicgermany.vercel.app</p>
               </div>
             </div>
             

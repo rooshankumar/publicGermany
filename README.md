@@ -1,4 +1,4 @@
-# GermanyHelp - Study in Germany Platform
+# publicgermany - Study in Germany Platform
 
 Complete redesign implemented with all improvements from the checklist:
 

@@ -54,7 +54,7 @@ function FreeVsPaidSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10 md:mb-14">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3">What’s Free vs Paid</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">GermanyHelp is free to use. You only pay if you request personalized, one‑on‑one help.</p>
+          <p className="text-muted-foreground max-w-2xl mx-auto">publicgermany is free to use. You only pay if you request personalized, one‑on‑one help.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <Card className="border-success/30 shadow-sm">
@@ -103,8 +103,8 @@ function Navbar() {
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="GermanyHelp Logo" className="h-10 w-10" />
-          <span className="font-bold text-xl text-foreground tracking-tight">GermanyHelp</span>
+          <img src={logo} alt="publicgermany Logo" className="h-10 w-10" />
+          <span className="font-bold text-xl text-foreground tracking-tight">publicgermany</span>
           <Badge className="trust-badge hidden sm:inline-flex">
             <Shield className="w-3 h-3" />
             Trusted
@@ -347,7 +347,7 @@ function HowItWorksSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            How GermanyHelp Works
+            How publicgermany Works
           </h2>
           <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
           <p className="text-lead max-w-2xl mx-auto">
@@ -596,7 +596,7 @@ function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
           Ready to Start Your German Education Journey?
         </h2>
         <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-          Join thousands of successful students who have achieved their dreams with GermanyHelp.
+          Join thousands of successful students who have achieved their dreams with publicgermany.
         </p>
         <Button 
           size="lg" 
@@ -618,8 +618,8 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <img src={logo} alt="GermanyHelp Logo" className="h-10 w-10" />
-              <span className="font-bold text-xl text-foreground">GermanyHelp</span>
+              <img src={logo} alt="publicgermany Logo" className="h-10 w-10" />
+              <span className="font-bold text-xl text-foreground">publicgermany</span>
             </div>
             <p className="text-muted-foreground mb-4">
               Your trusted partner for studying in Germany. We provide comprehensive guidance 
@@ -648,14 +648,14 @@ function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+              <li><a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
             </ul>
           </div>
         </div>
         
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 GermanyHelp. All rights reserved. Made with ❤️ for aspiring German students.</p>
+          <p>&copy; 2025 publicgermany. All rights reserved. Made with ❤️ for aspiring German students.</p>
         </div>
       </div>
     </footer>

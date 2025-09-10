@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -27,7 +28,7 @@ serve(async (req) => {
     // Fetch the resource
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'GermanyHelp Resource Fetcher 1.0'
+        'User-Agent': 'publicgermany Resource Fetcher 1.0'
       }
     })
 

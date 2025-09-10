@@ -59,9 +59,9 @@ const MobileNavigation = () => {
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <img src={logo} alt="GermanyHelp" className="w-10 h-10 rounded-lg" />
+                <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg" />
                 <div>
-                  <h1 className="text-lg font-bold text-foreground">GermanyHelp</h1>
+                  <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
                   <p className="text-sm text-muted-foreground">Study in Germany</p>
                 </div>
               </div>

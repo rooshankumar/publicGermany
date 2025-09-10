@@ -27,6 +27,8 @@ const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Reviews = lazy(() => import("./pages/Reviews"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 
 const queryClient = new QueryClient();
 
@@ -56,6 +58,8 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/dashboard" element={
           <ProtectedRoute disallowRole="admin">
             <Dashboard />

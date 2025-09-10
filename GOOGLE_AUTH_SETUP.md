@@ -1,7 +1,7 @@
 # Google Sign-In Integration - Setup Guide
 
 ## Overview
-This document outlines the Google Sign-In integration implemented in the GermanyHelp application using Supabase Authentication.
+This document outlines the Google Sign-In integration implemented in the publicgermany application using Supabase Authentication.
 
 ## What Has Been Implemented
 

@@ -22,9 +22,9 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      value: 'help@germanyhelp.com',
+      value: 'help@publicgermany.vercel.app',
       description: 'Send us an email for detailed inquiries',
-      href: 'mailto:help@germanyhelp.com'
+      href: 'mailto:help@publicgermany.vercel.app'
     },
     {
       icon: Phone,

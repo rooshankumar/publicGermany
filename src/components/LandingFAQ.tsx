@@ -8,10 +8,10 @@ const sections: FAQSection[] = [
     title: "General Questions About Studying in Germany",
     items: [
       {
-        q: "What is GermanyHelp and how can it assist me?",
+        q: "What is publicgermany and how can it assist me?",
         a: (
           <>
-            GermanyHelp is a comprehensive platform that provides guidance for international students planning to study in Germany. We offer free resources including personalized checklists, progress tracking, and access to guides covering APS certification, university applications, visa processes, and pre-departure support. Optional paid services include one-on-one consultations for APS guidance, university shortlisting, document review, and visa preparation.
+            publicgermany is a comprehensive platform that provides guidance for international students planning to study in Germany. We offer free resources including personalized checklists, progress tracking, and access to guides covering APS certification, university applications, visa processes, and pre-departure support. Optional paid services include one-on-one consultations for APS guidance, university shortlisting, document review, and visa preparation.
           </>
         )
       },

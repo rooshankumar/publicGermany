@@ -103,8 +103,8 @@ const Auth = () => {
           {/* Left Side - Branding & Features */}
           <div className="space-y-8 text-center lg:text-left">
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-              <img src={logo} alt="GermanyHelp Logo" className="h-12 w-12" />
-              <span className="font-bold text-2xl text-foreground">GermanyHelp</span>
+              <img src={logo} alt="publicgermany Logo" className="h-12 w-12" />
+              <span className="font-bold text-2xl text-foreground">publicgermany</span>
               <Badge className="trust-badge">
                 <Shield className="w-3 h-3" />
                 Trusted
@@ -400,6 +400,11 @@ const Auth = () => {
               <p className="text-sm text-muted-foreground">
                 Trusted by <span className="font-semibold text-primary">1000+</span> students worldwide
               </p>
+            </div>
+            <div className="mt-4 text-center text-xs text-muted-foreground">
+              <a href="/privacy" className="hover:underline">Privacy Policy</a>
+              <span className="mx-2">•</span>
+              <a href="/terms" className="hover:underline">Terms of Service</a>
             </div>
           </div>
         </div>

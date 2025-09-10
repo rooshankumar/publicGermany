@@ -18,7 +18,7 @@ export default function LandingHero({ onGetStarted, onSignIn }: { onGetStarted?:
       <div className="relative container mx-auto px-6 text-center">
         <div className="flex justify-center mb-8">
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-            <img src={logo} alt="GermanyHelp Logo" className="h-16 w-auto" />
+            <img src={logo} alt="publicgermany Logo" className="h-16 w-auto" />
           </div>
         </div>
         

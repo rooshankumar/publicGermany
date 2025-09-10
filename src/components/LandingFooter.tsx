@@ -8,11 +8,11 @@ export default function LandingFooter() {
           <a href="#about" className="hover:underline">About</a>
           <a href="#contact" className="hover:underline">Contact</a>
           <a href="#faq" className="hover:underline">FAQ</a>
-          <a href="#privacy" className="hover:underline">Privacy Policy</a>
-          <a href="#terms" className="hover:underline">Terms</a>
+          <a href="/privacy" className="hover:underline">Privacy Policy</a>
+          <a href="/terms" className="hover:underline">Terms</a>
         </div>
         <div className="text-xs text-center md:text-right">
-          GermanyHelp is an educational productivity tool. We do not provide legal immigration services. For official information, visit APS and Embassy websites.
+          publicgermany is an educational productivity tool. We do not provide legal immigration services. For official information, visit APS and Embassy websites.
         </div>
       </div>
     </footer>
