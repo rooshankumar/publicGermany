@@ -59,9 +59,9 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Logo Header */}
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-3 group">
-              <img src={logo} alt="GermanyHelp" className="w-10 h-10 rounded-lg transition-transform group-hover:scale-105" />
+              <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg transition-transform group-hover:scale-105" />
               <div>
-                <h1 className="text-xl font-bold text-foreground">GermanyHelp</h1>
+                <h1 className="text-xl font-bold text-foreground">publicgermany</h1>
                 <p className="text-sm text-muted-foreground">Study in Germany Platform</p>
               </div>
             </Link>
@@ -141,9 +141,9 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="flex items-center space-x-3">
               <MobileNavigation />
               <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
-                <img src={logo} alt="GermanyHelp" className="w-8 h-8 rounded-lg" />
+                <img src={logo} alt="publicgermany" className="w-8 h-8 rounded-lg" />
                 <div>
-                  <h1 className="text-lg font-bold text-foreground">GermanyHelp</h1>
+                  <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
                 </div>
               </Link>
             </div>
