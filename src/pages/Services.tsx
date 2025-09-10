@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { IndianRupee, Clock, CheckCircle, XCircle, Star, StarHalf, StarOff } from 'lucide-react';
+import { IndianRupee, Clock, CheckCircle, XCircle, Star, StarHalf, StarOff, Trash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -70,6 +70,32 @@ const discoverDeliverableFor = async (
   } catch (e: any) {
     toast({ title: 'Unable to fetch deliverable', description: e?.message || 'Please try again later.', variant: 'destructive' });
   }
+};
+
+// Extract a user-friendly filename from a URL
+const getFileNameFromUrl = (url: string) => {
+  try {
+    const u = new URL(url);
+    const pathname = u.pathname;
+    const last = pathname.substring(pathname.lastIndexOf('/') + 1);
+    return decodeURIComponent(last) || 'download';
+  } catch {
+    const parts = url.split('/');
+    return decodeURIComponent(parts[parts.length - 1] || 'download');
+  }
+};
+
+// Remove URLs and noisy labels from admin response for cleaner display
+const sanitizeAdminResponse = (text: string) => {
+  if (!text) return '';
+  let t = text;
+  // Remove any http/https links
+  t = t.replace(/https?:[^\s)]+/gi, ' ');
+  // Remove explicit labels like 'Deliverable:'
+  t = t.replace(/\bdeliverable:\s*/gi, '');
+  // Normalize whitespace
+  t = t.replace(/\s{2,}/g, ' ').trim();
+  return t;
 };
 
 const Services = () => {
@@ -456,6 +482,42 @@ const Services = () => {
     }
   };
 
+  // Delete a service request created by the current user
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm('Delete this service request? This cannot be undone.')) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('service_requests')
+        .delete()
+        .match({ id: requestId, user_id: user.id });
+      if (error) throw error;
+      toast({ title: 'Deleted', description: 'Your service request has been deleted.' });
+      fetchServiceRequests();
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e?.message || 'Could not delete request', variant: 'destructive' });
+    }
+  };
+
+  // Delete a review posted by the current user
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Delete this review? This cannot be undone.')) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await (supabase as any)
+        .from('reviews')
+        .delete()
+        .match({ id: reviewId, user_id: user.id });
+      if (error) throw error;
+      toast({ title: 'Deleted', description: 'Your review has been deleted.' });
+      fetchReviews();
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e?.message || 'Could not delete review', variant: 'destructive' });
+    }
+  };
+
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
       case 'completed':
@@ -695,6 +757,13 @@ const Services = () => {
                         {review.service_type}
                       </Badge>
                     )}
+                    {!review.is_approved && (
+                      <div className="mt-3">
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteReview(review.id)}>
+                          <Trash className="h-4 w-4 mr-1" /> Delete
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -854,6 +923,16 @@ const Services = () => {
                         <Badge variant={getStatusVariant(request.status)}>
                           {request.status.replace('_', ' ')}
                         </Badge>
+                        {request.status !== 'completed' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="ml-2"
+                            onClick={() => handleDeleteRequest(request.id)}
+                          >
+                            <Trash className="h-4 w-4 mr-1" /> Delete
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -872,20 +951,28 @@ const Services = () => {
 
                       {/* Show deliverable actions when completed */}
                       {(() => { const url = request.status === 'completed' ? (getDeliverableUrl(request) || deliverables[request.id]) : null; return url; })() && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <a
-                            href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Button size="sm">View</Button>
-                          </a>
-                          <a
-                            href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
-                            download
-                          >
-                            <Button size="sm" variant="outline">Download</Button>
-                          </a>
+                        <div className="mt-2 p-3 border rounded-md bg-green-50 border-green-200">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-green-700">
+                              <CheckCircle className="h-4 w-4" />
+                              <span className="text-sm font-medium">Delivered</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <Button size="sm" variant="default">View</Button>
+                              </a>
+                              <a
+                                href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
+                                download
+                              >
+                                <Button size="sm" variant="outline">Download</Button>
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -914,10 +1001,10 @@ const Services = () => {
                       </div>
                     </div>
 
-                    {request.admin_response && (
+                    {(() => { const clean = request.admin_response ? sanitizeAdminResponse(request.admin_response) : ''; return clean; })() && (
                       <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                         <p className="text-sm">
-                          <strong>Admin Response:</strong> {request.admin_response}
+                          <strong>Admin Response:</strong> {sanitizeAdminResponse(request.admin_response as string)}
                         </p>
                       </div>
                     )}
