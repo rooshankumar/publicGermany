@@ -6,9 +6,10 @@ import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: 'student' | 'admin';
+  disallowRole?: 'student' | 'admin';
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRole, disallowRole }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
 
   if (loading) {
@@ -28,6 +29,13 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
   if (requiredRole && profile?.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // If a role is explicitly disallowed for this route (e.g., admin on student pages), redirect
+  if (disallowRole && profile?.role === disallowRole) {
+    // Send admins to admin dashboard; students to user dashboard
+    const redirectPath = disallowRole === 'admin' ? '/admin' : '/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <>{children}</>;

@@ -82,16 +82,16 @@ const Documents = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">My Documents</h1>
-          <p className="text-muted-foreground">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col space-y-1.5 sm:space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Documents</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Upload and manage all your required documents in one place
           </p>
         </div>
 
         {/* Document Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
@@ -149,7 +149,7 @@ const Documents = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                 <span>{documentStats.uploaded} of {documentStats.total} documents uploaded</span>
                 <span>{documentStats.total - documentStats.uploaded} remaining</span>
               </div>
@@ -171,7 +171,7 @@ const Documents = () => {
         {/* General Document Upload */}
         <Card>
           <CardContent>
-            <div className="pt-6">
+            <div className="pt-4 sm:pt-6">
               <APSRequiredDocuments />
             </div>
           </CardContent>

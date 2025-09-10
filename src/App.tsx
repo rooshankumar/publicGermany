@@ -22,6 +22,7 @@ const Payments = lazy(() => import("./pages/admin/Payments"));
 const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const Exports = lazy(() => import("./pages/admin/Exports"));
 const Universities = lazy(() => import("./pages/admin/Universities"));
+const AdminReviews = lazy(() => import("./pages/admin/Reviews"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Documents = lazy(() => import("./pages/Documents"));
@@ -56,32 +57,32 @@ const AppRoutes = () => {
         <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Dashboard />
           </ProtectedRoute>
         } />
         <Route path="/applications" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Applications />
           </ProtectedRoute>
         } />
         <Route path="/profile" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Profile />
           </ProtectedRoute>
         } />
         <Route path="/services" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Services />
           </ProtectedRoute>
         } />
         <Route path="/resources" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Resources />
           </ProtectedRoute>
         } />
         <Route path="/contact" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Contact />
           </ProtectedRoute>
         } />
@@ -130,13 +131,18 @@ const AppRoutes = () => {
             <Universities />
           </ProtectedRoute>
         } />
+        <Route path="/admin/reviews" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminReviews />
+          </ProtectedRoute>
+        } />
         <Route path="/documents" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Documents />
           </ProtectedRoute>
         } />
         <Route path="/reviews" element={
-          <ProtectedRoute>
+          <ProtectedRoute disallowRole="admin">
             <Reviews />
           </ProtectedRoute>
         } />

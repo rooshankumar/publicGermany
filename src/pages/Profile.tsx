@@ -219,7 +219,7 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="container-mobile space-y-6">
+      <div className="container-mobile space-y-4 sm:space-y-6">
         
         <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -234,7 +234,7 @@ const Profile = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Personal Information */}
           <Card>
             <CardHeader>
@@ -244,7 +244,7 @@ const Profile = () => {
               </div>
               <CardDescription>Your basic personal details</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
               {/* Profile Photo */}
               <AvatarUpload
                 avatarUrl={formData.avatar_url}
@@ -264,7 +264,7 @@ const Profile = () => {
                   handleInputChange('avatar_url', publicUrl);
                 }}
               />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input
@@ -284,7 +284,7 @@ const Profile = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="state_of_education">State/Region</Label>
                   <Input
@@ -317,7 +317,7 @@ const Profile = () => {
               <CardDescription>Your educational background details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="class_10_marks">Class 10 Marks (%)</Label>
                   <Input
@@ -351,7 +351,7 @@ const Profile = () => {
                 </Select>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bachelor_degree_name">Bachelor's Degree</Label>
                   <Input
@@ -372,7 +372,7 @@ const Profile = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bachelor_cgpa_percentage">CGPA/Percentage</Label>
                   <Input
@@ -415,8 +415,8 @@ const Profile = () => {
               </div>
               <CardDescription>Your language test scores and proficiency</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="ielts_toefl_score">IELTS/TOEFL Score</Label>
                   <Input
@@ -458,7 +458,7 @@ const Profile = () => {
                   </SelectContent>
                 </Select>
                 {formData.has_aps_certificate === 'no' && (
-                  <div className="mt-3 p-4 rounded-md border border-amber-300 bg-amber-50 text-amber-800">
+                  <div className="mt-3 p-3 sm:p-4 rounded-md border border-amber-300 bg-amber-50 text-amber-800">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 mt-0.5" />
                       <div className="flex-1">
@@ -490,7 +490,7 @@ const Profile = () => {
               <CardDescription>Your professional background</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="work_experience_years">Years of Experience</Label>
                   <Input
@@ -536,7 +536,7 @@ const Profile = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {profile?.documents && profile.documents.length > 0 ? (
                     profile.documents.map((doc: Document) => (
                       <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
@@ -580,7 +580,7 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          <div className="flex flex-col sm:flex-row justify-end items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-end items-center gap-3 sm:gap-4">
             <Button type="submit" disabled={loading} className="min-w-32 w-full sm:w-auto">
               {loading ? 'Saving...' : 'Save Changes Now'}
             </Button>

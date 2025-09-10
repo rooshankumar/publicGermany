@@ -49,13 +49,13 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 
 function FreeVsPaidSection() {
   return (
-    <section id="free-vs-paid" className="py-20 bg-background">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-10 md:mb-12">
+    <section id="free-vs-paid" className="py-12 md:py-20 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2 md:mb-3">What’s Free vs Paid</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">GermanyHelp is free to use. You only pay if you request personalized, one‑on‑one help.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <Card className="border-success/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-success">
@@ -99,7 +99,7 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
   return (
-    <nav className="w-full py-4 px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
+    <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="GermanyHelp Logo" className="h-10 w-10" />
@@ -111,7 +111,7 @@ function Navbar() {
         </div>
         
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
           <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Features</a>
           <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
           <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Success Stories</a>
@@ -136,7 +136,7 @@ function Navbar() {
       {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 py-3 space-y-3">
             <a href="#features" className="block text-sm font-medium text-muted-foreground hover:text-primary">Features</a>
             <a href="#how-it-works" className="block text-sm font-medium text-muted-foreground hover:text-primary">How It Works</a>
             <a href="#testimonials" className="block text-sm font-medium text-muted-foreground hover:text-primary">Success Stories</a>
@@ -158,7 +158,7 @@ function Navbar() {
 
 function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="relative py-20 lg:py-32 overflow-hidden">
+    <section className="relative py-12 md:py-16 lg:py-28 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-success/5"></div>
       
@@ -167,10 +167,10 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
       }}></div>
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center">
           {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 md:mb-8">
             <Badge className="trust-badge">
               <Award className="w-3 h-3" />
               50+ Students Guided
@@ -181,34 +181,34 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             </Badge>
           </div>
 
-          <h1 className="text-hero mb-4 md:mb-6 animate-fade-in">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 md:mb-6 animate-fade-in">
             Your Complete Guide to 
             <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent"> Study in Germany</span>
           </h1>
           
-          <p className="text-lead max-w-3xl mx-auto mb-6 md:mb-8 animate-slide-up">
+          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-5 md:mb-8 animate-slide-up">
             Navigate APS certification, university applications, and visa processes with our comprehensive 
             checklist and expert guidance. Start your German education journey today.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-scale-in">
-            <Button size="lg" onClick={onGetStarted} className="btn-primary text-lg px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-12 animate-scale-in">
+            <Button size="lg" onClick={onGetStarted} className="btn-primary text-base md:text-lg px-5 py-3 md:px-8 md:py-4">
               <GraduationCap className="mr-2 w-5 h-5" />
               Start Your Journey Free
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4" asChild>
+            <Button size="lg" variant="outline" className="text-base md:text-lg px-5 py-3 md:px-8 md:py-4" asChild>
               <a href="#how-it-works">
                 See How It Works
                 <ArrowRight className="ml-2 w-5 h-5" />
               </a>
             </Button>
             <div className="w-full text-center">
-              <p className="mt-3 text-sm text-muted-foreground">Free app. Pay only if you need personalized help.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Free app. Pay only if you need personalized help.</p>
             </div>
           </div>
 
           {/* Social proof */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary mb-2">50+</div>
               <div className="text-sm text-muted-foreground">Students Guided Successfully</div>
@@ -260,9 +260,9 @@ function FeaturesSection() {
   ];
 
   return (
-    <section id="features" className="py-20 bg-muted/30">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
+    <section id="features" className="py-12 md:py-20 bg-muted/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-10 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Everything You Need for German Education
           </h2>
@@ -272,7 +272,7 @@ function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {features.map((feature, index) => (
             <Card key={index} className="card-hover border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>

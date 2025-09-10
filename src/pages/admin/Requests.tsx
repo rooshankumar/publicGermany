@@ -34,6 +34,8 @@ export default function Requests() {
   const [serviceFilter, setServiceFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [adminResponse, setAdminResponse] = useState('');
+  const [deliverableUploading, setDeliverableUploading] = useState(false);
+  const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -106,6 +108,12 @@ export default function Requests() {
     try {
       const updates: any = { status };
       if (response) updates.admin_response = response;
+      if (deliverableUrl) {
+        // Prefer dedicated column if present
+        (updates as any).deliverable_url = deliverableUrl;
+        // Also include link in admin_response for compatibility
+        updates.admin_response = [response || '', `Deliverable: ${deliverableUrl}`].filter(Boolean).join('\n');
+      }
 
       const { error } = await supabase
         .from('service_requests')
@@ -121,6 +129,7 @@ export default function Requests() {
       
       setSelectedRequest(null);
       setAdminResponse('');
+      setDeliverableUrl(null);
       fetchRequests();
     } catch (error: any) {
       toast({
@@ -374,15 +383,47 @@ export default function Requests() {
                       <input
                         type="file"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file) {
-                            // Handle file upload for final document
-                            console.log('Final document selected:', file);
+                          if (!file || !selectedRequest) return;
+                          try {
+                            setDeliverableUploading(true);
+                            const { data: { user } } = await supabase.auth.getUser();
+                            const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                            const path = `service_requests/${selectedRequest.id}/${safeName}`;
+                            const { error: uploadErr } = await supabase.storage
+                              .from('documents')
+                              .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+                            if (uploadErr) throw uploadErr;
+                            const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
+                            const url = publicData.publicUrl;
+                            setDeliverableUrl(url);
+                            // Immediately persist to DB so student UI can pick it up
+                            const currentResponse = adminResponse || selectedRequest.admin_response || '';
+                            const combinedResponse = [currentResponse, `Deliverable: ${url}`].filter(Boolean).join('\n');
+                            await (supabase as any)
+                              .from('service_requests')
+                              .update({ deliverable_url: url, admin_response: combinedResponse })
+                              .eq('id', selectedRequest.id);
+                            toast({ title: 'Deliverable uploaded', description: 'Final document attached to request.' });
+                            // Refresh requests to reflect change
+                            fetchRequests();
+                          } catch (err: any) {
+                            toast({ title: 'Upload failed', description: err?.message || 'Could not upload file', variant: 'destructive' });
+                          } finally {
+                            setDeliverableUploading(false);
                           }
                         }}
                         className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                       />
+                      {deliverableUploading && (
+                        <p className="text-xs text-muted-foreground">Uploading...</p>
+                      )}
+                      {deliverableUrl && (
+                        <div className="text-xs">
+                          <a href={deliverableUrl} target="_blank" rel="noreferrer" className="underline">View uploaded deliverable</a>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         Upload a final document that the student can access after completion
                       </p>

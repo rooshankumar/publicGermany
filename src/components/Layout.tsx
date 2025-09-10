@@ -126,7 +126,7 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 sm:p-6">
             {children}
           </main>
         </div>
@@ -162,7 +162,7 @@ const Layout = ({ children }: LayoutProps) => {
         </header>
 
         {/* Mobile Main Content */}
-        <main className="p-4">
+        <main className="p-3 sm:p-4">
           {children}
         </main>
       </div>

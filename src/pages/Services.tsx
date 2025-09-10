@@ -30,9 +30,47 @@ interface ServiceRequest {
   request_details: string | null;
   preferred_timeline: string | null;
   status: 'new' | 'in_review' | 'payment_pending' | 'in_progress' | 'completed';
-  admin_response: string | null;
+  admin_response?: string | null;
   created_at: string;
 }
+
+const getDeliverableUrl = (req: ServiceRequest) => {
+  const anyReq = req as any;
+  if (anyReq.deliverable_url && typeof anyReq.deliverable_url === 'string') {
+    return anyReq.deliverable_url as string;
+  }
+  if (req.admin_response && req.admin_response.includes('http')) {
+    const match = req.admin_response.match(/https?:[^\s)]+/i);
+    if (match) return match[0];
+  }
+  return null;
+};
+
+// Manually discover deliverable for a single request
+const discoverDeliverableFor = async (
+  req: ServiceRequest,
+  setDeliverables: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+  toast: (opts: { title: string; description?: string; variant?: any }) => void
+) => {
+  if (req.status !== 'completed') return;
+  try {
+    const path = `service_requests/${req.id}`;
+    const { data, error } = await supabase.storage.from('documents').list(path, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+    if (!error && data && data.length > 0) {
+      const file = data[0];
+      const fullPath = `${path}/${file.name}`;
+      const { data: pub } = supabase.storage.from('documents').getPublicUrl(fullPath);
+      if (pub?.publicUrl) {
+        setDeliverables(prev => ({ ...prev, [req.id]: pub.publicUrl }));
+        toast({ title: 'Deliverable found', description: 'You can now view or download the file.' });
+        return;
+      }
+    }
+    toast({ title: 'No deliverable found', description: 'Please ask the admin to attach the final document.', variant: 'destructive' });
+  } catch (e: any) {
+    toast({ title: 'Unable to fetch deliverable', description: e?.message || 'Please try again later.', variant: 'destructive' });
+  }
+};
 
 const Services = () => {
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
@@ -46,8 +84,13 @@ const Services = () => {
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(0);
   const [reviewServiceType, setReviewServiceType] = useState('general');
+  const [sortKey, setSortKey] = useState<'price_asc' | 'price_desc' | 'name_asc'>('price_asc');
+  const [search, setSearch] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Map of requestId -> discovered deliverable URL (from storage)
+  const [deliverables, setDeliverables] = useState<Record<string, string>>({});
 
   const services = [
     { id: 'university_shortlisting', name: 'University Shortlisting', price: 5000, description: 'Get personalized university recommendations based on your profile' },
@@ -59,6 +102,22 @@ const Services = () => {
     { id: 'aps_help', name: 'APS Help', price: 2000, description: 'Guidance and assistance with APS certificate application' },
     { id: 'general_profile_evaluation', name: 'General Profile Evaluation', price: 999, description: 'Quick profile evaluation with actionable next steps' },
   ];
+
+  // Sort services by price (low to high) for display consistency
+  const sortedServices = [...services].sort((a, b) => a.price - b.price);
+
+  // Compute displayed services based on search + sort controls
+  const displayedServices = [...services]
+    .filter(s => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      if (sortKey === 'price_asc') return a.price - b.price;
+      if (sortKey === 'price_desc') return b.price - a.price;
+      return a.name.localeCompare(b.name);
+    });
 
   // Fetch current user's payments
   const fetchUserPayments = async () => {
@@ -101,15 +160,56 @@ const Services = () => {
     fetchUserPayments();
 
     // Realtime sync for payments for this user
-    const channel = supabase
+    const paymentsChannel = supabase
       .channel('service-payments-user')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
         fetchUserPayments();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const requestsChannel = supabase
+      .channel('service-requests-user')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        // Refresh requests so status & deliverables are up-to-date
+        fetchServiceRequests();
+      })
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(paymentsChannel); 
+      supabase.removeChannel(requestsChannel);
+    };
   }, []);
+
+  // When requests load/update, try to discover deliverables in storage for completed ones
+  useEffect(() => {
+    const discover = async () => {
+      const candidates = serviceRequests.filter(r => r.status === 'completed' && !getDeliverableUrl(r) && !deliverables[r.id]);
+      if (candidates.length === 0) return;
+      const entries: Record<string, string> = {};
+      await Promise.all(candidates.map(async (r) => {
+        try {
+          const path = `service_requests/${r.id}`;
+          const { data, error } = await supabase.storage.from('documents').list(path, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+          if (!error && data && data.length > 0) {
+            const file = data[0];
+            const fullPath = `${path}/${file.name}`;
+            const { data: pub } = supabase.storage.from('documents').getPublicUrl(fullPath);
+            if (pub?.publicUrl) {
+              entries[r.id] = pub.publicUrl;
+            }
+          }
+        } catch (e) {
+          // ignore per-item errors
+        }
+      }));
+      if (Object.keys(entries).length > 0) {
+        setDeliverables(prev => ({ ...prev, ...entries }));
+      }
+    };
+    discover();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceRequests]);
 
   // Payment proof upload for General Profile Evaluation
   const [paymentUploading, setPaymentUploading] = useState(false);
@@ -428,15 +528,38 @@ const Services = () => {
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
         {/* Services Section */}
-        <div className="space-y-10">
+        <div className="space-y-6 md:space-y-10">
           <div className="text-center space-y-3">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Our Services</h1>
             <p className="text-muted-foreground text-lg">Professional assistance to help you succeed in your Germany study journey</p>
           </div>
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <Input
+                placeholder="Search services (e.g., SOP, APS, CV)"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground">Sort</Label>
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as any)}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                  <SelectItem value="name_asc">Name: A → Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           
-          {/* Services grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
+          {/* Services grid (with sort & search) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {displayedServices.map((service) => (
               <Card key={service.id} className="border-primary/10 hover:shadow-xl transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -596,7 +719,7 @@ const Services = () => {
               <form onSubmit={handleRequestSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Select Services</Label>
-                  {services.map((service) => (
+                  {sortedServices.map((service) => (
                     <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg">
                       <Checkbox
                         id={service.id}
@@ -738,7 +861,7 @@ const Services = () => {
                     <div className="flex flex-col gap-2">
                       <div className="text-sm">
                         <span className="font-medium">
-                          {request.service_currency} {request.service_price.toLocaleString()}
+                          {request.service_currency || 'INR'} {request.service_price?.toLocaleString()}
                         </span>
                         {request.preferred_timeline && (
                           <span className="text-muted-foreground ml-2">
@@ -746,6 +869,34 @@ const Services = () => {
                           </span>
                         )}
                       </div>
+
+                      {/* Show deliverable actions when completed */}
+                      {(() => { const url = request.status === 'completed' ? (getDeliverableUrl(request) || deliverables[request.id]) : null; return url; })() && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <a
+                            href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Button size="sm">View</Button>
+                          </a>
+                          <a
+                            href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
+                            download
+                          >
+                            <Button size="sm" variant="outline">Download</Button>
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Fallback: allow user to check storage for deliverable if completed but no link */}
+                      {request.status === 'completed' && !(getDeliverableUrl(request) || deliverables[request.id]) && (
+                        <div className="mt-2">
+                          <Button size="sm" variant="outline" onClick={() => discoverDeliverableFor(request, setDeliverables, toast)}>
+                            Check Deliverable
+                          </Button>
+                        </div>
+                      )}
 
                       {/* Reflect pending payments for included services */}
                       <div className="flex flex-wrap gap-2">

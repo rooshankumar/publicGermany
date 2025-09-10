@@ -340,6 +340,12 @@ const AdminDashboard = () => {
                   Payment Records
                 </Link>
               </Button>
+              <Button asChild className="h-20 flex-col" variant="secondary">
+                <Link to="/admin/reviews">
+                  <TrendingUp className="h-6 w-6 mb-2" />
+                  Moderate Reviews
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

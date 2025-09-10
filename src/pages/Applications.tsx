@@ -223,7 +223,7 @@ const Applications = () => {
               </DialogHeader>
               
               <form onSubmit={handleAddApplication} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="university_name">University Name *</Label>
                     <Input id="university_name" name="university_name" required />
@@ -234,7 +234,7 @@ const Applications = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="ielts_requirement">IELTS Requirement</Label>
                     <Input id="ielts_requirement" name="ielts_requirement" placeholder="e.g., 6.5 overall" />
@@ -245,7 +245,7 @@ const Applications = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fees_eur">Fees (EUR per semester)</Label>
                     <Input id="fees_eur" name="fees_eur" type="number" placeholder="e.g., 500" />
@@ -264,7 +264,7 @@ const Applications = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="start_date">Application Start Date</Label>
                     <Input id="start_date" name="start_date" type="date" />
@@ -275,7 +275,7 @@ const Applications = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="required_tests">Required Tests</Label>
                     <Input id="required_tests" name="required_tests" placeholder="e.g., TestAS, GRE" />
