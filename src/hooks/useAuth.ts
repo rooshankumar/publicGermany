@@ -175,10 +175,9 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Get the current origin, but ensure we're redirecting to the correct local URL
-      const redirectUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-        ? `${window.location.origin}/dashboard`
-        : `${window.location.origin}/dashboard`;
+      // Always redirect back to our dedicated OAuth callback route
+      // Supabase will append the authorization code or tokens which we handle there
+      const redirectUrl = `${window.location.origin}/auth/callback`;
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
