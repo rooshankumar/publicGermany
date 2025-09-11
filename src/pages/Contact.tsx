@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Send, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ContactForm } from '@/components/ContactForm';
 
 const Contact = () => {
@@ -18,6 +19,15 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-6 py-12 space-y-10">
+        {/* Back to Home */}
+        <div>
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
 
         {/* Header Section */}
         <div className="text-center">

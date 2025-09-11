@@ -2,12 +2,21 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { HelpCircle, Mail, FileText, BookOpen } from 'lucide-react';
+import { HelpCircle, Mail, FileText, BookOpen, ArrowLeft } from 'lucide-react';
 
 const Help: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-5xl mx-auto px-6 py-12">
+        {/* Back to Home */}
+        <div className="mb-6">
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
             <HelpCircle className="h-7 w-7 text-primary" /> Help Center

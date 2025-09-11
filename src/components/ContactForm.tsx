@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Phone, MapPin } from 'lucide-react';
+ 
 
 export const ContactForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +60,7 @@ export const ContactForm = () => {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-8">
+    <div className="grid gap-8">
       <Card>
         <CardHeader>
           <CardTitle>Send us a message</CardTitle>
@@ -137,67 +137,6 @@ export const ContactForm = () => {
           </form>
         </CardContent>
       </Card>
-
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full">
-                <Mail className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">Email</p>
-                <p className="text-muted-foreground">support@publicgermany.vercel.app</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full">
-                <Phone className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">Phone</p>
-                <p className="text-muted-foreground">+49 123 456 7890</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full">
-                <MapPin className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">Office</p>
-                <p className="text-muted-foreground">Berlin, Germany</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Office Hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Monday - Friday</span>
-                <span className="text-muted-foreground">9:00 AM - 6:00 PM</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Saturday</span>
-                <span className="text-muted-foreground">10:00 AM - 4:00 PM</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Sunday</span>
-                <span className="text-muted-foreground">Closed</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

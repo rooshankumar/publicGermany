@@ -1,9 +1,21 @@
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const Terms: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-6 py-12">
+        {/* Back to Home */}
+        <div className="mb-6">
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
         <p className="text-muted-foreground mb-8">Effective Date: September 2025</p>
 
