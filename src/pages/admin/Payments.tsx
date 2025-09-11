@@ -91,16 +91,18 @@ export default function Payments() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Payments Management</h1>
-          <p className="text-muted-foreground">Monitor and manage all payment transactions</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Payments Management</h1>
+            <p className="text-muted-foreground">Monitor and manage all payment transactions</p>
+          </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Search & Filter</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
                 placeholder="Search by payment ID or student ID..."
@@ -127,7 +129,7 @@ export default function Payments() {
           <CardHeader>
             <CardTitle>Payment Records ({filteredPayments.length})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -155,10 +157,10 @@ export default function Payments() {
                   <tbody>
                     {filteredPayments.map((payment) => (
                       <tr key={payment.id} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-3 font-mono text-sm">{payment.id}</td>
-                        <td className="p-3">{payment.user_id || 'N/A'}</td>
-                        <td className="p-3 capitalize">{(payment.service_id || '').replaceAll('_',' ')}</td>
-                        <td className="p-3">₹{payment.amount?.toLocaleString()} {payment.currency || ''}</td>
+                        <td className="p-3 font-mono text-sm truncate max-w-[160px] md:max-w-[220px]">{payment.id}</td>
+                        <td className="p-3 truncate max-w-[160px] md:max-w-[220px]">{payment.user_id || 'N/A'}</td>
+                        <td className="p-3 capitalize truncate max-w-[160px] md:max-w-[220px]">{(payment.service_id || '').replaceAll('_',' ')}</td>
+                        <td className="p-3 whitespace-nowrap">₹{payment.amount?.toLocaleString()} {payment.currency || ''}</td>
                         <td className="p-3"><a href={payment.proof_url} className="underline" target="_blank" rel="noreferrer">View</a></td>
                         <td className="p-3">
                           <Badge className={getStatusColor(payment.status)}>

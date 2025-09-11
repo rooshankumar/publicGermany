@@ -26,6 +26,7 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
   documents?: Database['public']['Tables']['documents']['Row'][];
   service_requests?: Database['public']['Tables']['service_requests']['Row'][];
+  files?: Database['public']['Tables']['files']['Row'][];
 };
 
 export default function Students() {
@@ -33,7 +34,7 @@ export default function Students() {
   const [filteredStudents, setFilteredStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [docsOpen, setDocsOpen] = useState(false);
-  const [docsForStudent, setDocsForStudent] = useState<{full_name?: string|null; documents: any[]} | null>(null);
+  const [docsForStudent, setDocsForStudent] = useState<{full_name?: string|null; documents: any[]; files: any[]} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [apsFilter, setApsFilter] = useState('all');
   const [germanFilter, setGermanFilter] = useState('all');
@@ -77,6 +78,7 @@ export default function Students() {
       // Fetch documents in bulk by user_id to avoid ambiguous relationships
       const userIds = (data || []).map((s: any) => s.user_id).filter(Boolean);
       let docsByUser: Record<string, any[]> = {};
+      let filesByUser: Record<string, any[]> = {};
       if (userIds.length > 0) {
         const { data: docsData } = await supabase
           .from('documents' as any)
@@ -86,6 +88,16 @@ export default function Students() {
           if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
           docsByUser[d.user_id].push(d);
         });
+
+        // Fetch files uploaded via files table
+        const { data: filesData } = await supabase
+          .from('files' as any)
+          .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
+          .in('user_id', userIds);
+        (filesData || []).forEach((f: any) => {
+          if (!filesByUser[f.user_id]) filesByUser[f.user_id] = [];
+          filesByUser[f.user_id].push(f);
+        });
       }
 
       // Safely set the data with proper type handling and attach documents
@@ -93,6 +105,7 @@ export default function Students() {
         ...student,
         applications: Array.isArray(student.applications) ? student.applications : [],
         documents: docsByUser[student.user_id] || [],
+        files: filesByUser[student.user_id] || [],
         service_requests: Array.isArray(student.service_requests) ? student.service_requests : []
       }));
 
@@ -334,13 +347,13 @@ export default function Students() {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{student.documents?.length || 0}</span>
-                              {student.documents && student.documents.length > 0 && (
+                              <span className="text-sm">{(student.documents?.length || 0) + (student.files?.length || 0)}</span>
+                              {(student.documents && student.documents.length > 0) || (student.files && student.files.length > 0) ? (
                                 <Button size="sm" variant="outline" onClick={() => {
-                                  setDocsForStudent({ full_name: student.full_name, documents: student.documents as any });
+                                  setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [], files: (student.files as any) || [] });
                                   setDocsOpen(true);
                                 }}>View</Button>
-                              )}
+                              ) : null}
                             </div>
                           </td>
                           <td className="p-3 hidden sm:table-cell">
@@ -391,28 +404,60 @@ export default function Students() {
           <DialogHeader>
             <DialogTitle>Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-            {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
-              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-            )}
-            {docsForStudent?.documents?.map((doc: any) => {
-              const url = doc.file_url || null;
-              return (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{doc.file_name || 'Document'}</p>
-                    <p className="text-xs text-muted-foreground">{doc.category || 'uncategorized'}</p>
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-3">
+              <p className="text-sm font-medium">From documents table</p>
+              {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
+                <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+              )}
+              {docsForStudent?.documents?.map((doc: any) => {
+                const url = doc.file_url || null;
+                return (
+                  <div key={`doc-${doc.id}`} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{doc.file_name || 'Document'}</p>
+                      <p className="text-xs text-muted-foreground">{doc.category || 'uncategorized'}</p>
+                    </div>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noreferrer">
+                        <Button size="sm" variant="outline">Open</Button>
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No link available</span>
+                    )}
                   </div>
-                  {url ? (
-                    <a href={url} target="_blank" rel="noreferrer">
-                      <Button size="sm" variant="outline">Open</Button>
-                    </a>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No link available</span>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">From files table</p>
+              {(!docsForStudent?.files || docsForStudent.files.length === 0) && (
+                <p className="text-sm text-muted-foreground">No files uploaded.</p>
+              )}
+              {docsForStudent?.files?.map((file: any) => {
+                // Create a signed URL for storage path when opening via UI
+                const handleOpen = async () => {
+                  try {
+                    const { data } = await supabase.storage
+                      .from('documents')
+                      .createSignedUrl(file.file_path, 300);
+                    if (data?.signedUrl) {
+                      window.open(data.signedUrl, '_blank');
+                    }
+                  } catch (e) {}
+                };
+                return (
+                  <div key={`file-${file.id}`} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{file.file_name || 'File'}</p>
+                      <p className="text-xs text-muted-foreground">{file.module || 'general'}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={handleOpen}>Open</Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

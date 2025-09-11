@@ -18,7 +18,8 @@ import {
   MapPin,
   Award,
   BookOpen,
-  Briefcase
+  Briefcase,
+  RefreshCw
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
@@ -26,12 +27,14 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
   documents?: Database['public']['Tables']['documents']['Row'][];
   service_requests?: Database['public']['Tables']['service_requests']['Row'][];
+  files?: Database['public']['Tables']['files']['Row'][];
 };
 
 export default function StudentProfile() {
   const { studentId } = useParams();
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchStudentProfile = async () => {
@@ -57,7 +60,16 @@ export default function StudentProfile() {
         .select('id,user_id,category,file_name,file_url,created_at')
         .eq('user_id', studentId);
 
-      setStudent({ ...(data as any), documents: docsData || [] });
+      // Fetch files uploaded via files table (DocumentUpload component)
+      const { data: filesData } = await supabase
+        .from('files' as any)
+        .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
+        .eq('user_id', studentId);
+
+      // Resolve user's email via Edge Function (service role)
+      await resolveEmail();
+
+      setStudent({ ...(data as any), documents: docsData || [], files: filesData || [] });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -66,6 +78,21 @@ export default function StudentProfile() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resolveEmail = async () => {
+    if (!studentId) return;
+    try {
+      const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: studentId });
+      if (error) throw error;
+      if (data) {
+        setEmail(data as string);
+      } else {
+        setEmail(null);
+      }
+    } catch (e: any) {
+      // Keep silent to avoid noisy UI; show fallback below.
     }
   };
 
@@ -170,15 +197,20 @@ export default function StudentProfile() {
 
         {/* Student Header */}
         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {student.full_name || 'Unknown Student'}
               </h1>
-              <div className="flex flex-wrap gap-4 mt-2 text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <span className="text-sm">{student.user_id}</span>
+                  <span className="text-sm">
+                    {email || `${student.user_id?.slice(0, 8)}… (email unavailable)`}
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-7 px-2" onClick={resolveEmail} title="Retry fetching email">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -319,14 +351,15 @@ export default function StudentProfile() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Documents ({student.documents?.length || 0})
+              Documents ({(student.documents?.length || 0) + (student.files?.length || 0)})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {student.documents && student.documents.length > 0 ? (
+            {(student.documents && student.documents.length > 0) || (student.files && student.files.length > 0) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {student.documents.map((doc) => (
-                  <div key={doc.id} className="border rounded-lg p-3">
+                {/* Render documents table entries */}
+                {student.documents?.map((doc) => (
+                  <div key={`doc-${doc.id}`} className="border rounded-lg p-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h4 className="font-medium text-sm">{doc.category}</h4>
@@ -339,7 +372,7 @@ export default function StudentProfile() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => viewDocument(doc)}
+                          onClick={() => viewDocument(doc as any)}
                           className="px-2"
                         >
                           <Eye className="h-3 w-3" />
@@ -347,7 +380,39 @@ export default function StudentProfile() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => downloadDocument(doc)}
+                          onClick={() => downloadDocument(doc as any)}
+                          className="px-2"
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {/* Render files table entries */}
+                {student.files?.map((file) => (
+                  <div key={`file-${file.id}`} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{file.module || 'File'}</h4>
+                        <p className="text-xs text-muted-foreground truncate">{file.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(file.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => viewDocument({ upload_path: file.file_path, file_name: file.file_name } as any)}
+                          className="px-2"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => downloadDocument({ upload_path: file.file_path, file_name: file.file_name } as any)}
                           className="px-2"
                         >
                           <Download className="h-3 w-3" />

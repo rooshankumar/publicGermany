@@ -170,9 +170,11 @@ export default function Applications() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Applications Management</h1>
-          <p className="text-muted-foreground">Track and manage all student university applications with live updates</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Applications Management</h1>
+            <p className="text-muted-foreground">Track and manage all student university applications with live updates</p>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -183,7 +185,7 @@ export default function Applications() {
               Search & Filter Applications
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Input
@@ -232,7 +234,7 @@ export default function Applications() {
           <CardHeader>
             <CardTitle>University Applications ({filteredApplications.length})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -279,11 +281,11 @@ export default function Applications() {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{app.university_name}</span>
+                              <span className="font-medium truncate max-w-[160px] md:max-w-[220px]">{app.university_name}</span>
                             </div>
                           </td>
                           <td className="p-3">
-                            <span className="text-sm">{app.program_name}</span>
+                            <span className="text-sm truncate block max-w-[160px] md:max-w-[220px]">{app.program_name}</span>
                           </td>
                           <td className="p-3">
                             <Badge className={`${getStatusColor(app.status)} flex items-center gap-1`}>
@@ -351,7 +353,7 @@ export default function Applications() {
             <CardHeader>
               <CardTitle>Manage Application - {selectedApp.university_name}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2">Application Details</h4>

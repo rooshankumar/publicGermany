@@ -173,9 +173,11 @@ export default function Requests() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Service Requests Management</h1>
-          <p className="text-muted-foreground">Track and manage all student service requests with live updates</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Service Requests Management</h1>
+            <p className="text-muted-foreground">Track and manage all student service requests with live updates</p>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -186,7 +188,7 @@ export default function Requests() {
               Search & Filter Requests
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Input
@@ -236,7 +238,7 @@ export default function Requests() {
           <CardHeader>
             <CardTitle>Service Requests ({filteredRequests.length})</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -270,7 +272,7 @@ export default function Requests() {
                               <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <p className="font-medium">{request.profiles?.full_name || 'Unknown Student'}</p>
+                              <p className="font-medium truncate max-w-[180px] md:max-w-[240px]">{request.profiles?.full_name || 'Unknown Student'}</p>
                               <p className="text-sm text-muted-foreground">
                                 ID: {request.profiles?.user_id?.slice(0, 8)}...
                               </p>

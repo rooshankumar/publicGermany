@@ -180,9 +180,11 @@ export default function Exports() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Data Export Center</h1>
-          <p className="text-muted-foreground">Export your data in CSV or JSON format for offline analysis</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Data Export Center</h1>
+            <p className="text-muted-foreground">Export your data in CSV or JSON format for offline analysis</p>
+          </div>
         </div>
 
         {/* Date Range Filter */}
@@ -193,7 +195,7 @@ export default function Exports() {
               Export Filters
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">From Date</label>
@@ -233,7 +235,7 @@ export default function Exports() {
                   </CardTitle>
                   <p className="text-xs md:text-sm text-muted-foreground">{option.description}</p>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 p-4 md:p-6">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => exportData(option.type, 'csv')}
@@ -268,7 +270,7 @@ export default function Exports() {
               Quick Export All Data
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             <p className="text-sm text-muted-foreground mb-4">
               Export all data types at once for comprehensive backup (Students, Applications, Service Requests)
             </p>

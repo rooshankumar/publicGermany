@@ -147,13 +147,13 @@ export default function AdminReviews() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-3xl font-bold">Reviews Moderation</h1>
             <p className="text-muted-foreground">Approve, feature, or remove student reviews</p>
           </div>
-          <div className="flex gap-2">
-            <Input placeholder="Search (name, text, service)" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="flex w-full sm:w-auto gap-2">
+            <Input className="flex-1" placeholder="Search (name, text, service)" value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={status} onValueChange={(v: any) => setStatus(v)}>
               <SelectTrigger className="w-44">
                 <SelectValue />
@@ -177,7 +177,7 @@ export default function AdminReviews() {
             <Card key={r.id} className="border-border/60">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{r.profile?.full_name || 'Anonymous'}</CardTitle>
+                  <CardTitle className="text-base truncate">{r.profile?.full_name || 'Anonymous'}</CardTitle>
                   <div className="flex items-center gap-2">
                     {r.is_approved ? (
                       <Badge variant="secondary">Approved</Badge>
@@ -196,7 +196,7 @@ export default function AdminReviews() {
                     <Badge variant="outline" className="capitalize">{r.service_type}</Badge>
                   </div>
                 )}
-                <p className="text-sm">"{r.review_text}"</p>
+                <p className="text-sm break-words truncate">"{r.review_text}"</p>
                 <div className="flex flex-wrap gap-2 pt-2">
                   {!r.is_approved && (
                     <Button size="sm" onClick={() => approve(r.id)}>Approve</Button>

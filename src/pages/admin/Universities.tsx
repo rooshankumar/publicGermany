@@ -292,7 +292,7 @@ export default function Universities() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Universities Management</h1>
             <p className="text-muted-foreground">Manage university database for student applications</p>
@@ -322,7 +322,7 @@ export default function Universities() {
           <CardHeader>
             <CardTitle>Search & Filter</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 md:p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
                 placeholder="Search universities or cities..."
@@ -353,7 +353,7 @@ export default function Universities() {
               Universities ({filteredUniversities.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -386,7 +386,7 @@ export default function Universities() {
                       <TableRow key={uni.id}>
                         <TableCell className="font-medium">
                           <div className="flex flex-col">
-                            <span>{uni.name}</span>
+                            <span className="truncate max-w-[220px] md:max-w-[320px]">{uni.name}</span>
                             {uni.website_url && (
                               <a
                                 href={uni.website_url}
@@ -400,7 +400,7 @@ export default function Universities() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{uni.city}, {uni.country}</TableCell>
+                        <TableCell className="truncate max-w-[160px] md:max-w-[220px]">{uni.city}, {uni.country}</TableCell>
                         <TableCell>
                           <Badge variant={uni.is_public ? 'default' : 'secondary'}>
                             {uni.is_public ? 'Public' : 'Private'}
