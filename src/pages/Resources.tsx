@@ -37,67 +37,67 @@ const Resources = () => {
   const [languageFilter, setLanguageFilter] = useState('all');
   const { toast } = useToast();
 
-  // Mock data - in real app this would come from Supabase
+  // 2025-compliant, updated resources
   const mockResources: Resource[] = [
     {
       id: '1',
-      title: 'APS Certificate Application Form',
-      description: 'Official form for APS certificate application with instructions',
-      category: 'forms',
-      file_url: '/resources/aps-form.pdf',
+      title: 'German National Visa Checklist 2025',
+      description: 'Mandatory 2025 checklist for student visa application, including updated biometric, APS, and financial requirements',
+      category: 'checklists',
+      file_url: '/resources/german-student-visa-checklist-2025.pdf',
       language: 'english',
-      tags: ['aps', 'certificate', 'application', 'form'],
-      created_at: '2024-01-15'
+      tags: ['visa', 'checklist', 'aps', 'blocked account'],
+      created_at: '2025-09-10'
     },
     {
       id: '2',
-      title: 'University Application Guide 2024',
-      description: 'Complete guide for applying to German universities including deadlines and requirements',
+      title: 'Online Student Visa Portal Guide',
+      description: 'Step-by-step instructions for applying for a German student visa online via the Consular Services Portal (2025)',
       category: 'guides',
-      external_url: 'https://daad.de/university-guide',
+      external_url: 'https://www.avanse.com/blog/germany-study-visa-process-a-guide-for-2025',
       language: 'english',
-      tags: ['university', 'application', 'guide', 'daad'],
-      created_at: '2024-01-10'
+      tags: ['visa', 'portal', 'online application', 'guide'],
+      created_at: '2025-09-01'
     },
     {
       id: '3',
-      title: 'Statement of Purpose Template',
-      description: 'Professional template for writing Statement of Purpose for German universities',
-      category: 'templates',
-      file_url: '/resources/sop-template.docx',
+      title: '2025 German University Application Timeline',
+      description: 'Detailed timeline and deadlines for 2025 intakes at major German universities, including task planning',
+      category: 'guides',
+      external_url: 'https://www.gyandhan.com/blogs/germany-universities-application-deadline',
       language: 'english',
-      tags: ['sop', 'template', 'writing', 'application'],
-      created_at: '2024-01-08'
+      tags: ['timeline', 'deadlines', 'application', 'universities'],
+      created_at: '2025-06-18'
     },
     {
       id: '4',
-      title: 'Visa Requirements Checklist',
-      description: 'Complete checklist of documents required for German student visa',
-      category: 'checklists',
-      file_url: '/resources/visa-checklist.pdf',
+      title: 'Statement of Purpose Template (Visa/University)',
+      description: 'Modern template for crafting SOPs for German university and visa applications (2025 intake)',
+      category: 'templates',
+      file_url: '/resources/sop-template-2025.docx',
       language: 'english',
-      tags: ['visa', 'checklist', 'documents', 'germany'],
-      created_at: '2024-01-05'
+      tags: ['sop', 'template', 'statement', '2025'],
+      created_at: '2025-06-01'
     },
     {
       id: '5',
-      title: 'Studienkolleg Aufnahmeprüfung Vorbereitung',
-      description: 'Preparation guide for Studienkolleg entrance examination',
-      category: 'guides',
-      file_url: '/resources/stk-preparation-de.pdf',
-      language: 'german',
-      tags: ['studienkolleg', 'test', 'preparation', 'entrance'],
-      created_at: '2024-01-03'
+      title: 'APS Certificate 2025 Guidelines',
+      description: 'Official APS 2025 process, eligibility, and application instructions for Indian applicants',
+      category: 'requirements',
+      external_url: 'https://www.aps-india.de/en/',
+      language: 'english',
+      tags: ['aps', 'certificate', 'eligibility', 'process'],
+      created_at: '2025-03-14'
     },
     {
       id: '6',
       title: 'CV Template for German Applications',
-      description: 'Europass-style CV template specifically designed for German university applications',
+      description: 'Latest Europass-style CV template for German university admissions',
       category: 'templates',
-      file_url: '/resources/cv-template-german.docx',
+      file_url: '/resources/cv-template-german-2025.docx',
       language: 'english',
-      tags: ['cv', 'template', 'europass', 'application'],
-      created_at: '2024-01-01'
+      tags: ['cv', 'europass', 'template'],
+      created_at: '2025-01-15'
     }
   ];
 
@@ -151,11 +151,11 @@ const Resources = () => {
 
   const handleDownload = (resource: Resource) => {
     if (resource.file_url) {
-      // In a real app, this would be a proper download
       toast({
         title: "Download started",
         description: `Downloading ${resource.title}...`,
       });
+      // window.location.href = resource.file_url; // Real download
     } else if (resource.external_url) {
       window.open(resource.external_url, '_blank');
     }
@@ -167,10 +167,9 @@ const Resources = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
           <p className="text-muted-foreground">
-            Access important forms, guides, and templates for your Germany study journey
+            Access updated forms, checklists, and guides for German university and visa applications (2025)
           </p>
         </div>
-
         {/* Search and Filters */}
         <Card>
           <CardHeader>
@@ -217,10 +216,8 @@ const Resources = () => {
             </div>
           </CardContent>
         </Card>
-
         {/* Resource Fetcher Component */}
         <ResourceFetcher />
-
         {/* Resources Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
@@ -302,7 +299,6 @@ const Resources = () => {
             ))
           )}
         </div>
-
         {/* Quick Links Section */}
         <Card>
           <CardHeader>
@@ -328,7 +324,7 @@ const Resources = () => {
                 className="h-20 flex-col gap-2"
                 asChild
               >
-                <a href="https://www.aps.org.cn" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.aps-india.de/en/" target="_blank" rel="noopener noreferrer">
                   <FileText className="h-5 w-5" />
                   <span className="text-xs text-center">APS Portal</span>
                 </a>
@@ -338,7 +334,7 @@ const Resources = () => {
                 className="h-20 flex-col gap-2"
                 asChild
               >
-                <a href="https://www.uni-assist.de" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.uni-assist.de/en/" target="_blank" rel="noopener noreferrer">
                   <BookOpen className="h-5 w-5" />
                   <span className="text-xs text-center">Uni-assist</span>
                 </a>
@@ -348,7 +344,7 @@ const Resources = () => {
                 className="h-20 flex-col gap-2"
                 asChild
               >
-                <a href="https://www.germany.travel/en/ms/german-missions/visa.html" target="_blank" rel="noopener noreferrer">
+                <a href="https://india.diplo.de/in-en/service/2552164-2552164" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-5 w-5" />
                   <span className="text-xs text-center">Visa Info</span>
                 </a>
