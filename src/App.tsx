@@ -14,6 +14,7 @@ const Applications = lazy(() => import("./pages/Applications"));
 const Services = lazy(() => import("./pages/Services"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
+const Help = lazy(() => import("./pages/Help"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Requests = lazy(() => import("./pages/admin/Requests"));
@@ -86,11 +87,10 @@ const AppRoutes = () => {
             <Resources />
           </ProtectedRoute>
         } />
-        <Route path="/contact" element={
-          <ProtectedRoute disallowRole="admin">
-            <Contact />
-          </ProtectedRoute>
-        } />
+        {/* Make Contact public so it's accessible from the home page */}
+        <Route path="/contact" element={<Contact />} />
+        {/* Public Help Center */}
+        <Route path="/help" element={<Help />} />
         <Route path="/admin" element={
           <ProtectedRoute requiredRole="admin">
             <AdminDashboard />

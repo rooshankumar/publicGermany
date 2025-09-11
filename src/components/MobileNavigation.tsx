@@ -14,7 +14,8 @@ import {
   Settings,
   Users,
   FileBarChart,
-  LogOut
+  LogOut,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,13 +32,19 @@ const MobileNavigation = () => {
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'University Applications', icon: GraduationCap },
+    { href: '/resources', label: 'Resources', icon: FileText },
     { href: '/documents', label: 'Documents', icon: FileText },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
   const adminNavItems = [
-    { href: '/admin', label: 'Admin Panel', icon: Users },
+    { href: '/admin', label: 'Dashboard', icon: Home },
+    { href: '/admin/students', label: 'Students', icon: Users },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
+    { href: '/admin/applications', label: 'Applications', icon: GraduationCap },
+    { href: '/admin/payments', label: 'Payments', icon: FileText },
+    { href: '/admin/exports', label: 'Exports', icon: Settings },
+    { href: '/admin/reviews', label: 'Reviews', icon: Star },
   ];
 
   const navItems = isAdmin ? adminNavItems : studentNavItems;

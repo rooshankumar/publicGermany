@@ -117,6 +117,8 @@ function Navbar() {
           <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
           <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Success Stories</a>
           <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">FAQ</a>
+          <a href="/help" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Help Center</a>
+          <a href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Contact</a>
           <Button variant="outline" asChild>
             <a href="/auth">Sign In</a>
           </Button>
@@ -142,6 +144,8 @@ function Navbar() {
             <a href="#how-it-works" className="block text-sm font-medium text-muted-foreground hover:text-primary">How It Works</a>
             <a href="#testimonials" className="block text-sm font-medium text-muted-foreground hover:text-primary">Success Stories</a>
             <a href="#faq" className="block text-sm font-medium text-muted-foreground hover:text-primary">FAQ</a>
+            <a href="/help" className="block text-sm font-medium text-muted-foreground hover:text-primary">Help Center</a>
+            <a href="/contact" className="block text-sm font-medium text-muted-foreground hover:text-primary">Contact</a>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
                 <a href="/auth">Sign In</a>
@@ -646,8 +650,8 @@ function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">Support</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
+              <li><a href="/help" className="hover:text-primary transition-colors">Help Center</a></li>
+              <li><a href="/contact" className="hover:text-primary transition-colors">Contact Us</a></li>
               <li><a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a></li>
               <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
             </ul>

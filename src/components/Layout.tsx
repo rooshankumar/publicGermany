@@ -34,6 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'University Applications', icon: GraduationCap },
+    { href: '/resources', label: 'Resources', icon: FileText },
     { href: '/documents', label: 'Documents', icon: FileText },
     { href: '/profile', label: 'Profile', icon: User },
   ];

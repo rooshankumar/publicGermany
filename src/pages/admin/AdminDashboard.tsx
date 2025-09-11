@@ -14,7 +14,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Settings
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -344,6 +345,12 @@ const AdminDashboard = () => {
                 <Link to="/admin/reviews">
                   <TrendingUp className="h-6 w-6 mb-2" />
                   Moderate Reviews
+                </Link>
+              </Button>
+              <Button asChild className="h-20 flex-col" variant="outline">
+                <Link to="/admin/exports">
+                  <Settings className="h-6 w-6 mb-2" />
+                  Exports
                 </Link>
               </Button>
             </div>
