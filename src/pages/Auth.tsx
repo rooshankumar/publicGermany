@@ -135,15 +135,15 @@ const Auth = () => {
 
             <div className="flex items-center justify-center lg:justify-start gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">1000+</div>
+                <div className="text-2xl font-bold text-primary">50+</div>
                 <div className="text-xs text-muted-foreground">Students Guided</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-success">98%</div>
+                <div className="text-2xl font-bold text-success">99%</div>
                 <div className="text-xs text-muted-foreground">Success Rate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-warning">15+</div>
+                <div className="text-2xl font-bold text-warning">1.5+</div>
                 <div className="text-xs text-muted-foreground">Years Experience</div>
               </div>
             </div>
@@ -354,7 +354,7 @@ const Auth = () => {
                         </div>
                       </div>
 
-                      <Button 
+                      <Button S
                         type="button" 
                         variant="outline" 
                         className="w-full h-11" 
@@ -398,7 +398,7 @@ const Auth = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Trusted by <span className="font-semibold text-primary">1000+</span> students worldwide
+                Trusted by <span className="font-semibold text-primary">50+</span> students worldwide
               </p>
             </div>
             <div className="mt-4 text-center text-xs text-muted-foreground">
