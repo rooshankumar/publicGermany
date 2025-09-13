@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -24,34 +25,47 @@ const Documents = () => {
   });
   // Document name UI removed per user request
 
-  // Fetch user's documents with status and keep in sync via realtime
-  useEffect(() => {
-    const fetchUserDocs = async () => {
-      if (!profile?.user_id) return;
-      try {
-        const { data, error } = await supabase
-          .from('documents')
-          .select('id, category, file_url, upload_path, status')
-          .eq('user_id', profile.user_id);
-        if (error) throw error;
-        const map: Record<string, any | null> = {};
-        DOCUMENTS.forEach(d => { map[d.key] = null; });
-        (data || []).forEach((d: any) => {
-          if (d?.category && d.file_url) map[d.category] = d;
-        });
-        setUserDocs(map);
-      } catch (e) {
-        // Initialize empty map on error
-        const map: Record<string, any | null> = {};
-        DOCUMENTS.forEach(d => { map[d.key] = null; });
-        setUserDocs(map);
-      }
+  const queryClient = useQueryClient();
+
+  const fetchUserDocs = async () => {
+    if (!profile?.user_id) return [] as any[];
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, category, file_url, upload_path, status')
+      .eq('user_id', profile.user_id);
+    if (error) throw error;
+    return data || [];
+  };
+
+  const docsQuery = useQuery({
+    queryKey: ['documents', profile?.user_id],
+    queryFn: fetchUserDocs,
+    enabled: !!profile?.user_id,
+    onSuccess: (data: any[]) => {
+      const map: Record<string, any | null> = {};
+      DOCUMENTS.forEach(d => { map[d.key] = null; });
+      (data || []).forEach((d: any) => {
+        if (d?.category && d.file_url) map[d.category] = d;
+      });
+      setUserDocs(map);
+    }
+  });
+
+  // Debounce utility
+  const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
+    let t: any;
+    return (...args: Parameters<F>) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
     };
-    fetchUserDocs();
+  };
+
+  // Realtime refetch with debounce
+  useEffect(() => {
     if (!profile?.user_id) return;
     const channel = supabase
       .channel(`documents-user-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => fetchUserDocs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, debounce(() => docsQuery.refetch(), 400))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile?.user_id]);
@@ -79,12 +93,7 @@ const Documents = () => {
     if (!profile?.user_id) return;
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from('documents')
-        .select('id')
-        .eq('user_id', profile.user_id)
-        .limit(1);
-      if (error) throw error;
+      await docsQuery.refetch();
       toast({ title: 'Documents refreshed', description: 'Your document list has been updated.' });
     } catch (error) {
       console.error('Error refreshing documents:', error);
@@ -101,10 +110,10 @@ const Documents = () => {
 
   return (
     <Layout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 pb-20 md:pb-0">
         <div className="flex flex-col space-y-1.5 sm:space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Documents</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="hidden md:block text-2xl sm:text-3xl font-bold tracking-tight">My Documents</h1>
+          <p className="hidden md:block text-sm sm:text-base text-muted-foreground">
             Upload and manage all your required documents in one place
           </p>
         </div>
@@ -195,6 +204,14 @@ const Documents = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Mobile sticky action bar */}
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 py-3 flex items-center justify-center">
+            <Button className="w-full" variant="default" size="sm" onClick={refreshDocuments} disabled={loading}>
+              {loading ? 'Refreshing…' : 'Refresh Status'}
+            </Button>
+          </div>
+        </div>
       </div>
     </Layout>
   );

@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, 
@@ -40,56 +42,38 @@ export default function StudentProfile() {
   const { toast } = useToast();
 
   const fetchStudentProfile = async () => {
-    if (!studentId) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          applications(*),
-          service_requests(*)
-        `)
-        .eq('user_id', studentId)
-        .single();
+    if (!studentId) return null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(`
+        *,
+        applications(*),
+        service_requests(*)
+      `)
+      .eq('user_id', studentId)
+      .single();
+    if (error) throw error;
 
-      if (error) throw error;
-
-      // Fetch documents via admin RPC (security definer) to bypass RLS reliably
-      let docsData: any[] = [];
-      const { data: docsRpc, error: docsRpcErr } = await (supabase as any)
-        .rpc('admin_get_user_documents', { p_user_id: studentId });
-      if (!docsRpcErr && Array.isArray(docsRpc)) {
-        docsData = docsRpc;
-      } else {
-        // Fallback safe path (may be blocked by RLS if admin policy misconfigured)
-        const { data: docsDirect } = await supabase
-          .from('documents' as any)
-          .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,status,reviewed_by,reviewed_at,admin_notes')
-          .eq('user_id', studentId);
-        docsData = docsDirect || [];
-      }
-
-      // Fetch files uploaded via files table (DocumentUpload component)
-      const { data: filesData } = await supabase
-        .from('files' as any)
-        .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
+    // Documents via RPC (if present) else fallback
+    let docsData: any[] = [];
+    const { data: docsRpc, error: docsRpcErr } = await (supabase as any)
+      .rpc('admin_get_user_documents', { p_user_id: studentId });
+    if (!docsRpcErr && Array.isArray(docsRpc)) {
+      docsData = docsRpc;
+    } else {
+      const { data: docsDirect } = await supabase
+        .from('documents' as any)
+        .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,status,reviewed_by,reviewed_at,admin_notes')
         .eq('user_id', studentId);
-
-      // Resolve user's email via Edge Function (service role)
-      await resolveEmail();
-
-      setStudent({ ...(data as any), documents: docsData || [], files: filesData || [] });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch student profile",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      docsData = docsDirect || [];
     }
+
+    const { data: filesData } = await supabase
+      .from('files' as any)
+      .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
+      .eq('user_id', studentId);
+
+    return { ...(data as any), documents: docsData || [], files: filesData || [] } as StudentProfile;
   };
 
   const updateDocumentStatus = async (docId: string, nextStatus: 'pending' | 'approved' | 'rejected') => {
@@ -118,7 +102,7 @@ export default function StudentProfile() {
             .eq('id', docId)
             .select('id');
           if (err2) throw err2;
-          toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'secondary' });
+          toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'default' });
           fetchStudentProfile();
           return;
         } catch (e2: any) {
@@ -145,23 +129,35 @@ export default function StudentProfile() {
     }
   };
 
+  const studentQuery = useQuery({
+    queryKey: ['admin_student_profile', studentId],
+    queryFn: fetchStudentProfile,
+    enabled: !!studentId,
+  });
+
   useEffect(() => {
-    fetchStudentProfile();
-  }, [studentId]);
+    if (studentQuery.isSuccess) {
+      setStudent((studentQuery.data as any) || null);
+      resolveEmail();
+      setLoading(false);
+    } else if (studentQuery.isError) {
+      toast({ title: 'Error', description: 'Failed to fetch student profile', variant: 'destructive' });
+      setLoading(false);
+    }
+  }, [studentQuery.status]);
 
   // Realtime updates for student's documents
+  // Debounced realtime updates for documents under this student
   useEffect(() => {
     if (!studentId) return;
+    const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
+      let t: any; return (...args: Parameters<F>) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+    };
     const channel = supabase
       .channel(`student-docs-${studentId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, () => {
-        fetchStudentProfile();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [studentId]);
 
   const downloadDocument = async (doc: any) => {
@@ -424,7 +420,8 @@ export default function StudentProfile() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            {/* Desktop / Tablet list */}
+            <div className="hidden md:block space-y-2">
               {DOCUMENTS.map((d) => {
                 const doc = (student.documents || []).find((x) => x.category === d.key);
                 return (
@@ -438,37 +435,16 @@ export default function StudentProfile() {
                     <div className="flex items-center gap-2">
                       {doc ? (
                         <>
-                          {/* Current status badge */}
-                          <Badge variant={
-                            (doc as any).status === 'approved' ? 'secondary' :
-                            (doc as any).status === 'rejected' ? 'destructive' : 'outline'
-                          } className="capitalize">
+                          <Badge variant={(doc as any).status === 'approved' ? 'secondary' : (doc as any).status === 'rejected' ? 'destructive' : 'outline'} className="capitalize">
                             {(doc as any).status || 'pending'}
                           </Badge>
-                          {/* Actions: view/download */}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => viewDocument(doc as any)}
-                            className="px-2"
-                            title="View"
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => viewDocument(doc as any)} className="px-2" title="View">
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => downloadDocument(doc as any)}
-                            className="px-2"
-                            title="Download"
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2" title="Download">
                             <Download className="h-3 w-3" />
                           </Button>
-                          {/* Status dropdown */}
-                          <Select
-                            value={(doc as any).status || 'pending'}
-                            onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}
-                          >
+                          <Select value={(doc as any).status || 'pending'} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
                             <SelectTrigger className="w-32 h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
@@ -486,6 +462,57 @@ export default function StudentProfile() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Mobile: Accordion list */}
+            <div className="md:hidden">
+              <Accordion type="single" collapsible className="w-full">
+                {DOCUMENTS.map((d) => {
+                  const doc = (student.documents || []).find((x) => x.category === d.key);
+                  const status = (doc as any)?.status || 'pending';
+                  return (
+                    <AccordionItem key={d.key} value={d.key}>
+                      <AccordionTrigger className="text-left">
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span className="font-medium truncate">{d.label.replace('📄 ', '')}</span>
+                          {doc ? (
+                            <Badge variant={status === 'approved' ? 'secondary' : status === 'rejected' ? 'destructive' : 'outline'} className="capitalize ml-2">
+                              {status}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Missing</Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {doc ? (
+                          <div className="space-y-3 pt-2">
+                            <div className="text-xs text-muted-foreground truncate">{doc.file_name}</div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => viewDocument(doc as any)} className="px-2">View</Button>
+                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2">Download</Button>
+                            </div>
+                            <div className="pt-1">
+                              <Select value={status} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
+                                <SelectTrigger className="h-9 text-xs w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="approved">Approve</SelectItem>
+                                  <SelectItem value="rejected">Reject</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Not uploaded</div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
             </div>
           </CardContent>
         </Card>

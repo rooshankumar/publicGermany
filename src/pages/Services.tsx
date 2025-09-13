@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/types/database.types';
 import Layout from '@/components/Layout';
@@ -19,7 +20,7 @@ type Review = Database['public']['Tables']['reviews']['Row'] & {
   profile?: {
     full_name?: string | null;
     avatar_url?: string | null;
-  };
+  }
 };
 
 interface ServiceRequest {
@@ -145,17 +146,27 @@ const Services = () => {
       return a.name.localeCompare(b.name);
     });
 
+  // Debounce utility
+  const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
+    let t: any;
+    return (...args: Parameters<F>) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  };
+
   // Fetch current user's payments
-  const fetchUserPayments = async () => {
+  async function fetchUserPayments() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) return [] as any[];
     const { data, error } = await (supabase as any)
       .from('service_payments')
-      .select('*')
+      .select('id, service_id, amount, currency, proof_url, status, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    if (!error) setUserPayments(data || []);
-  };
+    if (error) throw error;
+    return data || [];
+  }
 
   // Map service display name to DB service_id
   const nameToId = (name: string) => {
@@ -179,26 +190,52 @@ const Services = () => {
     return filtered[0];
   };
 
-  useEffect(() => {
-    fetchServiceRequests();
-    fetchReviews();
-    // Fetch user's payments
-    fetchUserPayments();
+  // React Query hooks
+  const paymentsQuery = useQuery({
+    queryKey: ['service_payments', user?.id],
+    queryFn: fetchUserPayments,
+  });
 
+  const serviceRequestsQuery = useQuery({
+    queryKey: ['service_requests', user?.id],
+    queryFn: fetchServiceRequests,
+  });
+
+  const reviewsQuery = useQuery({
+    queryKey: ['reviews_public_and_me', user?.id],
+    queryFn: fetchReviews,
+  });
+
+  // Sync local state from query data
+  useEffect(() => {
+    if (paymentsQuery.data) setUserPayments(paymentsQuery.data as any[]);
+  }, [paymentsQuery.data]);
+
+  useEffect(() => {
+    if ((serviceRequestsQuery.data as any[])) setServiceRequests((serviceRequestsQuery.data as any[]) || []);
+  }, [serviceRequestsQuery.data]);
+
+  useEffect(() => {
+    const d: any = reviewsQuery.data as any;
+    if (d && typeof d === 'object') {
+      setReviews(d.publicData || []);
+      setMyReviews(d.mineData || []);
+    }
+  }, [reviewsQuery.data]);
+
+  useEffect(() => {
     // Realtime sync for payments for this user
     const paymentsChannel = supabase
       .channel('service-payments-user')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
-        fetchUserPayments();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, debounce(() => { paymentsQuery.refetch(); }, 400))
       .subscribe();
 
     const requestsChannel = supabase
       .channel('service-requests-user')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, debounce(() => {
         // Refresh requests so status & deliverables are up-to-date
-        fetchServiceRequests();
-      })
+        serviceRequestsQuery.refetch();
+      }, 400))
       .subscribe();
 
     // Realtime sync for this user's reviews (keep myReviews up to date)
@@ -211,10 +248,10 @@ const Services = () => {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'reviews', filter: `user_id=eq.${user.id}` },
-          () => {
+          debounce(() => {
             // Refresh both public and my reviews to reflect any change immediately
-            fetchReviews();
-          }
+            reviewsQuery.refetch();
+          }, 400)
         )
         .subscribe();
     })();
@@ -258,42 +295,42 @@ const Services = () => {
 
   // (Removed) QR payment and proof upload flow. Users should email for payments instead.
 
-  const fetchReviews = async () => {
+  async function fetchReviews() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return { publicData: [], mineData: [] } as any;
 
-      // 1) Fetch public approved reviews
+      // 1) Fetch public approved reviews (with minimal fields + profile join if available)
       const { data: publicData, error: publicErr } = await (supabase as any)
         .from('reviews')
-        .select('*')
+        .select(`
+          id, user_id, rating, review_text, service_type, is_approved, is_featured, created_at,
+          profiles:profiles!inner(user_id, full_name, avatar_url)
+        `)
         .eq('is_approved', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
       if (publicErr) throw publicErr;
 
-      // 2) Fetch this user's reviews (approved or pending)
+      // 2) Fetch this user's reviews (approved or pending) with profile
       const { data: mineData, error: mineErr } = await (supabase as any)
         .from('reviews')
-        .select('*')
+        .select(`
+          id, user_id, rating, review_text, service_type, is_approved, is_featured, created_at,
+          profiles:profiles!inner(user_id, full_name, avatar_url)
+        `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
       if (mineErr) throw mineErr;
 
-      // 3) Fetch the profiles for all user_ids present
-      const userIds = [...new Set([...(publicData?.map(r => r.user_id) || []), ...(mineData?.map(r => r.user_id) || [])])];
-      const { data: profilesData, error: profilesError } = await (supabase as any)
-        .from('profiles')
-        .select('user_id, full_name, avatar_url')
-        .in('user_id', userIds);
-      if (profilesError) throw profilesError;
-
-      const withProfile = (arr: any[] = []) => (arr || []).map((review: any) => ({
-        ...review,
-        profile: profilesData?.find(p => p.user_id === review.user_id) || {}
+      // Normalize profile shape to existing UI expectations
+      const mapWithProfile = (arr: any[] = []) => (arr || []).map((r: any) => ({
+        ...r,
+        profile: r.profiles ? { full_name: r.profiles.full_name, avatar_url: r.profiles.avatar_url } : {},
       }));
 
-      setReviews(withProfile(publicData));
-      setMyReviews(withProfile(mineData));
+      return { publicData: mapWithProfile(publicData), mineData: mapWithProfile(mineData) };
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
@@ -301,6 +338,7 @@ const Services = () => {
         description: 'Failed to load reviews',
         variant: 'destructive',
       });
+      return { publicData: [], mineData: [] } as any;
     }
   };
 
@@ -376,19 +414,19 @@ const Services = () => {
     }
   };
 
-  const fetchServiceRequests = async () => {
+  async function fetchServiceRequests() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return [] as any[];
       
       const { data, error } = await supabase
         .from('service_requests')
-        .select('*')
+        .select('id, user_id, service_type, service_price, service_currency, request_details, preferred_timeline, status, admin_response, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setServiceRequests(data || []);
+      return data || [];
     } catch (error) {
       console.error('Error fetching service requests:', error);
       toast({
@@ -396,6 +434,7 @@ const Services = () => {
         description: "Failed to fetch service requests",
         variant: "destructive",
       });
+      return [] as any[];
     } finally {
       setLoading(false);
     }
@@ -573,12 +612,12 @@ const Services = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 space-y-16">
         {/* Services Section */}
         <div className="space-y-6 md:space-y-10">
           <div className="text-center space-y-3">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Our Services</h1>
-            <p className="text-muted-foreground text-lg">Professional assistance to help you succeed in your Germany study journey</p>
+            <h1 className="hidden md:block text-4xl md:text-5xl font-bold tracking-tight">Our Services</h1>
+            <p className="hidden md:block text-muted-foreground text-lg">Professional assistance to help you succeed in your Germany study journey</p>
           </div>
           {/* Controls */}
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -632,7 +671,10 @@ const Services = () => {
             <CardHeader>
               <CardTitle>Payments</CardTitle>
               <CardDescription>
-                For payments, please communicate through email.
+                For payments, please contact us via email at{' '}
+                <a href="mailto:roshlingua@gmail.com" className="underline">
+                  roshlingua@gmail.com
+                </a>.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -995,6 +1037,12 @@ const Services = () => {
             </form>
           </DialogContent>
         </Dialog>
+        {/* Mobile sticky action bar */}
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 py-3 flex items-center justify-center">
+            <Button className="w-full" onClick={() => setShowRequestDialog(true)}>Request Service</Button>
+          </div>
+        </div>
       </div>
     </Layout>
   );

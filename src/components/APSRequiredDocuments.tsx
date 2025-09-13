@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, DragEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CheckCircle, Upload, Trash2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +52,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
     try {
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select('id, category, file_url, file_name, upload_path, status')
         .eq('user_id', profile.user_id);
       
       if (error) throw error;
@@ -228,15 +229,14 @@ function APSRequiredDocuments({ displayName }: APSProps) {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto pb-16 md:pb-0">
       <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
-        <h2 className="text-lg md:text-xl font-semibold mb-6">Document Upload</h2>
-        <div className="flex flex-col gap-4">
+        <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Document Upload</h2>
+
+        {/* Desktop/Tablet: existing list */}
+        <div className="hidden md:flex flex-col gap-4">
           {DOCUMENTS.map(doc => (
-            <div
-              key={doc.key}
-              className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border border-gray-100 shadow-sm bg-gray-50"
-            >
+            <div key={doc.key} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border border-gray-100 shadow-sm bg-gray-50">
               <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium">
                 <span>{doc.label}</span>
                 <span className="text-xs text-muted-foreground mt-1">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</span>
@@ -247,69 +247,90 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="text-green-500 h-5 w-5" />
                       <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
-                      {/* Status badge */}
                       <span className="ml-1">
-                        <span className={
-                          `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ` +
-                          ((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' :
-                           (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')
-                        }>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' : (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}`}>
                           {((docs[doc.key] as any)?.status || 'pending')}
                         </span>
                       </span>
                     </div>
                     <div className="flex items-center gap-1 ml-auto">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="px-2"
+                      <Button size="sm" variant="outline" className="px-2"
                         onClick={async () => {
                           try {
-                            const { data } = await supabase.storage
-                              .from('documents')
-                              .createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
-                            if (data?.signedUrl) {
-                              window.open(data.signedUrl, '_blank');
-                            } else {
-                              window.open(docs[doc.key]!.file_url, '_blank');
-                            }
-                          } catch (error) {
-                            window.open(docs[doc.key]!.file_url, '_blank');
-                          }
+                            const { data } = await supabase.storage.from('documents').createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
+                            if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
+                          } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
                         }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(doc.key)}
-                        disabled={loading === doc.key}
-                        className="px-2"
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key} className="px-2">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <DocumentDropZone
-                    docKey={doc.key}
-                    onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
-                    onUpload={() => {
-                      if (selectedFiles[doc.key]) {
-                        handleUpload(doc.key, selectedFiles[doc.key]!);
-                        setSelectedFiles(prev => ({ ...prev, [doc.key]: null }));
-                      }
-                    }}
-                    selectedFile={selectedFiles[doc.key]}
-                    loading={loading === doc.key}
-                    maxFiles={doc.maxFiles}
+                  <DocumentDropZone docKey={doc.key} onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
+                    onUpload={() => { if (selectedFiles[doc.key]) { handleUpload(doc.key, selectedFiles[doc.key]!); setSelectedFiles(prev => ({ ...prev, [doc.key]: null })); } }}
+                    selectedFile={selectedFiles[doc.key]} loading={loading === doc.key} maxFiles={doc.maxFiles}
                   />
                 )}
               </div>
             </div>
           ))}
         </div>
+
+        {/* Mobile: Accordion */}
+        <div className="md:hidden">
+          <Accordion type="single" collapsible className="w-full">
+            {DOCUMENTS.map(doc => (
+              <AccordionItem key={doc.key} value={doc.key}>
+                <AccordionTrigger className="text-left">
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="font-medium truncate">{doc.label}</span>
+                    {docs[doc.key] ? (
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' : (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}`}>
+                        {((docs[doc.key] as any)?.status || 'pending')}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700">Missing</span>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="text-xs text-muted-foreground mb-2">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</div>
+                  {docs[doc.key] ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="text-green-500 h-5 w-5" />
+                        <span className="truncate text-sm font-medium">{docs[doc.key]!.file_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" className="px-3"
+                          onClick={async () => {
+                            try {
+                              const { data } = await supabase.storage.from('documents').createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
+                              if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
+                            } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button size="sm" variant="ghost" className="px-3" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key}>Delete</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <DocumentDropZone docKey={doc.key} onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
+                      onUpload={() => { if (selectedFiles[doc.key]) { handleUpload(doc.key, selectedFiles[doc.key]!); setSelectedFiles(prev => ({ ...prev, [doc.key]: null })); } }}
+                      selectedFile={selectedFiles[doc.key]} loading={loading === doc.key} maxFiles={doc.maxFiles}
+                    />
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+
       </div>
     </div>
   );

@@ -13,9 +13,9 @@ export default function ReviewsPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   return (
-    <div className="container py-8">
+    <div className="container py-8 pb-20 md:pb-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-3xl font-bold tracking-tight">Student Reviews</h1>
           <p className="text-muted-foreground mt-2">
             Read what our students say about their experience
@@ -75,6 +75,15 @@ export default function ReviewsPage() {
           <ReviewList serviceType="counseling" />
         </TabsContent>
       </Tabs>
+
+      {/* Mobile sticky action bar */}
+      {user && (
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 py-3 flex items-center justify-center">
+            <Button className="w-full" onClick={() => setShowReviewForm(true)}>Write a Review</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
