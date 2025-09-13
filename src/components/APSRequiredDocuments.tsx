@@ -31,6 +31,7 @@ interface DocumentMeta {
   file_url: string;
   file_name: string;
   upload_path?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 interface APSProps {
@@ -84,6 +85,13 @@ function APSRequiredDocuments({ displayName }: APSProps) {
 
   useEffect(() => {
     fetchDocs();
+    // Realtime subscription to reflect admin status updates immediately
+    if (!profile?.user_id) return;
+    const channel = supabase
+      .channel(`docs-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => fetchDocs())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [profile?.user_id]);
 
   const handleUpload = async (key: string, file: File) => {
@@ -141,6 +149,8 @@ function APSRequiredDocuments({ displayName }: APSProps) {
           file_type: file.type,
           upload_path: filePath,
           updated_at: new Date().toISOString(),
+          // Reset status to pending on new upload so admin can review again
+          status: 'pending',
         })
         .select()
         .single();
@@ -237,6 +247,16 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="text-green-500 h-5 w-5" />
                       <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
+                      {/* Status badge */}
+                      <span className="ml-1">
+                        <span className={
+                          `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ` +
+                          ((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' :
+                           (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')
+                        }>
+                          {((docs[doc.key] as any)?.status || 'pending')}
+                        </span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 ml-auto">
                       <Button 

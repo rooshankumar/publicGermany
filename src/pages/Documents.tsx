@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 const Documents = () => {
-  const { profile, refetchProfile } = useAuth();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [userDocs, setUserDocs] = useState<Record<string, any | null>>({});
   // Tabs removed; simplifying to a single upload section
   const [documentStats, setDocumentStats] = useState({
     total: 0,
@@ -23,53 +24,71 @@ const Documents = () => {
   });
   // Document name UI removed per user request
 
-  // Calculate document statistics using required DOCUMENTS list for accuracy
+  // Fetch user's documents with status and keep in sync via realtime
   useEffect(() => {
-    const docs = (profile as any)?.documents as any[] | undefined;
+    const fetchUserDocs = async () => {
+      if (!profile?.user_id) return;
+      try {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('id, category, file_url, upload_path, status')
+          .eq('user_id', profile.user_id);
+        if (error) throw error;
+        const map: Record<string, any | null> = {};
+        DOCUMENTS.forEach(d => { map[d.key] = null; });
+        (data || []).forEach((d: any) => {
+          if (d?.category && d.file_url) map[d.category] = d;
+        });
+        setUserDocs(map);
+      } catch (e) {
+        // Initialize empty map on error
+        const map: Record<string, any | null> = {};
+        DOCUMENTS.forEach(d => { map[d.key] = null; });
+        setUserDocs(map);
+      }
+    };
+    fetchUserDocs();
+    if (!profile?.user_id) return;
+    const channel = supabase
+      .channel(`documents-user-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => fetchUserDocs())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.user_id]);
+
+  // Calculate document statistics using status
+  useEffect(() => {
     const requiredKeys = DOCUMENTS.map(d => d.key);
     const total = requiredKeys.length;
-    let uploaded = 0;
-    if (Array.isArray(docs)) {
-      const byCategory = new Map<string, any>();
-      for (const d of docs) {
-        if (d?.category && requiredKeys.includes(d.category) && (d.file_url || d.upload_path)) {
-          byCategory.set(d.category, d);
-        }
-      }
-      uploaded = byCategory.size;
-    }
-    const pending = Math.max(0, total - uploaded);
-    const rejected = 0; // not tracked
-    setDocumentStats({ total, uploaded, pending, rejected });
-  }, [profile]);
+    let approved = 0;
+    let pending = 0;
+    let rejected = 0;
+    requiredKeys.forEach((k) => {
+      const d = userDocs[k] as any | null;
+      if (!d) return; // not uploaded
+      const st = (d.status || 'pending') as string;
+      if (st === 'approved') approved += 1;
+      else if (st === 'rejected') rejected += 1;
+      else pending += 1;
+    });
+    setDocumentStats({ total, uploaded: approved, pending, rejected });
+  }, [userDocs]);
 
   // Refresh document list
   const refreshDocuments = async () => {
     if (!profile?.user_id) return;
-    
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('documents')
-        .select('*')
-        .eq('user_id', profile.user_id);
-      
+        .select('id')
+        .eq('user_id', profile.user_id)
+        .limit(1);
       if (error) throw error;
-      
-      // Update profile with fresh documents
-      await refetchProfile();
-      
-      toast({
-        title: "Documents refreshed",
-        description: "Your document list has been updated.",
-      });
+      toast({ title: 'Documents refreshed', description: 'Your document list has been updated.' });
     } catch (error) {
       console.error('Error refreshing documents:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh documents. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to refresh documents. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -104,7 +123,7 @@ const Documents = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Uploaded</CardTitle>
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
               <FileCheck className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>

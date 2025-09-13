@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, 
   User, 
@@ -65,7 +66,7 @@ export default function StudentProfile() {
         // Fallback safe path (may be blocked by RLS if admin policy misconfigured)
         const { data: docsDirect } = await supabase
           .from('documents' as any)
-          .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path')
+          .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,status,reviewed_by,reviewed_at,admin_notes')
           .eq('user_id', studentId);
         docsData = docsDirect || [];
       }
@@ -88,6 +89,44 @@ export default function StudentProfile() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateDocumentStatus = async (docId: string, nextStatus: 'pending' | 'approved' | 'rejected') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await (supabase as any)
+        .from('documents')
+        .update({
+          status: nextStatus,
+          reviewed_by: user?.id || null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', docId)
+        .select('id');
+      if (error) throw error;
+      toast({ title: 'Updated', description: `Document marked as ${nextStatus}.` });
+      fetchStudentProfile();
+    } catch (e: any) {
+      const msg = (e?.message || '').toLowerCase();
+      // Fallback if new columns not in DB yet: only update status
+      if (msg.includes("reviewed_at") || msg.includes("reviewed_by") || msg.includes("column") || msg.includes("schema cache")) {
+        try {
+          const { error: err2 } = await (supabase as any)
+            .from('documents')
+            .update({ status: nextStatus })
+            .eq('id', docId)
+            .select('id');
+          if (err2) throw err2;
+          toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'secondary' });
+          fetchStudentProfile();
+          return;
+        } catch (e2: any) {
+          toast({ title: 'Update failed', description: e2?.message || 'Unable to update document status', variant: 'destructive' });
+          return;
+        }
+      }
+      toast({ title: 'Update failed', description: e?.message || 'Unable to update document status', variant: 'destructive' });
     }
   };
 
@@ -396,9 +435,17 @@ export default function StudentProfile() {
                         {doc ? doc.file_name : 'Not uploaded'}
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-2">
                       {doc ? (
                         <>
+                          {/* Current status badge */}
+                          <Badge variant={
+                            (doc as any).status === 'approved' ? 'secondary' :
+                            (doc as any).status === 'rejected' ? 'destructive' : 'outline'
+                          } className="capitalize">
+                            {(doc as any).status || 'pending'}
+                          </Badge>
+                          {/* Actions: view/download */}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -417,6 +464,20 @@ export default function StudentProfile() {
                           >
                             <Download className="h-3 w-3" />
                           </Button>
+                          {/* Status dropdown */}
+                          <Select
+                            value={(doc as any).status || 'pending'}
+                            onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}
+                          >
+                            <SelectTrigger className="w-32 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="approved">Approve</SelectItem>
+                              <SelectItem value="rejected">Reject</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </>
                       ) : (
                         <Badge variant="outline">Missing</Badge>
