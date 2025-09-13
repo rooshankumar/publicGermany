@@ -56,21 +56,17 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Desktop Layout */}
       <div className="hidden md:flex min-h-screen">
         {/* Desktop Sidebar */}
-  <div className="w-72 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
+  <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
           {/* Logo Header */}
-          <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
-            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-3 group">
-              <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg transition-transform group-hover:scale-105" />
-              <div>
-                <h1 className="text-xl font-bold text-foreground">publicgermany</h1>
-                <p className="text-sm text-muted-foreground">Study in Germany Platform</p>
-              </div>
+          <div className="p-0">
+            <Link to={isAdmin ? '/admin' : '/dashboard'} className="block" aria-label="Go to home">
+              <img src={logo} alt="publicgermany" className="block w-full h-32 object-cover rounded-none" />
             </Link>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 p-4">
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
@@ -80,14 +76,15 @@ const Layout = ({ children }: LayoutProps) => {
                     <Link
                       to={item.href}
                       className={cn(
-                        "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                        isActive 
-                          ? "bg-primary text-primary-foreground shadow-lg" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:translate-x-1"
+                        "group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
                       )}
+                      aria-current={isActive ? 'page' : undefined}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -137,15 +134,12 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Mobile Layout */}
       <div className="md:hidden">
         {/* Mobile Header */}
-        <header className="bg-card border-b border-border p-4">
+        <header className="bg-card p-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-1">
               <MobileNavigation />
-              <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
-                <img src={logo} alt="publicgermany" className="w-8 h-8 rounded-lg" />
-                <div>
-                  <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
-                </div>
+              <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 min-w-0" aria-label="Go to home">
+                <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-none" />
               </Link>
             </div>
             

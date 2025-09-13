@@ -205,7 +205,7 @@ export default function Students() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
           <p className="text-muted-foreground">Manage and track all student profiles with live updates</p>
@@ -213,24 +213,22 @@ export default function Students() {
 
         {/* Search and Filters */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
               Search & Filter Students
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by name, student ID, or user ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Input
+                placeholder="Search by name, student ID, or user ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
               <Select value={apsFilter} onValueChange={setApsFilter}>
-                <SelectTrigger className="w-full md:w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="APS Pathway" />
                 </SelectTrigger>
                 <SelectContent>
@@ -241,7 +239,7 @@ export default function Students() {
                 </SelectContent>
               </Select>
               <Select value={germanFilter} onValueChange={setGermanFilter}>
-                <SelectTrigger className="w-full md:w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="German Level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,18 +254,19 @@ export default function Students() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredStudents.length} of {students.length} students
-              </p>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <p>Showing {filteredStudents.length} of {students.length} students</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Students List */}
         <Card>
-          <CardHeader>
-            <CardTitle>Student Profiles ({filteredStudents.length})</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span>Student Profiles ({filteredStudents.length})</span>
+              <span className="hidden lg:inline text-xs text-muted-foreground">Tip: Scroll horizontally to view more columns</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -281,34 +280,34 @@ export default function Students() {
                 <p className="text-muted-foreground">No students found matching your criteria</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Student</th>
-                      <th className="text-left p-3 font-medium hidden sm:table-cell">Student ID</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">APS Pathway</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">German Level</th>
-                      <th className="text-left p-3 font-medium hidden lg:table-cell">Progress</th>
-                      <th className="text-left p-3 font-medium hidden lg:table-cell">Applications</th>
-                      <th className="text-left p-3 font-medium">Documents</th>
-                      <th className="text-left p-3 font-medium hidden sm:table-cell">Joined</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+              <div className="overflow-x-auto max-h-[70vh]">
+                <table className="w-full border-collapse text-sm">
+                  <thead className="sticky top-0 bg-card z-10">
+                    <tr className="border-b text-muted-foreground">
+                      <th className="text-left p-3 font-medium whitespace-nowrap">Student</th>
+                      <th className="text-left p-3 font-medium hidden sm:table-cell whitespace-nowrap">Student ID</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell whitespace-nowrap">APS Pathway</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell whitespace-nowrap">German Level</th>
+                      <th className="text-left p-3 font-medium hidden lg:table-cell whitespace-nowrap">Progress</th>
+                      <th className="text-left p-3 font-medium hidden lg:table-cell whitespace-nowrap">Applications</th>
+                      <th className="text-left p-3 font-medium whitespace-nowrap">Documents</th>
+                      <th className="text-left p-3 font-medium hidden sm:table-cell whitespace-nowrap">Joined</th>
+                      <th className="text-left p-3 font-medium whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="align-middle">
                     {filteredStudents.map((student) => {
                       const progress = getProgressPercentage(student);
                       return (
                         <tr key={student.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="p-3">
+                          <td className="p-3 min-w-[220px]">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                                 <UserCheck className="h-5 w-5 text-primary" />
                               </div>
-                              <div>
-                                <p className="font-medium">{student.full_name || 'Unnamed Student'}</p>
-                                <p className="text-sm text-muted-foreground">ID: {student.user_id.slice(0, 8)}...</p>
+                              <div className="max-w-[280px]">
+                                <p className="font-medium truncate" title={student.full_name || undefined}>{student.full_name || 'Unnamed Student'}</p>
+                                <p className="text-xs text-muted-foreground">ID: {student.user_id.slice(0, 8)}...</p>
                               </div>
                             </div>
                           </td>
@@ -329,7 +328,7 @@ export default function Students() {
                           </td>
                           <td className="p-3 hidden lg:table-cell">
                             <div className="flex items-center gap-2">
-                              <div className="w-16 bg-muted rounded-full h-2">
+                              <div className="w-20 bg-muted rounded-full h-2">
                                 <div 
                                   className="bg-primary h-2 rounded-full transition-all"
                                   style={{ width: `${progress}%` }}
@@ -359,7 +358,7 @@ export default function Students() {
                           <td className="p-3 hidden sm:table-cell">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">
+                              <span className="text-sm whitespace-nowrap">
                                 {new Date(student.created_at).toLocaleDateString()}
                               </span>
                             </div>
