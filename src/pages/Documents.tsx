@@ -5,11 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Upload, FileText, FileCheck, FileX, FileClock } from 'lucide-react';
+import { Save, Upload, FileText, FileCheck, FileX, FileClock, Info } from 'lucide-react';
 import Layout from '@/components/Layout';
 import APSRequiredDocuments, { DOCUMENTS } from '@/components/APSRequiredDocuments';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Documents = () => {
   const { profile } = useAuth();
@@ -120,7 +121,7 @@ const Documents = () => {
 
         {/* Document Stats */}
         <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="bg-background">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -130,30 +131,30 @@ const Documents = () => {
               <p className="text-xs text-muted-foreground">Required for your application</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-background">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <FileCheck className="h-4 w-4 text-green-500" />
+              <FileCheck className="h-4 w-4 text-pg-success" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{documentStats.uploaded}</div>
               <p className="text-xs text-muted-foreground">Approved and verified</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-background">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-              <FileClock className="h-4 w-4 text-amber-500" />
+              <FileClock className="h-4 w-4 text-pg-gold" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{documentStats.pending}</div>
               <p className="text-xs text-muted-foreground">Awaiting verification</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-background">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <FileX className="h-4 w-4 text-red-500" />
+              <FileX className="h-4 w-4 text-pg-error" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{documentStats.rejected}</div>
@@ -163,10 +164,22 @@ const Documents = () => {
         </div>
 
         {/* Progress Bar */}
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Document Completion</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Document Completion</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[240px] text-xs">
+                      Upload all required documents to reach 100% completion. Admins will review and approve your uploads.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Badge variant="outline" className="font-normal">
                 {uploadProgress}% Complete
               </Badge>
@@ -176,12 +189,18 @@ const Documents = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
-                <span>{documentStats.uploaded} of {documentStats.total} documents uploaded</span>
-                <span>{documentStats.total - documentStats.uploaded} remaining</span>
+                <span>
+                  <Badge variant="secondary" className="mr-2">{documentStats.uploaded}</Badge>
+                  of {documentStats.total} documents uploaded
+                </span>
+                <span>
+                  <Badge variant="secondary" className="mr-2">{documentStats.total - documentStats.uploaded}</Badge>
+                  remaining
+                </span>
               </div>
-              <Progress value={uploadProgress} className="h-2" />
+              <Progress value={uploadProgress} className="h-2 rounded-full" />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
@@ -207,7 +226,7 @@ const Documents = () => {
         {/* Mobile sticky action bar */}
         <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-4 py-3 flex items-center justify-center">
-            <Button className="w-full" variant="default" size="sm" onClick={refreshDocuments} disabled={loading}>
+            <Button className="w-full" variant="outline" size="sm" onClick={refreshDocuments} disabled={loading}>
               {loading ? 'Refreshing…' : 'Refresh Status'}
             </Button>
           </div>

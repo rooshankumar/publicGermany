@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CheckCircle, Upload, Trash2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export const DOCUMENTS = [
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
@@ -66,7 +67,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
     try {
       const { data, error } = await supabase
         .from('documents')
-        .select('id, category, file_url, file_name, upload_path, status')
+        .select('id, category, file_url, file_name, upload_path, status, admin_notes')
         .eq('user_id', profile.user_id);
       
       if (error) throw error;
@@ -244,7 +245,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
 
   return (
     <div className="w-full max-w-3xl mx-auto pb-16 md:pb-0">
-      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+      <div className="bg-white rounded-lg shadow-sm p-3 md:p-6">
         <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Document Upload</h2>
 
         {/* Desktop/Tablet: existing list */}
@@ -297,12 +298,29 @@ function APSRequiredDocuments({ displayName }: APSProps) {
               <AccordionItem key={doc.key} value={doc.key}>
                 <AccordionTrigger className="text-left px-3">
                   <div className="flex items-center justify-between w-full gap-2">
-                    <span className="font-medium truncate text-sm text-foreground">{doc.label}</span>
-                    {docs[doc.key] ? (
-                      renderStatusPill((docs[doc.key] as any)?.status)
-                    ) : (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-muted text-muted-foreground">Missing</span>
-                    )}
+                    <span className="font-medium text-sm text-foreground leading-tight break-words" style={{maxWidth:'75%'}}>{doc.label}</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            {docs[doc.key] ? (
+                              renderStatusPill((docs[doc.key] as any)?.status)
+                            ) : (
+                              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-muted text-muted-foreground">Missing</span>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[220px] text-xs">
+                          {docs[doc.key]
+                            ? ((docs[doc.key] as any)?.status === 'approved'
+                                ? 'Approved: Your document has been verified.'
+                                : (docs[doc.key] as any)?.status === 'rejected'
+                                  ? 'Rejected: Tap to expand and view reason and next steps.'
+                                  : 'Pending: Awaiting admin review.')
+                            : 'Missing: No file uploaded yet.'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -313,6 +331,13 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                         <CheckCircle className="text-green-500 h-5 w-5" />
                         <span className="truncate text-sm font-medium">{docs[doc.key]!.file_name}</span>
                       </div>
+                      {((docs[doc.key] as any)?.status === 'rejected') && (docs[doc.key] as any)?.admin_notes && (
+                        <div className="rounded-md border border-pg-error/30 bg-pg-error/5 text-sm text-pg-error p-3">
+                          <div className="font-medium mb-1">Why it was rejected</div>
+                          <div className="whitespace-pre-wrap break-words">{(docs[doc.key] as any).admin_notes}</div>
+                          <div className="text-xs text-muted-foreground mt-2">Please upload a corrected document and resubmit.</div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline" className="px-3"
                           onClick={async () => {
