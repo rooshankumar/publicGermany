@@ -42,15 +42,18 @@ const Documents = () => {
     queryKey: ['documents', profile?.user_id],
     queryFn: fetchUserDocs,
     enabled: !!profile?.user_id,
-    onSuccess: (data: any[]) => {
-      const map: Record<string, any | null> = {};
-      DOCUMENTS.forEach(d => { map[d.key] = null; });
-      (data || []).forEach((d: any) => {
-        if (d?.category && d.file_url) map[d.category] = d;
-      });
-      setUserDocs(map);
-    }
   });
+
+  // Map fetched docs into a keyed object for quick status lookups
+  useEffect(() => {
+    const data = (docsQuery.data as any[]) || [];
+    const map: Record<string, any | null> = {};
+    DOCUMENTS.forEach(d => { map[d.key] = null; });
+    data.forEach((d: any) => {
+      if (d?.category && d.file_url) map[d.category] = d;
+    });
+    setUserDocs(map);
+  }, [docsQuery.data]);
 
   // Debounce utility
   const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {

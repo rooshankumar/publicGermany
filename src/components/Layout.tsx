@@ -164,7 +164,7 @@ const Layout = ({ children }: LayoutProps) => {
         </header>
 
         {/* Mobile Main Content */}
-        <main className="p-3 sm:p-4">
+        <main className="p-3 sm:p-4 max-w-full pb-[calc(env(safe-area-inset-bottom)+4.5rem)] overflow-x-hidden">
           {children}
         </main>
       </div>
