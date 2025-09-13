@@ -45,6 +45,20 @@ function APSRequiredDocuments({ displayName }: APSProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+  
+  // Helper to render a consistent, brand-styled status pill
+  const renderStatusPill = (status?: string) => {
+    const s = ((status || 'pending') as 'pending' | 'approved' | 'rejected');
+    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border';
+    const classes =
+      s === 'approved'
+        ? 'bg-pg-success/10 text-pg-success border-pg-success/30'
+        : s === 'rejected'
+        ? 'bg-pg-error/10 text-pg-error border-pg-error/30'
+        : 'bg-pg-gold/10 text-pg-gold border-pg-gold/30';
+    const label = s.charAt(0).toUpperCase() + s.slice(1);
+    return <span className={`${base} ${classes}`}>{label}</span>;
+  };
 
   const fetchDocs = async () => {
     if (!profile?.user_id) return;
@@ -234,10 +248,10 @@ function APSRequiredDocuments({ displayName }: APSProps) {
         <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Document Upload</h2>
 
         {/* Desktop/Tablet: existing list */}
-        <div className="hidden md:flex flex-col gap-4">
+        <div className="hidden md:flex flex-col gap-3">
           {DOCUMENTS.map(doc => (
-            <div key={doc.key} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border border-gray-100 shadow-sm bg-gray-50">
-              <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium">
+            <div key={doc.key} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border bg-background">
+              <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium text-foreground">
                 <span>{doc.label}</span>
                 <span className="text-xs text-muted-foreground mt-1">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</span>
               </div>
@@ -247,11 +261,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="text-green-500 h-5 w-5" />
                       <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
-                      <span className="ml-1">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' : (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}`}>
-                          {((docs[doc.key] as any)?.status || 'pending')}
-                        </span>
-                      </span>
+                      <span className="ml-1">{renderStatusPill((docs[doc.key] as any)?.status)}</span>
                     </div>
                     <div className="flex items-center gap-1 ml-auto">
                       <Button size="sm" variant="outline" className="px-2"
@@ -281,19 +291,17 @@ function APSRequiredDocuments({ displayName }: APSProps) {
         </div>
 
         {/* Mobile: Accordion */}
-        <div className="md:hidden">
+        <div className="md:hidden pb-24">
           <Accordion type="single" collapsible className="w-full">
             {DOCUMENTS.map(doc => (
               <AccordionItem key={doc.key} value={doc.key}>
-                <AccordionTrigger className="text-left">
+                <AccordionTrigger className="text-left px-3">
                   <div className="flex items-center justify-between w-full gap-2">
-                    <span className="font-medium truncate">{doc.label}</span>
+                    <span className="font-medium truncate text-sm text-foreground">{doc.label}</span>
                     {docs[doc.key] ? (
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${((docs[doc.key] as any)?.status === 'approved' ? 'bg-green-100 text-green-800' : (docs[doc.key] as any)?.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}`}>
-                        {((docs[doc.key] as any)?.status || 'pending')}
-                      </span>
+                      renderStatusPill((docs[doc.key] as any)?.status)
                     ) : (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700">Missing</span>
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-muted text-muted-foreground">Missing</span>
                     )}
                   </div>
                 </AccordionTrigger>
