@@ -201,9 +201,28 @@ const Services = () => {
       })
       .subscribe();
 
+    // Realtime sync for this user's reviews (keep myReviews up to date)
+    let reviewsChannel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      reviewsChannel = supabase
+        .channel('reviews-user')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'reviews', filter: `user_id=eq.${user.id}` },
+          () => {
+            // Refresh both public and my reviews to reflect any change immediately
+            fetchReviews();
+          }
+        )
+        .subscribe();
+    })();
+
     return () => { 
       supabase.removeChannel(paymentsChannel); 
       supabase.removeChannel(requestsChannel);
+      if (reviewsChannel) supabase.removeChannel(reviewsChannel);
     };
   }, []);
 
@@ -237,51 +256,7 @@ const Services = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceRequests]);
 
-  // Payment proof upload for General Profile Evaluation
-  const [paymentUploading, setPaymentUploading] = useState(false);
-  const [paymentFile, setPaymentFile] = useState<File | null>(null);
-
-  const handleProofUpload = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({ title: 'Error', description: 'You must be logged in', variant: 'destructive' });
-        return;
-      }
-      if (!paymentFile) {
-        toast({ title: 'No file selected', description: 'Please choose a screenshot/image as payment proof.' });
-        return;
-      }
-      setPaymentUploading(true);
-      const safeName = `${Date.now()}-${paymentFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      const uploadPath = `${user.id}/payments/profile_evaluation/${safeName}`;
-      const { error: uploadErr } = await supabase.storage
-        .from('documents')
-        .upload(uploadPath, paymentFile, { upsert: true, contentType: paymentFile.type, cacheControl: '3600' });
-      if (uploadErr) throw uploadErr;
-      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(uploadPath);
-
-      const { error: dbErr } = await (supabase as any)
-        .from('service_payments')
-        .insert({
-          user_id: user.id,
-          service_id: 'general_profile_evaluation',
-          amount: 999,
-          currency: 'INR',
-          proof_url: publicUrl,
-          status: 'pending'
-        });
-      if (dbErr) throw dbErr;
-
-      toast({ title: 'Payment Proof Submitted', description: 'We will verify and approve shortly.' });
-      setPaymentFile(null);
-    } catch (err: any) {
-      console.error('Payment upload error:', err);
-      toast({ title: 'Upload failed', description: err?.message || 'Could not upload payment proof', variant: 'destructive' });
-    } finally {
-      setPaymentUploading(false);
-    }
-  };
+  // (Removed) QR payment and proof upload flow. Users should email for payments instead.
 
   const fetchReviews = async () => {
     try {
@@ -506,13 +481,23 @@ const Services = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      const { error } = await (supabase as any)
+      const { error, data: deleted } = await (supabase as any)
         .from('reviews')
         .delete()
-        .match({ id: reviewId, user_id: user.id });
+        .eq('id', reviewId)
+        .eq('user_id', user.id)
+        .select('id');
       if (error) throw error;
+      if (!deleted || deleted.length === 0) {
+        // No rows deleted - likely due to RLS or it was already approved/removed
+        toast({ title: 'Not deleted', description: 'Unable to delete this review (not found or not permitted).', variant: 'destructive' });
+        // Ensure UI is accurate
+        fetchReviews();
+        return;
+      }
       toast({ title: 'Deleted', description: 'Your review has been deleted.' });
-      fetchReviews();
+      // Remove from UI immediately since DB confirmed deletion
+      setMyReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (e: any) {
       toast({ title: 'Delete failed', description: e?.message || 'Could not delete review', variant: 'destructive' });
     }
@@ -802,26 +787,12 @@ const Services = () => {
                   </Select>
                 </div>
 
-                {/* If General Profile Evaluation is selected, show QR + proof inline so users can pay before submitting */}
-                {selectedServices.includes('general_profile_evaluation') && (
-                  <div className="space-y-3 p-4 border rounded-lg">
-                    <Label>Pay via QR. Receiver: Roshan Kumar</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                      <div className="flex flex-col items-center">
-                        <img src="/qr-eval.png" alt="Scan to pay (Receiver: Roshan Kumar)" className="w-56 h-56 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
-                      </div>
-                      <div className="space-y-2">
-                        <Input type="file" accept="image/*" onChange={(e) => setPaymentFile(e.target.files?.[0] || null)} />
-                        <div className="flex gap-2">
-                          <Button type="button" disabled={paymentUploading} onClick={handleProofUpload}>
-                            {paymentUploading ? 'Uploading...' : 'Submit Proof'}
-                          </Button>
-                          <Button type="button" variant="outline" onClick={() => setPaymentFile(null)}>Clear</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Payment Instructions */}
+                <div className="p-4 bg-muted rounded-lg text-sm">
+                  For payments, please contact us via email at
+                  {' '}
+                  <a href="mailto:roshlingua@gmail.com" className="underline">roshlingua@gmail.com</a>.
+                </div>
 
                 <div className="flex justify-end space-x-2">
                   <Button 

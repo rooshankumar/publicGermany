@@ -33,10 +33,19 @@ export function useAutoSave({
 
     try {
       setStatus('saving');
-      
+      // Defensive normalization: avoid sending empty strings to typed columns
+      // This prevents Postgres 22007 (invalid input syntax for type date: "")
+      let normalizedData = data;
+      if (tableName === 'profiles') {
+        normalizedData = {
+          ...data,
+          date_of_birth: data?.date_of_birth === '' ? null : data?.date_of_birth,
+        };
+      }
+
       const { error } = await supabase
         .from(tableName as any)
-        .update(data)
+        .update(normalizedData)
         .eq('user_id', userId);
 
       if (error) throw error;

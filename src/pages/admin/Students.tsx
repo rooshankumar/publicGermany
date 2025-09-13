@@ -412,6 +412,13 @@ export default function Students() {
               )}
               {docsForStudent?.documents?.map((doc: any) => {
                 const url = doc.file_url || null;
+                const handleDownload = () => {
+                  if (!url) return;
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = doc.file_name || 'document';
+                  link.click();
+                };
                 return (
                   <div key={`doc-${doc.id}`} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
@@ -419,9 +426,12 @@ export default function Students() {
                       <p className="text-xs text-muted-foreground">{doc.category || 'uncategorized'}</p>
                     </div>
                     {url ? (
-                      <a href={url} target="_blank" rel="noreferrer">
-                        <Button size="sm" variant="outline">Open</Button>
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a href={url} target="_blank" rel="noreferrer">
+                          <Button size="sm" variant="outline">Open</Button>
+                        </a>
+                        <Button size="sm" variant="ghost" onClick={handleDownload}>Download</Button>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">No link available</span>
                     )}
@@ -436,7 +446,7 @@ export default function Students() {
                 <p className="text-sm text-muted-foreground">No files uploaded.</p>
               )}
               {docsForStudent?.files?.map((file: any) => {
-                // Create a signed URL for storage path when opening via UI
+                // Create a signed URL for storage path when opening/downloading via UI
                 const handleOpen = async () => {
                   try {
                     const { data } = await supabase.storage
@@ -447,13 +457,29 @@ export default function Students() {
                     }
                   } catch (e) {}
                 };
+                const handleDownload = async () => {
+                  try {
+                    const { data } = await supabase.storage
+                      .from('documents')
+                      .createSignedUrl(file.file_path, 300);
+                    if (data?.signedUrl) {
+                      const link = document.createElement('a');
+                      link.href = data.signedUrl;
+                      link.download = file.file_name || 'file';
+                      link.click();
+                    }
+                  } catch (e) {}
+                };
                 return (
                   <div key={`file-${file.id}`} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <p className="font-medium text-sm">{file.file_name || 'File'}</p>
                       <p className="text-xs text-muted-foreground">{file.module || 'general'}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={handleOpen}>Open</Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={handleOpen}>Open</Button>
+                      <Button size="sm" variant="ghost" onClick={handleDownload}>Download</Button>
+                    </div>
                   </div>
                 );
               })}

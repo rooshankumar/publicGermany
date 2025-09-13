@@ -22,6 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { DOCUMENTS } from '@/components/APSRequiredDocuments';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
@@ -54,11 +55,20 @@ export default function StudentProfile() {
 
       if (error) throw error;
 
-      // Fetch documents separately by user_id to avoid embed issues
-      const { data: docsData } = await supabase
-        .from('documents' as any)
-        .select('id,user_id,category,file_name,file_url,created_at')
-        .eq('user_id', studentId);
+      // Fetch documents via admin RPC (security definer) to bypass RLS reliably
+      let docsData: any[] = [];
+      const { data: docsRpc, error: docsRpcErr } = await (supabase as any)
+        .rpc('admin_get_user_documents', { p_user_id: studentId });
+      if (!docsRpcErr && Array.isArray(docsRpc)) {
+        docsData = docsRpc;
+      } else {
+        // Fallback safe path (may be blocked by RLS if admin policy misconfigured)
+        const { data: docsDirect } = await supabase
+          .from('documents' as any)
+          .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path')
+          .eq('user_id', studentId);
+        docsData = docsDirect || [];
+      }
 
       // Fetch files uploaded via files table (DocumentUpload component)
       const { data: filesData } = await supabase
@@ -98,6 +108,21 @@ export default function StudentProfile() {
 
   useEffect(() => {
     fetchStudentProfile();
+  }, [studentId]);
+
+  // Realtime updates for student's documents
+  useEffect(() => {
+    if (!studentId) return;
+    const channel = supabase
+      .channel(`student-docs-${studentId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, () => {
+        fetchStudentProfile();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [studentId]);
 
   const downloadDocument = async (doc: any) => {
@@ -346,87 +371,65 @@ export default function StudentProfile() {
           </CardContent>
         </Card>
 
-        {/* Documents */}
+        {/* Required Documents (mirrors student view categories) */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Documents ({(student.documents?.length || 0) + (student.files?.length || 0)})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Required Documents (by category)
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={fetchStudentProfile}>
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            {(student.documents && student.documents.length > 0) || (student.files && student.files.length > 0) ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Render documents table entries */}
-                {student.documents?.map((doc) => (
-                  <div key={`doc-${doc.id}`} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{doc.category}</h4>
-                        <p className="text-xs text-muted-foreground truncate">{doc.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(doc.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => viewDocument(doc as any)}
-                          className="px-2"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => downloadDocument(doc as any)}
-                          className="px-2"
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </div>
+            <div className="space-y-2">
+              {DOCUMENTS.map((d) => {
+                const doc = (student.documents || []).find((x) => x.category === d.key);
+                return (
+                  <div key={d.key} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{d.label.replace('📄 ', '')}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {doc ? doc.file_name : 'Not uploaded'}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      {doc ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => viewDocument(doc as any)}
+                            className="px-2"
+                            title="View"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadDocument(doc as any)}
+                            className="px-2"
+                            title="Download"
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant="outline">Missing</Badge>
+                      )}
                     </div>
                   </div>
-                ))}
-                {/* Render files table entries */}
-                {student.files?.map((file) => (
-                  <div key={`file-${file.id}`} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{file.module || 'File'}</h4>
-                        <p className="text-xs text-muted-foreground truncate">{file.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(file.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => viewDocument({ upload_path: file.file_path, file_name: file.file_name } as any)}
-                          className="px-2"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => downloadDocument({ upload_path: file.file_path, file_name: file.file_name } as any)}
-                          className="px-2"
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No documents uploaded</p>
-            )}
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
+
+        
 
         {/* Service Requests */}
         <Card>

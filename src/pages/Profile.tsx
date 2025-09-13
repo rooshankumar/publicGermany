@@ -95,14 +95,16 @@ const Profile = () => {
     }
     const updateData = {
       ...formData,
+      // Normalize empty strings to null for typed columns
+      date_of_birth: formData.date_of_birth === '' ? null : formData.date_of_birth,
       bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
       bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
       work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
       aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
       german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
       has_aps_certificate: formData.has_aps_certificate === '' ? null : formData.has_aps_certificate === 'yes',
-      country_of_education: formData.country_of_education,
-      state_of_education: formData.state_of_education,
+      country_of_education: formData.country_of_education || null,
+      state_of_education: formData.state_of_education || null,
     };
       const { error } = await supabase
         .from('profiles')
@@ -154,6 +156,7 @@ const Profile = () => {
     // Trigger auto-save with processed data
     const updateData = {
       ...newData,
+      date_of_birth: newData.date_of_birth === '' ? null : newData.date_of_birth,
       bachelor_credits_ects: newData.bachelor_credits_ects ? parseInt(newData.bachelor_credits_ects) : null,
       bachelor_duration_years: newData.bachelor_duration_years ? parseInt(newData.bachelor_duration_years) : null,
       work_experience_years: newData.work_experience_years ? parseInt(newData.work_experience_years) : null,
@@ -162,6 +165,7 @@ const Profile = () => {
       has_aps_certificate: newData.has_aps_certificate === '' ? null : newData.has_aps_certificate === 'yes',
       state_of_education: newData.state_of_education || null,
       avatar_url: newData.avatar_url || null,
+      country_of_education: newData.country_of_education || null,
     };
     
     autoSave.debouncedSave(updateData);
@@ -184,12 +188,15 @@ const Profile = () => {
     try {
       const updateData = {
         ...formData,
+        date_of_birth: formData.date_of_birth === '' ? null : formData.date_of_birth,
         bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
         bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
         work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
         aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null,
         german_level: formData.german_level === '' ? null : formData.german_level as 'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2' | null,
         has_aps_certificate: formData.has_aps_certificate === '' ? null : formData.has_aps_certificate === 'yes',
+        country_of_education: formData.country_of_education || null,
+        state_of_education: formData.state_of_education || null,
       };
 
       const { error } = await supabase
