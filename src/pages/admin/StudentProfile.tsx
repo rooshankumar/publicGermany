@@ -77,6 +77,18 @@ export default function StudentProfile() {
     return { ...(data as any), documents: docsData || [], files: filesData || [] } as StudentProfile;
   };
 
+  // Resolve the student's email using the Edge Function at send time
+  const resolveEmailNow = async (): Promise<string | null> => {
+    try {
+      if (!studentId) return email;
+      const { data, error } = await supabase.functions.invoke('get-user-email', {
+        body: { user_id: studentId }
+      });
+      if (!error && (data as any)?.email) return (data as any).email as string;
+    } catch {}
+    return email;
+  };
+
   const updateDocumentStatus = async (docId: string, nextStatus: 'pending' | 'approved' | 'rejected') => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,11 +105,12 @@ export default function StudentProfile() {
       toast({ title: 'Updated', description: `Document marked as ${nextStatus}.` });
       fetchStudentProfile();
 
-      // Fire-and-forget: notify student via email if we know their email
+      // Fire-and-forget: notify student via email (attempt to resolve email now)
       try {
-        if (email) {
+        const to = await resolveEmailNow();
+        if (to) {
           await sendEmail(
-            email,
+            to,
             `Your document status was updated to ${nextStatus}`,
             `<p>Hi ${student?.full_name || ''},</p>
              <p>Your document status has been updated to <strong>${nextStatus}</strong> by the admin team.</p>
@@ -119,9 +132,10 @@ export default function StudentProfile() {
           toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'default' });
           fetchStudentProfile();
           try {
-            if (email) {
+            const to = await resolveEmailNow();
+            if (to) {
               await sendEmail(
-                email,
+                to,
                 `Your document status was updated to ${nextStatus}`,
                 `<p>Hi ${student?.full_name || ''},</p>
                  <p>Your document status has been updated to <strong>${nextStatus}</strong> by the admin team.</p>

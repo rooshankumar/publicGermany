@@ -58,6 +58,16 @@ export default function Requests() {
     filterRequests();
   }, [requests, searchTerm, statusFilter, serviceFilter]);
 
+  const resolveEmail = async (userId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-user-email', { body: { user_id: userId } });
+      if (!error && (data as any)?.email) return (data as any).email as string;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const fetchRequests = async () => {
     setLoading(true);
     try {
@@ -65,12 +75,16 @@ export default function Requests() {
         .from('service_requests')
         .select(`
           *,
-          profiles!service_requests_user_id_fkey(full_name, user_id)
+          profiles!inner(user_id)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests((data as any[]) || []);
+      const requestsWithEmail = await Promise.all(data.map(async (request) => {
+        const email = await resolveEmail(request.profiles.user_id);
+        return { ...request, profiles: { ...request.profiles, email } };
+      }));
+      setRequests(requestsWithEmail);
     } catch (error: any) {
       toast({
         title: "Error fetching requests",
