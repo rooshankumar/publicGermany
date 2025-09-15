@@ -77,14 +77,12 @@ export default function StudentProfile() {
     return { ...(data as any), documents: docsData || [], files: filesData || [] } as StudentProfile;
   };
 
-  // Resolve the student's email using the Edge Function at send time
+  // Resolve the student's email using the Postgres RPC at send time (no CORS)
   const resolveEmailNow = async (): Promise<string | null> => {
     try {
       if (!studentId) return email;
-      const { data, error } = await supabase.functions.invoke('get-user-email', {
-        body: { user_id: studentId }
-      });
-      if (!error && (data as any)?.email) return (data as any).email as string;
+      const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: studentId });
+      if (!error && data) return data as string;
     } catch {}
     return email;
   };

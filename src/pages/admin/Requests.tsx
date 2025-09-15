@@ -60,8 +60,8 @@ export default function Requests() {
 
   const resolveEmail = async (userId: string): Promise<string | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('get-user-email', { body: { user_id: userId } });
-      if (!error && (data as any)?.email) return (data as any).email as string;
+      const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: userId });
+      if (!error && data) return data as string;
       return null;
     } catch {
       return null;

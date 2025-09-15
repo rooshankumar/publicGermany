@@ -7,17 +7,27 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
+const corsHeaders: HeadersInit = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      ...corsHeaders,
       ...(init.headers || {}),
     },
   });
 }
 
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method Not Allowed" }, { status: 405 });
   }
