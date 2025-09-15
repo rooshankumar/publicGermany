@@ -51,6 +51,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/applications', label: 'University Applications', icon: GraduationCap },
     { href: '/resources', label: 'Resources', icon: FileText },
     { href: '/documents', label: 'Documents', icon: FileText },
+    { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -127,7 +128,14 @@ const Layout = ({ children }: LayoutProps) => {
                       )}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      <div className="relative">
+                        <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                        {item.href === '/notifications' && unseen > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-1 rounded-full bg-destructive text-[10px] leading-3 text-destructive-foreground flex items-center justify-center">
+                            {unseen > 9 ? '9+' : unseen}
+                          </span>
+                        )}
+                      </div>
                       <span className="truncate">{item.label}</span>
                     </Link>
                   </li>

@@ -32,6 +32,7 @@ const Documents = lazy(() => import("./pages/Documents"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +151,11 @@ const AppRoutes = () => {
         <Route path="/documents" element={
           <ProtectedRoute disallowRole="admin">
             <Documents />
+          </ProtectedRoute>
+        } />
+        <Route path="/notifications" element={
+          <ProtectedRoute disallowRole="admin">
+            <Notifications />
           </ProtectedRoute>
         } />
         <Route path="/reviews" element={
