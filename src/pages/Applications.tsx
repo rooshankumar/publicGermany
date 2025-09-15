@@ -43,10 +43,16 @@ const Applications = () => {
 
   const fetchApplications = async () => {
     try {
+      // Guard: if user profile not ready yet, avoid empty uuid filter
+      if (!profile?.user_id) {
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('applications')
         .select('*')
-        .eq('user_id', profile?.user_id || '')
+        .eq('user_id', profile.user_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -63,9 +69,72 @@ const Applications = () => {
     }
   };
 
+  // Open the Edit dialog with prefilled values
+  const openEditDialog = (app: Application) => {
+    setEditApp(app);
+    setEditValues({
+      university_name: app.university_name || '',
+      program_name: app.program_name || '',
+      ielts_requirement: app.ielts_requirement || '',
+      german_requirement: app.german_requirement || '',
+      fees_eur: app.fees_eur ?? '',
+      start_date: app.start_date ? app.start_date.substring(0, 10) : '',
+      end_date: app.end_date ? app.end_date.substring(0, 10) : '',
+      application_method: app.application_method || '',
+      required_tests: app.required_tests || '',
+      portal_link: app.portal_link || '',
+      notes: app.notes || '',
+      status: app.status,
+    });
+    setShowEditDialog(true);
+  };
+
+  // Save changes from Edit dialog
+  const handleEditApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editApp) return;
+    if (!profile?.user_id) {
+      toast({ title: 'Error', description: 'Not signed in', variant: 'destructive' });
+      return;
+    }
+    try {
+      const payload: Partial<Application> & Record<string, any> = {
+        university_name: editValues.university_name,
+        program_name: editValues.program_name,
+        ielts_requirement: editValues.ielts_requirement || null,
+        german_requirement: editValues.german_requirement || null,
+        fees_eur: editValues.fees_eur === '' ? null : Number(editValues.fees_eur),
+        start_date: editValues.start_date || null,
+        end_date: editValues.end_date || null,
+        application_method: editValues.application_method || null,
+        required_tests: editValues.required_tests || null,
+        portal_link: editValues.portal_link || null,
+        notes: editValues.notes || null,
+        status: (editValues.status as Application['status']) || editApp.status,
+      };
+
+      const { error } = await supabase
+        .from('applications')
+        .update(payload)
+        .eq('id', editApp.id)
+        .eq('user_id', profile.user_id);
+
+      if (error) throw error;
+
+      toast({ title: 'Updated', description: 'Application updated successfully' });
+      setShowEditDialog(false);
+      setEditApp(null);
+      setEditValues({});
+      fetchApplications();
+    } catch (err) {
+      console.error('Error updating application:', err);
+      toast({ title: 'Error', description: 'Failed to update application', variant: 'destructive' });
+    }
+  };
+
   useEffect(() => {
     fetchApplications();
-  }, []);
+  }, [profile?.user_id]);
 
   // Set up real-time sync
   useRealTimeSync({

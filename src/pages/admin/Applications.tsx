@@ -128,6 +128,16 @@ export default function Applications() {
       setNotes('');
       fetchApplications();
 
+      // Add in-app notification for the student (bell)
+      try {
+        const app = applications.find(a => a.id === appId);
+        const userId = app?.profiles?.user_id;
+        if (userId) {
+          const uni = app?.university_name || '';
+          await (supabase as any).from('notifications').insert({ user_id: userId, title: `Application updated: ${uni} → ${status.replace('_',' ')}` });
+        }
+      } catch {}
+
       // Fire-and-forget email to student
       try {
         const app = applications.find(a => a.id === appId);

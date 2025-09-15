@@ -102,6 +102,12 @@ export default function StudentProfile() {
       if (error) throw error;
       toast({ title: 'Updated', description: `Document marked as ${nextStatus}.` });
       fetchStudentProfile();
+      // Add notification for student
+      try {
+        if (studentId) {
+          await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}` });
+        }
+      } catch {}
 
       // Fire-and-forget: notify student via email (attempt to resolve email now)
       try {
@@ -129,6 +135,11 @@ export default function StudentProfile() {
           if (err2) throw err2;
           toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'default' });
           fetchStudentProfile();
+          try {
+            if (studentId) {
+              await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}` });
+            }
+          } catch {}
           try {
             const to = await resolveEmailNow();
             if (to) {

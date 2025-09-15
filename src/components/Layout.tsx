@@ -32,6 +32,15 @@ const Layout = ({ children }: LayoutProps) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; time: string }>>([]);
   const [unseen, setUnseen] = useState(0);
+  const markAllAsRead = async () => {
+    if (!profile?.user_id) return;
+    try {
+      await supabase.from('notifications' as any).update({ seen: true }).eq('user_id', profile.user_id).eq('seen', false);
+      setUnseen(0);
+    } catch (e) {
+      console.error('Mark read failed', e);
+    }
+  };
 
   const isAdmin = profile?.role === 'admin';
 
@@ -59,52 +68,29 @@ const Layout = ({ children }: LayoutProps) => {
   useEffect(() => {
     if (!profile?.user_id) return;
 
-    const addNotif = (title: string) => {
-      const item = { id: crypto.randomUUID(), title, time: new Date().toLocaleString() };
-      setNotifications(prev => [item, ...prev].slice(0, 50));
-      setUnseen(prev => prev + 1);
+    const fetchNotifs = async () => {
+      const { data, error } = await supabase
+        .from('notifications' as any)
+        .select('id, title, created_at, seen')
+        .eq('user_id', profile.user_id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!error) {
+        setNotifications((data || []).map((n: any) => ({ id: n.id, title: n.title, time: new Date(n.created_at).toLocaleString() })));
+        setUnseen((data || []).filter((n: any) => !n.seen).length);
+      }
     };
 
-    const channelDocs = supabase
-      .channel(`notifs-docs-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
-        const doc = payload.new as any;
-        const action = payload.eventType === 'INSERT' ? 'uploaded' : payload.eventType === 'UPDATE' ? `updated (${doc?.status || 'pending'})` : 'deleted';
-        addNotif(`Document ${action}`);
+    fetchNotifs();
+
+    const channel = supabase
+      .channel(`notifs-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.user_id}` }, (_payload) => {
+        fetchNotifs();
       })
       .subscribe();
 
-    const channelApps = supabase
-      .channel(`notifs-apps-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
-        const app = payload.new as any;
-        if (payload.eventType === 'UPDATE') {
-          addNotif(`Application ${app?.university_name || ''} ${app?.program_name || ''} updated: ${app?.status || ''}`.trim());
-        } else if (payload.eventType === 'INSERT') {
-          addNotif(`Application added: ${app?.university_name || ''}`.trim());
-        } else if (payload.eventType === 'DELETE') {
-          addNotif(`Application removed`);
-        }
-      })
-      .subscribe();
-
-    const channelReq = supabase
-      .channel(`notifs-req-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
-        const r = payload.new as any;
-        if (payload.eventType === 'UPDATE') {
-          addNotif(`Service request ${r?.service_type || ''} ${r?.status ? '→ ' + r.status : 'updated'}`.trim());
-        } else if (payload.eventType === 'INSERT') {
-          addNotif(`Service request created`);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channelDocs);
-      supabase.removeChannel(channelApps);
-      supabase.removeChannel(channelReq);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [profile?.user_id]);
 
   return (
@@ -215,7 +201,8 @@ const Layout = ({ children }: LayoutProps) => {
                         ))
                       )}
                     </div>
-                    <div className="p-2 text-right">
+                    <div className="p-2 flex items-center justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={markAllAsRead}>Mark all as read</Button>
                       <Button size="sm" variant="ghost" onClick={() => setNotifications([])}>Clear</Button>
                     </div>
                   </div>
