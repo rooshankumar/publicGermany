@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
+import { sendEmail } from '@/lib/sendEmail';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
@@ -91,6 +92,19 @@ export default function StudentProfile() {
       if (error) throw error;
       toast({ title: 'Updated', description: `Document marked as ${nextStatus}.` });
       fetchStudentProfile();
+
+      // Fire-and-forget: notify student via email if we know their email
+      try {
+        if (email) {
+          await sendEmail(
+            email,
+            `Your document status was updated to ${nextStatus}`,
+            `<p>Hi ${student?.full_name || ''},</p>
+             <p>Your document status has been updated to <strong>${nextStatus}</strong> by the admin team.</p>
+             <p>If you have questions, please reply to this email.</p>`
+          );
+        }
+      } catch (_) { /* ignore email errors */ }
     } catch (e: any) {
       const msg = (e?.message || '').toLowerCase();
       // Fallback if new columns not in DB yet: only update status
@@ -104,6 +118,17 @@ export default function StudentProfile() {
           if (err2) throw err2;
           toast({ title: 'Updated (partial)', description: `Document marked as ${nextStatus}. Apply migrations to enable reviewer metadata.`, variant: 'default' });
           fetchStudentProfile();
+          try {
+            if (email) {
+              await sendEmail(
+                email,
+                `Your document status was updated to ${nextStatus}`,
+                `<p>Hi ${student?.full_name || ''},</p>
+                 <p>Your document status has been updated to <strong>${nextStatus}</strong> by the admin team.</p>
+                 <p>If you have questions, please reply to this email.</p>`
+              );
+            }
+          } catch (_) {}
           return;
         } catch (e2: any) {
           toast({ title: 'Update failed', description: e2?.message || 'Unable to update document status', variant: 'destructive' });
@@ -427,8 +452,8 @@ export default function StudentProfile() {
                 return (
                   <div key={d.key} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{d.label.replace('📄 ', '')}</p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="font-medium text-sm break-words whitespace-normal">{d.label.replace('📄 ', '')}</p>
+                      <p className="text-xs text-muted-foreground break-words whitespace-normal">
                         {doc ? doc.file_name : 'Not uploaded'}
                       </p>
                     </div>
@@ -474,7 +499,7 @@ export default function StudentProfile() {
                     <AccordionItem key={d.key} value={d.key}>
                       <AccordionTrigger className="text-left">
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span className="font-medium truncate">{d.label.replace('📄 ', '')}</span>
+                          <span className="font-medium break-words whitespace-normal">{d.label.replace('📄 ', '')}</span>
                           {doc ? (
                             <Badge variant={status === 'approved' ? 'secondary' : status === 'rejected' ? 'destructive' : 'outline'} className="capitalize ml-2">
                               {status}
@@ -487,10 +512,10 @@ export default function StudentProfile() {
                       <AccordionContent>
                         {doc ? (
                           <div className="space-y-3 pt-2">
-                            <div className="text-xs text-muted-foreground truncate">{doc.file_name}</div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" onClick={() => viewDocument(doc as any)} className="px-2">View</Button>
-                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2">Download</Button>
+                            <div className="text-xs text-muted-foreground break-words whitespace-normal">{doc.file_name}</div>
+                            <div className="flex items-center gap-2 flex-wrap w-full">
+                              <Button size="sm" variant="outline" onClick={() => viewDocument(doc as any)} className="px-2 w-full sm:w-auto">View</Button>
+                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2 w-full sm:w-auto">Download</Button>
                             </div>
                             <div className="pt-1">
                               <Select value={status} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>

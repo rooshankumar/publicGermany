@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { sendEmail } from '@/lib/sendEmail';
 
 export interface Document {
   id: string;
@@ -142,6 +143,19 @@ export const useAuth = () => {
       });
       
       if (error) throw error;
+
+      // Fire-and-forget welcome email (Auth confirmation still goes via Supabase SMTP)
+      try {
+        await sendEmail(
+          email,
+          'Welcome to publicGermany 🎉',
+          `<p>Hi ${fullName || ''},</p>
+           <p>Welcome to publicGermany! We're excited to help you on your Germany journey.</p>
+           <p>If you didn't request this, you can ignore this email.</p>`
+        );
+      } catch (_) {
+        // Do not block signup on email failure
+      }
       return { error: null };
     } catch (error: any) {
       return { error: error.message };

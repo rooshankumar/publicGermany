@@ -18,6 +18,7 @@ import {
   Settings
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { sendEmail } from '@/lib/sendEmail';
 
 interface DashboardStats {
   totalStudents: number;
@@ -354,6 +355,27 @@ const AdminDashboard = () => {
                   <Settings className="h-6 w-6 mb-2" />
                   Exports
                 </Link>
+              </Button>
+              <Button
+                className="h-20 flex-col"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const to = window.prompt('Enter recipient email for test:');
+                    if (!to) return;
+                    await sendEmail(
+                      to,
+                      'Test Alert 🚀',
+                      '<p>Hello from publicGermany via Supabase Edge Function (Brevo)!</p>'
+                    );
+                    toast({ title: 'Email sent', description: `Test email sent to ${to}` });
+                  } catch (e: any) {
+                    toast({ title: 'Send failed', description: e?.message || 'Unable to send email', variant: 'destructive' });
+                  }
+                }}
+              >
+                <Settings className="h-6 w-6 mb-2" />
+                Send Test Email
               </Button>
             </div>
           </CardContent>

@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { CheckCircle, Upload, Trash2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { sendEmail } from '@/lib/sendEmail';
 
 export const DOCUMENTS = [
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
@@ -178,6 +179,23 @@ function APSRequiredDocuments({ displayName }: APSProps) {
       
       // Refresh the documents list
       await fetchDocs();
+
+      // Fire-and-forget: email confirmation to the user
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const to = user?.email;
+        if (to) {
+          const label = (DOCUMENTS.find(d => d.key === key)?.label || key).replace('📄 ', '');
+          await sendEmail(
+            to,
+            'We received your document',
+            `<p>Hi ${profile?.full_name || ''},</p>
+             <p>Your document <strong>${label}</strong> was uploaded successfully and is now <strong>pending</strong> review.</p>
+             <p>We will notify you once it is approved or if any changes are required.</p>
+             <p>— publicGermany Team</p>`
+          );
+        }
+      } catch (_) {/* ignore email errors */}
       
     } catch (error) {
       console.error('Error in handleUpload:', error);

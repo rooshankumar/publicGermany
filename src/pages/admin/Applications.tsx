@@ -22,6 +22,8 @@ import {
   FileText
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { sendEmail } from '@/lib/sendEmail';
+
 import useRealTimeSync from '@/hooks/useRealTimeSync';
 
 type Application = Database['public']['Tables']['applications']['Row'] & {
@@ -95,6 +97,16 @@ export default function Applications() {
     setFilteredApplications(filtered);
   };
 
+  const resolveEmail = async (userId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: userId });
+      if (error) return null;
+      return (data as string) || null;
+    } catch {
+      return null;
+    }
+  };
+
   const updateApplicationStatus = async (appId: string, status: string, updatedNotes?: string) => {
     try {
       const updates: any = { status };
@@ -115,6 +127,25 @@ export default function Applications() {
       setSelectedApp(null);
       setNotes('');
       fetchApplications();
+
+      // Fire-and-forget email to student
+      try {
+        const app = applications.find(a => a.id === appId);
+        const userId = app?.profiles?.user_id;
+        const to = userId ? await resolveEmail(userId) : null;
+        if (to) {
+          const parts: string[] = [];
+          parts.push(`<p>Hi ${app?.profiles?.full_name || ''},</p>`);
+          parts.push(`<p>Your application for <strong>${app?.university_name || ''}</strong> — <em>${app?.program_name || ''}</em> is now <strong>${status.replace('_',' ')}</strong>.</p>`);
+          if (updatedNotes) parts.push(`<p><strong>Admin notes:</strong><br/>${(updatedNotes || '').replace(/\n/g, '<br/>')}</p>`);
+          const deadline = (app as any)?.application_end_date ? new Date((app as any).application_end_date) : null;
+          if (deadline) {
+            parts.push(`<p>Deadline: ${deadline.toLocaleDateString()}</p>`);
+          }
+          parts.push('<p>— publicGermany Team</p>');
+          await sendEmail(to, 'Application update', parts.join('\n'));
+        }
+      } catch {}
     } catch (error: any) {
       toast({
         title: "Error updating application",

@@ -399,7 +399,7 @@ export default function Students() {
 
       {/* Documents Dialog */}
       <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle>
           </DialogHeader>
@@ -419,17 +419,17 @@ export default function Students() {
                   link.click();
                 };
                 return (
-                  <div key={`doc-${doc.id}`} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{doc.file_name || 'Document'}</p>
-                      <p className="text-xs text-muted-foreground">{doc.category || 'uncategorized'}</p>
+                  <div key={`doc-${doc.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm break-words whitespace-normal">{doc.file_name || 'Document'}</p>
+                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{doc.category || 'uncategorized'}</p>
                     </div>
                     {url ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
                         <a href={url} target="_blank" rel="noreferrer">
-                          <Button size="sm" variant="outline">Open</Button>
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto">Open</Button>
                         </a>
-                        <Button size="sm" variant="ghost" onClick={handleDownload}>Download</Button>
+                        <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">No link available</span>
@@ -470,14 +470,14 @@ export default function Students() {
                   } catch (e) {}
                 };
                 return (
-                  <div key={`file-${file.id}`} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{file.file_name || 'File'}</p>
-                      <p className="text-xs text-muted-foreground">{file.module || 'general'}</p>
+                  <div key={`file-${file.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm break-words whitespace-normal">{file.file_name || 'File'}</p>
+                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{file.module || 'general'}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={handleOpen}>Open</Button>
-                      <Button size="sm" variant="ghost" onClick={handleDownload}>Download</Button>
+                    <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpen}>Open</Button>
+                      <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
                     </div>
                   </div>
                 );
