@@ -134,7 +134,7 @@ export default function Applications() {
         const userId = app?.profiles?.user_id;
         if (userId) {
           const uni = app?.university_name || '';
-          await (supabase as any).from('notifications').insert({ user_id: userId, title: `Application updated: ${uni} → ${status.replace('_',' ')}` });
+          await (supabase as any).from('notifications').insert({ user_id: userId, title: `Application updated: ${uni} → ${status.replace('_',' ')}`, type: 'application', ref_id: appId });
         }
       } catch {}
 

@@ -151,7 +151,7 @@ export default function Requests() {
         const userId = req?.profiles?.user_id;
         if (userId) {
           const title = `Service request ${req?.service_type || ''} → ${status}`.trim();
-          await (supabase as any).from('notifications').insert({ user_id: userId, title });
+          await (supabase as any).from('notifications').insert({ user_id: userId, title, type: 'service_request', ref_id: requestId });
         }
       } catch {}
     } catch (error: any) {

@@ -126,7 +126,7 @@ const Applications = () => {
       try {
         const uni = editApp.university_name || '';
         const statusLabel = ((payload.status as string) || editApp.status).toString();
-        await (supabase as any).from('notifications').insert({ user_id: profile.user_id, title: `Application updated: ${uni} → ${statusLabel}` });
+        await (supabase as any).from('notifications').insert({ user_id: profile.user_id, title: `Application updated: ${uni} → ${statusLabel}`, type: 'application', ref_id: editApp.id });
       } catch {}
       setShowEditDialog(false);
       setEditApp(null);

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,8 +30,9 @@ const Layout = ({ children }: LayoutProps) => {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; time: string }>>([]);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; time: string; type?: string | null; ref_id?: string | null }>>([]);
   const [unseen, setUnseen] = useState(0);
+  const navigate = useNavigate();
   const markAllAsRead = async () => {
     if (!profile?.user_id) return;
     try {
@@ -71,12 +72,12 @@ const Layout = ({ children }: LayoutProps) => {
     const fetchNotifs = async () => {
       const { data, error } = await supabase
         .from('notifications' as any)
-        .select('id, title, created_at, seen')
+        .select('id, title, created_at, seen, type, ref_id')
         .eq('user_id', profile.user_id)
         .order('created_at', { ascending: false })
         .limit(100);
       if (!error) {
-        setNotifications((data || []).map((n: any) => ({ id: n.id, title: n.title, time: new Date(n.created_at).toLocaleString() })));
+        setNotifications((data || []).map((n: any) => ({ id: n.id, title: n.title, time: new Date(n.created_at).toLocaleString(), type: n.type, ref_id: n.ref_id })));
         setUnseen((data || []).filter((n: any) => !n.seen).length);
       }
     };
@@ -193,12 +194,21 @@ const Layout = ({ children }: LayoutProps) => {
                       {notifications.length === 0 ? (
                         <div className="p-3 text-sm text-muted-foreground">No notifications yet</div>
                       ) : (
-                        notifications.map(n => (
-                          <div key={n.id} className="p-3 text-sm border-b last:border-b-0">
-                            <div className="font-medium">{n.title}</div>
-                            <div className="text-xs text-muted-foreground">{n.time}</div>
-                          </div>
-                        ))
+                        notifications.map(n => {
+                          const onClick = () => {
+                            if (n.type === 'application') navigate('/applications');
+                            else if (n.type === 'document') navigate('/documents');
+                            else if (n.type === 'service_request') navigate('/services');
+                            else navigate('/dashboard');
+                            setNotifOpen(false);
+                          };
+                          return (
+                            <button key={n.id} onClick={onClick} className="w-full text-left p-3 text-sm border-b last:border-b-0 hover:bg-accent/30">
+                              <div className="font-medium">{n.title}</div>
+                              <div className="text-xs text-muted-foreground">{n.time}</div>
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                     <div className="p-2 flex items-center justify-end gap-2">

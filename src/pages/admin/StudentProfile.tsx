@@ -105,7 +105,7 @@ export default function StudentProfile() {
       // Add notification for student
       try {
         if (studentId) {
-          await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}` });
+          await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}`, type: 'document', ref_id: docId });
         }
       } catch {}
 
@@ -137,7 +137,7 @@ export default function StudentProfile() {
           fetchStudentProfile();
           try {
             if (studentId) {
-              await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}` });
+              await (supabase as any).from('notifications').insert({ user_id: studentId, title: `Document status updated to ${nextStatus}`, type: 'document', ref_id: docId });
             }
           } catch {}
           try {
