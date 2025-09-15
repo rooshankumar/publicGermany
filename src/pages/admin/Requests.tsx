@@ -145,6 +145,15 @@ export default function Requests() {
       setAdminResponse('');
       setDeliverableUrl(null);
       fetchRequests();
+      // Add in-app notification for the student (bell)
+      try {
+        const req = requests.find(r => r.id === requestId);
+        const userId = req?.profiles?.user_id;
+        if (userId) {
+          const title = `Service request ${req?.service_type || ''} → ${status}`.trim();
+          await (supabase as any).from('notifications').insert({ user_id: userId, title });
+        }
+      } catch {}
     } catch (error: any) {
       toast({
         title: "Error updating request",

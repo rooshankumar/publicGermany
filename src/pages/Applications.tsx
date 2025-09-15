@@ -122,6 +122,12 @@ const Applications = () => {
       if (error) throw error;
 
       toast({ title: 'Updated', description: 'Application updated successfully' });
+      // Add in-app notification for the student (self-edit)
+      try {
+        const uni = editApp.university_name || '';
+        const statusLabel = ((payload.status as string) || editApp.status).toString();
+        await (supabase as any).from('notifications').insert({ user_id: profile.user_id, title: `Application updated: ${uni} → ${statusLabel}` });
+      } catch {}
       setShowEditDialog(false);
       setEditApp(null);
       setEditValues({});
@@ -419,7 +425,7 @@ const Applications = () => {
                         <SelectContent>
                           <SelectItem value="Uni-assist">Uni-assist</SelectItem>
                           <SelectItem value="Direct">Direct</SelectItem>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
