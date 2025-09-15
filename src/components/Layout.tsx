@@ -1,8 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import {
   Home,
   Briefcase,
@@ -19,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import MobileNavigation from './MobileNavigation';
 import logo from '@/assets/germany-help-logo.png';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: ReactNode;
@@ -27,6 +29,9 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { profile, signOut } = useAuth();
   const location = useLocation();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; time: string }>>([]);
+  const [unseen, setUnseen] = useState(0);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -51,12 +56,64 @@ const Layout = ({ children }: LayoutProps) => {
 
   const navItems = isAdmin ? adminNavItems : studentNavItems;
 
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const addNotif = (title: string) => {
+      const item = { id: crypto.randomUUID(), title, time: new Date().toLocaleString() };
+      setNotifications(prev => [item, ...prev].slice(0, 50));
+      setUnseen(prev => prev + 1);
+    };
+
+    const channelDocs = supabase
+      .channel(`notifs-docs-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
+        const doc = payload.new as any;
+        const action = payload.eventType === 'INSERT' ? 'uploaded' : payload.eventType === 'UPDATE' ? `updated (${doc?.status || 'pending'})` : 'deleted';
+        addNotif(`Document ${action}`);
+      })
+      .subscribe();
+
+    const channelApps = supabase
+      .channel(`notifs-apps-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
+        const app = payload.new as any;
+        if (payload.eventType === 'UPDATE') {
+          addNotif(`Application ${app?.university_name || ''} ${app?.program_name || ''} updated: ${app?.status || ''}`.trim());
+        } else if (payload.eventType === 'INSERT') {
+          addNotif(`Application added: ${app?.university_name || ''}`.trim());
+        } else if (payload.eventType === 'DELETE') {
+          addNotif(`Application removed`);
+        }
+      })
+      .subscribe();
+
+    const channelReq = supabase
+      .channel(`notifs-req-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, (payload) => {
+        const r = payload.new as any;
+        if (payload.eventType === 'UPDATE') {
+          addNotif(`Service request ${r?.service_type || ''} ${r?.status ? '→ ' + r.status : 'updated'}`.trim());
+        } else if (payload.eventType === 'INSERT') {
+          addNotif(`Service request created`);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelDocs);
+      supabase.removeChannel(channelApps);
+      supabase.removeChannel(channelReq);
+    };
+  }, [profile?.user_id]);
+
   return (
     <div className="min-h-screen bg-background">
+
       {/* Desktop Layout */}
       <div className="hidden md:flex min-h-screen">
         {/* Desktop Sidebar */}
-  <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
+        <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
           {/* Logo Header */}
           <div className="p-0">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="block" aria-label="Go to home">
@@ -70,7 +127,7 @@ const Layout = ({ children }: LayoutProps) => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
-                
+
                 return (
                   <li key={item.href}>
                     <Link
@@ -110,11 +167,11 @@ const Layout = ({ children }: LayoutProps) => {
                 </p>
               </div>
             </div>
-            
-            <Button 
-              onClick={signOut} 
-              variant="outline" 
-              size="sm" 
+
+            <Button
+              onClick={signOut}
+              variant="outline"
+              size="sm"
               className="w-full justify-start hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -135,24 +192,51 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="md:hidden">
         {/* Mobile Header */}
         <header className="bg-card p-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <MobileNavigation />
-              <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 min-w-0" aria-label="Go to home">
-                <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-none" />
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
+          <div className="flex items-center justify-between relative">
+            {/* Left: Bell + Avatar */}
+            <div className="flex items-center gap-2 pl-2">
+              <div className="relative">
+                <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications">
+                  <Bell className="h-5 w-5" />
+                  {unseen > 0 && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-destructive rounded-full" />}
+                </Button>
+                {notifOpen && (
+                  <div className="absolute left-0 mt-2 w-80 max-w-[90vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-md">
+                    <div className="p-2 border-b text-sm font-medium">Notifications</div>
+                    <div className="max-h-64 overflow-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-3 text-sm text-muted-foreground">No notifications yet</div>
+                      ) : (
+                        notifications.map(n => (
+                          <div key={n.id} className="p-3 text-sm border-b last:border-b-0">
+                            <div className="font-medium">{n.title}</div>
+                            <div className="text-xs text-muted-foreground">{n.time}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="p-2 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setNotifications([])}>Clear</Button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Avatar className="h-8 w-8">
                 <AvatarImage src={(profile as any)?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
+            </div>
+
+            {/* Center: Logo */}
+            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 min-w-0" aria-label="Go to home">
+              <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-none" />
+            </Link>
+
+            {/* Right: Hamburger */}
+            <div className="pr-2">
+              <MobileNavigation />
             </div>
           </div>
         </header>

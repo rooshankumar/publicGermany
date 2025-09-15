@@ -1,9 +1,9 @@
+// @ts-nocheck
 // Supabase Edge Function: send-email
 // Uses Brevo Transactional API (HTTP) to send emails.
 // Configure secrets via: supabase functions secrets set BREVO_API_KEY=... FROM_EMAIL=... FROM_NAME=...
-
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
+// Provide Deno runtime types for local IDEs
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
@@ -24,7 +24,7 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
   });
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -78,6 +78,7 @@ serve(async (req: Request) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL");
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       if (supabaseUrl && serviceKey) {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.56.0");
         const supabase = createClient(supabaseUrl, serviceKey);
         await supabase.from("emails_log").insert({
           to_email: Array.isArray(to) ? to.join(",") : String(to),

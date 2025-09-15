@@ -35,6 +35,9 @@ const Applications = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editApp, setEditApp] = useState<Application | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, any>>({});
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -43,6 +46,7 @@ const Applications = () => {
       const { data, error } = await supabase
         .from('applications')
         .select('*')
+        .eq('user_id', profile?.user_id || '')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -300,6 +304,110 @@ const Applications = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Application Dialog */}
+          <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setEditApp(null); setEditValues({}); } }}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Application</DialogTitle>
+                <DialogDescription>Update your saved application details</DialogDescription>
+              </DialogHeader>
+              {editApp && (
+                <form onSubmit={handleEditApplication} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_university_name">University Name *</Label>
+                      <Input id="edit_university_name" value={editValues.university_name || ''} onChange={(e) => setEditValues(v => ({ ...v, university_name: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_program_name">Program Name *</Label>
+                      <Input id="edit_program_name" value={editValues.program_name || ''} onChange={(e) => setEditValues(v => ({ ...v, program_name: e.target.value }))} required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_ielts">IELTS Requirement</Label>
+                      <Input id="edit_ielts" value={editValues.ielts_requirement || ''} onChange={(e) => setEditValues(v => ({ ...v, ielts_requirement: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_german">German Requirement</Label>
+                      <Input id="edit_german" value={editValues.german_requirement || ''} onChange={(e) => setEditValues(v => ({ ...v, german_requirement: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_fees">Fees (EUR per semester)</Label>
+                      <Input id="edit_fees" type="number" value={editValues.fees_eur ?? ''} onChange={(e) => setEditValues(v => ({ ...v, fees_eur: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_application_method">Application Method</Label>
+                      <Select value={editValues.application_method || ''} onValueChange={(val) => setEditValues(v => ({ ...v, application_method: val }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Uni-assist">Uni-assist</SelectItem>
+                          <SelectItem value="Direct">Direct</SelectItem>
+                          <SelectItem value="">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_start">Application Start Date</Label>
+                      <Input id="edit_start" type="date" value={editValues.start_date || ''} onChange={(e) => setEditValues(v => ({ ...v, start_date: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_end">Application End Date</Label>
+                      <Input id="edit_end" type="date" value={editValues.end_date || ''} onChange={(e) => setEditValues(v => ({ ...v, end_date: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_tests">Required Tests</Label>
+                      <Input id="edit_tests" value={editValues.required_tests || ''} onChange={(e) => setEditValues(v => ({ ...v, required_tests: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_portal">Portal Link</Label>
+                      <Input id="edit_portal" type="url" value={editValues.portal_link || ''} onChange={(e) => setEditValues(v => ({ ...v, portal_link: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_status">Status</Label>
+                      <Select value={editValues.status || 'draft'} onValueChange={(val) => setEditValues(v => ({ ...v, status: val }))}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="submitted">Submitted</SelectItem>
+                          <SelectItem value="interview">Interview</SelectItem>
+                          <SelectItem value="offer">Offer</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_notes">Notes</Label>
+                      <Input id="edit_notes" value={editValues.notes || ''} onChange={(e) => setEditValues(v => ({ ...v, notes: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => { setShowEditDialog(false); setEditApp(null); setEditValues({}); }}>Cancel</Button>
+                    <Button type="submit">Save Changes</Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Card>
@@ -386,6 +494,13 @@ const Applications = () => {
                               onClick={() => deleteApplication(app.id)}
                             >
                               <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(app)}
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

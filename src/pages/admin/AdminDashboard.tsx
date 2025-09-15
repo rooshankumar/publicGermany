@@ -356,6 +356,12 @@ const AdminDashboard = () => {
                   Exports
                 </Link>
               </Button>
+              <Button asChild className="h-20 flex-col" variant="secondary">
+                <Link to="/admin/email-logs">
+                  <TrendingUp className="h-6 w-6 mb-2" />
+                  Email Logs
+                </Link>
+              </Button>
               <Button
                 className="h-20 flex-col"
                 variant="outline"
