@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { IndianRupee, Clock, CheckCircle, XCircle, Star, StarHalf, StarOff, Trash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
 
 type Review = Database['public']['Tables']['reviews']['Row'] & {
@@ -353,7 +354,7 @@ const Services = () => {
       } else if (i === fullStars + 1 && hasHalfStar) {
         stars.push(<StarHalf key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
       } else {
-        stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
+        stars.push(<Star key={i} className="w-5 h-5 text-muted-foreground" />);
       }
     }
     return stars;
@@ -487,6 +488,17 @@ const Services = () => {
       if (error) throw error;
 
       toast({ title: "Success", description: "Service request submitted" });
+      // Notify admin(s) via email (bell notifications handled by DB trigger)
+      try {
+        await sendEmail(
+          'roshlingua@gmail.com',
+          'New Service Request',
+          `<p>A new service request has been created.</p>
+           <p><strong>Services:</strong> ${serviceNames || '(none)'}<br/>
+           <strong>Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>
+           <strong>User ID:</strong> ${user.id}</p>`
+        );
+      } catch (_) { /* ignore admin email errors */ }
       setShowRequestDialog(false);
       setSelectedServices([]);
       fetchServiceRequests();
@@ -545,13 +557,13 @@ const Services = () => {
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-success" />;
       case 'in_progress':
-        return <Clock className="h-4 w-4 text-blue-600" />;
+        return <Clock className="h-4 w-4 text-primary" />;
       case 'payment_pending':
-        return <IndianRupee className="h-4 w-4 text-orange-600" />;
+        return <IndianRupee className="h-4 w-4 text-warning" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 

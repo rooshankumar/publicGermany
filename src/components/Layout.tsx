@@ -213,10 +213,16 @@ const Layout = ({ children }: LayoutProps) => {
                       ) : (
                         notifications.map(n => {
                           const onClick = () => {
-                            if (n.type === 'application') navigate('/applications');
-                            else if (n.type === 'document') navigate('/documents');
-                            else if (n.type === 'service_request') navigate('/services');
-                            else navigate('/dashboard');
+                            if (isAdmin) {
+                              if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
+                              else if (n.type === 'service_request') navigate('/admin/requests');
+                              else navigate('/admin');
+                            } else {
+                              if (n.type === 'application') navigate('/applications');
+                              else if (n.type === 'document') navigate('/documents');
+                              else if (n.type === 'service_request') navigate('/services');
+                              else navigate('/profile');
+                            }
                             setNotifOpen(false);
                           };
                           return (

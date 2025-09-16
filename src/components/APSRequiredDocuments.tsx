@@ -263,7 +263,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
 
   return (
     <div className="w-full max-w-3xl mx-auto pb-16 md:pb-0">
-      <div className="bg-white rounded-lg shadow-sm p-3 md:p-6">
+      <div className="bg-card rounded-lg shadow-sm p-3 md:p-6 border border-border">
         <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Document Upload</h2>
 
         {/* Desktop/Tablet: existing list */}
@@ -278,7 +278,7 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                 {docs[doc.key] ? (
                   <div className="flex items-center gap-2 justify-between">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-500 h-5 w-5" />
+                      <CheckCircle className="text-success h-5 w-5" />
                       <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
                       <span className="ml-1">{renderStatusPill((docs[doc.key] as any)?.status)}</span>
                     </div>
@@ -416,7 +416,7 @@ function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loadin
         <div
           className={
             'flex items-center border-2 border-dashed rounded-md p-1 transition-colors ' +
-            (dragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white')
+            (dragActive ? 'border-ring bg-accent/30' : 'border-border bg-background')
           }
           onDragOver={e => {
             e.preventDefault();
@@ -430,8 +430,8 @@ function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loadin
           onClick={() => inputRef.current?.click()}
           style={{ cursor: 'pointer', minHeight: 36, maxWidth: 260 }}
         >
-          <span className="text-xs text-gray-500">Drag & drop or <span className="text-blue-600 underline">click to upload</span></span>
-          <Upload className="h-4 w-4 text-gray-400 ml-2" />
+          <span className="text-xs text-muted-foreground">Drag & drop or <span className="text-primary underline">click to upload</span></span>
+          <Upload className="h-4 w-4 text-muted-foreground ml-2" />
           <input
             ref={inputRef}
             type="file"
@@ -447,7 +447,7 @@ function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loadin
         </div>
       ) : (
         <div className="flex items-center gap-2 mt-1">
-          <span className="truncate max-w-[180px] text-sm font-medium text-blue-700">{selectedFile.name}</span>
+          <span className="truncate max-w-[180px] text-sm font-medium text-primary">{selectedFile.name}</span>
           <Button
             size="sm"
             variant="ghost"

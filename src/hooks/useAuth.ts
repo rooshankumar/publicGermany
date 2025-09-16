@@ -153,6 +153,16 @@ export const useAuth = () => {
            <p>Welcome to publicGermany! We're excited to help you on your Germany journey.</p>
            <p>If you didn't request this, you can ignore this email.</p>`
         );
+        // Notify admin(s) of new signup
+        try {
+          await sendEmail(
+            'roshlingua@gmail.com',
+            'New student signed up',
+            `<p>A new student just signed up.</p>
+             <p><strong>Name:</strong> ${fullName || ''}<br/>
+             <strong>Email:</strong> ${email}</p>`
+          );
+        } catch (_) { /* ignore admin email errors */ }
       } catch (_) {
         // Do not block signup on email failure
       }

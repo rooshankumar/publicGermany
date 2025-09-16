@@ -101,7 +101,8 @@ export default function StudentProfile() {
         .select('id');
       if (error) throw error;
       toast({ title: 'Updated', description: `Document marked as ${nextStatus}.` });
-      fetchStudentProfile();
+      // Ensure UI is in sync without hard refresh
+      await studentQuery.refetch();
       // Add notification for student
       try {
         if (studentId) {
@@ -184,7 +185,7 @@ export default function StudentProfile() {
   });
 
   useEffect(() => {
-    if (studentQuery.isSuccess) {
+    if (studentQuery.data) {
       setStudent((studentQuery.data as any) || null);
       resolveEmail();
       setLoading(false);
@@ -192,7 +193,7 @@ export default function StudentProfile() {
       toast({ title: 'Error', description: 'Failed to fetch student profile', variant: 'destructive' });
       setLoading(false);
     }
-  }, [studentQuery.status]);
+  }, [studentQuery.data, studentQuery.isError]);
 
   // Realtime updates for student's documents
   // Debounced realtime updates for documents under this student
