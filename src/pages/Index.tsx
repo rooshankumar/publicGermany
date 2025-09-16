@@ -27,6 +27,7 @@ import {
   StarOff
 } from 'lucide-react';
 import LandingFAQ from '@/components/LandingFAQ';
+import ThemeToggle from '@/components/ThemeToggle';
 
 // Simple error boundary for Navbar
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
@@ -119,6 +120,7 @@ function Navbar() {
           <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">FAQ</a>
           <a href="/help" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Help Center</a>
           <a href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Contact</a>
+          <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
             <a href="/auth">Sign In</a>
           </Button>
@@ -128,18 +130,26 @@ function Navbar() {
         </div>
 
         {/* Mobile menu button */}
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2 text-muted-foreground hover:text-primary"
-        >
-          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="md:hidden flex items-center gap-1">
+          <ThemeToggle variant="icon" />
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 text-muted-foreground hover:text-primary"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
           <div className="px-4 py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <ThemeToggle variant="switch" />
+            </div>
             <a href="#features" className="block text-sm font-medium text-muted-foreground hover:text-primary">Features</a>
             <a href="#how-it-works" className="block text-sm font-medium text-muted-foreground hover:text-primary">How It Works</a>
             <a href="#testimonials" className="block text-sm font-medium text-muted-foreground hover:text-primary">Success Stories</a>
