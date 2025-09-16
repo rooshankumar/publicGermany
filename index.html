@@ -16,6 +16,26 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#2C3E50" />
 
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var shouldDark = stored === 'dark' || (!stored || (stored !== 'light' && stored !== 'dark')) && prefersDark;
+          if (shouldDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // In case of any errors (e.g., blocked storage), fall back to system preference
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        }
+      })();
+    </script>
+
     <meta property="og:title" content="publicgermany – Trusted Support" />
     <meta property="og:description" content="Your complete guide to studying in Germany — APS, universities, visa, and more." />
     <meta property="og:type" content="website" />

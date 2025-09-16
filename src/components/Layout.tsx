@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import MobileNavigation from './MobileNavigation';
 import logo from '@/assets/germany-help-logo.png';
 import { supabase } from '@/integrations/supabase/client';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface LayoutProps {
   children: ReactNode;
@@ -107,6 +108,14 @@ const Layout = ({ children }: LayoutProps) => {
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="block" aria-label="Go to home">
               <img src={logo} alt="publicgermany" className="block w-full h-32 object-cover rounded-none" />
             </Link>
+          </div>
+
+          {/* Theme Toggle (Desktop) */}
+          <div className="px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <ThemeToggle variant="switch" />
+            </div>
           </div>
 
           {/* Navigation */}
@@ -240,7 +249,8 @@ const Layout = ({ children }: LayoutProps) => {
             </Link>
 
             {/* Right: Hamburger */}
-            <div className="pr-2">
+            <div className="pr-2 flex items-center gap-1">
+              <ThemeToggle variant="icon" />
               <MobileNavigation />
             </div>
           </div>
