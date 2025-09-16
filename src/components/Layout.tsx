@@ -251,7 +251,7 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Center: Logo */}
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 min-w-0" aria-label="Go to home">
-              <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-none" />
+              <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-md bg-card p-1 ring-1 ring-border" />
             </Link>
 
             {/* Right: Hamburger */}

@@ -104,7 +104,7 @@ function Navbar() {
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="publicgermany Logo" className="h-10 w-10" />
+          <img src={logo} alt="publicgermany Logo" className="h-10 w-10 rounded-md bg-card p-1 ring-1 ring-border" />
           <span className="font-bold text-xl text-foreground tracking-tight">publicgermany</span>
           <Badge className="trust-badge hidden sm:inline-flex">
             <Shield className="w-3 h-3" />
@@ -134,10 +134,10 @@ function Navbar() {
           <ThemeToggle variant="icon" />
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-muted-foreground hover:text-primary"
+            className="p-2 text-foreground hover:text-primary"
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? <X className="w-6 h-6 text-foreground" /> : <Menu className="w-6 h-6 text-foreground" />}
           </button>
         </div>
       </div>

@@ -56,8 +56,8 @@ const MobileNavigation = () => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-6 w-6" />
+        <Button variant="ghost" size="icon" className="md:hidden text-foreground" aria-label="Open menu">
+          <Menu className="h-6 w-6 text-foreground" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-80 p-0">
@@ -66,14 +66,14 @@ const MobileNavigation = () => {
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg" />
+                <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg bg-card p-1 ring-1 ring-border" />
                 <div>
                   <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
                   <p className="text-sm text-muted-foreground">Study in Germany</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                <X className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu" className="text-foreground">
+                <X className="h-5 w-5 text-foreground" />
               </Button>
             </div>
           </div>
