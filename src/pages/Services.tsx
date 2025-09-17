@@ -119,10 +119,19 @@ const Services = () => {
   const [search, setSearch] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const [timeline, setTimeline] = useState<string>('');
 
   // Map of requestId -> discovered deliverable URL (from storage)
   const [deliverables, setDeliverables] = useState<Record<string, string>>({});
   const [paymentEmail, setPaymentEmail] = useState<string>('roshlingua@gmail.com');
+
+  // Parse stored service_type into clean list of service names (handles package + "Extras:")
+  const parseServiceNames = (text: string = ''): string[] => {
+    return text
+      .split(/\||,/g)
+      .map(s => s.replace(/Extras:\s*/i, '').trim())
+      .filter(Boolean);
+  };
 
   type CatalogItem = {
     id: string;
@@ -543,10 +552,17 @@ const Services = () => {
       return;
     }
 
+    if (!timeline) {
+      toast({ title: "Timeline required", description: "Please choose a preferred timeline before submitting.", variant: "destructive" });
+      return;
+    }
+
     const formData = new FormData(e.target as HTMLFormElement);
+    // Build a human-friendly description including package and optional extras
+    const selectedExtras = selectedServices.map(id => services.find(s => s.id === id)?.name).filter(Boolean) as string[];
     const serviceNames = packageRequestName
-      ? packageRequestName
-      : selectedServices.map(id => services.find(s => s.id === id)?.name).join(', ');
+      ? [packageRequestName, ...(selectedExtras.length ? ["Extras: " + selectedExtras.join(', ')] : [])].join(' | ')
+      : selectedExtras.join(', ');
 
     try {
       const { error } = await supabase
@@ -554,7 +570,8 @@ const Services = () => {
         .insert([{
           user_id: user.id,
           service_type: serviceNames,
-          service_price: packageRequestName ? 0 : calculateTotalPrice(),
+          // For package requests, store only the extras total as price (package range is informational)
+          service_price: packageRequestName ? calculateTotalPrice() : calculateTotalPrice(),
           service_currency: 'INR',
           request_details: formData.get('details') as string,
           preferred_timeline: formData.get('timeline') as string,
@@ -749,7 +766,7 @@ const Services = () => {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button 
                         className="w-full sm:w-auto"
-                        onClick={() => { setPackageRequestName(p.name); setShowRequestDialog(true); }}
+                        onClick={() => { setSelectedServices([]); setTimeline(''); setPackageRequestName(p.name); setShowRequestDialog(true); }}
                       >
                         Request Package
                       </Button>
@@ -774,8 +791,8 @@ const Services = () => {
             <div className="flex-1">
               <Input
                 placeholder="Search services (e.g., SOP, APS, CV)"
-                defaultValue={search}
-                onChange={(e) => debounce((val: string) => setSearch(val), 250)(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -801,14 +818,14 @@ const Services = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>{service.name}</CardTitle>
-                      <Badge variant="secondary">₹{service.price.toLocaleString()}</Badge>
+                      <Badge variant="secondary">{service.price != null ? `₹${service.price.toLocaleString()}` : '—'}</Badge>
                     </div>
                     <CardDescription>{service.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Button 
                       className="w-full"
-                      onClick={() => { setSelectedServices([service.id]); setShowRequestDialog(true); }}
+                      onClick={() => { setPackageRequestName(null); setSelectedServices([service.id]); setTimeline(''); setShowRequestDialog(true); }}
                     >
                       Request Service
                     </Button>
@@ -930,47 +947,51 @@ const Services = () => {
               
               <form onSubmit={handleRequestSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  {!packageRequestName ? (
-                    <>
-                      <Label className="text-base font-medium">Select Services</Label>
-                      {sortedServices.map((service) => (
-                        <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg">
-                          <Checkbox
-                            id={service.id}
-                            checked={selectedServices.includes(service.id)}
-                            onCheckedChange={(checked) => handleServiceSelection(service.id, checked as boolean)}
-                          />
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <Label htmlFor={service.id} className="font-medium cursor-pointer">
-                                  {service.name}
-                                </Label>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {service.description}
-                                </p>
-                              </div>
-                              <Badge variant="outline">
-                                ₹{service.price.toLocaleString()}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="p-4 border rounded-lg">
+                  {packageRequestName && (
+                    <div className="p-4 border rounded-lg space-y-1">
                       <p className="font-medium">Selected package</p>
                       <p className="text-muted-foreground">{packageRequestName}</p>
+                      {(() => { const p = packages.find(pk => pk.name === packageRequestName); return p && p.priceRange; })() && (
+                        <p className="text-sm text-muted-foreground">Package price: ₹{packages.find(pk => pk.name === packageRequestName)?.priceRange}</p>
+                      )}
                     </div>
                   )}
 
-                  {selectedServices.length > 0 && !packageRequestName && (
-                    <div className="p-4 bg-primary/10 rounded-lg">
+                  <Label className="text-base font-medium">{packageRequestName ? 'Add optional services' : 'Select Services'}</Label>
+                  {sortedServices.map((service) => (
+                    <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id={service.id}
+                        checked={selectedServices.includes(service.id)}
+                        onCheckedChange={(checked) => handleServiceSelection(service.id, checked as boolean)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <Label htmlFor={service.id} className="font-medium cursor-pointer">
+                              {service.name}
+                            </Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {service.description}
+                            </p>
+                          </div>
+                          <Badge variant="outline">
+                            ₹{service.price?.toLocaleString()}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {selectedServices.length > 0 && (
+                    <div className="p-4 bg-primary/10 rounded-lg space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">Total</span>
+                        <span className="font-medium">{packageRequestName ? 'Extras total' : 'Total'}</span>
                         <span>₹{calculateTotalPrice().toLocaleString()}</span>
                       </div>
+                      {packageRequestName && (
+                        <p className="text-xs text-muted-foreground">Package price is separate; shown above as a range.</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -988,7 +1009,9 @@ const Services = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="timeline">Preferred Timeline</Label>
-                  <Select name="timeline" required>
+                  {/* Hidden input ensures the selected value is submitted with the form */}
+                  <input type="hidden" name="timeline" value={timeline} />
+                  <Select value={timeline} onValueChange={setTimeline}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select timeline" />
                     </SelectTrigger>
@@ -1004,9 +1027,8 @@ const Services = () => {
 
                 {/* Payment Instructions */}
                 <div className="p-4 bg-muted rounded-lg text-sm">
-                  For payments, please contact us via email at
-                  {' '}
-                  <a href="mailto:roshlingua@gmail.com" className="underline">roshlingua@gmail.com</a>.
+                  For payments, please contact us via email at{' '}
+                  <a href={`mailto:${paymentEmail}`} className="underline">{paymentEmail}</a>.
                 </div>
 
                 <div className="flex justify-end space-x-2">
@@ -1017,7 +1039,7 @@ const Services = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={selectedServices.length === 0}>
+                  <Button type="submit" disabled={!packageRequestName && selectedServices.length === 0}>
                     Submit Request
                   </Button>
                 </div>
@@ -1038,7 +1060,7 @@ const Services = () => {
           {serviceRequests.length === 0 ? (
             <div className="text-center py-8 border rounded-lg">
               <p className="text-muted-foreground mb-4">No service requests yet</p>
-              <Button onClick={() => setShowRequestDialog(true)}>
+              <Button onClick={() => { setPackageRequestName(null); setSelectedServices([]); setTimeline(''); setShowRequestDialog(true); }}>
                 Request Your First Service
               </Button>
             </div>
@@ -1123,7 +1145,7 @@ const Services = () => {
 
                       {/* Reflect pending payments for included services */}
                       <div className="flex flex-wrap gap-2">
-                        {request.service_type.split(',').map(n => n.trim()).filter(Boolean).map((name) => {
+                        {parseServiceNames(request.service_type).map((name) => {
                           const sid = nameToId(name);
                           const pay = getPaymentFor(sid);
                           if (!pay) return null;
