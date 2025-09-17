@@ -43,8 +43,7 @@
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(0 100% 41%), hsl(0 100% 46%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 100% 41%), hsl(0 100% 46%), hsl(48 100% 50%));
-
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%), hsl(0 0% 92%), hsl(0 0% 88%)); /* classic, less bright */
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --gradient-success: linear-gradient(135deg, hsl(123 46% 33%), hsl(123 46% 43%));
 
@@ -133,61 +132,58 @@
 }
 
   .dark {
-    /* Neon Dark Theme */
+    /* Monochromatic Minimalism (Dark Mode) */
     /* Base */
-    --background: 0 0% 5%; /* #0D0D0D */
-    --foreground: 0 0% 100%; /* #FFFFFF */
+    --background: 0 0% 7%; /* #121212 */
+    --foreground: 0 0% 88%; /* #E0E0E0 primary text */
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 9%; /* slightly above bg */
+    --card-foreground: 0 0% 88%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 88%;
 
-    /* Neon Tokens */
-    --neon-green: 152 100% 50%; /* #00FF85 */
-    --neon-blue: 209 100% 56%;  /* #1E90FF */
-    --neon-pink: 324 100% 50%;  /* #FF0099 */
-
-    /* Map semantic tokens to neon for dark */
-    --primary: var(--neon-green);
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 152 100% 60%;
+    /* Semantic tokens (grayscale) */
+    --primary: 0 0% 53%; /* #888888 for interactive/primary */
+    --primary-foreground: 0 0% 7%; /* #121212 on primary surfaces */
+    --primary-glow: 0 0% 60%; /* subtle lighter gray for focus/hover */
 
     --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 0 0% 88%;
 
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 80%;
+    --muted-foreground: 0 0% 69%; /* #B0B0B0 secondary text */
 
-    --accent: var(--neon-blue);
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 53%; /* #888888 */
+    --accent-foreground: 0 0% 7%;
 
-    --success: 152 100% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 48 100% 57%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 350 100% 55%;
-    --destructive-foreground: 0 0% 100%;
+    /* Keep status colors for semantics/accessibility */
+    --success: 123 46% 33%;
+    --success-foreground: 0 0% 98%;
+    --warning: 48 100% 50%;
+    --warning-foreground: 0 0% 0%;
+    --destructive: 350 100% 35%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 16%;
-    --ring: var(--neon-green);
+    /* UI elements */
+    --border: 0 0% 27%; /* #444444 */
+    --input: 0 0% 16%; /* inputs a touch lighter than bg */
+    --ring: 0 0% 53%; /* use accent gray for focus ring */
 
-    /* Gradients tuned for neon */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--neon-green)), hsl(var(--neon-blue)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--neon-blue)), hsl(var(--neon-green)), hsl(var(--neon-pink)));
+    /* Neutral gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 20%), hsl(0 0% 35%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 13%), hsl(0 0% 20%), hsl(0 0% 35%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 7%), hsl(0 0% 10%));
-    --gradient-success: linear-gradient(135deg, hsl(152 100% 40%), hsl(152 100% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(123 46% 28%), hsl(123 46% 38%));
 
-    /* Shadows stronger but subtle */
-    --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.35);
-    --shadow-medium: 0 8px 25px hsl(0 0% 0% / 0.45);
-    --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.55);
+    /* Subtle shadows for dark surfaces */
+    --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.25);
+    --shadow-medium: 0 8px 25px hsl(0 0% 0% / 0.35);
+    --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.45);
 
-    /* Bright Accent for Dark Mode (hover) */
-    --bright-accent: var(--neon-pink);
-    --bright-accent-foreground: 0 0% 6%;
+    /* Bright Accent adjusted to neutral */
+    --bright-accent: 0 0% 60%;
+    --bright-accent-foreground: 0 0% 7%;
   }
 
   /* Bright Accent Button */
@@ -198,7 +194,7 @@
   }
 
   .btn-bright:hover {
-    background-color: hsl(195 100% 60%);
+    background-color: hsl(0 0% 70%);
     transform: translateY(-1px);
   }
 

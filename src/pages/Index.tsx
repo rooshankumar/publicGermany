@@ -729,16 +729,19 @@ function TestimonialsSection() {
 
 function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <section className="py-20 md:py-24 bg-gradient-to-r from-primary to-success relative overflow-hidden animate-fade-in-up">
+    <section
+      className="py-20 md:py-24 relative overflow-hidden animate-fade-in-up"
+      style={{ background: 'var(--gradient-hero)' }}
+    >
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
       }}></div>
       
       <div className="relative max-w-6xl mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
           Ready to Start Your German Education Journey?
         </h2>
-        <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+        <p className="text-xl text-foreground/90 mb-8 max-w-2xl mx-auto">
           Join thousands of successful students who have achieved their dreams with publicgermany.
         </p>
         <Button 

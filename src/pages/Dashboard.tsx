@@ -229,33 +229,33 @@ const Dashboard = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 no-x-scroll">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-primary via-primary to-success relative overflow-hidden">
+        <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
           <div className="absolute inset-0 opacity-20" style={{
             backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
           }}></div>
           
           <div className="relative container mx-auto px-4 sm:px-6 py-8 md:py-16">
-            <div className="max-w-4xl mx-auto text-center text-white">
+            <div className="max-w-4xl mx-auto text-center text-foreground">
               <div className="flex items-center justify-center gap-4 mb-6">
-                <Avatar className="h-14 w-14 ring-2 ring-white/30">
+                <Avatar className="h-14 w-14 ring-2 ring-foreground/30">
                   <AvatarImage src={userData.avatar_url} />
-                  <AvatarFallback className="bg-white/20 text-white">
+                  <AvatarFallback className="bg-foreground/10 text-foreground">
                     {userData.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <GraduationCap className="w-8 h-8" />
+                <div className="w-16 h-16 bg-foreground/10 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <GraduationCap className="w-8 h-8 text-foreground" />
                 </div>
               </div>
               <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4">
                 Welcome back, {userData.full_name.split(' ')[0]}!
               </h1>
-              <p className="text-lg md:text-2xl text-white/90 mb-6 md:mb-8">
+              <p className="text-lg md:text-2xl text-foreground/90 mb-6 md:mb-8">
                 {userData.profile_completion < 50 
                   ? `Let's get started on your journey to studying in Germany`
                   : `You're ${userData.profile_completion}% of the way there! Keep up the great work!`}
               </p>
-              <div className="flex items-center justify-center gap-4 text-white/80">
+              <div className="flex items-center justify-center gap-4 text-foreground/80">
                 <div className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
                   <span>Goal-oriented</span>
