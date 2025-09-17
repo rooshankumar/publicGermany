@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PromoCard from '@/components/PromoCard';
 import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useQuery } from '@tanstack/react-query';
@@ -166,11 +166,15 @@ const Services = () => {
   const catalogQuery = useQuery({
     queryKey: ['services_catalog_active'],
     queryFn: fetchCatalog,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const paymentContactQuery = useQuery({
     queryKey: ['payment_contact'],
     queryFn: fetchPaymentContact,
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -181,39 +185,47 @@ const Services = () => {
   const promoExpert = usePromoOncePerSession('expert-help', 6 * 60 * 60 * 1000);
   const promoPackages = usePromoOncePerSession('packages-push', 6 * 60 * 60 * 1000);
 
-  const services = (catalogQuery.data || [])
-    .filter((i) => i.kind === 'individual' && i.price_inr !== null)
-    .map((i) => ({
-      id: slugifyName(i.name),
-      name: i.name,
-      price: Number(i.price_inr) || 0,
-      description: i.description || '',
-    }));
+  const services = useMemo(() => (
+    (catalogQuery.data || [])
+      .filter((i) => i.kind === 'individual')
+      .map((i) => ({
+        id: slugifyName(i.name),
+        name: i.name,
+        price: i.price_inr === null ? null : Number(i.price_inr) || 0,
+        description: i.description || '',
+      }))
+  ), [catalogQuery.data]);
 
-  const packages = (catalogQuery.data || [])
-    .filter((i) => i.kind === 'package')
-    .map((i) => ({
-      id: slugifyName(i.name),
-      name: i.name,
-      priceRange: i.price_range_inr || '',
-      description: i.description || '',
-    }));
+  const packages = useMemo(() => (
+    (catalogQuery.data || [])
+      .filter((i) => i.kind === 'package')
+      .map((i) => ({
+        id: slugifyName(i.name),
+        name: i.name,
+        priceRange: i.price_range_inr || '',
+        description: i.description || '',
+      }))
+  ), [catalogQuery.data]);
 
   // Sort services by price (low to high) for display consistency
-  const sortedServices = [...services].sort((a, b) => a.price - b.price);
+  const sortedServices = useMemo(() => (
+    [...services].sort((a, b) => (a.price || 0) - (b.price || 0))
+  ), [services]);
 
   // Compute displayed services based on search + sort controls
-  const displayedServices = [...services]
-    .filter(s => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
-      return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q);
-    })
-    .sort((a, b) => {
-      if (sortKey === 'price_asc') return a.price - b.price;
-      if (sortKey === 'price_desc') return b.price - a.price;
-      return a.name.localeCompare(b.name);
-    });
+  const displayedServices = useMemo(() => (
+    [...services]
+      .filter(s => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q);
+      })
+      .sort((a, b) => {
+        if (sortKey === 'price_asc') return (a.price || 0) - (b.price || 0);
+        if (sortKey === 'price_desc') return (b.price || 0) - (a.price || 0);
+        return a.name.localeCompare(b.name);
+      })
+  ), [services, search, sortKey]);
 
   // Debounce utility
   const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
@@ -251,16 +263,22 @@ const Services = () => {
   const paymentsQuery = useQuery({
     queryKey: ['service_payments', user?.id],
     queryFn: fetchUserPayments,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const serviceRequestsQuery = useQuery({
     queryKey: ['service_requests', user?.id],
     queryFn: fetchServiceRequests,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const reviewsQuery = useQuery({
     queryKey: ['reviews_public_and_me', user?.id],
     queryFn: fetchReviews,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Sync local state from query data
@@ -684,6 +702,15 @@ const Services = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 space-y-16">
+        {/* Catalog load errors */}
+        {catalogQuery.isError && (
+          <Card className="border-destructive/30">
+            <CardHeader>
+              <CardTitle className="text-destructive text-base">Unable to load services</CardTitle>
+              <CardDescription>{(catalogQuery.error as any)?.message || 'Please try again shortly.'}</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
         {/* Minimal promo pop cards */}
         {promoExpert.shouldShow && (
           <PromoCard 
@@ -747,8 +774,8 @@ const Services = () => {
             <div className="flex-1">
               <Input
                 placeholder="Search services (e.g., SOP, APS, CV)"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                defaultValue={search}
+                onChange={(e) => debounce((val: string) => setSearch(val), 250)(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -767,27 +794,39 @@ const Services = () => {
           </div>
           
           {/* Services grid (with sort & search) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {displayedServices.map((service) => (
-              <Card key={service.id} className="border-primary/10 hover:shadow-xl transition-all">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>{service.name}</CardTitle>
-                    <Badge variant="secondary">₹{service.price.toLocaleString()}</Badge>
-                  </div>
-                  <CardDescription>{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    className="w-full"
-                    onClick={() => { setSelectedServices([service.id]); setShowRequestDialog(true); }}
-                  >
-                    Request Service
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {displayedServices.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {displayedServices.map((service) => (
+                <Card key={service.id} className="border-primary/10 hover:shadow-xl transition-all">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>{service.name}</CardTitle>
+                      <Badge variant="secondary">₹{service.price.toLocaleString()}</Badge>
+                    </div>
+                    <CardDescription>{service.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      className="w-full"
+                      onClick={() => { setSelectedServices([service.id]); setShowRequestDialog(true); }}
+                    >
+                      Request Service
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border/60">
+              <CardHeader>
+                <CardTitle className="text-base">No services available right now</CardTitle>
+                <CardDescription>
+                  We’re updating our catalog. Please check back soon or contact us at{' '}
+                  <a href={`mailto:${paymentEmail}`} className="underline">{paymentEmail}</a>.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
 
           {/* Payments Note */}
           <Card className="border-primary/20">

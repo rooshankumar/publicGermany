@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import PromoCard from '@/components/PromoCard';
 import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useNavigate } from "react-router-dom";
@@ -28,7 +29,7 @@ import {
   StarHalf,
   StarOff
 } from 'lucide-react';
-import LandingFAQ from '@/components/LandingFAQ';
+const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
 import ThemeToggle from '@/components/ThemeToggle';
 
 // Simple error boundary for Navbar
@@ -101,6 +102,23 @@ function FreeVsPaidSection() {
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const queryClient = useQueryClient();
+
+  const prefetchServices = async () => {
+    try {
+      await queryClient.prefetchQuery({
+        queryKey: ['services_catalog_active'],
+        queryFn: async () => {
+          const { data } = await (supabase as any)
+            .from('services_catalog')
+            .select('id, kind, name, description, price_inr, price_range_inr, is_active')
+            .eq('is_active', true);
+          return data || [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } catch (_) {}
+  };
   
   return (
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
@@ -124,6 +142,7 @@ function Navbar() {
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <a href="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</a>
           <a href="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</a>
+          <a href="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</a>
           <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
             <a href="/auth">Sign In</a>
@@ -160,6 +179,7 @@ function Navbar() {
             <a href="#faq" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
             <a href="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</a>
             <a href="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</a>
+            <a href="/services" onMouseEnter={prefetchServices} className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Services</a>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
                 <a href="/auth">Sign In</a>
@@ -263,7 +283,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
 }
 
 function FeaturesSection() {
-  const features = [
+  const features = React.useMemo(() => ([
     {
       icon: FileCheck,
       title: "APS Certification Guidance",
@@ -294,7 +314,7 @@ function FeaturesSection() {
       title: "Pre-departure Support",
       description: "Guidance on accommodation, insurance, and settling in Germany."
     }
-  ];
+  ]), []);
 
   return (
     <section id="features" className="py-16 md:py-24 bg-muted/30">
@@ -333,7 +353,7 @@ function FeaturesSection() {
 }
 
 function HowItWorksSection() {
-  const steps = [
+  const steps = React.useMemo(() => ([
     {
       step: "1",
       title: "Create Your Profile",
@@ -358,7 +378,7 @@ function HowItWorksSection() {
       description: "Successfully get admitted to your dream German university",
       icon: GraduationCap
     }
-  ];
+  ]), []);
 
   return (
     <section id="how-it-works" className="py-16 md:py-24 bg-accent/30">
@@ -831,7 +851,9 @@ const Index = () => {
         <div className="border-t border-border" />
         <TestimonialsSection />
         <div className="border-t border-border" />
-        <LandingFAQ />
+        <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading FAQs…</div>}>
+          <LandingFAQ />
+        </React.Suspense>
         <CTASection onGetStarted={handleGetStarted} />
       </main>
       <Footer />
