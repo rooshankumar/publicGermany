@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import PromoCard from '@/components/PromoCard';
+import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/types/database.types';
@@ -106,6 +108,7 @@ const Services = () => {
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [packageRequestName, setPackageRequestName] = useState<string | null>(null);
   const [userPayments, setUserPayments] = useState<any[]>([]);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -174,12 +177,25 @@ const Services = () => {
     if (paymentContactQuery.data) setPaymentEmail(paymentContactQuery.data);
   }, [paymentContactQuery.data]);
 
+  // Minimal promo popups (once per session)
+  const promoExpert = usePromoOncePerSession('expert-help', 6 * 60 * 60 * 1000);
+  const promoPackages = usePromoOncePerSession('packages-push', 6 * 60 * 60 * 1000);
+
   const services = (catalogQuery.data || [])
     .filter((i) => i.kind === 'individual' && i.price_inr !== null)
     .map((i) => ({
       id: slugifyName(i.name),
       name: i.name,
       price: Number(i.price_inr) || 0,
+      description: i.description || '',
+    }));
+
+  const packages = (catalogQuery.data || [])
+    .filter((i) => i.kind === 'package')
+    .map((i) => ({
+      id: slugifyName(i.name),
+      name: i.name,
+      priceRange: i.price_range_inr || '',
       description: i.description || '',
     }));
 
@@ -498,8 +514,8 @@ const Services = () => {
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedServices.length === 0) {
-      toast({ title: "Error", description: "Please select at least one service", variant: "destructive" });
+    if (selectedServices.length === 0 && !packageRequestName) {
+      toast({ title: "Error", description: "Please select at least one service or a package", variant: "destructive" });
       return;
     }
 
@@ -510,7 +526,9 @@ const Services = () => {
     }
 
     const formData = new FormData(e.target as HTMLFormElement);
-    const serviceNames = selectedServices.map(id => services.find(s => s.id === id)?.name).join(', ');
+    const serviceNames = packageRequestName
+      ? packageRequestName
+      : selectedServices.map(id => services.find(s => s.id === id)?.name).join(', ');
 
     try {
       const { error } = await supabase
@@ -518,7 +536,7 @@ const Services = () => {
         .insert([{
           user_id: user.id,
           service_type: serviceNames,
-          service_price: calculateTotalPrice(),
+          service_price: packageRequestName ? 0 : calculateTotalPrice(),
           service_currency: 'INR',
           request_details: formData.get('details') as string,
           preferred_timeline: formData.get('timeline') as string,
@@ -541,6 +559,7 @@ const Services = () => {
       } catch (_) { /* ignore admin email errors */ }
       setShowRequestDialog(false);
       setSelectedServices([]);
+      setPackageRequestName(null);
       fetchServiceRequests();
     } catch (error) {
       console.error('Error:', error);
@@ -665,6 +684,58 @@ const Services = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 space-y-16">
+        {/* Minimal promo pop cards */}
+        {promoExpert.shouldShow && (
+          <PromoCard 
+            title="Get expert help" 
+            description="Start with a quick profile evaluation, only ₹999." 
+            onClose={promoExpert.markShown} 
+          />
+        )}
+        {promoPackages.shouldShow && (
+          <PromoCard 
+            title="Admission + Visa Packages" 
+            description="End-to-end guidance. Request a package now." 
+            onClose={promoPackages.markShown} 
+          />
+        )}
+        {/* Packages Section */}
+        {packages.length > 0 && (
+          <div className="space-y-4 md:space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl font-bold tracking-tight">Packages</h2>
+              <p className="text-muted-foreground">All-in-one bundles to save time and maximize outcomes</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {packages.map((p) => (
+                <Card key={p.id} className="border-accent/20 hover:shadow-lg transition-all">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>{p.name}</CardTitle>
+                      {p.priceRange ? (
+                        <Badge variant="secondary">₹{p.priceRange}</Badge>
+                      ) : null}
+                    </div>
+                    <CardDescription>{p.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button 
+                        className="w-full sm:w-auto"
+                        onClick={() => { setPackageRequestName(p.name); setShowRequestDialog(true); }}
+                      >
+                        Request Package
+                      </Button>
+                      <Button variant="outline" asChild className="w-full sm:w-auto">
+                        <a href={`mailto:${paymentEmail}?subject=${encodeURIComponent('Package enquiry: ' + p.name)}`}>Ask About This</a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Services Section */}
         <div className="space-y-6 md:space-y-10">
           <div className="text-center space-y-3">
@@ -810,45 +881,56 @@ const Services = () => {
               <DialogHeader>
                 <DialogTitle>Request Personalized Help</DialogTitle>
                 <DialogDescription>
-                  Select the services you need and provide details about your requirements
+                  {packageRequestName ? (
+                    <span>You're requesting the <strong>{packageRequestName}</strong> package</span>
+                  ) : (
+                    <span>Select the services you need and provide details about your requirements</span>
+                  )}
                 </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={handleRequestSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <Label className="text-base font-medium">Select Services</Label>
-                  {sortedServices.map((service) => (
-                    <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg">
-                      <Checkbox
-                        id={service.id}
-                        checked={selectedServices.includes(service.id)}
-                        onCheckedChange={(checked) => handleServiceSelection(service.id, checked as boolean)}
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <Label htmlFor={service.id} className="font-medium cursor-pointer">
-                              {service.name}
-                            </Label>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {service.description}
-                            </p>
+                  {!packageRequestName ? (
+                    <>
+                      <Label className="text-base font-medium">Select Services</Label>
+                      {sortedServices.map((service) => (
+                        <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                          <Checkbox
+                            id={service.id}
+                            checked={selectedServices.includes(service.id)}
+                            onCheckedChange={(checked) => handleServiceSelection(service.id, checked as boolean)}
+                          />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <Label htmlFor={service.id} className="font-medium cursor-pointer">
+                                  {service.name}
+                                </Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {service.description}
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                ₹{service.price.toLocaleString()}
+                              </Badge>
+                            </div>
                           </div>
-                          <Badge variant="outline">
-                            ₹{service.price.toLocaleString()}
-                          </Badge>
                         </div>
-                      </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="p-4 border rounded-lg">
+                      <p className="font-medium">Selected package</p>
+                      <p className="text-muted-foreground">{packageRequestName}</p>
                     </div>
-                  ))}
-                  
-                  {selectedServices.length > 0 && (
+                  )}
+
+                  {selectedServices.length > 0 && !packageRequestName && (
                     <div className="p-4 bg-primary/10 rounded-lg">
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center justify-between">
                         <span className="font-medium">Total</span>
-                        <span className="text-lg font-bold">
-                          ₹{calculateTotalPrice().toLocaleString()}
-                        </span>
+                        <span>₹{calculateTotalPrice().toLocaleString()}</span>
                       </div>
                     </div>
                   )}

@@ -1,4 +1,6 @@
 import React from 'react';
+import PromoCard from '@/components/PromoCard';
+import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -794,6 +796,10 @@ const Index = () => {
     navigate('/auth');
   };
 
+  // Minimal promo popups (once per session)
+  const promoExpert = usePromoOncePerSession('home-expert-help', 6 * 60 * 60 * 1000);
+  const promoPackages = usePromoOncePerSession('home-packages-push', 6 * 60 * 60 * 1000);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <ErrorBoundary>
@@ -801,6 +807,21 @@ const Index = () => {
       </ErrorBoundary>
       <GermanyFlagBar />
       <main className="flex-1">
+        {/* Minimal promo pop cards on homepage */}
+        {promoExpert.shouldShow && (
+          <PromoCard 
+            title="Get expert help" 
+            description="Start with a quick profile evaluation, only ₹999." 
+            onClose={promoExpert.markShown} 
+          />
+        )}
+        {promoPackages.shouldShow && (
+          <PromoCard 
+            title="Admission + Visa Packages" 
+            description="End-to-end guidance. Request a package now." 
+            onClose={promoPackages.markShown} 
+          />
+        )}
         <HeroSection onGetStarted={handleGetStarted} />
         <FeaturesSection />
         <div className="border-t border-border" />
