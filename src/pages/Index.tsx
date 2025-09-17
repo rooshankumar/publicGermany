@@ -123,15 +123,25 @@ function Navbar() {
   return (
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-6 w-6 rounded-md overflow-hidden shrink-0">
-            <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
+        <div className="flex items-center gap-4 pr-2 md:pr-4 min-w-0">
+          <div className="h-12 w-12 md:h-16 md:w-16 rounded-md overflow-hidden shrink-0">
+            <img
+              src={logos}
+              srcSet={`${logos} 1x, ${logos} 2x`}
+              sizes="(min-width: 768px) 64px, 56px"
+              alt="publicgermany logo"
+              loading="eager"
+              decoding="async"
+              className="h-full w-full object-contain object-center"
+            />
           </div>
-          <span className="font-bold text-lg text-foreground tracking-tight whitespace-nowrap">publicgermany</span>
-          <Badge className="trust-badge hidden md:inline-flex ml-3">
-            <Shield className="w-3 h-3" />
-            Trusted
-          </Badge>
+          <div className="flex flex-col justify-center leading-tight">
+            <Badge className="trust-badge inline-flex self-start mb-0.5 text-[10px] md:text-[11px] px-2 py-0 h-5">
+              <Shield className="w-3 h-3" />
+              Trusted
+            </Badge>
+            <span className="font-bold text-lg text-foreground tracking-tight whitespace-nowrap">publicgermany</span>
+          </div>
         </div>
         
         {/* Desktop Navigation */}
