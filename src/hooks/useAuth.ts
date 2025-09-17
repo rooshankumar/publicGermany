@@ -76,8 +76,38 @@ export const useAuth = () => {
           documents: documentsData || []
         });
       } else {
-        // Profile may not be created yet (e.g., immediate post-signup before trigger runs)
-        setProfile(null);
+        // Profile may not be created yet (e.g., immediate post-signup before trigger runs).
+        // Attempt to create a minimal profile client-side to avoid blocking the user.
+        try {
+          const user = (await supabase.auth.getUser()).data.user;
+          if (user) {
+            const fullName = (user.user_metadata as any)?.full_name || null;
+            const { error: insertErr } = await supabase
+              .from('profiles')
+              .insert({
+                user_id: user.id,
+                full_name: fullName,
+                role: 'student',
+              } as any);
+            if (insertErr) {
+              // If insert fails due to race/constraint, we ignore and leave profile as null for now
+              console.warn('Profile insert skipped/failed (likely race):', insertErr.message);
+            } else {
+              // Re-fetch profile after creating it
+              const { data: createdProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+              setProfile(createdProfile ? { ...createdProfile, documents: documentsData || [] } : null);
+            }
+          } else {
+            setProfile(null);
+          }
+        } catch (e) {
+          console.warn('Profile creation attempt failed:', e);
+          setProfile(null);
+        }
       }
       
     } catch (error) {
@@ -134,7 +164,7 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, fullName: string) => {
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/auth/callback`;
       
       const { error } = await supabase.auth.signUp({
         email,
