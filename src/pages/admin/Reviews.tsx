@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import InlineLoader from '@/components/InlineLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,7 +171,11 @@ export default function AdminReviews() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? (
-            <Card><CardContent className="p-6">Loading...</CardContent></Card>
+            <Card>
+              <CardContent className="p-6">
+                <InlineLoader label="Loading reviews" />
+              </CardContent>
+            </Card>
           ) : filtered.length === 0 ? (
             <Card><CardContent className="p-6 text-muted-foreground">No reviews found.</CardContent></Card>
           ) : filtered.map((r) => (

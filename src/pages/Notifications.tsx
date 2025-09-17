@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import InlineLoader from '@/components/InlineLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -85,7 +86,7 @@ export default function Notifications() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-muted-foreground">Loading…</p>
+              <InlineLoader label="Loading notifications" />
             ) : items.length === 0 ? (
               <p className="text-muted-foreground">No notifications yet.</p>
             ) : (

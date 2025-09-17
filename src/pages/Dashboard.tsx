@@ -3,7 +3,8 @@ import { useAuth, type Profile } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
+import FullScreenLoader from '@/components/FullScreenLoader';
 import { Badge } from '@/components/ui/badge';
 // Custom Progress component to replace the shadcn/ui one
 const Progress = ({ value, className = '', indicatorClassName = '' }: { 
@@ -214,13 +215,7 @@ const Dashboard = () => {
   if (loading || !userData) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-          <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 -mt-8 relative z-10">
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
-          </div>
-        </div>
+        <FullScreenLoader label="Loading dashboard" />
       </Layout>
     );
   }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import InlineLoader from '@/components/InlineLoader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -114,6 +115,7 @@ export const ResourceFetcher = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {isLoading && <InlineLoader label="Fetching resource" />}
           <div>
             <h4 className="font-medium mb-3">Quick Access Resources</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

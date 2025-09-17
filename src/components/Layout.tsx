@@ -103,19 +103,22 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="hidden md:flex min-h-screen">
         {/* Desktop Sidebar */}
         <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
-          {/* Logo Header */}
-          <div className="p-0">
-            <Link to={isAdmin ? '/admin' : '/dashboard'} className="block" aria-label="Go to home">
-              <div className="block w-full h-24 rounded-none overflow-hidden">
-                <img src={logos} alt="publicgermany logo" className="w-full h-full object-contain object-center p-2" />
+          {/* Logo Header (match mobile style) */}
+          <div className="p-4 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
+            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-3" aria-label="Go to home">
+              <div className="w-10 h-10 rounded-lg overflow-hidden">
+                <img src={logos} alt="publicgermany" className="w-full h-full object-cover object-left" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
+                <p className="text-sm text-muted-foreground">Study in Germany</p>
               </div>
             </Link>
           </div>
 
           {/* Theme Toggle (Desktop) */}
           <div className="px-4 py-3 border-b border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Theme</span>
+            <div className="flex items-center justify-end">
               <ThemeToggle variant="switch" />
             </div>
           </div>

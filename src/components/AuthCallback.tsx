@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -61,14 +61,7 @@ const AuthCallback = () => {
     handleAuthCallback();
   }, [navigate, location]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-        <p className="text-muted-foreground">Completing sign in...</p>
-      </div>
-    </div>
-  );
+  return <FullScreenLoader label="Completing sign in" />;
 };
 
 export default AuthCallback;

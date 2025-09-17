@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import InlineLoader from '@/components/InlineLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,10 +132,7 @@ export default function Payments() {
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading payments...</p>
-              </div>
+              <InlineLoader label="Loading payments" />
             ) : filteredPayments.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No payments found</p>

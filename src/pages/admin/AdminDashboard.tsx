@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,12 +164,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading dashboard...</p>
-          </div>
-        </div>
+        <FullScreenLoader label="Loading admin dashboard" />
       </Layout>
     );
   }

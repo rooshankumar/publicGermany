@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,6 +90,10 @@ const Auth = () => {
     { icon: BookOpen, text: "Document Preparation Help" },
     { icon: Users, text: "Expert Consultations" }
   ];
+
+  if (loading) {
+    return <FullScreenLoader label="Preparing sign in" />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-primary/5">

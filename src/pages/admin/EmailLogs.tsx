@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import InlineLoader from '@/components/InlineLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +80,7 @@ export default function EmailLogs() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-muted-foreground">Loading...</p>
+              <InlineLoader label="Loading emails" />
             ) : filtered.length === 0 ? (
               <p className="text-muted-foreground">No emails found.</p>
             ) : (

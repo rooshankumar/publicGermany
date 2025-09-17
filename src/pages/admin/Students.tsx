@@ -1,4 +1,5 @@
 import Layout from '@/components/Layout';
+import InlineLoader from '@/components/InlineLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -270,10 +271,7 @@ export default function Students() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading students...</p>
-              </div>
+              <InlineLoader label="Loading students" />
             ) : filteredStudents.length === 0 ? (
               <div className="text-center py-8">
                 <UserX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

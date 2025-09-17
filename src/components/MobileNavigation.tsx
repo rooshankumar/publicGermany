@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   Menu,
-  X,
   Home,
   Briefcase,
   GraduationCap,
@@ -74,9 +73,7 @@ const MobileNavigation = () => {
                   <p className="text-sm text-muted-foreground">Study in Germany</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu" className="text-foreground">
-                <X className="h-5 w-5 text-foreground" />
-              </Button>
+              {/* Built-in close button is rendered by SheetContent; no extra close needed here */}
             </div>
           </div>
 
