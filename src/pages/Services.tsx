@@ -143,6 +143,7 @@ const Services = () => {
     return { min, max };
   };
 
+
   type CatalogItem = {
     id: string;
     kind: 'package' | 'individual';
@@ -214,6 +215,14 @@ const Services = () => {
         description: i.description || '',
       }))
   ), [catalogQuery.data]);
+
+  // Detailed list of currently selected extras with price (must be after `services` is declared)
+  const selectedExtrasDetailed = useMemo(() => {
+    return selectedServices
+      .map((id) => services.find((s) => s.id === id))
+      .filter((s): s is { id: string; name: string; price: number | null; description: string } => !!s)
+      .map((s) => ({ name: s.name, price: s.price || 0 }));
+  }, [selectedServices, services]);
 
   const packages = useMemo(() => (
     (catalogQuery.data || [])
@@ -1002,6 +1011,17 @@ const Services = () => {
                             <span className="font-medium">Package price</span>
                             <span>{p?.priceRange ? `₹${p.priceRange}` : '—'}</span>
                           </div>
+                          {/* Named extras breakdown */}
+                          {selectedExtrasDetailed.length > 0 && (
+                            <div className="pt-1 space-y-1">
+                              {selectedExtrasDetailed.map((ex, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-sm">
+                                  <span>{ex.name}</span>
+                                  <span>₹{ex.price.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex items-center justify-between">
                             <span className="font-medium">Extras total</span>
                             <span>₹{extras.toLocaleString()}</span>
