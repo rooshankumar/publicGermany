@@ -119,17 +119,69 @@ const Services = () => {
 
   // Map of requestId -> discovered deliverable URL (from storage)
   const [deliverables, setDeliverables] = useState<Record<string, string>>({});
+  const [paymentEmail, setPaymentEmail] = useState<string>('roshlingua@gmail.com');
 
-  const services = [
-    { id: 'university_shortlisting', name: 'University Shortlisting', price: 5000, description: 'Get personalized university recommendations based on your profile' },
-    { id: 'cv_preparation', name: 'CV Preparation', price: 3000, description: 'Professional CV tailored for German university applications' },
-    { id: 'sop_first_draft', name: 'SOP (1st draft)', price: 2500, description: 'Statement of Purpose - first draft with revisions' },
-    { id: 'sop_additional', name: 'SOP (additional)', price: 2000, description: 'Additional SOP for different programs' },
-    { id: 'lor_samples', name: 'LOR Samples', price: 3000, description: 'Letter of Recommendation templates and samples' },
-    { id: 'visa_sop', name: 'Visa SOP', price: 5000, description: 'Statement of Purpose specifically for visa applications' },
-    { id: 'aps_help', name: 'APS Help', price: 2000, description: 'Guidance and assistance with APS certificate application' },
-    { id: 'general_profile_evaluation', name: 'General Profile Evaluation', price: 999, description: 'Quick profile evaluation with actionable next steps' },
-  ];
+  type CatalogItem = {
+    id: string;
+    kind: 'package' | 'individual';
+    name: string;
+    description: string | null;
+    price_inr: number | null;
+    price_range_inr: string | null;
+    is_active: boolean;
+  };
+
+  const slugifyName = (name: string) =>
+    name
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+
+  async function fetchCatalog(): Promise<CatalogItem[]> {
+    const { data, error } = await (supabase as any)
+      .from('services_catalog')
+      .select('id, kind, name, description, price_inr, price_range_inr, is_active')
+      .eq('is_active', true);
+    if (error) throw error;
+    return (data || []) as CatalogItem[];
+  }
+
+  async function fetchPaymentContact(): Promise<string> {
+    const { data, error } = await (supabase as any)
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'payment_contact')
+      .single();
+    if (error) return 'roshlingua@gmail.com';
+    const email = (data?.value?.email || data?.value?.contact || '').toString();
+    return email || 'roshlingua@gmail.com';
+  }
+
+  // DB-backed services list (individual services only)
+  const catalogQuery = useQuery({
+    queryKey: ['services_catalog_active'],
+    queryFn: fetchCatalog,
+  });
+
+  const paymentContactQuery = useQuery({
+    queryKey: ['payment_contact'],
+    queryFn: fetchPaymentContact,
+  });
+
+  useEffect(() => {
+    if (paymentContactQuery.data) setPaymentEmail(paymentContactQuery.data);
+  }, [paymentContactQuery.data]);
+
+  const services = (catalogQuery.data || [])
+    .filter((i) => i.kind === 'individual' && i.price_inr !== null)
+    .map((i) => ({
+      id: slugifyName(i.name),
+      name: i.name,
+      price: Number(i.price_inr) || 0,
+      description: i.description || '',
+    }));
 
   // Sort services by price (low to high) for display consistency
   const sortedServices = [...services].sort((a, b) => a.price - b.price);
@@ -170,19 +222,7 @@ const Services = () => {
   }
 
   // Map service display name to DB service_id
-  const nameToId = (name: string) => {
-    const map: Record<string, string> = {
-      'General Profile Evaluation': 'general_profile_evaluation',
-      'APS Help': 'aps_help',
-      'University Shortlisting': 'university_shortlisting',
-      'CV Preparation': 'cv_preparation',
-      'SOP (1st draft)': 'sop_first_draft',
-      'SOP (additional)': 'sop_additional',
-      'LOR Samples': 'lor_samples',
-      'Visa SOP': 'visa_sop',
-    };
-    return map[name] || name.toLowerCase().split(' ').join('_');
-  };
+  const nameToId = (name: string) => slugifyName(name);
 
   // Get latest payment for a given service_id from user's payments
   const getPaymentFor = (serviceId: string) => {
@@ -577,7 +617,7 @@ const Services = () => {
     }
   };
 
-  if (loading) {
+  if (loading || catalogQuery.isLoading) {
     return (
       <Layout>
         <div className="animate-pulse space-y-4">
@@ -684,8 +724,8 @@ const Services = () => {
               <CardTitle>Payments</CardTitle>
               <CardDescription>
                 For payments, please contact us via email at{' '}
-                <a href="mailto:roshlingua@gmail.com" className="underline">
-                  roshlingua@gmail.com
+                <a href={`mailto:${paymentEmail}`} className="underline">
+                  {paymentEmail}
                 </a>.
               </CardDescription>
             </CardHeader>
