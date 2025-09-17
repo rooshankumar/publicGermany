@@ -205,7 +205,7 @@ export default function Students() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-5 max-w-7xl mx-auto">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
           <p className="text-muted-foreground">Manage and track all student profiles with live updates</p>
@@ -213,22 +213,22 @@ export default function Students() {
 
         {/* Search and Filters */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+              <Filter className="h-4 w-4" />
               Search & Filter Students
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <CardContent className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <Input
                 placeholder="Search by name, student ID, or user ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
+                className="w-full h-9"
               />
               <Select value={apsFilter} onValueChange={setApsFilter}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="APS Pathway" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,7 +239,7 @@ export default function Students() {
                 </SelectContent>
               </Select>
               <Select value={germanFilter} onValueChange={setGermanFilter}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="German Level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,7 +262,7 @@ export default function Students() {
 
         {/* Students List */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between">
               <span>Student Profiles ({filteredStudents.length})</span>
               <span className="hidden lg:inline text-xs text-muted-foreground">Tip: Scroll horizontally to view more columns</span>
@@ -281,18 +281,18 @@ export default function Students() {
               </div>
             ) : (
               <div className="overflow-x-auto max-h-[70vh]">
-                <table className="w-full border-collapse text-sm">
+                <table className="w-full border-collapse text-[13px]">
                   <thead className="sticky top-0 bg-card z-10">
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left p-3 font-medium whitespace-nowrap">Student</th>
-                      <th className="text-left p-3 font-medium hidden sm:table-cell whitespace-nowrap">Student ID</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell whitespace-nowrap">APS Pathway</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell whitespace-nowrap">German Level</th>
-                      <th className="text-left p-3 font-medium hidden lg:table-cell whitespace-nowrap">Progress</th>
-                      <th className="text-left p-3 font-medium hidden lg:table-cell whitespace-nowrap">Applications</th>
-                      <th className="text-left p-3 font-medium whitespace-nowrap">Documents</th>
-                      <th className="text-left p-3 font-medium hidden sm:table-cell whitespace-nowrap">Joined</th>
-                      <th className="text-left p-3 font-medium whitespace-nowrap">Actions</th>
+                      <th className="text-left p-2 font-medium whitespace-nowrap">Student</th>
+                      <th className="text-left p-2 font-medium hidden sm:table-cell whitespace-nowrap">Student ID</th>
+                      <th className="text-left p-2 font-medium hidden md:table-cell whitespace-nowrap">APS Pathway</th>
+                      <th className="text-left p-2 font-medium hidden md:table-cell whitespace-nowrap">German Level</th>
+                      <th className="text-left p-2 font-medium hidden lg:table-cell whitespace-nowrap">Progress</th>
+                      <th className="text-left p-2 font-medium hidden lg:table-cell whitespace-nowrap">Applications</th>
+                      <th className="text-left p-2 font-medium whitespace-nowrap">Documents</th>
+                      <th className="text-left p-2 font-medium hidden sm:table-cell whitespace-nowrap">Joined</th>
+                      <th className="text-left p-2 font-medium whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="align-middle">
@@ -300,33 +300,33 @@ export default function Students() {
                       const progress = getProgressPercentage(student);
                       return (
                         <tr key={student.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="p-3 min-w-[220px]">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                                <UserCheck className="h-5 w-5 text-primary" />
+                          <td className="p-2 min-w-[220px]">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <UserCheck className="h-4 w-4 text-primary" />
                               </div>
-                              <div className="max-w-[280px]">
+                              <div className="max-w-[260px]">
                                 <p className="font-medium truncate" title={student.full_name || undefined}>{student.full_name || 'Unnamed Student'}</p>
                                 <p className="text-xs text-muted-foreground">ID: {student.user_id.slice(0, 8)}...</p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-3 hidden sm:table-cell">
+                          <td className="p-2 hidden sm:table-cell">
                             <Badge variant="outline" className="font-mono">
                               {generateStudentId(students.indexOf(student) + 1)}
                             </Badge>
                           </td>
-                          <td className="p-3 hidden md:table-cell">
+                          <td className="p-2 hidden md:table-cell">
                             <Badge className={getAPSStatusColor(student.aps_pathway)}>
                               {student.aps_pathway?.replace('_', ' ').toUpperCase() || 'Not Set'}
                             </Badge>
                           </td>
-                          <td className="p-3 hidden md:table-cell">
+                          <td className="p-2 hidden md:table-cell">
                             <Badge className={getGermanLevelColor(student.german_level)}>
                               {student.german_level?.toUpperCase() || 'None'}
                             </Badge>
                           </td>
-                          <td className="p-3 hidden lg:table-cell">
+                          <td className="p-2 hidden lg:table-cell">
                             <div className="flex items-center gap-2">
                               <div className="w-20 bg-muted rounded-full h-2">
                                 <div 
@@ -337,25 +337,25 @@ export default function Students() {
                               <span className="text-sm text-muted-foreground">{progress}%</span>
                             </div>
                           </td>
-                          <td className="p-3 hidden lg:table-cell">
+                          <td className="p-2 hidden lg:table-cell">
                             <div className="flex items-center gap-1">
                               <FileText className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">{student.applications?.length || 0}</span>
                             </div>
                           </td>
-                          <td className="p-3">
+                          <td className="p-2">
                             <div className="flex items-center gap-2">
                               <GraduationCap className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">{(student.documents?.length || 0) + (student.files?.length || 0)}</span>
                               {(student.documents && student.documents.length > 0) || (student.files && student.files.length > 0) ? (
-                                <Button size="sm" variant="outline" onClick={() => {
+                                <Button size="sm" variant="outline" className="h-8" onClick={() => {
                                   setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [], files: (student.files as any) || [] });
                                   setDocsOpen(true);
                                 }}>View</Button>
                               ) : null}
                             </div>
                           </td>
-                          <td className="p-3 hidden sm:table-cell">
+                          <td className="p-2 hidden sm:table-cell">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm whitespace-nowrap">
@@ -363,9 +363,9 @@ export default function Students() {
                               </span>
                             </div>
                           </td>
-                          <td className="p-3">
+                          <td className="p-2">
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" asChild>
+                              <Button size="sm" variant="outline" className="h-8" asChild>
                                 <Link to={`/admin/students/${student.user_id}`}>
                                   <Eye className="h-4 w-4 mr-1" />
                                   View Profile
@@ -374,6 +374,7 @@ export default function Students() {
                               <Button 
                                 size="sm" 
                                 variant="ghost"
+                                className="h-8"
                                 onClick={() => {
                                   // Quick edit functionality can be added here
                                   toast({

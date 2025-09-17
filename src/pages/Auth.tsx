@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen } from 'lucide-react';
-import logo from '@/assets/germany-help-logo.png';
+import logos from '@/assets/logos.png';
 
 const Auth = () => {
   const { signIn, signUp, signInWithGoogle, loading } = useAuth();
@@ -103,7 +103,9 @@ const Auth = () => {
           {/* Left Side - Branding & Features */}
           <div className="space-y-8 text-center lg:text-left">
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-              <img src={logo} alt="publicgermany Logo" className="h-12 w-12" />
+              <div className="h-12 w-12 rounded-md overflow-hidden">
+                <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
+              </div>
               <span className="font-bold text-2xl text-foreground">publicgermany</span>
               <Badge className="trust-badge">
                 <Shield className="w-3 h-3" />
@@ -354,7 +356,7 @@ const Auth = () => {
                         </div>
                       </div>
 
-                      <Button S
+                      <Button 
                         type="button" 
                         variant="outline" 
                         className="w-full h-11" 

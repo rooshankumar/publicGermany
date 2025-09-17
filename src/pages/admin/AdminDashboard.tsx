@@ -184,7 +184,7 @@ const AdminDashboard = () => {
         </div>
         
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -238,7 +238,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Recent Payments */}
           <Card>
             <CardHeader>
@@ -319,51 +319,51 @@ const AdminDashboard = () => {
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button asChild className="h-20 flex-col">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button asChild className="h-16 flex-col">
                 <Link to="/admin/students">
-                  <Users className="h-6 w-6 mb-2" />
+                  <Users className="h-5 w-5 mb-1.5" />
                   Manage Students
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="secondary">
+              <Button asChild className="h-16 flex-col" variant="secondary">
                 <Link to="/admin/applications">
-                  <FileText className="h-6 w-6 mb-2" />
+                  <FileText className="h-5 w-5 mb-1.5" />
                   Review Applications
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="outline">
+              <Button asChild className="h-16 flex-col" variant="outline">
                 <Link to="/admin/requests">
-                  <GraduationCap className="h-6 w-6 mb-2" />
+                  <GraduationCap className="h-5 w-5 mb-1.5" />
                   Service Requests
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="ghost">
+              <Button asChild className="h-16 flex-col" variant="ghost">
                 <Link to="/admin/payments">
-                  <CreditCard className="h-6 w-6 mb-2" />
+                  <CreditCard className="h-5 w-5 mb-1.5" />
                   Payment Records
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="secondary">
+              <Button asChild className="h-16 flex-col" variant="secondary">
                 <Link to="/admin/reviews">
-                  <TrendingUp className="h-6 w-6 mb-2" />
+                  <TrendingUp className="h-5 w-5 mb-1.5" />
                   Moderate Reviews
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="outline">
+              <Button asChild className="h-16 flex-col" variant="outline">
                 <Link to="/admin/exports">
-                  <Settings className="h-6 w-6 mb-2" />
+                  <Settings className="h-5 w-5 mb-1.5" />
                   Exports
                 </Link>
               </Button>
-              <Button asChild className="h-20 flex-col" variant="secondary">
+              <Button asChild className="h-16 flex-col" variant="secondary">
                 <Link to="/admin/email-logs">
-                  <TrendingUp className="h-6 w-6 mb-2" />
+                  <TrendingUp className="h-5 w-5 mb-1.5" />
                   Email Logs
                 </Link>
               </Button>
               <Button
-                className="h-20 flex-col"
+                className="h-16 flex-col"
                 variant="outline"
                 onClick={async () => {
                   try {

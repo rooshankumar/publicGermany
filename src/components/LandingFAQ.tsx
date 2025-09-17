@@ -168,31 +168,31 @@ export default function LandingFAQ() {
   const toggle = (key: string) => setOpen(open === key ? null : key);
 
   return (
-    <section id="faq" className="py-16 bg-background">
-      <div className="container mx-auto max-w-4xl px-4">
+    <section id="faq" className="py-16 bg-background text-foreground">
+      <div className="container mx-auto max-w-5xl px-4">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold">FAQ</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">FAQ</h2>
           <p className="text-muted-foreground mt-2">Answers to common questions about studying in Germany</p>
         </div>
 
         <div className="space-y-10">
           {sections.map((section, si) => (
             <div key={si}>
-              <h3 className="text-xl md:text-2xl font-semibold mb-4">{section.title}</h3>
+              <h3 className="text-xl md:text-2xl font-semibold mb-4 text-foreground">{section.title}</h3>
               <div className="space-y-3">
                 {section.items.map((item, ii) => {
                   const key = `${si}-${ii}`;
                   const isOpen = open === key;
                   return (
-                    <div key={key} className="rounded-lg border bg-card/50 backdrop-blur-sm">
+                    <div key={key} className="rounded-lg border border-border bg-card/50 backdrop-blur-sm">
                       <button
-                        className="w-full flex justify-between items-center px-5 py-4 text-left font-medium hover:bg-accent/30 transition"
+                        className="w-full flex justify-between items-center px-5 py-4 text-left font-medium text-foreground hover:bg-accent/30 transition"
                         onClick={() => toggle(key)}
                         aria-expanded={isOpen}
                         aria-controls={`faq-panel-${key}`}
                       >
-                        <span>{item.q}</span>
-                        <span className={`ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+                        <span className="pr-3">{item.q}</span>
+                        <span className={`ml-auto text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                       </button>
                       {isOpen && (
                         <div id={`faq-panel-${key}`} className="px-5 pb-5 text-muted-foreground text-sm animate-fade-in">

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MobileNavigation from './MobileNavigation';
-import logo from '@/assets/germany-help-logo.png';
+import logos from '@/assets/logos.png';
 import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -106,7 +106,9 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Logo Header */}
           <div className="p-0">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="block" aria-label="Go to home">
-              <img src={logo} alt="publicgermany" className="block w-full h-32 object-cover rounded-none" />
+              <div className="block w-full h-24 rounded-none overflow-hidden">
+                <img src={logos} alt="publicgermany logo" className="w-full h-full object-contain object-center p-2" />
+              </div>
             </Link>
           </div>
 
@@ -249,10 +251,7 @@ const Layout = ({ children }: LayoutProps) => {
               </Avatar>
             </div>
 
-            {/* Center: Logo */}
-            <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 min-w-0" aria-label="Go to home">
-              <img src={logo} alt="publicgermany" className="block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-md bg-card p-1 ring-1 ring-border" />
-            </Link>
+            {/* Center: Logo removed for mobile as requested */}
 
             {/* Right: Hamburger */}
             <div className="pr-2 flex items-center gap-1">

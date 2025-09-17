@@ -95,6 +95,16 @@
     max-width: 100%;
     height: auto;
   }
+  /* Default text and background tokens */
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+  *, *::before, *::after {
+    border-color: hsl(var(--border));
+  }
 }
 
 @layer utilities {
@@ -123,50 +133,61 @@
 }
 
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 0 0% 95%;
+    /* Neon Dark Theme */
+    /* Base */
+    --background: 0 0% 5%; /* #0D0D0D */
+    --foreground: 0 0% 100%; /* #FFFFFF */
 
-    --card: 220 20% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 20% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 0 100% 55%;
-    --primary-foreground: 220 20% 8%;
-    --primary-glow: 0 100% 65%;
+    /* Neon Tokens */
+    --neon-green: 152 100% 50%; /* #00FF85 */
+    --neon-blue: 209 100% 56%;  /* #1E90FF */
+    --neon-pink: 324 100% 50%;  /* #FF0099 */
 
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 0 0% 95%;
+    /* Map semantic tokens to neon for dark */
+    --primary: var(--neon-green);
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 152 100% 60%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 0 0% 75%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
 
-    --accent: 48 100% 45%;
-    --accent-foreground: 220 20% 8%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 80%;
 
-    --success: 123 46% 43%;
-    --success-foreground: 220 20% 8%;
+    --accent: var(--neon-blue);
+    --accent-foreground: 0 0% 100%;
+
+    --success: 152 100% 45%;
+    --success-foreground: 0 0% 100%;
     --warning: 48 100% 57%;
-    --warning-foreground: 220 20% 8%;
-    --destructive: 350 100% 45%;
-    --destructive-foreground: 220 20% 8%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 350 100% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 18%;
-    --ring: 0 100% 55%;
-    --gradient-primary: linear-gradient(135deg, hsl(215 84% 45%), hsl(215 84% 55%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 84% 35%), hsl(215 84% 45%), hsl(142 76% 36%));
-    --gradient-card: linear-gradient(145deg, hsl(220 20% 10%), hsl(220 15% 12%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
-    
-    --shadow-soft: 0 4px 12px hsl(220 20% 2% / 0.3);
-    --shadow-medium: 0 8px 25px hsl(220 20% 2% / 0.4);
-    --shadow-strong: 0 16px 40px hsl(220 20% 2% / 0.5);
+    --border: 0 0% 20%;
+    --input: 0 0% 16%;
+    --ring: var(--neon-green);
 
-    /* Bright Accent for Dark Mode */
-    --bright-accent: 195 100% 60%;
-    --bright-accent-foreground: 220 20% 8%;
+    /* Gradients tuned for neon */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--neon-green)), hsl(var(--neon-blue)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--neon-blue)), hsl(var(--neon-green)), hsl(var(--neon-pink)));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 7%), hsl(0 0% 10%));
+    --gradient-success: linear-gradient(135deg, hsl(152 100% 40%), hsl(152 100% 55%));
+
+    /* Shadows stronger but subtle */
+    --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.35);
+    --shadow-medium: 0 8px 25px hsl(0 0% 0% / 0.45);
+    --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.55);
+
+    /* Bright Accent for Dark Mode (hover) */
+    --bright-accent: var(--neon-pink);
+    --bright-accent-foreground: 0 0% 6%;
   }
 
   /* Bright Accent Button */
@@ -187,4 +208,6 @@
     background-color: hsl(var(--bright-accent));
     color: hsl(var(--bright-accent-foreground));
   }
+  
+  /* Removed brand-logo styles per design request */
 }

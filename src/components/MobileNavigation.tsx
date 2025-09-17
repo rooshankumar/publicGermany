@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import logo from '@/assets/germany-help-logo.png';
+import logos from '@/assets/logos.png';
 
 const MobileNavigation = () => {
   const { profile, signOut } = useAuth();
@@ -66,7 +66,9 @@ const MobileNavigation = () => {
           <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <img src={logo} alt="publicgermany" className="w-10 h-10 rounded-lg bg-card p-1 ring-1 ring-border" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden">
+                  <img src={logos} alt="publicgermany" className="w-full h-full object-cover object-left" />
+                </div>
                 <div>
                   <h1 className="text-lg font-bold text-foreground">publicgermany</h1>
                   <p className="text-sm text-muted-foreground">Study in Germany</p>

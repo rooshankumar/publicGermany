@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Home, ArrowLeft, Search, GraduationCap } from "lucide-react";
-import logo from '@/assets/germany-help-logo.png';
+import logos from '@/assets/logos.png';
 
 const NotFound = () => {
   const location = useLocation();

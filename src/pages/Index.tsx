@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import logo from '@/assets/germany-help-logo.png';
+import logos from '@/assets/logos.png';
 import { 
   GraduationCap, 
   Shield, 
@@ -104,22 +104,24 @@ function Navbar() {
     <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="publicgermany Logo" className="h-10 w-10 rounded-md bg-card p-1 ring-1 ring-border" />
-          <span className="font-bold text-xl text-foreground tracking-tight">publicgermany</span>
-          <Badge className="trust-badge hidden sm:inline-flex">
+          <div className="h-6 w-6 rounded-md overflow-hidden shrink-0">
+            <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
+          </div>
+          <span className="font-bold text-lg text-foreground tracking-tight whitespace-nowrap">publicgermany</span>
+          <Badge className="trust-badge hidden md:inline-flex ml-3">
             <Shield className="w-3 h-3" />
             Trusted
           </Badge>
         </div>
         
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6 lg:gap-8">
-          <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
-          <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Success Stories</a>
-          <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">FAQ</a>
-          <a href="/help" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Help Center</a>
-          <a href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Contact</a>
+        <div className="hidden md:flex items-center gap-5 lg:gap-6">
+          <a href="#features" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
+          <a href="#how-it-works" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">How It Works</a>
+          <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
+          <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
+          <a href="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</a>
+          <a href="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</a>
           <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
             <a href="/auth">Sign In</a>
@@ -150,12 +152,12 @@ function Navbar() {
               <span className="text-sm text-muted-foreground">Theme</span>
               <ThemeToggle variant="switch" />
             </div>
-            <a href="#features" className="block text-sm font-medium text-muted-foreground hover:text-primary">Features</a>
-            <a href="#how-it-works" className="block text-sm font-medium text-muted-foreground hover:text-primary">How It Works</a>
-            <a href="#testimonials" className="block text-sm font-medium text-muted-foreground hover:text-primary">Success Stories</a>
-            <a href="#faq" className="block text-sm font-medium text-muted-foreground hover:text-primary">FAQ</a>
-            <a href="/help" className="block text-sm font-medium text-muted-foreground hover:text-primary">Help Center</a>
-            <a href="/contact" className="block text-sm font-medium text-muted-foreground hover:text-primary">Contact</a>
+            <a href="#features" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
+            <a href="#how-it-works" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">How It Works</a>
+            <a href="#testimonials" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
+            <a href="#faq" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
+            <a href="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</a>
+            <a href="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</a>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
                 <a href="/auth">Sign In</a>
@@ -403,6 +405,17 @@ interface Review {
 }
 
 function TestimonialsSection() {
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  // Mobile slider ref and controls
+  const mobileSliderRef = React.useRef<HTMLDivElement | null>(null);
+  const scrollMobile = (dir: 'prev' | 'next') => {
+    const el = mobileSliderRef.current;
+    if (!el) return;
+    const delta = Math.round(el.clientWidth * 0.9) * (dir === 'next' ? 1 : -1);
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  };
   const { data: reviews, isLoading, error } = useQuery<Review[]>({
     queryKey: ['approved-reviews-home'],
     queryFn: async () => {
@@ -487,7 +500,7 @@ function TestimonialsSection() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="h-full">
-                <CardContent className="p-6 h-full flex flex-col">
+                <CardContent className="px-7 py-7 h-full flex flex-col">
                   <Skeleton className="h-5 w-32 mb-4" />
                   <Skeleton className="h-4 w-full mb-2" />
                   <Skeleton className="h-4 w-5/6 mb-2" />
@@ -535,64 +548,148 @@ function TestimonialsSection() {
           </p>
         </div>
         
-        {/* Mobile slider */}
-        <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory space-x-4 flex">
-          {reviews.map((review) => (
-            <Card key={review.id} className="min-w-[85%] snap-center hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
-              <CardContent className="p-6 h-full flex flex-col">
+        {/* Mobile slider with controls */}
+        <div className="md:hidden relative">
+          <div ref={mobileSliderRef} className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory space-x-4 flex">
+          {reviews.map((review) => {
+            const isOpen = !!expanded[review.id];
+            const text = review.review_text || "";
+            const truncated = text.length > 180 && !isOpen ? text.slice(0, 180) + "…" : text;
+            return (
+            <Card
+              key={review.id}
+              className="min-w-[85%] snap-center border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <CardContent className="px-6 py-6 h-full flex flex-col">
+                {/* Header: Avatar + Name/Date + Service Chip */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex">{renderStars(review.rating)}</div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
+                      {review.profiles?.full_name?.charAt(0) || 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{review.profiles?.full_name || 'Anonymous'}</p>
+                      <p className="text-[11px] text-muted-foreground">{formatDate(review.created_at)}</p>
+                    </div>
+                  </div>
                   {review.service_type && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{review.service_type}</span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap">
+                      {review.service_type}
+                    </span>
                   )}
                 </div>
-                <p className="text-muted-foreground mb-6 flex-grow">"{review.review_text}"</p>
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium mr-3">
-                    {review.profiles?.full_name?.charAt(0) || 'U'}
+
+                {/* Quote body with accent bar */}
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-1.5 rounded bg-accent/60 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-accent/80 mb-1">“</div>
+                    <p className="text-sm leading-relaxed text-foreground/90">{truncated}</p>
+                    {!isOpen && text.length > 180 && (
+                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                        Show more
+                      </button>
+                    )}
+                    {isOpen && text.length > 180 && (
+                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                        Show less
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium">{review.profiles?.full_name || 'Anonymous'}</p>
-                    <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
-                  </div>
+                </div>
+
+                {/* Footer: rating */}
+                <div className="mt-auto pt-2 border-t border-border/60 flex items-center justify-between">
+                  <div className="flex">{renderStars(review.rating)}</div>
+                  <span className="text-xs text-muted-foreground">{review.rating.toFixed(1)}/5</span>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ); })}
+          </div>
+          {/* Controls */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => scrollMobile('prev')}
+              aria-label="Previous review"
+              className="pointer-events-auto h-8 w-8 rounded-full bg-background/80 backdrop-blur border-border/60"
+            >
+              ‹
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => scrollMobile('next')}
+              aria-label="Next review"
+              className="pointer-events-auto h-8 w-8 rounded-full bg-background/80 backdrop-blur border-border/60"
+            >
+              ›
+            </Button>
+          </div>
         </div>
 
         {/* Desktop grid */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-8">
-          {reviews.map((review) => (
-            <Card key={review.id} className="h-full hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {reviews.map((review) => {
+            const isOpen = !!expanded[review.id];
+            const text = review.review_text || "";
+            const truncated = text.length > 220 && !isOpen ? text.slice(0, 220) + "…" : text;
+            return (
+            <Card
+              key={review.id}
+              className="h-full border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            >
               <CardContent className="p-6 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex">{renderStars(review.rating)}</div>
+                {/* Header: Avatar + Name/Date + Service Chip */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
+                      {review.profiles?.full_name?.charAt(0) || 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{review.profiles?.full_name || 'Anonymous'}</p>
+                      <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
+                    </div>
+                  </div>
                   {review.service_type && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{review.service_type}</span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap">
+                      {review.service_type}
+                    </span>
                   )}
                 </div>
-                <p className="text-muted-foreground mb-6 flex-grow">"{review.review_text}"</p>
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium mr-3">
-                    {review.profiles?.full_name?.charAt(0) || 'U'}
+
+                {/* Quote body with accent bar */}
+                <div className="flex items-start gap-3 mb-5 flex-grow">
+                  <div className="w-1.5 rounded bg-accent/60 mt-1" />
+                  <div className="flex-1">
+                    <div className="text-accent/80 mb-1">“</div>
+                    <p className="leading-relaxed text-foreground/90">{truncated}</p>
+                    {!isOpen && text.length > 220 && (
+                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                        Show more
+                      </button>
+                    )}
+                    {isOpen && text.length > 220 && (
+                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                        Show less
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium">{review.profiles?.full_name || 'Anonymous'}</p>
-                    <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
-                  </div>
+                </div>
+
+                {/* Footer: rating */}
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                  <div className="flex">{renderStars(review.rating)}</div>
+                  <span className="text-sm text-muted-foreground">{review.rating.toFixed(1)}/5</span>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ); })}
         </div>
         
-        <div className="text-center mt-12">
-          <Button variant="outline" className="mx-auto">
-            Read All Reviews
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+        {/* Removed 'Read All Reviews' link as requested */}
       </div>
     </section>
   );
@@ -632,7 +729,9 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <img src={logo} alt="publicgermany Logo" className="h-10 w-10" />
+              <div className="h-10 w-10 rounded-md overflow-hidden">
+                <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
+              </div>
               <span className="font-bold text-xl text-foreground">publicgermany</span>
             </div>
             <p className="text-muted-foreground mb-4">
