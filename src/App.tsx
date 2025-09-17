@@ -196,7 +196,7 @@ const App = () => (
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
-      <Analytics />
+      {import.meta.env.MODE === 'production' ? <Analytics /> : null}
     </TooltipProvider>
   </QueryClientProvider>
 );

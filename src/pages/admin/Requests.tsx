@@ -26,6 +26,16 @@ type ServiceRequest = Database['public']['Tables']['service_requests']['Row'] & 
   profiles?: any;
 };
 
+// Simple debounce hook
+function useDebouncedValue<T>(value: T, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function Requests() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<ServiceRequest[]>([]);
@@ -38,6 +48,8 @@ export default function Requests() {
   const [deliverableUploading, setDeliverableUploading] = useState(false);
   const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   useEffect(() => {
     fetchRequests();
@@ -57,7 +69,7 @@ export default function Requests() {
 
   useEffect(() => {
     filterRequests();
-  }, [requests, searchTerm, statusFilter, serviceFilter]);
+  }, [requests, debouncedSearch, statusFilter, serviceFilter]);
 
   const resolveEmail = async (userId: string): Promise<string | null> => {
     try {
@@ -100,11 +112,12 @@ export default function Requests() {
   const filterRequests = () => {
     let filtered = requests;
 
-    if (searchTerm) {
+    const q = (debouncedSearch || '').toLowerCase().trim();
+    if (q) {
       filtered = filtered.filter(req => 
-        req.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.service_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.request_details?.toLowerCase().includes(searchTerm.toLowerCase())
+        (req.profiles?.full_name || '').toLowerCase().includes(q) ||
+        (req.service_type || '').toLowerCase().includes(q) ||
+        (req.request_details || '').toLowerCase().includes(q)
       );
     }
 

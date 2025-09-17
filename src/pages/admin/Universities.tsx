@@ -36,6 +36,18 @@ export default function Universities() {
   const [countryFilter, setCountryFilter] = useState('all');
   const { toast } = useToast();
 
+  // Simple debounce hook
+  function useDebouncedValue<T>(value: T, delay = 300) {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+      const t = setTimeout(() => setDebounced(value), delay);
+      return () => clearTimeout(t);
+    }, [value, delay]);
+    return debounced;
+  }
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
   useEffect(() => {
     fetchUniversities();
     
@@ -181,8 +193,9 @@ export default function Universities() {
   };
 
   const filteredUniversities = universities.filter(uni => {
-    const matchesSearch = uni.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         uni.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = (debouncedSearch || '').toLowerCase().trim();
+    const matchesSearch = !q || uni.name.toLowerCase().includes(q) ||
+                         (uni.city || '').toLowerCase().includes(q);
     const matchesCountry = countryFilter === 'all' || uni.country === countryFilter;
     return matchesSearch && matchesCountry;
   });

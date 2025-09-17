@@ -16,6 +16,18 @@ export default function Payments() {
   const [statusFilter, setStatusFilter] = useState('all');
   const { toast } = useToast();
 
+  // Simple debounce hook
+  function useDebouncedValue<T>(value: T, delay = 300) {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+      const t = setTimeout(() => setDebounced(value), delay);
+      return () => clearTimeout(t);
+    }, [value, delay]);
+    return debounced;
+  }
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
   useEffect(() => {
     fetchPayments();
     
@@ -73,9 +85,10 @@ export default function Payments() {
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = (payment.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (payment.user_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (payment.service_id || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const q = (debouncedSearch || '').toLowerCase().trim();
+    const matchesSearch = !q || (payment.id || '').toLowerCase().includes(q) ||
+                         (payment.user_id || '').toLowerCase().includes(q) ||
+                         (payment.service_id || '').toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     return matchesSearch && matchesStatus;
   });

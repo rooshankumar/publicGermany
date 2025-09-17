@@ -31,6 +31,16 @@ type Application = Database['public']['Tables']['applications']['Row'] & {
   profiles?: any;
 };
 
+// Simple debounce hook
+function useDebouncedValue<T>(value: T, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function Applications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
@@ -41,6 +51,8 @@ export default function Applications() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -74,16 +86,17 @@ export default function Applications() {
 
   useEffect(() => {
     filterApplications();
-  }, [applications, searchTerm, statusFilter, universityFilter]);
+  }, [applications, debouncedSearch, statusFilter, universityFilter]);
 
   const filterApplications = () => {
     let filtered = applications;
 
-    if (searchTerm) {
+    const q = (debouncedSearch || '').toLowerCase().trim();
+    if (q) {
       filtered = filtered.filter(app => 
-        app.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.university_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.program_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        (app.profiles?.full_name || '').toLowerCase().includes(q) ||
+        (app.university_name || '').toLowerCase().includes(q) ||
+        (app.program_name || '').toLowerCase().includes(q)
       );
     }
 

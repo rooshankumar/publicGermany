@@ -24,6 +24,18 @@ export default function EmailLogs() {
   const [search, setSearch] = useState('');
   const { toast } = useToast();
 
+  // Simple debounce hook
+  function useDebouncedValue<T>(value: T, delay = 300) {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+      const t = setTimeout(() => setDebounced(value), delay);
+      return () => clearTimeout(t);
+    }, [value, delay]);
+    return debounced;
+  }
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   useEffect(() => {
     const fetchLogs = async () => {
       try {
@@ -52,14 +64,14 @@ export default function EmailLogs() {
   }, []);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     if (!q) return logs;
     return logs.filter(l =>
       l.to_email?.toLowerCase().includes(q) ||
       l.subject?.toLowerCase().includes(q) ||
       l.status?.toLowerCase().includes(q)
     );
-  }, [logs, search]);
+  }, [logs, debouncedSearch]);
 
   return (
     <Layout>
