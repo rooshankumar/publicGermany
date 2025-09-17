@@ -69,11 +69,16 @@ export const useAuth = () => {
       
       if (documentsError) throw documentsError;
       
-      // Combine profile and documents data
-      setProfile({
-        ...profileData,
-        documents: documentsData || []
-      });
+      // Combine profile and documents data (guard against null profileData)
+      if (profileData) {
+        setProfile({
+          ...profileData,
+          documents: documentsData || []
+        });
+      } else {
+        // Profile may not be created yet (e.g., immediate post-signup before trigger runs)
+        setProfile(null);
+      }
       
     } catch (error) {
       console.error('Error fetching profile:', error);
