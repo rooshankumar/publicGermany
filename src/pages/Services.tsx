@@ -133,6 +133,16 @@ const Services = () => {
       .filter(Boolean);
   };
 
+  // Parse a price range string like "20000-25000" into min/max numbers
+  const parsePriceRange = (range?: string | null): { min: number; max: number } | null => {
+    if (!range) return null;
+    const match = (range || '').toString().match(/(\d[\d,]*)\s*-\s*(\d[\d,]*)/);
+    if (!match) return null;
+    const min = Number(match[1].replace(/,/g, '')) || 0;
+    const max = Number(match[2].replace(/,/g, '')) || min;
+    return { min, max };
+  };
+
   type CatalogItem = {
     id: string;
     kind: 'package' | 'individual';
@@ -951,9 +961,6 @@ const Services = () => {
                     <div className="p-4 border rounded-lg space-y-1">
                       <p className="font-medium">Selected package</p>
                       <p className="text-muted-foreground">{packageRequestName}</p>
-                      {(() => { const p = packages.find(pk => pk.name === packageRequestName); return p && p.priceRange; })() && (
-                        <p className="text-sm text-muted-foreground">Package price: ₹{packages.find(pk => pk.name === packageRequestName)?.priceRange}</p>
-                      )}
                     </div>
                   )}
 
@@ -983,16 +990,41 @@ const Services = () => {
                     </div>
                   ))}
 
-                  {selectedServices.length > 0 && (
-                    <div className="p-4 bg-primary/10 rounded-lg space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{packageRequestName ? 'Extras total' : 'Total'}</span>
-                        <span>₹{calculateTotalPrice().toLocaleString()}</span>
+                  {packageRequestName ? (
+                    (() => {
+                      const p = packages.find(pk => pk.name === packageRequestName);
+                      const range = parsePriceRange(p?.priceRange);
+                      const extras = calculateTotalPrice();
+                      const combined = range ? { min: range.min + extras, max: range.max + extras } : null;
+                      return (
+                        <div className="p-4 bg-primary/10 rounded-lg space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">Package price</span>
+                            <span>{p?.priceRange ? `₹${p.priceRange}` : '—'}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">Extras total</span>
+                            <span>₹{extras.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">Combined total</span>
+                            <span>
+                              {combined ? `₹${combined.min.toLocaleString()} - ₹${combined.max.toLocaleString()}` : `₹${extras.toLocaleString()}`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Package range + extras shown as combined total.</p>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    selectedServices.length > 0 && (
+                      <div className="p-4 bg-primary/10 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Total</span>
+                          <span>₹{calculateTotalPrice().toLocaleString()}</span>
+                        </div>
                       </div>
-                      {packageRequestName && (
-                        <p className="text-xs text-muted-foreground">Package price is separate; shown above as a range.</p>
-                      )}
-                    </div>
+                    )
                   )}
                 </div>
 
