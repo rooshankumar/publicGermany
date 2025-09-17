@@ -19,7 +19,14 @@
         try {
           var stored = localStorage.getItem('theme');
           var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var shouldDark = stored === 'dark' || (!stored || (stored !== 'light' && stored !== 'dark')) && prefersDark;
+          var hour = new Date().getHours();
+          var inNight = hour >= 19 || hour < 5; // 19:00 - 05:00
+          // Support modes: 'light' | 'dark' | 'auto'
+          var shouldDark = false;
+          if (stored === 'dark') shouldDark = true;
+          else if (stored === 'light') shouldDark = false;
+          else if (stored === 'auto') shouldDark = inNight;
+          else shouldDark = prefersDark; // first visit fallback
           if (shouldDark) {
             document.documentElement.classList.add('dark');
           } else {

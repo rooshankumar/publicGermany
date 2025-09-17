@@ -9,16 +9,17 @@ interface ThemeToggleProps {
 }
 
 export default function ThemeToggle({ variant = "switch", className }: ThemeToggleProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, mode, toggleTheme, cycleMode } = useTheme();
 
   if (variant === "icon") {
     return (
       <Button
         variant="ghost"
         size="icon"
-        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        onClick={toggleTheme}
+        aria-label={`Theme: ${mode}. Click to change (light → dark → auto)`}
+        onClick={cycleMode}
         className={className}
+        title={`Theme: ${mode}. Click to change (light → dark → auto)`}
       >
         {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </Button>
