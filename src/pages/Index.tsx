@@ -2,7 +2,7 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import PromoCard from '@/components/PromoCard';
 import { usePromoOncePerSession } from '@/hooks/usePromo';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -150,15 +150,15 @@ function Navbar() {
           <a href="#how-it-works" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">How It Works</a>
           <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
-          <a href="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</a>
-          <a href="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</a>
-          <a href="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</a>
+          <Link to="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
+          <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
+          <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
           <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
-            <a href="/auth">Sign In</a>
+            <Link to="/auth">Sign In</Link>
           </Button>
           <Button asChild className="btn-cta">
-            <a href="/auth">Get Started Free</a>
+            <Link to="/auth">Get Started Free</Link>
           </Button>
         </div>
 
@@ -187,15 +187,15 @@ function Navbar() {
             <a href="#how-it-works" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">How It Works</a>
             <a href="#testimonials" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
             <a href="#faq" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
-            <a href="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</a>
-            <a href="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</a>
-            <a href="/services" onMouseEnter={prefetchServices} className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Services</a>
+            <Link to="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
+            <Link to="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
+            <Link to="/services" onMouseEnter={prefetchServices} className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
-                <a href="/auth">Sign In</a>
+                <Link to="/auth">Sign In</Link>
               </Button>
               <Button asChild className="w-full btn-cta">
-                <a href="/auth">Get Started Free</a>
+                <Link to="/auth">Get Started Free</Link>
               </Button>
             </div>
           </div>

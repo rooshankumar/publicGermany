@@ -534,9 +534,11 @@ const Profile = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.location.href = '/documents'}
+                  asChild
                 >
+                  <a href="/documents">
                   Manage Documents
+                  </a>
                 </Button>
               </div>
               <CardDescription>View and manage your uploaded documents</CardDescription>
@@ -576,9 +578,11 @@ const Profile = () => {
                       <Button 
                         variant="link" 
                         className="mt-2"
-                        onClick={() => window.location.href = '/documents'}
+                        asChild
                       >
+                        <a href="/documents">
                         Upload your first document
+                        </a>
                       </Button>
                     </div>
                   )}

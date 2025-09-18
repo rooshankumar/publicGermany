@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -409,9 +410,9 @@ const Auth = () => {
               </p>
             </div>
             <div className="mt-4 text-center text-xs text-muted-foreground">
-              <a href="/privacy" className="hover:underline">Privacy Policy</a>
+              <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
               <span className="mx-2">•</span>
-              <a href="/terms" className="hover:underline">Terms of Service</a>
+              <Link to="/terms" className="hover:underline">Terms of Service</Link>
             </div>
           </div>
         </div>

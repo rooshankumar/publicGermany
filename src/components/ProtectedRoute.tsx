@@ -20,6 +20,11 @@ const ProtectedRoute = ({ children, requiredRole, disallowRole }: ProtectedRoute
     return <Navigate to="/auth" replace />;
   }
 
+  // If a specific role is required but profile hasn't loaded yet, wait briefly instead of redirecting
+  if (requiredRole && !profile) {
+    return <FullScreenLoader label="Loading profile" />;
+  }
+
   if (requiredRole && profile?.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />;
   }

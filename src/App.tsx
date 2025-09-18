@@ -6,7 +6,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
+import AppShellFallback from "./components/AppShellFallback";
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./components/AuthCallback"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -49,7 +50,43 @@ const queryClient = new QueryClient({
 });
 
 const AppRoutes = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
+
+  // Preload most-used routes after auth state is known to avoid cold-start delays
+  useEffect(() => {
+    if (loading) return;
+    // Public routes
+    import('./pages/Index');
+    import('./pages/Contact');
+    import('./pages/Help');
+
+    if (user) {
+      // Student side preloads
+      if (profile?.role !== 'admin') {
+        import('./pages/Dashboard');
+        import('./pages/Applications');
+        import('./pages/Services');
+        import('./pages/Resources');
+        import('./pages/Documents');
+        import('./pages/Reviews');
+        import('./pages/Profile');
+        import('./pages/Notifications');
+      }
+      // Admin side preloads
+      if (profile?.role === 'admin') {
+        import('./pages/admin/AdminDashboard');
+        import('./pages/admin/Requests');
+        import('./pages/admin/Students');
+        import('./pages/admin/Applications');
+        import('./pages/admin/Payments');
+        import('./pages/admin/StudentProfile');
+        import('./pages/admin/Exports');
+        import('./pages/admin/Universities');
+        import('./pages/admin/Reviews');
+        import('./pages/admin/EmailLogs');
+      }
+    }
+  }, [loading, user, profile?.role]);
 
   if (loading) {
     return (
@@ -64,12 +101,8 @@ const AppRoutes = () => {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      // App Shell fallback: show layout chrome immediately, while page content lazily loads
+      <AppShellFallback />
     }>
       <Routes>
         <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />

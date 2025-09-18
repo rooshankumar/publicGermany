@@ -178,7 +178,7 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
 
             <Button
-              onClick={signOut}
+              onClick={async () => { await signOut(); navigate('/'); }}
               variant="outline"
               size="sm"
               className="w-full justify-start hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"

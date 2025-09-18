@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function LandingFooter() {
   return (
@@ -8,8 +9,8 @@ export default function LandingFooter() {
           <a href="#about" className="hover:underline">About</a>
           <a href="#contact" className="hover:underline">Contact</a>
           <a href="#faq" className="hover:underline">FAQ</a>
-          <a href="/privacy" className="hover:underline">Privacy Policy</a>
-          <a href="/terms" className="hover:underline">Terms</a>
+          <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
+          <Link to="/terms" className="hover:underline">Terms</Link>
         </div>
         <div className="text-xs text-center md:text-right">
           publicgermany is an educational productivity tool. We do not provide legal immigration services. For official information, visit APS and Embassy websites.

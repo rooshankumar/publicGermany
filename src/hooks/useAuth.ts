@@ -52,29 +52,38 @@ export const useAuth = () => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // First, fetch the profile
-      const { data: profileData, error: profileError } = await supabase
+      // 1) Fetch minimal profile first (fast path for authZ checks)
+      const { data: minimal, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id,user_id,role,full_name,created_at,updated_at')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       if (profileError) throw profileError;
-      
-      // Then, fetch the user's documents
-      const { data: documentsData, error: documentsError } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', userId);
-      
-      if (documentsError) throw documentsError;
-      
-      // Combine profile and documents data (guard against null profileData)
-      if (profileData) {
-        setProfile({
-          ...profileData,
-          documents: documentsData || []
-        });
+
+      if (minimal) {
+        // Set minimal profile immediately so routes can authorize quickly
+        const nextProfile = (minimal as unknown) as Profile;
+        setProfile(nextProfile);
+        try {
+          localStorage.setItem('pg_profile', JSON.stringify(nextProfile));
+        } catch {}
+
+        // 2) Fetch heavy data (documents) in background without blocking
+        supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', userId)
+          .then(({ data: documentsData, error: documentsError }) => {
+            if (!documentsError) {
+              setProfile((prev) => {
+                if (!prev) return prev;
+                const merged = { ...prev, documents: documentsData || [] } as Profile;
+                try { localStorage.setItem('pg_profile', JSON.stringify(merged)); } catch {}
+                return merged;
+              });
+            }
+          });
       } else {
         // Profile may not be created yet (e.g., immediate post-signup before trigger runs).
         // Attempt to create a minimal profile client-side to avoid blocking the user.
@@ -90,16 +99,21 @@ export const useAuth = () => {
                 role: 'student',
               } as any);
             if (insertErr) {
-              // If insert fails due to race/constraint, we ignore and leave profile as null for now
+              // If insert fails due to race/constraint, ignore and leave profile as null for now
               console.warn('Profile insert skipped/failed (likely race):', insertErr.message);
+              setProfile(null);
             } else {
-              // Re-fetch profile after creating it
+              // Re-fetch minimal profile
               const { data: createdProfile } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('id,user_id,role,full_name,created_at,updated_at')
                 .eq('user_id', user.id)
                 .maybeSingle();
-              setProfile(createdProfile ? { ...createdProfile, documents: documentsData || [] } : null);
+              if (createdProfile) {
+                const next = { ...(profile || ({} as Profile)), ...createdProfile } as Profile;
+                setProfile(next);
+                try { localStorage.setItem('pg_profile', JSON.stringify(next)); } catch {}
+              }
             }
           } else {
             setProfile(null);
@@ -109,13 +123,22 @@ export const useAuth = () => {
           setProfile(null);
         }
       }
-      
+
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
   };
 
   useEffect(() => {
+    // 0) Hydrate cached profile to render app shell immediately
+    try {
+      const cached = localStorage.getItem('pg_profile');
+      if (cached) {
+        const parsed = JSON.parse(cached) as Profile;
+        setProfile(parsed);
+      }
+    } catch {}
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -132,11 +155,6 @@ export const useAuth = () => {
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
-          
-          // If this is a sign-in event and we're on the auth page, redirect to dashboard
-          if (event === 'SIGNED_IN' && window.location.pathname === '/auth') {
-            window.location.href = '/dashboard';
-          }
         } else {
           setProfile(null);
         }
@@ -225,11 +243,6 @@ export const useAuth = () => {
       
       if (error) throw error;
       
-      if (data.user) {
-        // Force page reload after successful sign in
-        window.location.href = '/dashboard';
-      }
-      
       return { error: null };
     } catch (error: any) {
       setLoading(false);
@@ -267,8 +280,10 @@ export const useAuth = () => {
       setSession(null);
       setProfile(null);
       
-      // Clear any stored data in localStorage
-      localStorage.clear();
+      // Clear only our app-specific cached data; avoid nuking everything (prevents theme/query flashes)
+      try {
+        localStorage.removeItem('pg_profile');
+      } catch {}
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -277,14 +292,11 @@ export const useAuth = () => {
         console.error('Sign out error:', error);
         throw error;
       }
-      
-      // Redirect to home page after successful sign out
-      window.location.href = '/';
-      
+      // Let callers handle navigation without hard refresh
+      return;
     } catch (error) {
       console.error('Error during sign out:', error);
-      // Even if there's an error, still try to redirect to home page
-      window.location.href = '/';
+      return;
     }
   };
 
