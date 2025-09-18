@@ -151,6 +151,7 @@ function Navbar() {
           <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
+          <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
           <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
           <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
           <ThemeToggle variant="icon" />
@@ -188,6 +189,7 @@ function Navbar() {
             <a href="#testimonials" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
             <a href="#faq" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
             <Link to="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
+            <Link to="/resources" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
             <Link to="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
             <Link to="/services" onMouseEnter={prefetchServices} className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
             <div className="flex flex-col gap-2 pt-4">
