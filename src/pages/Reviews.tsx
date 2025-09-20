@@ -16,31 +16,8 @@ export default function ReviewsPage() {
   return (
     <Layout>
       <div className="container py-8 pb-20 md:pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <aside className="hidden md:block md:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Browse Reviews</CardTitle>
-                <CardDescription>Select a category</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant={activeTab === 'all' ? 'default' : 'outline'} className="w-full justify-start" onClick={() => setActiveTab('all')}>All Reviews</Button>
-                <Button variant={activeTab === 'university' ? 'default' : 'outline'} className="w-full justify-start" onClick={() => setActiveTab('university')}>University Applications</Button>
-                <Button variant={activeTab === 'visa' ? 'default' : 'outline'} className="w-full justify-start" onClick={() => setActiveTab('visa')}>Visa Assistance</Button>
-                <Button variant={activeTab === 'counseling' ? 'default' : 'outline'} className="w-full justify-start" onClick={() => setActiveTab('counseling')}>Counseling</Button>
-                {user && (
-                  <Button onClick={() => setShowReviewForm(true)} className="w-full justify-start mt-2">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Write a Review
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </aside>
-
-          {/* Main content */}
-          <section className="md:col-span-3">
+        {/* Main content (full width) */}
+        <section>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Student Reviews</h1>
@@ -73,36 +50,12 @@ export default function ReviewsPage() {
               </Card>
             )}
 
-            <Tabs 
-              defaultValue="all" 
-              value={activeTab}
-              className="w-full"
-              onValueChange={(value) => setActiveTab(value)}
-            >
-              <div className="flex items-center justify-between mb-6 md:hidden">
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="university">University</TabsTrigger>
-                  <TabsTrigger value="visa">Visa</TabsTrigger>
-                  <TabsTrigger value="counseling">Counseling</TabsTrigger>
-                </TabsList>
-              </div>
-
+            <Tabs defaultValue="all" className="w-full">
               <TabsContent value="all">
                 <ReviewList />
               </TabsContent>
-              <TabsContent value="university">
-                <ReviewList serviceType="university" />
-              </TabsContent>
-              <TabsContent value="visa">
-                <ReviewList serviceType="visa" />
-              </TabsContent>
-              <TabsContent value="counseling">
-                <ReviewList serviceType="counseling" />
-              </TabsContent>
             </Tabs>
-          </section>
-        </div>
+        </section>
 
         {/* Mobile sticky action bar */}
         {user && (
