@@ -883,78 +883,7 @@ const Services = () => {
           </Card>
         </div>
 
-        {/* Reviews Section removed on Services page: Only show the user's own reviews below */}
-
-        {/* Your Reviews Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-foreground">Your Reviews</h3>
-              <p className="text-muted-foreground">See what you've shared. Pending reviews will be shown here until approved.</p>
-            </div>
-            <Button variant="outline" onClick={() => setShowReviewDialog(true)}>Write a Review</Button>
-          </div>
-
-          {myReviews.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {myReviews.map((review) => (
-                <Card key={review.id} className="border-primary/10">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-medium">
-                            {review.profile?.full_name?.charAt(0) || 'U'}
-                          </span>
-                        </div>
-                        <div>
-                          <CardTitle className="text-base">
-                            {review.profile?.full_name || 'You'}
-                          </CardTitle>
-                          <CardDescription>
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!review.is_approved ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-300">Pending Approval</Badge>
-                        ) : review.is_featured ? (
-                          <Badge variant="secondary">Featured</Badge>
-                        ) : (
-                          <Badge variant="secondary">Approved</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center mb-3">
-                      {renderStars(review.rating)}
-                    </div>
-                    <p className="text-muted-foreground">"{review.review_text}"</p>
-                    {review.service_type && (
-                      <Badge variant="outline" className="mt-3">
-                        {review.service_type}
-                      </Badge>
-                    )}
-                    {!review.is_approved && (
-                      <div className="mt-3">
-                        <Button size="sm" variant="destructive" onClick={() => handleDeleteReview(review.id)}>
-                          <Trash className="h-4 w-4 mr-1" /> Delete
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 border rounded-lg">
-              <p className="text-muted-foreground">You haven't submitted any reviews yet.</p>
-              <Button className="mt-3" onClick={() => setShowReviewDialog(true)}>Write your first review</Button>
-            </div>
-          )}
-        </div>
+        {/* Reviews section removed from Services; please use /reviews */}
         <div className="">
           <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

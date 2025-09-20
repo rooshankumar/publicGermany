@@ -169,7 +169,7 @@ export default function Payments() {
         const amountText = resolvedAmount != null ? `${defaultCurrency || 'INR'} ${Number(resolvedAmount)}` : '—';
         const loginUrl = 'https://publicgermany.vercel.app/';
         const safeName = studentName || 'Student';
-        const safeService = (serviceType || '').replaceAll('_',' ') || 'Service';
+        const safeService = (serviceType || '').split('_').join(' ') || 'Service';
         const adminNote = (payload.admin_note || '').toString();
         const buttonHtml = `<a href="${loginUrl}" style="display:inline-block;padding:10px 16px;background:#D00000;color:#ffffff;text-decoration:none;border-radius:6px;">Open My Account</a>`;
 
@@ -316,7 +316,7 @@ export default function Payments() {
                             })()}
                           </div>
                         </td>
-                        <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').replaceAll('_',' ')}</td>
+                        <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').split('_').join(' ')}</td>
                         <td className="p-3 whitespace-nowrap">
                           <Input
                             type="number"
