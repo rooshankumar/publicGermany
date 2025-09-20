@@ -28,6 +28,8 @@ interface DashboardStats {
   totalRevenue: number;
   recentPayments: any[];
   urgentTasks: any[];
+  pendingPayments: number;
+  receivedPayments: number;
 }
 
 const AdminDashboard = () => {
@@ -37,7 +39,9 @@ const AdminDashboard = () => {
     pendingRequests: 0,
     totalRevenue: 0,
     recentPayments: [],
-    urgentTasks: []
+    urgentTasks: [],
+    pendingPayments: 0,
+    receivedPayments: 0
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -63,8 +67,8 @@ const AdminDashboard = () => {
           fetchDashboardData();
         }),
       supabase
-        .channel('payments-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        .channel('service-payments-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
           fetchDashboardData();
         })
     ];
@@ -97,18 +101,27 @@ const AdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .in('status', ['new', 'in_progress']);
 
-      // Fetch revenue from payments
-      const { data: payments } = await supabase
-        .from('payments' as any)
-        .select('amount, status, created_at')
-        .eq('status', 'paid');
+      // Fetch revenue and counts from service_payments
+      const { data: receivedRows } = await supabase
+        .from('service_payments' as any)
+        .select('amount')
+        .eq('status', 'received');
 
-      const totalRevenue = payments?.reduce((sum: number, payment: any) => 
-        sum + (payment.amount || 0), 0) || 0;
+      const totalRevenue = receivedRows?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
+
+      const { count: pendingPayments } = await supabase
+        .from('service_payments' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      const { count: receivedPayments } = await supabase
+        .from('service_payments' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'received');
 
       // Fetch recent payments (last 5)
       const { data: recentPayments } = await supabase
-        .from('payments' as any)
+        .from('service_payments' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(5);
@@ -130,7 +143,9 @@ const AdminDashboard = () => {
         pendingRequests: requestsCount || 0,
         totalRevenue,
         recentPayments: recentPayments || [],
-        urgentTasks: urgentApps || []
+        urgentTasks: urgentApps || [],
+        pendingPayments: pendingPayments || 0,
+        receivedPayments: receivedPayments || 0
       });
 
     } catch (error: any) {
@@ -146,9 +161,9 @@ const AdminDashboard = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'paid': return <CheckCircle className="h-4 w-4 text-success" />;
+      case 'received': return <CheckCircle className="h-4 w-4 text-success" />;
       case 'pending': return <Clock className="h-4 w-4 text-warning" />;
-      case 'failed': return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'cancelled': return <XCircle className="h-4 w-4 text-destructive" />;
       default: return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
@@ -232,6 +247,19 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+              <Clock className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">{stats.pendingPayments}</div>
+              <p className="text-xs text-muted-foreground">
+                <Link to="/admin/payments" className="hover:underline">Resolve now</Link>
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -260,7 +288,7 @@ const AdminDashboard = () => {
                           </p>
                         </div>
                       </div>
-                      <Badge variant={payment.status === 'paid' ? 'default' : 'secondary'}>
+                      <Badge variant={payment.status === 'received' ? 'default' : payment.status === 'pending' ? 'secondary' : 'destructive'}>
                         {payment.status}
                       </Badge>
                     </div>

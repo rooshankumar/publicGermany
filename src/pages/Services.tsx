@@ -523,8 +523,13 @@ const Services = () => {
       if (!user) return [] as any[];
       
       const { data, error } = await supabase
-        .from('service_requests')
-        .select('id, user_id, service_type, service_price, service_currency, request_details, preferred_timeline, status, admin_response, created_at')
+        .from('service_requests' as any)
+        .select(`
+          id, user_id, service_type, service_price, service_currency, request_details, preferred_timeline, status, admin_response, created_at,
+          service_payments (
+            id, amount, currency, status, paid_at
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -1107,6 +1112,9 @@ const Services = () => {
               <h2 className="text-2xl font-bold text-foreground">My Service Requests</h2>
               <p className="text-muted-foreground">Track the status of your service requests</p>
             </div>
+            <a href="/reviews">
+              <Button variant="outline">Write a Review</Button>
+            </a>
           </div>
           
           {serviceRequests.length === 0 ? (
@@ -1158,6 +1166,21 @@ const Services = () => {
                           </span>
                         )}
                       </div>
+                      {/* Payment Status */}
+                      <div className="text-sm mt-1">
+                        {(() => {
+                          const p = (request as any).service_payments?.[0] as undefined | { status: 'pending'|'received'|'cancelled'; amount: number|null; currency: string|null };
+                          const status = p?.status || 'pending';
+                          const cls = status === 'received' ? 'bg-success/10 text-success' : status === 'cancelled' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning';
+                          const amount = (p?.amount ?? request.service_price) as any;
+                          const currency = (p?.currency || request.service_currency || 'INR') as any;
+                          return (
+                            <Badge className={cls}>
+                              Payment: {status}{amount != null ? ` • ${currency} ${amount}` : ''}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
 
                       {/* Show deliverable actions when completed */}
                       {(() => { const url = request.status === 'completed' ? (getDeliverableUrl(request) || deliverables[request.id]) : null; return url; })() && (
@@ -1195,20 +1218,7 @@ const Services = () => {
                         </div>
                       )}
 
-                      {/* Reflect pending payments for included services */}
-                      <div className="flex flex-wrap gap-2">
-                        {parseServiceNames(request.service_type).map((name) => {
-                          const sid = nameToId(name);
-                          const pay = getPaymentFor(sid);
-                          if (!pay) return null;
-                          const variant = pay.status === 'approved' ? 'secondary' : pay.status === 'rejected' ? 'destructive' : 'outline';
-                          return (
-                            <Badge key={`${request.id}-${sid}`} variant={variant as any} className="capitalize">
-                              {name}: {pay.status} • ₹{(pay.amount || 0).toLocaleString()}
-                            </Badge>
-                          );
-                        })}
-                      </div>
+                      {/* Payment badges per-service removed; using unified payment status above */}
                     </div>
 
                     {(() => { const clean = request.admin_response ? sanitizeAdminResponse(request.admin_response) : ''; return clean; })() && (
@@ -1225,65 +1235,7 @@ const Services = () => {
           )}
         </div>
 
-        {/* Review Dialog */}
-        <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Write a Review</DialogTitle>
-              <DialogDescription>Share your experience with our services</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleReviewSubmit} className="space-y-4">
-              <div>
-                <Label>Rating</Label>
-                <div className="flex space-x-1 my-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-8 h-8 cursor-pointer ${
-                        star <= rating
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-300'
-                      }`}
-                      onClick={() => setRating(star)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="review">Your Review</Label>
-                <Textarea
-                  id="review"
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Share your experience..."
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label>Service Type</Label>
-                <Select
-                  value={reviewServiceType}
-                  onValueChange={setReviewServiceType}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General Experience</SelectItem>
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">
-                Submit Review
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {/* Review moved to dedicated page /reviews */}
         {/* Mobile sticky action bar */}
         <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-4 py-3 flex items-center justify-center">

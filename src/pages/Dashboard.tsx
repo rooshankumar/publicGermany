@@ -82,6 +82,20 @@ const Dashboard = () => {
     documentsReady: 0,
     daysToDeadline: 45
   });
+  const [recentPayments, setRecentPayments] = useState<Array<{
+    id: string;
+    service_type: string;
+    service_price: number | null;
+    service_currency: string | null;
+    created_at: string;
+    service_payments: Array<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: 'pending' | 'received' | 'cancelled';
+      paid_at: string | null;
+    }>
+  }>>([]);
 
   // Fetch dashboard data
   useEffect(() => {
@@ -196,6 +210,30 @@ const Dashboard = () => {
         }
 
         setTasks(userTasks);
+
+        // Fetch recent service requests with payment info (left join)
+        const { data: srWithPayments, error: payErr } = await supabase
+          .from('service_requests')
+          .select(`
+            id,
+            service_type,
+            service_price,
+            service_currency,
+            created_at,
+            service_payments (
+              id,
+              amount,
+              currency,
+              status,
+              paid_at
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (payErr) throw payErr;
+        setRecentPayments(srWithPayments || []);
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

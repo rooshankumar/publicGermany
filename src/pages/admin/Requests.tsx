@@ -88,16 +88,16 @@ export default function Requests() {
         .from('service_requests')
         .select(`
           *,
-          profiles!inner(user_id)
+          profiles:profiles!inner(user_id, full_name)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const requestsWithEmail = await Promise.all(data.map(async (request) => {
-        const email = await resolveEmail(request.profiles.user_id);
+      const withEmails = await Promise.all((data || []).map(async (request: any) => {
+        const email = await resolveEmail(request?.profiles?.user_id);
         return { ...request, profiles: { ...request.profiles, email } };
       }));
-      setRequests(requestsWithEmail);
+      setRequests(withEmails as any);
     } catch (error: any) {
       toast({
         title: "Error fetching requests",
@@ -116,6 +116,7 @@ export default function Requests() {
     if (q) {
       filtered = filtered.filter(req => 
         (req.profiles?.full_name || '').toLowerCase().includes(q) ||
+        (req.profiles?.email || '').toLowerCase().includes(q) ||
         (req.service_type || '').toLowerCase().includes(q) ||
         (req.request_details || '').toLowerCase().includes(q)
       );
@@ -306,10 +307,19 @@ export default function Requests() {
                               <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <p className="font-medium truncate max-w-[180px] md:max-w-[240px]">{request.profiles?.full_name || 'Unknown Student'}</p>
-                              <p className="text-sm text-muted-foreground">
-                                ID: {request.profiles?.user_id?.slice(0, 8)}...
-                              </p>
+                              {(() => {
+                                const email: string | undefined = (request as any).profiles?.email;
+                                const inferred = email ? email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()) : '';
+                                const name = (request as any).profiles?.full_name || inferred || 'Unknown Student';
+                                return (
+                                  <>
+                                    <p className="font-medium truncate max-w-[180px] md:max-w-[240px]">{name}</p>
+                                    <p className="text-sm text-muted-foreground truncate max-w-[220px]">
+                                      {email || 'No email'}
+                                    </p>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         </td>

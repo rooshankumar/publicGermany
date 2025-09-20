@@ -33,6 +33,7 @@ const MobileNavigation = () => {
     { href: '/applications', label: 'University Applications', icon: GraduationCap },
     { href: '/resources', label: 'Resources', icon: FileText },
     { href: '/documents', label: 'Documents', icon: FileText },
+    { href: '/reviews', label: 'Write a Review', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
