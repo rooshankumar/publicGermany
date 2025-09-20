@@ -103,7 +103,7 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Desktop Layout */}
       <div className="hidden md:flex min-h-screen">
         {/* Desktop Sidebar */}
-        <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen">
+        <div className="w-64 bg-card border-r border-border flex flex-col sticky top-0 h-screen overflow-hidden">
           {/* Logo Header (match mobile style) */}
           <div className="p-4 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5">
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center space-x-3" aria-label="Go to home">
@@ -124,8 +124,8 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4">
+          {/* Navigation (scrollable area) */}
+          <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-1.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -159,8 +159,8 @@ const Layout = ({ children }: LayoutProps) => {
             </ul>
           </nav>
 
-          {/* User Profile Section */}
-          <div className="p-4 border-t border-border bg-muted/30">
+          {/* User Profile Section (anchored at bottom) */}
+          <div className="p-4 border-t border-border bg-muted/30 sticky bottom-0">
             <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-background">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={(profile as any)?.avatar_url || undefined} />
