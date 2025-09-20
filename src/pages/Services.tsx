@@ -186,15 +186,19 @@ const Services = () => {
   const catalogQuery = useQuery({
     queryKey: ['services_catalog_active'],
     queryFn: fetchCatalog,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
   });
 
   const paymentContactQuery = useQuery({
     queryKey: ['payment_contact'],
     queryFn: fetchPaymentContact,
     staleTime: 60 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {
@@ -291,28 +295,44 @@ const Services = () => {
   const paymentsQuery = useQuery({
     queryKey: ['service_payments', user?.id],
     queryFn: fetchUserPayments,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
+    enabled: !!user?.id,
   });
 
   const serviceRequestsQuery = useQuery({
     queryKey: ['service_requests', user?.id],
     queryFn: fetchServiceRequests,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
+    enabled: !!user?.id,
   });
 
   const reviewsQuery = useQuery({
     queryKey: ['reviews_public_and_me', user?.id],
     queryFn: fetchReviews,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: 'always',
+    enabled: !!user?.id,
   });
 
   // Sync local state from query data
   useEffect(() => {
     if (paymentsQuery.data) setUserPayments(paymentsQuery.data as any[]);
   }, [paymentsQuery.data]);
+
+  // Derive loading state from queries to avoid getting stuck until hard refresh
+  useEffect(() => {
+    const anyLoading = catalogQuery.isLoading || serviceRequestsQuery.isLoading;
+    const allSettled = catalogQuery.isFetched && serviceRequestsQuery.isFetched;
+    setLoading(anyLoading ? true : !allSettled ? true : false);
+  }, [catalogQuery.isLoading, catalogQuery.isFetched, serviceRequestsQuery.isLoading, serviceRequestsQuery.isFetched]);
 
   useEffect(() => {
     if ((serviceRequestsQuery.data as any[])) setServiceRequests((serviceRequestsQuery.data as any[]) || []);
