@@ -30,7 +30,7 @@ import {
   StarOff
 } from 'lucide-react';
 const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
-import ThemeToggle from '@/components/ThemeToggle';
+// import ThemeToggle from '@/components/ThemeToggle';
 
 // Simple error boundary for Navbar
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
@@ -144,28 +144,25 @@ function Navbar() {
           </div>
         </div>
         
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-5 lg:gap-6">
-          <a href="#features" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
-          <a href="#how-it-works" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">How It Works</a>
-          <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
-          <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
-          <Link to="/help" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
-          <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
-          <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
-          <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
-          <ThemeToggle variant="icon" />
+        {/* Desktop Navigation (show from lg and up). Only requested links */}
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
+          <a href="#features" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
+          <a href="#testimonials" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
+          <Link to="/services" onMouseEnter={prefetchServices} className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
+          <Link to="/help" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
+          <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
+          <a href="#faq" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
+          <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
           <Button variant="outline" asChild>
-            <Link to="/auth">Sign In</Link>
+            <Link to="/auth" className="text-base">Sign In</Link>
           </Button>
           <Button asChild className="btn-cta">
-            <Link to="/auth">Get Started Free</Link>
+            <Link to="/auth" className="text-base">Get Started Free</Link>
           </Button>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="md:hidden flex items-center gap-1">
-          <ThemeToggle variant="icon" />
+        {/* Mobile menu button (show until lg) */}
+        <div className="lg:hidden flex items-center gap-1">
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-2 text-foreground hover:text-primary"
@@ -176,28 +173,23 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation (active below lg) */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
           <div className="px-4 py-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Theme</span>
-              <ThemeToggle variant="switch" />
-            </div>
-            <a href="#features" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
-            <a href="#how-it-works" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">How It Works</a>
-            <a href="#testimonials" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
-            <a href="#faq" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
-            <Link to="/help" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
-            <Link to="/resources" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
-            <Link to="/contact" className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
-            <Link to="/services" onMouseEnter={prefetchServices} className="block text-sm font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
+            <a href="#features" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
+            <a href="#testimonials" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
+            <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
+            <Link to="/help" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
+            <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
+            <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
+            <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
-                <Link to="/auth">Sign In</Link>
+                <Link to="/auth" className="text-base">Sign In</Link>
               </Button>
               <Button asChild className="w-full btn-cta">
-                <Link to="/auth">Get Started Free</Link>
+                <Link to="/auth" className="text-base">Get Started Free</Link>
               </Button>
             </div>
           </div>
@@ -858,13 +850,14 @@ const Index = () => {
           />
         )}
         <HeroSection onGetStarted={handleGetStarted} />
+        {/* Move Testimonials before Features */}
+        <TestimonialsSection />
+        <div className="border-t border-border" />
         <FeaturesSection />
         <div className="border-t border-border" />
         <HowItWorksSection />
         <div className="border-t border-border" />
         <FreeVsPaidSection />
-        <div className="border-t border-border" />
-        <TestimonialsSection />
         <div className="border-t border-border" />
         <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading FAQs…</div>}>
           <LandingFAQ />
