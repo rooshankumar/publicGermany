@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import PromoCard from '@/components/PromoCard';
+import OfferPopup from '@/components/OfferPopup';
 import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,83 @@ function FreeVsPaidSection() {
             </CardContent>
           </Card>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturedServicesBox() {
+  return (
+    <section id="featured-services" className="py-10 md:py-14">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <Card className="border-primary/30 shadow-sm bg-card/80 backdrop-blur">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl md:text-3xl flex items-center gap-2">
+              <Star className="w-5 h-5 text-primary" />
+              Explore Our Germany Admission & Visa Services
+            </CardTitle>
+            <CardDescription className="text-base">
+              We offer expert solutions for your Germany study journey – from profile evaluation to complete visa support. Discover our best packages and individual services.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Packages */}
+              <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="border-border/60">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Admission Package</CardTitle>
+                      <CardDescription>Profile evaluation, SOP, LOR, university selection, all-in-one admission assistance.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-semibold text-foreground">₹20,000 - ₹25,000</span>
+                        <Badge variant="secondary" className="uppercase">Package</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/60">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Visa Package</CardTitle>
+                      <CardDescription>Covers admission guidance plus visa application, document checks, and support till visa approval.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-semibold text-foreground">₹30,000 - ₹35,000</span>
+                        <Badge variant="secondary" className="uppercase">Package</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Highlights */}
+              <div className="lg:border-l lg:pl-6 border-border/60">
+                <h3 className="text-base font-semibold mb-3">What’s Included</h3>
+                <ul className="text-sm space-y-2 text-muted-foreground">
+                  <li>• Profile Evaluation</li>
+                  <li>• SOP Drafting (Admission/Visa)</li>
+                  <li>• University Shortlisting</li>
+                  <li>• APS Help</li>
+                  <li>• VFS Appointment Booking</li>
+                  <li>• CV Preparation</li>
+                  <li>• LOR Samples</li>
+                </ul>
+
+                <div className="mt-5">
+                  <Button asChild className="w-full sm:w-auto">
+                    <Link to="/services">
+                      See All Services
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
@@ -823,9 +900,8 @@ const Index = () => {
     navigate('/auth');
   };
 
-  // Minimal promo popups (once per session)
-  const promoExpert = usePromoOncePerSession('home-expert-help', 6 * 60 * 60 * 1000);
-  const promoPackages = usePromoOncePerSession('home-packages-push', 6 * 60 * 60 * 1000);
+  // Single offer popup (once per session) — 2 hours cooldown
+  const promoOffer = usePromoOncePerSession('home-offer', 2 * 60 * 60 * 1000);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -834,23 +910,11 @@ const Index = () => {
       </ErrorBoundary>
       <GermanyFlagBar />
       <main className="flex-1">
-        {/* Minimal promo pop cards on homepage */}
-        {promoExpert.shouldShow && (
-          <PromoCard 
-            title="Get expert help" 
-            description="Start with a quick profile evaluation, only ₹999." 
-            onClose={promoExpert.markShown} 
-          />
-        )}
-        {promoPackages.shouldShow && (
-          <PromoCard 
-            title="Admission + Visa Packages" 
-            description="End-to-end guidance. Request a package now." 
-            onClose={promoPackages.markShown} 
-          />
-        )}
+        {/* Offer popup (once per session) */}
+        <OfferPopup open={promoOffer.shouldShow} onClose={promoOffer.markShown} />
         <HeroSection onGetStarted={handleGetStarted} />
         {/* Move Testimonials before Features */}
+        <FeaturedServicesBox />
         <TestimonialsSection />
         <div className="border-t border-border" />
         <FeaturesSection />
