@@ -11,7 +11,7 @@ interface Review {
   user_id: string;
   rating: number;
   review_text: string;
-  service_type: string;
+  service_type: string | null;
   created_at: string;
   profiles?: {
     full_name: string;
@@ -36,15 +36,9 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
       try {
         setLoading(true);
         
-        let query = supabase
+        let query = (supabase as any)
           .from('reviews')
-          .select(`
-            *,
-            profiles (
-              full_name,
-              avatar_url
-            )
-          `)
+          .select(`id, user_id, rating, review_text, service_type, created_at, profiles ( full_name, avatar_url )`)
           .eq('is_approved', true)
           .order('created_at', { ascending: false });
 
@@ -60,7 +54,7 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
 
         if (fetchError) throw fetchError;
 
-        setReviews(data || []);
+        setReviews((data || []) as Review[]);
       } catch (err) {
         console.error('Error fetching reviews:', err);
         setError('Failed to load reviews. Please try again later.');
@@ -154,7 +148,7 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
         {reviews.map((review) => (
           <Card key={review.id} className="overflow-hidden">
             <CardContent className="p-6">
-              <div className="flex items-start space-x-4">
+              <div className="flex items-start gap-4 flex-wrap">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={review.profiles?.avatar_url} alt={review.profiles?.full_name} />
                   <AvatarFallback>
@@ -164,12 +158,12 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
                       .join('')}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <h4 className="font-medium truncate max-w-[70%] sm:max-w-none">
                       {review.profiles?.full_name || 'Anonymous'}
                     </h4>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground shrink-0">
                       {formatDate(review.created_at)}
                     </span>
                   </div>
@@ -181,7 +175,7 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
                       {review.rating.toFixed(1)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">
                     {review.review_text}
                   </p>
                   {review.service_type && review.service_type !== 'general' && (

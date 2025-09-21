@@ -369,6 +369,50 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          id: string
+          user_id: string
+          rating: number
+          review_text: string
+          service_type: string | null
+          is_featured: boolean
+          is_approved: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rating: number
+          review_text: string
+          service_type?: string | null
+          is_featured?: boolean
+          is_approved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rating?: number
+          review_text?: string
+          service_type?: string | null
+          is_featured?: boolean
+          is_approved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           aps_pathway: Database["public"]["Enums"]["aps_pathway"] | null
