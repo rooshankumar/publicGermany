@@ -20,7 +20,6 @@ const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Requests = lazy(() => import("./pages/admin/Requests"));
 const Students = lazy(() => import("./pages/admin/Students"));
-const ApplicationsAdmin = lazy(() => import("./pages/admin/Applications"));
 const Payments = lazy(() => import("./pages/admin/Payments"));
 const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const Exports = lazy(() => import("./pages/admin/Exports"));
@@ -78,7 +77,6 @@ const AppRoutes = () => {
         import('./pages/admin/AdminDashboard');
         import('./pages/admin/Requests');
         import('./pages/admin/Students');
-        import('./pages/admin/Applications');
         import('./pages/admin/Payments');
         import('./pages/admin/StudentProfile');
         import('./pages/admin/Exports');
@@ -155,11 +153,9 @@ const AppRoutes = () => {
             <StudentProfile />
           </ProtectedRoute>
         } />
-        <Route path="/admin/applications" element={
-          <ProtectedRoute requiredRole="admin">
-            <ApplicationsAdmin />
-          </ProtectedRoute>
-        } />
+        {/* Backward compatibility: redirect old admin applications path */}
+        <Route path="/admin/applications" element={<Navigate to="/admin" replace />} />
+        
         <Route path="/admin/payments" element={
           <ProtectedRoute requiredRole="admin">
             <Payments />

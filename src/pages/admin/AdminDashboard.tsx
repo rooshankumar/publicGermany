@@ -217,7 +217,7 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold text-secondary">{stats.activeApplications}</div>
               <p className="text-xs text-muted-foreground">
-                <Link to="/admin/applications" className="hover:underline">Manage applications</Link>
+                <Link to="/admin" className="hover:underline">Manage applications</Link>
               </p>
             </CardContent>
           </Card>
@@ -348,12 +348,6 @@ const AdminDashboard = () => {
                 <Link to="/admin/students">
                   <Users className="h-5 w-5 mb-1.5" />
                   Manage Students
-                </Link>
-              </Button>
-              <Button asChild className="h-16 flex-col" variant="secondary">
-                <Link to="/admin/applications">
-                  <FileText className="h-5 w-5 mb-1.5" />
-                  Review Applications
                 </Link>
               </Button>
               <Button asChild className="h-16 flex-col" variant="outline">

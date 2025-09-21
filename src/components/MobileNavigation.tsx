@@ -41,7 +41,6 @@ const MobileNavigation = () => {
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
-    { href: '/admin/applications', label: 'Applications', icon: GraduationCap },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
