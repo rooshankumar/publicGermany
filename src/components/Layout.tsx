@@ -194,7 +194,7 @@ const Layout = ({ children }: LayoutProps) => {
                     </AvatarFallback>
                   </Avatar>
                   <Button
-                    onClick={async () => { await signOut(); navigate('/'); }}
+                    onClick={async () => { await signOut(); navigate('/auth'); }}
                     variant="outline"
                     size="sm"
                     className="hidden md:inline-flex"
@@ -306,7 +306,7 @@ const Layout = ({ children }: LayoutProps) => {
                     </AvatarFallback>
                   </Avatar>
                   <Button
-                    onClick={async () => { await signOut(); navigate('/'); }}
+                    onClick={async () => { await signOut(); navigate('/auth'); }}
                     variant="outline"
                     size="sm"
                     className="hidden md:inline-flex"
@@ -404,7 +404,7 @@ const Layout = ({ children }: LayoutProps) => {
                   const ok = window.confirm('Are you sure you want to sign out?');
                   if (!ok) return;
                   await signOut();
-                  navigate('/');
+                  navigate('/auth');
                 }}
               >
                 <LogOut className="h-5 w-5" />

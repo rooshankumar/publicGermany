@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -23,6 +23,7 @@ import logos from '@/assets/logos.png';
 const MobileNavigation = () => {
   const { profile, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
@@ -128,6 +129,7 @@ const MobileNavigation = () => {
               onClick={() => {
                 signOut();
                 setIsOpen(false);
+                navigate('/auth');
               }}
               variant="outline" 
               className="w-full justify-start"
