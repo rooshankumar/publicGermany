@@ -274,29 +274,29 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
+    // Try to sign out from Supabase first. Even if it fails with session-missing, proceed to clear local state.
     try {
-      // Clear local state first
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        const msg = String((error as any)?.message || '').toLowerCase();
+        // Ignore expected "no active session" conditions
+        if (msg.includes('session missing') || msg.includes('no active session')) {
+          if (import.meta.env.MODE !== 'production') {
+            console.debug('Sign out: no active Supabase session, proceeding to clear local state');
+          }
+        } else {
+          console.warn('Sign out error (non-fatal):', error);
+        }
+      }
+    } catch (e) {
+      // Network or other unexpected error; continue clearing local state to ensure UI signs out
+      console.warn('Sign out request threw, proceeding anyway:', e);
+    } finally {
+      // Clear local state and app-specific cached data; avoid nuking unrelated storage (e.g., theme)
       setUser(null);
       setSession(null);
       setProfile(null);
-      
-      // Clear only our app-specific cached data; avoid nuking everything (prevents theme/query flashes)
-      try {
-        localStorage.removeItem('pg_profile');
-      } catch {}
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error('Sign out error:', error);
-        throw error;
-      }
-      // Let callers handle navigation without hard refresh
-      return;
-    } catch (error) {
-      console.error('Error during sign out:', error);
-      return;
+      try { localStorage.removeItem('pg_profile'); } catch {}
     }
   };
 
