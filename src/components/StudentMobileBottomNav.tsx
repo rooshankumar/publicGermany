@@ -9,6 +9,7 @@ const StudentMobileBottomNav = () => {
   const [open, setOpen] = useState(false);
 
   const primary = [
+    { href: '/profile', label: 'Profile', icon: User },
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'Applications', icon: GraduationCap },
     { href: '/documents', label: 'Documents', icon: FileText },
@@ -19,7 +20,6 @@ const StudentMobileBottomNav = () => {
     { href: '/resources', label: 'Resources', icon: BookOpen },
     { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/reviews', label: 'Reviews', icon: Star },
-    { href: '/profile', label: 'Profile', icon: User },
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
@@ -27,7 +27,7 @@ const StudentMobileBottomNav = () => {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-        <ul className="grid grid-cols-4 items-stretch h-14">
+        <ul className="grid grid-cols-5 items-stretch h-14">
           {primary.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);

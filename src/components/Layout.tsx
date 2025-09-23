@@ -18,8 +18,7 @@ import {
   Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import MobileNavigation from './MobileNavigation';
-import logos from '@/assets/logos.png';
+
 import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 import AdminMobileBottomNav from '@/components/AdminMobileBottomNav';
@@ -51,10 +50,9 @@ const Layout = ({ children }: LayoutProps) => {
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/services', label: 'Services', icon: Briefcase },
-    { href: '/applications', label: 'University Applications', icon: GraduationCap },
+    { href: '/applications', label: 'Applications', icon: GraduationCap },
     { href: '/resources', label: 'Resources', icon: FileText },
     { href: '/documents', label: 'Documents', icon: FileText },
-    { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/reviews', label: 'Write a Review', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ];
@@ -102,17 +100,14 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-background">
 
       {/* Desktop Layout */}
-      {/* If admin, show a top navigation bar. If student, keep sidebar layout. */}
+      {/* If admin, show a top navigation bar. If student, show student top navigation. */}
       {isAdmin ? (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Admin Top Navbar (Desktop) */}
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-3 px-4 md:px-6">
             <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
-              {/* Left: Logo and brand */}
-              <Link to="/admin" className="flex items-center gap-4" aria-label="Admin home">
-                <div className="h-12 w-12 md:h-16 md:w-16 rounded-md overflow-hidden shrink-0">
-                  <img src={logos} alt="publicgermany" className="h-full w-full object-contain object-center" />
-                </div>
+              {/* Left: Brand */}
+              <Link to="/admin" className="flex items-center gap-3" aria-label="Admin home">
                 <div className="flex flex-col leading-tight">
                   <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
                   <span className="text-xs text-muted-foreground">Admin</span>
@@ -220,11 +215,8 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Student Top Navbar (Desktop) */}
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-3 px-4 md:px-6">
             <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
-              {/* Left: Logo and brand */}
-              <Link to="/dashboard" className="flex items-center gap-4" aria-label="Student home">
-                <div className="h-12 w-12 md:h-16 md:w-16 rounded-md overflow-hidden shrink-0">
-                  <img src={logos} alt="publicgermany" className="h-full w-full object-contain object-center" />
-                </div>
+              {/* Left: Brand */}
+              <Link to="/dashboard" className="flex items-center gap-3" aria-label="Student home">
                 <div className="flex flex-col leading-tight">
                   <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
                   <span className="text-xs text-muted-foreground">Student</span>
@@ -232,7 +224,7 @@ const Layout = ({ children }: LayoutProps) => {
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-3 xl:gap-5">
+              <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-wrap overflow-x-hidden">
                 {studentNavItems.map((item) => {
                   const active = location.pathname === item.href;
                   return (
@@ -240,7 +232,7 @@ const Layout = ({ children }: LayoutProps) => {
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "relative pb-1 text-base font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
+                        "relative pb-0.5 text-sm font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
                         active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
                       )}
                       aria-current={active ? 'page' : undefined}
