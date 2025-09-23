@@ -32,7 +32,7 @@ const Documents = () => {
     if (!profile?.user_id) return [] as any[];
     const { data, error } = await supabase
       .from('documents')
-      .select('id, category, file_url, upload_path, status')
+      .select('id, category, file_url, file_name, upload_path, status')
       .eq('user_id', profile.user_id);
     if (error) throw error;
     return data || [];

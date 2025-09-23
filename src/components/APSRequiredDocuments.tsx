@@ -28,6 +28,26 @@ export const DOCUMENTS = [
   { key: 'master_degree', label: '📄 Copy of Master’s Degree and Transcripts (if applicable)', maxFiles: 2 },
 ];
 
+// Map document keys to standardized base filenames used when storing files.
+const CATEGORY_BASE_FILENAME: Record<string, string> = {
+  passport_copy: 'Passport',
+  admission_letter: 'Admission Letter',
+  aps_certificate: 'APS Certificate',
+  health_insurance: 'Proof of Health Insurance',
+  academic_transcripts: 'Academic Transcripts',
+  degree_certificate: 'Degree Certificate',
+  language_certificates: 'Language Certificates',
+  motivation_letter: 'Motivation Letter',
+  cv: 'CV',
+  recommendation_letter: 'Recommendation Letter',
+  financial_proof: 'Financial Proof',
+  class_x: 'Class X marksheets and certificate',
+  class_xii: 'Class XII marksheets and certificate',
+  all_sem_marksheets: 'All Semester Marksheets',
+  bachelor_degree: 'Bachelor Degree and Transcript',
+  master_degree: "Master's Degree and Transcripts",
+};
+
 interface DocumentMeta {
   id: string;
   category: string;
@@ -120,15 +140,14 @@ function APSRequiredDocuments({ displayName }: APSProps) {
     setLoading(key);
     
     try {
-      // Generate a unique file path
+      // Generate a standardized stored file name based on category + original extension
       const originalExt = (() => {
         const dot = file.name.lastIndexOf('.');
         return dot >= 0 ? file.name.slice(dot) : '';
       })();
-      const safeBaseName = (displayName && displayName.trim().length > 0)
-        ? displayName.trim().replace(/[^a-zA-Z0-9-_ ]/g, '')
-        : file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_ ]/g, '');
-      const storedFileName = `${safeBaseName}${originalExt || ''}`;
+      const base = CATEGORY_BASE_FILENAME[key] || key;
+      const safeBaseName = base.replace(/[^a-zA-Z0-9-_ ()]/g, '');
+      const storedFileName = `${safeBaseName}${originalExt || ''}`; // e.g., "Passport.pdf"
       const fileName = `${Date.now()}-${storedFileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `${profile.user_id}/${key}/${fileName}`;
       
@@ -286,12 +305,37 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                       <Button size="sm" variant="outline" className="px-2"
                         onClick={async () => {
                           try {
-                            const { data } = await supabase.storage.from('documents').createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
+                            const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
+                            const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60);
                             if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
                           } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
                         }}
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="px-2"
+                        onClick={async () => {
+                          try {
+                            const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
+                            const desiredName = docs[doc.key]!.file_name || 'document';
+                            const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60, { download: desiredName });
+                            const url = data?.signedUrl || docs[doc.key]!.file_url;
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = desiredName;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                          } catch (_) {
+                            // fallback open
+                            window.open(docs[doc.key]!.file_url, '_blank');
+                          }
+                        }}
+                      >
+                        Download
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key} className="px-2">
                         <Trash2 className="h-4 w-4" />
@@ -360,12 +404,36 @@ function APSRequiredDocuments({ displayName }: APSProps) {
                         <Button size="sm" variant="outline" className="px-3"
                           onClick={async () => {
                             try {
-                              const { data } = await supabase.storage.from('documents').createSignedUrl(docs[doc.key]!.upload_path || docs[doc.key]!.file_url, 60);
+                              const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
+                              const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60);
                               if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
                             } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
                           }}
                         >
                           View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="px-3"
+                          onClick={async () => {
+                            try {
+                              const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
+                              const desiredName = docs[doc.key]!.file_name || 'document';
+                              const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60, { download: desiredName });
+                              const url = data?.signedUrl || docs[doc.key]!.file_url;
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = desiredName;
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                            } catch (_) {
+                              window.open(docs[doc.key]!.file_url, '_blank');
+                            }
+                          }}
+                        >
+                          Download
                         </Button>
                         <Button size="sm" variant="ghost" className="px-3" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key}>Delete</Button>
                       </div>
