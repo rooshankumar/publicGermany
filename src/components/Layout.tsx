@@ -380,10 +380,22 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Center: Logo removed for mobile as requested */}
 
-            {/* Right: Hamburger */}
+            {/* Right: Theme + Sign Out (icons) */}
             <div className="pr-2 flex items-center gap-1">
               <ThemeToggle variant="icon" />
-              {/* Hide legacy drawer nav for both roles since we use bottom navs */}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+                onClick={async () => {
+                  const ok = window.confirm('Are you sure you want to sign out?');
+                  if (!ok) return;
+                  await signOut();
+                  navigate('/');
+                }}
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </header>

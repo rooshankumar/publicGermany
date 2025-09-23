@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
-import FullScreenLoader from '@/components/FullScreenLoader';
 import { Badge } from '@/components/ui/badge';
 // Custom Progress component to replace the shadcn/ui one
 const Progress = ({ value, className = '', indicatorClassName = '' }: { 
@@ -253,7 +252,7 @@ const Dashboard = () => {
   if (loading || !userData) {
     return (
       <Layout>
-        <FullScreenLoader label="Loading dashboard" />
+        <div className="p-8 text-center text-muted-foreground">Loading…</div>
       </Layout>
     );
   }

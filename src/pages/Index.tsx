@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logos from '@/assets/logos.png';
+import ThemeToggle from '@/components/ThemeToggle';
 import { 
   GraduationCap, 
   Shield, 
@@ -100,82 +101,6 @@ function FreeVsPaidSection() {
   );
 }
 
-function FeaturedServicesBox() {
-  return (
-    <section id="featured-services" className="py-10 md:py-14">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <Card className="border-primary/30 shadow-sm bg-card/80 backdrop-blur">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl md:text-3xl flex items-center gap-2">
-              <Star className="w-5 h-5 text-primary" />
-              Explore Our Germany Admission & Visa Services
-            </CardTitle>
-            <CardDescription className="text-base">
-              We offer expert solutions for your Germany study journey – from profile evaluation to complete visa support. Discover our best packages and individual services.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Packages */}
-              <div className="lg:col-span-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="border-border/60">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">Admission Package</CardTitle>
-                      <CardDescription>Profile evaluation, SOP, LOR, university selection, all-in-one admission assistance.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-semibold text-foreground">₹20,000 - ₹25,000</span>
-                        <Badge variant="secondary" className="uppercase">Package</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/60">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">Visa Package</CardTitle>
-                      <CardDescription>Covers admission guidance plus visa application, document checks, and support till visa approval.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-semibold text-foreground">₹30,000 - ₹35,000</span>
-                        <Badge variant="secondary" className="uppercase">Package</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Highlights */}
-              <div className="lg:border-l lg:pl-6 border-border/60">
-                <h3 className="text-base font-semibold mb-3">What’s Included</h3>
-                <ul className="text-sm space-y-2 text-muted-foreground">
-                  <li>• Profile Evaluation</li>
-                  <li>• SOP Drafting (Admission/Visa)</li>
-                  <li>• University Shortlisting</li>
-                  <li>• APS Help</li>
-                  <li>• VFS Appointment Booking</li>
-                  <li>• CV Preparation</li>
-                  <li>• LOR Samples</li>
-                </ul>
-
-                <div className="mt-5">
-                  <Button asChild className="w-full sm:w-auto">
-                    <Link to="/services">
-                      See All Services
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
-  );
-}
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -230,6 +155,7 @@ function Navbar() {
           <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
           <a href="#faq" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
+          <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
             <Link to="/auth" className="text-base">Sign In</Link>
           </Button>
@@ -640,14 +566,16 @@ function TestimonialsSection() {
   }
 
   return (
-    <section id="testimonials" className="py-16 bg-muted/50">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <Badge variant="outline" className="mb-4">Testimonials</Badge>
-          <h2 className="text-3xl font-bold tracking-tight mb-4">What Our Students Say</h2>
-          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Hear from students who have successfully navigated their journey to studying in Germany with our help.
+    <section id="testimonials" className="relative py-20 md:py-24" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="absolute inset-0 opacity-15" style={{
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
+      }}></div>
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12 md:mb-16">
+          <Badge variant="outline" className="mb-3">Testimonials</Badge>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">Students love publicgermany</h2>
+          <p className="text-base md:text-lg text-foreground/90 max-w-2xl mx-auto">
+            Real stories from students who reached Germany with our guidance.
           </p>
         </div>
         
@@ -663,48 +591,47 @@ function TestimonialsSection() {
               key={review.id}
               className="min-w-[85%] snap-center border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             >
-              <CardContent className="px-6 py-6 h-full flex flex-col">
-                {/* Header: Avatar + Name/Date + Service Chip */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
-                      {review.profiles?.full_name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{review.profiles?.full_name || 'Anonymous'}</p>
-                      <p className="text-[11px] text-muted-foreground">{formatDate(review.created_at)}</p>
-                    </div>
-                  </div>
-                  {review.service_type && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap">
-                      {review.service_type}
-                    </span>
+              <CardContent className="px-6 py-6 h-full flex flex-col relative overflow-hidden">
+                {/* Accent top bar */}
+                <div className="-mx-6 -mt-6 mb-4 h-1 rounded-t-xl bg-gradient-to-r from-primary via-warning to-success" />
+                {/* Quote at top */}
+                <div className="relative mb-3">
+                  <div className="absolute left-0 top-0 text-foreground/30 text-xl select-none">“</div>
+                  <p className="pl-4 text-sm leading-relaxed text-foreground/90">{truncated}</p>
+                  {!isOpen && text.length > 180 && (
+                    <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                      Show more
+                    </button>
                   )}
-                </div>
-
-                {/* Quote body with accent bar */}
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-1.5 rounded bg-accent/60 mt-0.5" />
-                  <div className="flex-1">
-                    <div className="text-accent/80 mb-1">“</div>
-                    <p className="text-sm leading-relaxed text-foreground/90">{truncated}</p>
-                    {!isOpen && text.length > 180 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show more
-                      </button>
-                    )}
-                    {isOpen && text.length > 180 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show less
-                      </button>
-                    )}
-                  </div>
+                  {isOpen && text.length > 180 && (
+                    <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
+                      Show less
+                    </button>
+                  )}
                 </div>
 
                 {/* Footer: rating */}
                 <div className="mt-auto pt-2 border-t border-border/60 flex items-center justify-between">
                   <div className="flex">{renderStars(review.rating)}</div>
                   <span className="text-xs text-muted-foreground">{review.rating.toFixed(1)}/5</span>
+                </div>
+
+                {/* Avatar/Name at bottom */}
+                <div className="pt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
+                      {review.profiles?.full_name?.charAt(0) || 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate text-foreground max-w-[180px]">{review.profiles?.full_name || 'Anonymous'}</p>
+                      <p className="text-[11px] text-muted-foreground">{formatDate(review.created_at)}</p>
+                    </div>
+                  </div>
+                  {review.service_type && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap border border-border/50">
+                      {review.service_type}
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -742,57 +669,6 @@ function TestimonialsSection() {
             return (
             <Card
               key={review.id}
-              className="h-full border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-            >
-              <CardContent className="p-6 h-full flex flex-col">
-                {/* Header: Avatar + Name/Date + Service Chip */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
-                      {review.profiles?.full_name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{review.profiles?.full_name || 'Anonymous'}</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
-                    </div>
-                  </div>
-                  {review.service_type && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap">
-                      {review.service_type}
-                    </span>
-                  )}
-                </div>
-
-                {/* Quote body with accent bar */}
-                <div className="flex items-start gap-3 mb-5 flex-grow">
-                  <div className="w-1.5 rounded bg-accent/60 mt-1" />
-                  <div className="flex-1">
-                    <div className="text-accent/80 mb-1">“</div>
-                    <p className="leading-relaxed text-foreground/90">{truncated}</p>
-                    {!isOpen && text.length > 220 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show more
-                      </button>
-                    )}
-                    {isOpen && text.length > 220 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show less
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer: rating */}
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between">
-                  <div className="flex">{renderStars(review.rating)}</div>
-                  <span className="text-sm text-muted-foreground">{review.rating.toFixed(1)}/5</span>
-                </div>
-              </CardContent>
-            </Card>
-          ); })}
-        </div>
-        
-        {/* Removed 'Read All Reviews' link as requested */}
       </div>
     </section>
   );
@@ -913,8 +789,7 @@ const Index = () => {
         {/* Offer popup (once per session) */}
         <OfferPopup open={promoOffer.shouldShow} onClose={promoOffer.markShown} />
         <HeroSection onGetStarted={handleGetStarted} />
-        {/* Move Testimonials before Features */}
-        <FeaturedServicesBox />
+        {/* Testimonials highlighted section */}
         <TestimonialsSection />
         <div className="border-t border-border" />
         <FeaturesSection />
