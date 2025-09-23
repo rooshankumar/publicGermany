@@ -1,9 +1,9 @@
 import Layout from '@/components/Layout';
-import FullScreenLoader from '@/components/FullScreenLoader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -44,98 +44,73 @@ const AdminDashboard = () => {
     receivedPayments: 0
   });
   const [loading, setLoading] = useState(true);
+  const initialLoadDoneRef = useRef(false);
+  const debounceRef = useRef<number | null>(null);
+
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchDashboardData();
-    
-    // Set up real-time subscriptions for live updates
-    const channels = [
-      supabase
-        .channel('profiles-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          fetchDashboardData();
-        }),
-      supabase
-        .channel('applications-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-          fetchDashboardData();
-        }),
-      supabase
-        .channel('service-requests-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
-          fetchDashboardData();
-        }),
-      supabase
-        .channel('service-payments-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
-          fetchDashboardData();
-        })
-    ];
+    // Initial load (show spinner)
+    fetchDashboardData(true);
 
-    channels.forEach(channel => channel.subscribe());
+    // Single realtime channel with debounced refreshes (no spinner)
+    const channel = supabase
+      .channel('admin-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => scheduleRefresh())
+      .subscribe();
 
     return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      supabase.removeChannel(channel);
     };
   }, []);
 
-  const fetchDashboardData = async () => {
+  const scheduleRefresh = () => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => fetchDashboardData(false), 400);
+  };
+
+  const fetchDashboardData = async (showSpinner: boolean) => {
     try {
-      setLoading(true);
+      if (showSpinner) setLoading(true);
       
-      // Fetch students count
-      const { count: studentsCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch applications count
-      const { count: applicationsCount } = await supabase
-        .from('applications')
-        .select('*', { count: 'exact', head: true })
-        .neq('status', 'rejected');
-
-      // Fetch pending service requests
-      const { count: requestsCount } = await supabase
-        .from('service_requests')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['new', 'in_progress']);
-
-      // Fetch revenue and counts from service_payments
-      const { data: receivedRows } = await supabase
-        .from('service_payments' as any)
-        .select('amount')
-        .eq('status', 'received');
-
-      const totalRevenue = receivedRows?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
-
-      const { count: pendingPayments } = await supabase
-        .from('service_payments' as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      const { count: receivedPayments } = await supabase
-        .from('service_payments' as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'received');
-
-      // Fetch recent payments (last 5)
-      const { data: recentPayments } = await supabase
-        .from('service_payments' as any)
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Fetch urgent tasks (applications with deadlines in next 7 days)
+      // Prepare time window
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
-      
-      const { data: urgentApps } = await supabase
-        .from('applications')
-        .select('*, profiles!applications_user_id_fkey(full_name)')
-        .lte('application_end_date', nextWeek.toISOString())
-        .neq('status', 'submitted')
-        .order('application_end_date', { ascending: true });
+
+      // Run all requests in parallel and narrow columns
+      const [
+        studentsCountRes,
+        applicationsCountRes,
+        requestsCountRes,
+        receivedRowsRes,
+        pendingPaymentsCountRes,
+        receivedPaymentsCountRes,
+        recentPaymentsRes,
+        urgentAppsRes,
+      ] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('applications').select('id', { count: 'exact', head: true }).neq('status', 'rejected'),
+        supabase.from('service_requests').select('id', { count: 'exact', head: true }).in('status', ['new', 'in_progress']),
+        supabase.from('service_payments' as any).select('amount').eq('status', 'received'),
+        supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'received'),
+        supabase.from('service_payments' as any).select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(5),
+        supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(10),
+      ]);
+
+      const studentsCount = studentsCountRes.count || 0;
+      const applicationsCount = applicationsCountRes.count || 0;
+      const requestsCount = requestsCountRes.count || 0;
+      const receivedRows = receivedRowsRes.data || [];
+      const totalRevenue = receivedRows.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      const pendingPayments = pendingPaymentsCountRes.count || 0;
+      const receivedPayments = receivedPaymentsCountRes.count || 0;
+      const recentPayments = recentPaymentsRes.data || [];
+      const urgentApps = urgentAppsRes.data || [];
 
       setStats({
         totalStudents: studentsCount || 0,
@@ -155,7 +130,10 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showSpinner || !initialLoadDoneRef.current) {
+        setLoading(false);
+        initialLoadDoneRef.current = true;
+      }
     }
   };
 
@@ -176,13 +154,7 @@ const AdminDashboard = () => {
     return diffDays;
   };
 
-  if (loading) {
-    return (
-      <Layout>
-        <FullScreenLoader label="Loading admin dashboard" />
-      </Layout>
-    );
-  }
+  // Note: We intentionally avoid blocking UI with a full-screen loader to keep the page feeling responsive.
 
   return (
     <Layout>
