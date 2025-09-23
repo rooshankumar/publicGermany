@@ -30,6 +30,7 @@ import {
   StarHalf,
   StarOff
 } from 'lucide-react';
+import TestimonialCard from '@/components/TestimonialCard';
 const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
 // import ThemeToggle from '@/components/ThemeToggle';
 
@@ -431,6 +432,10 @@ interface Review {
     full_name: string;
     avatar_url?: string;
   } | null;
+  // Optional metadata for richer cards
+  course_name?: string;
+  university_name?: string;
+  approval_status?: string; // e.g., "Visa Approved!"
 }
 
 function TestimonialsSection() {
@@ -480,31 +485,7 @@ function TestimonialsSection() {
     }
   });
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars.push(<Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars.push(<StarHalf key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
-      } else {
-        stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
-      }
-    }
-
-    return stars;
-  };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+  // Star rendering and date formatting handled inside TestimonialCard
 
   if (error) {
     return (
@@ -582,60 +563,17 @@ function TestimonialsSection() {
         {/* Mobile slider with controls */}
         <div className="md:hidden relative">
           <div ref={mobileSliderRef} className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory space-x-4 flex">
-          {reviews.map((review) => {
-            const isOpen = !!expanded[review.id];
-            const text = review.review_text || "";
-            const truncated = text.length > 180 && !isOpen ? text.slice(0, 180) + "…" : text;
-            return (
-            <Card
+          {reviews.map((review) => (
+            <TestimonialCard
               key={review.id}
-              className="min-w-[85%] snap-center border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-            >
-              <CardContent className="px-6 py-6 h-full flex flex-col relative overflow-hidden">
-                {/* Accent top bar */}
-                <div className="-mx-6 -mt-6 mb-4 h-1 rounded-t-xl bg-gradient-to-r from-primary via-warning to-success" />
-                {/* Quote at top */}
-                <div className="relative mb-3">
-                  <div className="absolute left-0 top-0 text-foreground/30 text-xl select-none">“</div>
-                  <p className="pl-4 text-sm leading-relaxed text-foreground/90">{truncated}</p>
-                  {!isOpen && text.length > 180 && (
-                    <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                      Show more
-                    </button>
-                  )}
-                  {isOpen && text.length > 180 && (
-                    <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                      Show less
-                    </button>
-                  )}
-                </div>
-
-                {/* Footer: rating */}
-                <div className="mt-auto pt-2 border-t border-border/60 flex items-center justify-between">
-                  <div className="flex">{renderStars(review.rating)}</div>
-                  <span className="text-xs text-muted-foreground">{review.rating.toFixed(1)}/5</span>
-                </div>
-
-                {/* Avatar/Name at bottom */}
-                <div className="pt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
-                      {review.profiles?.full_name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate text-foreground max-w-[180px]">{review.profiles?.full_name || 'Anonymous'}</p>
-                      <p className="text-[11px] text-muted-foreground">{formatDate(review.created_at)}</p>
-                    </div>
-                  </div>
-                  {review.service_type && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap border border-border/50">
-                      {review.service_type}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ); })}
+              review={review}
+              isOpen={!!expanded[review.id]}
+              onToggle={toggleExpand}
+              truncateAt={180}
+              className="min-w-[85%] snap-center"
+              showNameBelowCard={false}
+            />
+          ))}
           </div>
           {/* Controls */}
           <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1">
@@ -662,59 +600,16 @@ function TestimonialsSection() {
 
         {/* Desktop grid */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {reviews.map((review) => {
-            const isOpen = !!expanded[review.id];
-            const text = review.review_text || "";
-            const truncated = text.length > 220 && !isOpen ? text.slice(0, 220) + "…" : text;
-            return (
-              <Card
-                key={review.id}
-                className="h-full border border-border/60 bg-card/90 rounded-xl transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-              >
-                <CardContent className="px-7 py-7 h-full flex flex-col">
-                  {/* Header: rating */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex">{renderStars(review.rating)}</div>
-                    <span className="text-xs text-muted-foreground">{review.rating.toFixed(1)}/5</span>
-                  </div>
-
-                  {/* Quote */}
-                  <div className="relative mb-3">
-                    <div className="absolute left-0 top-0 text-foreground/30 text-xl select-none">“</div>
-                    <p className="pl-4 text-sm leading-relaxed text-foreground/90">{truncated}</p>
-                    {!isOpen && text.length > 220 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show more
-                      </button>
-                    )}
-                    {isOpen && text.length > 220 && (
-                      <button onClick={() => toggleExpand(review.id)} className="mt-1 text-xs text-primary hover:underline">
-                        Show less
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Footer: avatar/name and service */}
-                  <div className="mt-auto pt-3 border-t border-border/60 flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold">
-                        {review.profiles?.full_name?.charAt(0) || 'U'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate text-foreground max-w-[180px]">{review.profiles?.full_name || 'Anonymous'}</p>
-                        <p className="text-[11px] text-muted-foreground">{formatDate(review.created_at)}</p>
-                      </div>
-                    </div>
-                    {review.service_type && (
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-foreground/80 whitespace-nowrap border border-border/50">
-                        {review.service_type}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {reviews.map((review) => (
+            <TestimonialCard
+              key={review.id}
+              review={review}
+              isOpen={!!expanded[review.id]}
+              onToggle={toggleExpand}
+              truncateAt={220}
+              className="h-full"
+            />
+          ))}
         </div>
       </div>
     </section>

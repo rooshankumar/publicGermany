@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import logos from '@/assets/logos.png';
 
 import {
   Home,
@@ -108,6 +109,9 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
               {/* Left: Brand */}
               <Link to="/admin" className="flex items-center gap-3" aria-label="Admin home">
+                <div className="h-10 w-10 rounded-md overflow-hidden shrink-0">
+                  <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+                </div>
                 <div className="flex flex-col leading-tight">
                   <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
                   <span className="text-xs text-muted-foreground">Admin</span>
@@ -217,6 +221,9 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
               {/* Left: Brand */}
               <Link to="/dashboard" className="flex items-center gap-3" aria-label="Student home">
+                <div className="h-10 w-10 rounded-md overflow-hidden shrink-0">
+                  <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+                </div>
                 <div className="flex flex-col leading-tight">
                   <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
                   <span className="text-xs text-muted-foreground">Student</span>
@@ -378,7 +385,13 @@ const Layout = ({ children }: LayoutProps) => {
               </Avatar>
             </div>
 
-            {/* Center: Logo removed for mobile as requested */}
+            {/* Center: Brand Logo + Name */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <div className="h-8 w-8 rounded-md overflow-hidden">
+                <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+              </div>
+              <span className="font-semibold text-base text-foreground">publicgermany</span>
+            </div>
 
             {/* Right: Theme + Sign Out (icons) */}
             <div className="pr-2 flex items-center gap-1">
