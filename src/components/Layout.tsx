@@ -37,6 +37,10 @@ const Layout = ({ children }: LayoutProps) => {
   const [unseen, setUnseen] = useState(0);
   const [pendingReviews, setPendingReviews] = useState<number>(0);
   const [openRequests, setOpenRequests] = useState<number>(0);
+  // Student-side counts
+  const [docCount, setDocCount] = useState<number>(0);
+  const [appCount, setAppCount] = useState<number>(0);
+  const [svcCount, setSvcCount] = useState<number>(0);
   const navigate = useNavigate();
   const markAllAsRead = async () => {
     if (!profile?.user_id) return;
@@ -123,6 +127,51 @@ const Layout = ({ children }: LayoutProps) => {
       })
       .subscribe();
 
+    // Student-only counts
+    const fetchStudentCounts = async () => {
+      if ((profile as any)?.role !== 'student') return;
+      try {
+        // Documents: pending or rejected
+        const { count: dCount } = await (supabase as any)
+          .from('documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['pending', 'rejected']);
+        setDocCount(dCount || 0);
+
+        // Applications: submitted or interview
+        const { count: aCount } = await (supabase as any)
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['submitted', 'interview']);
+        setAppCount(aCount || 0);
+
+        // Services: new, in_review, payment_pending, in_progress
+        const { count: sCount } = await (supabase as any)
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
+        setSvcCount(sCount || 0);
+      } catch {}
+    };
+
+    const docsCh = supabase
+      .channel(`docs-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .subscribe();
+    const appsCh = supabase
+      .channel(`apps-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .subscribe();
+    const svcCh = supabase
+      .channel(`svc-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .subscribe();
+
+    fetchStudentCounts();
+
     const requestsChannel = supabase
       .channel('service-requests-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
@@ -136,6 +185,9 @@ const Layout = ({ children }: LayoutProps) => {
       supabase.removeChannel(channel);
       supabase.removeChannel(reviewsChannel);
       supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(docsCh);
+      supabase.removeChannel(appsCh);
+      supabase.removeChannel(svcCh);
     };
   }, [profile?.user_id]);
 
@@ -309,7 +361,24 @@ const Layout = ({ children }: LayoutProps) => {
                       )}
                       aria-current={active ? 'page' : undefined}
                     >
-                      {item.label}
+                      <span className="relative inline-flex items-center">
+                        {item.label}
+                        {item.href === '/documents' && docCount > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {docCount > 99 ? '99+' : docCount}
+                          </span>
+                        )}
+                        {item.href === '/applications' && appCount > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {appCount > 99 ? '99+' : appCount}
+                          </span>
+                        )}
+                        {item.href === '/services' && svcCount > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {svcCount > 99 ? '99+' : svcCount}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   );
                 })}

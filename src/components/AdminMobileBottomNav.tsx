@@ -1,12 +1,48 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, Mail } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminMobileBottomNav = () => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [openRequests, setOpenRequests] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState(0);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const { count: r } = await (supabase as any)
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
+        setOpenRequests(r || 0);
+
+        const { count: rv } = await (supabase as any)
+          .from('reviews')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_approved', false);
+        setPendingReviews(rv || 0);
+      } catch {}
+    };
+
+    const rch = supabase
+      .channel('mb-admin-req')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, fetchCounts)
+      .subscribe();
+    const vch = supabase
+      .channel('mb-admin-rev')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, fetchCounts)
+      .subscribe();
+
+    fetchCounts();
+    return () => {
+      supabase.removeChannel(rch);
+      supabase.removeChannel(vch);
+    };
+  }, []);
 
   const primary = [
     { href: '/admin', label: 'Dashboard', icon: Home },
@@ -35,12 +71,17 @@ const AdminMobileBottomNav = () => {
                 <Link
                   to={item.href}
                   className={cn(
-                    'flex-1 flex flex-col items-center justify-center text-xs gap-1 rounded-md',
+                    'flex-1 relative flex flex-col items-center justify-center text-xs gap-1 rounded-md',
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="leading-none">{item.label}</span>
+                  {item.href === '/admin/requests' && openRequests > 0 && (
+                    <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                      {openRequests > 99 ? '99+' : openRequests}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
@@ -67,10 +108,15 @@ const AdminMobileBottomNav = () => {
                         key={item.href}
                         to={item.href}
                         onClick={() => setOpen(false)}
-                        className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30"
+                        className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30 relative"
                       >
                         <Icon className="h-5 w-5" />
                         <span className="text-sm font-medium">{item.label}</span>
+                        {item.href === '/admin/reviews' && pendingReviews > 0 && (
+                          <span className="absolute top-2 right-2 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {pendingReviews > 99 ? '99+' : pendingReviews}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}

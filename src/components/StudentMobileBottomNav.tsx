@@ -1,12 +1,66 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Briefcase, GraduationCap, FileText, MoreHorizontal, Home, BookOpen, Bell, Star, User } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const StudentMobileBottomNav = () => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { profile } = useAuth();
+  const [docCount, setDocCount] = useState(0);
+  const [appCount, setAppCount] = useState(0);
+  const [svcCount, setSvcCount] = useState(0);
+
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    const fetchCounts = async () => {
+      try {
+        const { count: d } = await (supabase as any)
+          .from('documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['pending', 'rejected']);
+        setDocCount(d || 0);
+
+        const { count: a } = await (supabase as any)
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['submitted', 'interview']);
+        setAppCount(a || 0);
+
+        const { count: s } = await (supabase as any)
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
+        setSvcCount(s || 0);
+      } catch {}
+    };
+
+    const dch = supabase
+      .channel(`sm-docs-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .subscribe();
+    const ach = supabase
+      .channel(`sm-apps-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .subscribe();
+    const sch = supabase
+      .channel(`sm-svc-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .subscribe();
+
+    fetchCounts();
+    return () => {
+      supabase.removeChannel(dch);
+      supabase.removeChannel(ach);
+      supabase.removeChannel(sch);
+    };
+  }, [profile?.user_id]);
 
   const primary = [
     { href: '/profile', label: 'Profile', icon: User },
@@ -36,12 +90,27 @@ const StudentMobileBottomNav = () => {
                 <Link
                   to={item.href}
                   className={cn(
-                    'flex-1 flex flex-col items-center justify-center text-xs gap-1 rounded-md',
+                    'flex-1 relative flex flex-col items-center justify-center text-xs gap-1 rounded-md',
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="leading-none">{item.label}</span>
+                  {item.href === '/documents' && docCount > 0 && (
+                    <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                      {docCount > 99 ? '99+' : docCount}
+                    </span>
+                  )}
+                  {item.href === '/applications' && appCount > 0 && (
+                    <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                      {appCount > 99 ? '99+' : appCount}
+                    </span>
+                  )}
+                  {item.href === '/services' && svcCount > 0 && (
+                    <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                      {svcCount > 99 ? '99+' : svcCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
