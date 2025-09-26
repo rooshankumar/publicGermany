@@ -191,6 +191,18 @@ const Layout = ({ children }: LayoutProps) => {
     };
   }, [profile?.user_id]);
 
+  // Clear badges when navigating to the corresponding page (desktop & mobile share this state in Layout)
+  useEffect(() => {
+    const path = location.pathname;
+    // Admin clears
+    if (path === '/admin/reviews') setPendingReviews(0);
+    if (path === '/admin/requests') setOpenRequests(0);
+    // Student clears
+    if (path === '/documents') setDocCount(0);
+    if (path === '/applications') setAppCount(0);
+    if (path === '/services') setSvcCount(0);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen bg-background">
 
