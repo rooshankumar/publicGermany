@@ -141,15 +141,7 @@ export default function ReviewsPage() {
               </div>
             </div>
         </section>
-
-        {/* Mobile sticky action bar */}
-        {user && (
-          <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="px-4 py-3 flex items-center justify-center">
-              <Button className="w-full" onClick={() => setShowReviewForm(true)}>Write a Review</Button>
-            </div>
-          </div>
-        )}
+        
       </div>
     </Layout>
   );
