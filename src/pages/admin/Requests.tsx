@@ -448,7 +448,7 @@ export default function Requests() {
                       <label className="text-sm font-medium">Final Document (Optional)</label>
                       <input
                         type="file"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                         onChange={async (e) => {
                           const file = e.target.files?.[0] || null;
                           setPendingDeliverableFile(file);

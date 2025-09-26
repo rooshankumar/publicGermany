@@ -118,7 +118,7 @@ const Services = () => {
   const [sortKey, setSortKey] = useState<'price_asc' | 'price_desc' | 'name_asc'>('price_asc');
   const [search, setSearch] = useState('');
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [timeline, setTimeline] = useState<string>('');
 
   // Map of requestId -> discovered deliverable URL (from storage)
@@ -627,11 +627,19 @@ const Services = () => {
       toast({ title: "Success", description: "Service request submitted" });
       // Notify admin(s) via email (bell notifications handled by DB trigger)
       try {
+        const studentName = (profile?.full_name && profile.full_name.trim())
+          ? profile.full_name.trim()
+          : (user.email ? user.email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()) : '');
+        const studentEmail = user.email || '';
+        const profileUrl = `${window.location.origin}/admin/students/${user.id}`;
         await sendEmail(
           'roshlingua@gmail.com',
           'New Service Request',
           `<p>A new service request has been created.</p>
-           <p><strong>Services:</strong> ${serviceNames || '(none)'}<br/>
+           <p><strong>Student:</strong> ${studentName || '(unknown)'}<br/>
+           <strong>Email:</strong> ${studentEmail || '(unknown)'}<br/>
+           <strong>Profile:</strong> <a href="${profileUrl}">${profileUrl}</a><br/>
+           <strong>Services:</strong> ${serviceNames || '(none)'}<br/>
            <strong>Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>
            <strong>User ID:</strong> ${user.id}</p>`
         );
