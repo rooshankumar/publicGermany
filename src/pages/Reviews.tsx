@@ -43,7 +43,7 @@ export default function ReviewsPage() {
 
   return (
     <Layout>
-      <div className="container py-8 pb-20 md:pb-8">
+      <div className="w-full md:container mx-auto px-3 sm:px-4 py-4 md:py-8">
         {/* Main content (full width) */}
         <section>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -81,8 +81,8 @@ export default function ReviewsPage() {
 
             {/* Two columns: All students' reviews (approved) and My reviews with status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Card>
+              <div className="w-full">
+                <Card className="w-full">
                   <CardHeader>
                     <CardTitle>All Students' Reviews</CardTitle>
                     <CardDescription>Recently approved reviews</CardDescription>
@@ -92,8 +92,8 @@ export default function ReviewsPage() {
                   </CardContent>
                 </Card>
               </div>
-              <div>
-                <Card>
+              <div className="w-full">
+                <Card className="w-full">
                   <CardHeader>
                     <CardTitle>My Reviews</CardTitle>
                     <CardDescription>Your submitted reviews and their status</CardDescription>
