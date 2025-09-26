@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 type Review = {
   id: string;
   user_id: string;
@@ -29,6 +30,7 @@ export default function AdminReviews() {
   const [status, setStatus] = useState<'all' | 'pending' | 'approved' | 'featured'>('pending');
   const [search, setSearch] = useState('');
   const { toast } = useToast();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchReviews = async () => {
     setLoading(true);
@@ -201,7 +203,24 @@ export default function AdminReviews() {
                     <Badge variant="outline" className="capitalize">{r.service_type}</Badge>
                   </div>
                 )}
-                <p className="text-sm break-words truncate">"{r.review_text}"</p>
+                <div
+                  className={cn(
+                    'text-sm break-words whitespace-pre-wrap',
+                    expanded[r.id] ? '' : 'max-h-24 overflow-hidden'
+                  )}
+                >
+                  {r.review_text}
+                </div>
+                {(r.review_text?.length ?? 0) > 120 && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="px-0"
+                    onClick={() => setExpanded((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
+                  >
+                    {expanded[r.id] ? 'Show less' : 'Read more'}
+                  </Button>
+                )}
                 <div className="flex flex-wrap gap-2 pt-2">
                   {!r.is_approved && (
                     <Button size="sm" onClick={() => approve(r.id)}>Approve</Button>

@@ -24,6 +24,7 @@ import { Database } from '@/integrations/supabase/types';
 
 type ServiceRequest = Database['public']['Tables']['service_requests']['Row'] & {
   profiles?: any;
+  deliverable_url?: string | null;
 };
 
 // Simple debounce hook
@@ -47,6 +48,8 @@ export default function Requests() {
   const [adminResponse, setAdminResponse] = useState('');
   const [deliverableUploading, setDeliverableUploading] = useState(false);
   const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<string>('');
+  const [pendingDeliverableFile, setPendingDeliverableFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -133,15 +136,30 @@ export default function Requests() {
     setFilteredRequests(filtered);
   };
 
-  const updateRequestStatus = async (requestId: string, status: string, response?: string) => {
+  const saveRequestChanges = async (requestId: string, status: string, response?: string) => {
     try {
+      // If a file is staged, upload it first and derive URL
+      let finalDeliverableUrl = deliverableUrl;
+      if (pendingDeliverableFile && selectedRequest) {
+        setDeliverableUploading(true);
+        const safeName = `${Date.now()}-${pendingDeliverableFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const path = `service_requests/${selectedRequest.id}/${safeName}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('documents')
+          .upload(path, pendingDeliverableFile, { upsert: true, contentType: pendingDeliverableFile.type, cacheControl: '3600' });
+        if (uploadErr) throw uploadErr;
+        const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
+        finalDeliverableUrl = publicData.publicUrl;
+        setDeliverableUrl(finalDeliverableUrl);
+      }
+
       const updates: any = { status };
       if (response) updates.admin_response = response;
-      if (deliverableUrl) {
+      if (finalDeliverableUrl) {
         // Prefer dedicated column if present
-        (updates as any).deliverable_url = deliverableUrl;
+        (updates as any).deliverable_url = finalDeliverableUrl;
         // Also include link in admin_response for compatibility
-        updates.admin_response = [response || '', `Deliverable: ${deliverableUrl}`].filter(Boolean).join('\n');
+        updates.admin_response = [response || '', `Deliverable: ${finalDeliverableUrl}`].filter(Boolean).join('\n');
       }
 
       const { error } = await supabase
@@ -151,14 +169,12 @@ export default function Requests() {
 
       if (error) throw error;
 
-      toast({
-        title: "Request updated",
-        description: "Request status updated successfully",
-      });
+      toast({ title: "Request updated", description: "Changes saved successfully" });
       
       setSelectedRequest(null);
       setAdminResponse('');
       setDeliverableUrl(null);
+      setPendingDeliverableFile(null);
       fetchRequests();
       // Add in-app notification for the student (bell)
       try {
@@ -175,6 +191,8 @@ export default function Requests() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setDeliverableUploading(false);
     }
   };
 
@@ -363,6 +381,8 @@ export default function Requests() {
                               onClick={() => {
                                 setSelectedRequest(request);
                                 setAdminResponse(request.admin_response || '');
+                                setPendingStatus(request.status);
+                                setDeliverableUrl(request.deliverable_url || null);
                               }}
                             >
                               Manage
@@ -405,8 +425,8 @@ export default function Requests() {
                   <h4 className="font-medium mb-2">Update Status</h4>
                   <div className="space-y-3">
                     <Select 
-                      value={selectedRequest.status}
-                      onValueChange={(status) => updateRequestStatus(selectedRequest.id, status)}
+                      value={pendingStatus}
+                      onValueChange={setPendingStatus}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -430,34 +450,10 @@ export default function Requests() {
                         type="file"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file || !selectedRequest) return;
-                          try {
-                            setDeliverableUploading(true);
-                            const { data: { user } } = await supabase.auth.getUser();
-                            const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                            const path = `service_requests/${selectedRequest.id}/${safeName}`;
-                            const { error: uploadErr } = await supabase.storage
-                              .from('documents')
-                              .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
-                            if (uploadErr) throw uploadErr;
-                            const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
-                            const url = publicData.publicUrl;
-                            setDeliverableUrl(url);
-                            // Immediately persist to DB so student UI can pick it up
-                            const currentResponse = adminResponse || selectedRequest.admin_response || '';
-                            const combinedResponse = [currentResponse, `Deliverable: ${url}`].filter(Boolean).join('\n');
-                            await (supabase as any)
-                              .from('service_requests')
-                              .update({ deliverable_url: url, admin_response: combinedResponse })
-                              .eq('id', selectedRequest.id);
-                            toast({ title: 'Deliverable uploaded', description: 'Final document attached to request.' });
-                            // Refresh requests to reflect change
-                            fetchRequests();
-                          } catch (err: any) {
-                            toast({ title: 'Upload failed', description: err?.message || 'Could not upload file', variant: 'destructive' });
-                          } finally {
-                            setDeliverableUploading(false);
+                          const file = e.target.files?.[0] || null;
+                          setPendingDeliverableFile(file);
+                          if (file) {
+                            toast({ title: 'File selected', description: `${file.name} will upload on Save.` });
                           }
                         }}
                         className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
@@ -465,7 +461,12 @@ export default function Requests() {
                       {deliverableUploading && (
                         <p className="text-xs text-muted-foreground">Uploading...</p>
                       )}
-                      {deliverableUrl && (
+                      {pendingDeliverableFile && (
+                        <div className="text-xs text-muted-foreground">
+                          Selected: {pendingDeliverableFile.name}
+                        </div>
+                      )}
+                      {deliverableUrl && !pendingDeliverableFile && (
                         <div className="text-xs">
                           <a href={deliverableUrl} target="_blank" rel="noreferrer" className="underline">View uploaded deliverable</a>
                         </div>
@@ -476,7 +477,7 @@ export default function Requests() {
                     </div>
                     <div className="flex gap-2">
                       <Button 
-                        onClick={() => updateRequestStatus(selectedRequest.id, selectedRequest.status, adminResponse)}
+                        onClick={() => saveRequestChanges(selectedRequest.id, pendingStatus || selectedRequest.status, adminResponse)}
                       >
                         Save Response
                       </Button>
@@ -485,6 +486,9 @@ export default function Requests() {
                         onClick={() => {
                           setSelectedRequest(null);
                           setAdminResponse('');
+                          setPendingStatus('');
+                          setDeliverableUrl(null);
+                          setPendingDeliverableFile(null);
                         }}
                       >
                         Cancel

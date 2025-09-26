@@ -35,6 +35,8 @@ const Layout = ({ children }: LayoutProps) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; time: string; type?: string | null; ref_id?: string | null }>>([]);
   const [unseen, setUnseen] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState<number>(0);
+  const [openRequests, setOpenRequests] = useState<number>(0);
   const navigate = useNavigate();
   const markAllAsRead = async () => {
     if (!profile?.user_id) return;
@@ -94,7 +96,47 @@ const Layout = ({ children }: LayoutProps) => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Admin-only counts
+    const fetchAdminCounts = async () => {
+      if ((profile as any)?.role !== 'admin') return;
+      try {
+        const { count: reviewsCount } = await (supabase as any)
+          .from('reviews')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_approved', false);
+        setPendingReviews(reviewsCount || 0);
+
+        const { count: requestsCount } = await (supabase as any)
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
+        setOpenRequests(requestsCount || 0);
+      } catch (e) {
+        // ignore silently
+      }
+    };
+
+    const reviewsChannel = supabase
+      .channel('reviews-counts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => {
+        fetchAdminCounts();
+      })
+      .subscribe();
+
+    const requestsChannel = supabase
+      .channel('service-requests-counts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        fetchAdminCounts();
+      })
+      .subscribe();
+
+    fetchAdminCounts();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(reviewsChannel);
+      supabase.removeChannel(requestsChannel);
+    };
   }, [profile?.user_id]);
 
   return (
@@ -113,7 +155,15 @@ const Layout = ({ children }: LayoutProps) => {
                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
+                  <span className="font-bold text-lg text-foreground tracking-tight flex items-center gap-2">
+                    publicgermany
+                    {(pendingReviews > 0 || openRequests > 0) && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                        {pendingReviews > 0 && (<span>R:{pendingReviews}</span>)}
+                        {openRequests > 0 && (<span>SR:{openRequests}</span>)}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-xs text-muted-foreground">Admin</span>
                 </div>
               </Link>
@@ -132,19 +182,34 @@ const Layout = ({ children }: LayoutProps) => {
                       )}
                       aria-current={active ? 'page' : undefined}
                     >
-                      {item.label}
+                      <span className="relative inline-flex items-center">
+                        {item.label}
+                        {item.href === '/admin/reviews' && pendingReviews > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {pendingReviews > 99 ? '99+' : pendingReviews}
+                          </span>
+                        )}
+                        {item.href === '/admin/requests' && openRequests > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
+                            {openRequests > 99 ? '99+' : openRequests}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   );
                 })}
               </nav>
-
               {/* Right: Theme, Notifications, Avatar, Sign out */}
               <div className="flex items-center gap-2">
                 <ThemeToggle variant="icon" />
                 <div className="relative">
-                  <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications">
+                  <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="relative">
                     <Bell className="h-5 w-5" />
-                    {unseen > 0 && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-destructive rounded-full" />}
+                    {unseen > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
+                        {unseen > 99 ? '99+' : unseen}
+                      </span>
+                    )}
                   </Button>
                   {notifOpen && (
                     <div className="absolute right-0 mt-2 w-96 max-w-[90vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-md">
@@ -254,9 +319,13 @@ const Layout = ({ children }: LayoutProps) => {
               <div className="flex items-center gap-2">
                 <ThemeToggle variant="icon" />
                 <div className="relative">
-                  <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications">
+                  <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="relative">
                     <Bell className="h-5 w-5" />
-                    {unseen > 0 && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-destructive rounded-full" />}
+                    {unseen > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
+                        {unseen > 99 ? '99+' : unseen}
+                      </span>
+                    )}
                   </Button>
                   {notifOpen && (
                     <div className="absolute right-0 mt-2 w-96 max-w-[90vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-md">
@@ -336,9 +405,13 @@ const Layout = ({ children }: LayoutProps) => {
             {/* Left: Bell + Avatar */}
             <div className="flex items-center gap-2 pl-2">
               <div className="relative">
-                <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications">
+                <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="relative">
                   <Bell className="h-5 w-5" />
-                  {unseen > 0 && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-destructive rounded-full" />}
+                  {unseen > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] px-1">
+                      {unseen > 99 ? '99+' : unseen}
+                    </span>
+                  )}
                 </Button>
                 {notifOpen && (
                   <div className="absolute left-0 mt-2 w-80 max-w-[90vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-md">
