@@ -43,7 +43,7 @@ export default function ReviewsPage() {
 
   return (
     <Layout>
-      <div className="w-full md:container mx-auto px-3 sm:px-4 py-4 md:py-8">
+      <div className="w-full md:container mx-auto px-2 sm:px-4 py-4 md:py-8">
         {/* Main content (full width) */}
         <section>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
