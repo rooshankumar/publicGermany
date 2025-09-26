@@ -233,6 +233,10 @@ const Layout = ({ children }: LayoutProps) => {
                         active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
                       )}
                       aria-current={active ? 'page' : undefined}
+                      onClick={() => {
+                        if (item.href === '/admin/reviews') setPendingReviews(0);
+                        if (item.href === '/admin/requests') setOpenRequests(0);
+                      }}
                     >
                       <span className="relative inline-flex items-center">
                         {item.label}
@@ -360,6 +364,11 @@ const Layout = ({ children }: LayoutProps) => {
                         active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
                       )}
                       aria-current={active ? 'page' : undefined}
+                      onClick={() => {
+                        if (item.href === '/documents') setDocCount(0);
+                        if (item.href === '/applications') setAppCount(0);
+                        if (item.href === '/services') setSvcCount(0);
+                      }}
                     >
                       <span className="relative inline-flex items-center">
                         {item.label}

@@ -93,6 +93,11 @@ const StudentMobileBottomNav = () => {
                     'flex-1 relative flex flex-col items-center justify-center text-xs gap-1 rounded-md',
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
+                  onClick={() => {
+                    if (item.href === '/documents') setDocCount(0);
+                    if (item.href === '/applications') setAppCount(0);
+                    if (item.href === '/services') setSvcCount(0);
+                  }}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="leading-none">{item.label}</span>
