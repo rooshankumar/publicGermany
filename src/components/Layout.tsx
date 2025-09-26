@@ -41,6 +41,18 @@ const Layout = ({ children }: LayoutProps) => {
   const [docCount, setDocCount] = useState<number>(0);
   const [appCount, setAppCount] = useState<number>(0);
   const [svcCount, setSvcCount] = useState<number>(0);
+  // Suppression flags: keep badges hidden after visit until new changes arrive
+  const [suppressAdminReviews, setSuppressAdminReviews] = useState(false);
+  const [suppressAdminRequests, setSuppressAdminRequests] = useState(false);
+  const [suppressDocs, setSuppressDocs] = useState(false);
+  const [suppressApps, setSuppressApps] = useState(false);
+  const [suppressSvcs, setSuppressSvcs] = useState(false);
+  // Last seen timestamps (ms) for when user visited the corresponding pages
+  const [seenAdminReviewsAt, setSeenAdminReviewsAt] = useState<number>(0);
+  const [seenAdminRequestsAt, setSeenAdminRequestsAt] = useState<number>(0);
+  const [seenDocsAt, setSeenDocsAt] = useState<number>(0);
+  const [seenAppsAt, setSeenAppsAt] = useState<number>(0);
+  const [seenSvcsAt, setSeenSvcsAt] = useState<number>(0);
   const navigate = useNavigate();
   const markAllAsRead = async () => {
     if (!profile?.user_id) return;
@@ -77,6 +89,21 @@ const Layout = ({ children }: LayoutProps) => {
 
   useEffect(() => {
     if (!profile?.user_id) return;
+    // Initialize suppression flags from localStorage per user
+    try {
+      const key = (k: string) => `badge_suppress:${profile.user_id}:${k}`;
+      setSuppressAdminReviews(localStorage.getItem(key('admin_reviews')) === '1');
+      setSuppressAdminRequests(localStorage.getItem(key('admin_requests')) === '1');
+      setSuppressDocs(localStorage.getItem(key('docs')) === '1');
+      setSuppressApps(localStorage.getItem(key('apps')) === '1');
+      setSuppressSvcs(localStorage.getItem(key('svcs')) === '1');
+      const tkey = (k: string) => `badge_seen_at:${profile.user_id}:${k}`;
+      setSeenAdminReviewsAt(parseInt(localStorage.getItem(tkey('admin_reviews')) || '0', 10));
+      setSeenAdminRequestsAt(parseInt(localStorage.getItem(tkey('admin_requests')) || '0', 10));
+      setSeenDocsAt(parseInt(localStorage.getItem(tkey('docs')) || '0', 10));
+      setSeenAppsAt(parseInt(localStorage.getItem(tkey('apps')) || '0', 10));
+      setSeenSvcsAt(parseInt(localStorage.getItem(tkey('svcs')) || '0', 10));
+    } catch {}
 
     const fetchNotifs = async () => {
       const { data, error } = await supabase
@@ -122,8 +149,13 @@ const Layout = ({ children }: LayoutProps) => {
 
     const reviewsChannel = supabase
       .channel('reviews-counts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => {
-        fetchAdminCounts();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenAdminReviewsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:admin_reviews`); } catch {}
+          setSuppressAdminReviews(false);
+          fetchAdminCounts();
+        }
       })
       .subscribe();
 
@@ -159,23 +191,49 @@ const Layout = ({ children }: LayoutProps) => {
 
     const docsCh = supabase
       .channel(`docs-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenDocsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:docs`); } catch {}
+          setSuppressDocs(false);
+          fetchStudentCounts();
+        }
+      })
       .subscribe();
     const appsCh = supabase
       .channel(`apps-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenAppsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:apps`); } catch {}
+          setSuppressApps(false);
+          fetchStudentCounts();
+        }
+      })
       .subscribe();
     const svcCh = supabase
       .channel(`svc-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, () => fetchStudentCounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenSvcsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:svcs`); } catch {}
+          setSuppressSvcs(false);
+          fetchStudentCounts();
+        }
+      })
       .subscribe();
 
     fetchStudentCounts();
 
     const requestsChannel = supabase
       .channel('service-requests-counts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
-        fetchAdminCounts();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenAdminRequestsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:admin_requests`); } catch {}
+          setSuppressAdminRequests(false);
+          fetchAdminCounts();
+        }
       })
       .subscribe();
 
@@ -195,12 +253,18 @@ const Layout = ({ children }: LayoutProps) => {
   useEffect(() => {
     const path = location.pathname;
     // Admin clears
-    if (path === '/admin/reviews') setPendingReviews(0);
-    if (path === '/admin/requests') setOpenRequests(0);
+    if (path === '/admin/reviews' || path.startsWith('/admin/reviews/')) {
+      setPendingReviews(0); setSuppressAdminReviews(true);
+      try { const now = Date.now(); localStorage.setItem(`badge_suppress:${profile?.user_id}:admin_reviews`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:admin_reviews`, String(now)); } catch {}
+    }
+    if (path === '/admin/requests' || path.startsWith('/admin/requests/')) {
+      setOpenRequests(0); setSuppressAdminRequests(true);
+      try { const now = Date.now(); localStorage.setItem(`badge_suppress:${profile?.user_id}:admin_requests`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:admin_requests`, String(now)); } catch {}
+    }
     // Student clears
-    if (path === '/documents') setDocCount(0);
-    if (path === '/applications') setAppCount(0);
-    if (path === '/services') setSvcCount(0);
+    if (path === '/documents' || path.startsWith('/documents/')) { setDocCount(0); setSuppressDocs(true); try { const now = Date.now(); localStorage.setItem(`badge_suppress:${profile?.user_id}:docs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:docs`, String(now)); } catch {} }
+    if (path === '/applications' || path.startsWith('/applications/')) { setAppCount(0); setSuppressApps(true); try { const now = Date.now(); localStorage.setItem(`badge_suppress:${profile?.user_id}:apps`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:apps`, String(now)); } catch {} }
+    if (path === '/services' || path.startsWith('/services/')) { setSvcCount(0); setSuppressSvcs(true); try { const now = Date.now(); localStorage.setItem(`badge_suppress:${profile?.user_id}:svcs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:svcs`, String(now)); } catch {} }
   }, [location.pathname]);
 
   return (
@@ -219,15 +283,7 @@ const Layout = ({ children }: LayoutProps) => {
                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-lg text-foreground tracking-tight flex items-center gap-2">
-                    publicgermany
-                    {(pendingReviews > 0 || openRequests > 0) && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {pendingReviews > 0 && (<span>R:{pendingReviews}</span>)}
-                        {openRequests > 0 && (<span>SR:{openRequests}</span>)}
-                      </span>
-                    )}
-                  </span>
+                  <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
                   <span className="text-xs text-muted-foreground">Admin</span>
                 </div>
               </Link>
@@ -235,7 +291,7 @@ const Layout = ({ children }: LayoutProps) => {
               {/* Center: Horizontal Nav */}
               <nav className="hidden lg:flex items-center gap-3 xl:gap-5">
                 {adminNavItems.map((item) => {
-                  const active = location.pathname === item.href;
+                  const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
                     <Link
                       key={item.href}
@@ -246,18 +302,25 @@ const Layout = ({ children }: LayoutProps) => {
                       )}
                       aria-current={active ? 'page' : undefined}
                       onClick={() => {
-                        if (item.href === '/admin/reviews') setPendingReviews(0);
-                        if (item.href === '/admin/requests') setOpenRequests(0);
+                        const now = Date.now();
+                        if (item.href === '/admin/reviews') {
+                          setPendingReviews(0); setSuppressAdminReviews(true);
+                          try { localStorage.setItem(`badge_suppress:${profile?.user_id}:admin_reviews`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:admin_reviews`, String(now)); } catch {}
+                        }
+                        if (item.href === '/admin/requests') {
+                          setOpenRequests(0); setSuppressAdminRequests(true);
+                          try { localStorage.setItem(`badge_suppress:${profile?.user_id}:admin_requests`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:admin_requests`, String(now)); } catch {}
+                        }
                       }}
                     >
                       <span className="relative inline-flex items-center">
                         {item.label}
-                        {item.href === '/admin/reviews' && pendingReviews > 0 && (
+                        {item.href === '/admin/reviews' && pendingReviews > 0 && !active && !suppressAdminReviews && (
                           <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {pendingReviews > 99 ? '99+' : pendingReviews}
                           </span>
                         )}
-                        {item.href === '/admin/requests' && openRequests > 0 && (
+                        {item.href === '/admin/requests' && openRequests > 0 && !active && !suppressAdminRequests && (
                           <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {openRequests > 99 ? '99+' : openRequests}
                           </span>
@@ -366,7 +429,7 @@ const Layout = ({ children }: LayoutProps) => {
               {/* Center: Horizontal Nav */}
               <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-wrap overflow-x-hidden">
                 {studentNavItems.map((item) => {
-                  const active = location.pathname === item.href;
+                  const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
                     <Link
                       key={item.href}
@@ -377,24 +440,25 @@ const Layout = ({ children }: LayoutProps) => {
                       )}
                       aria-current={active ? 'page' : undefined}
                       onClick={() => {
-                        if (item.href === '/documents') setDocCount(0);
-                        if (item.href === '/applications') setAppCount(0);
-                        if (item.href === '/services') setSvcCount(0);
+                        const now = Date.now();
+                        if (item.href === '/documents') { setDocCount(0); setSuppressDocs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:docs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:docs`, String(now)); } catch {} }
+                        if (item.href === '/applications') { setAppCount(0); setSuppressApps(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:apps`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:apps`, String(now)); } catch {} }
+                        if (item.href === '/services') { setSvcCount(0); setSuppressSvcs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:svcs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:svcs`, String(now)); } catch {} }
                       }}
                     >
                       <span className="relative inline-flex items-center">
                         {item.label}
-                        {item.href === '/documents' && docCount > 0 && (
+                        {item.href === '/documents' && docCount > 0 && !active && !suppressDocs && (
                           <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {docCount > 99 ? '99+' : docCount}
                           </span>
                         )}
-                        {item.href === '/applications' && appCount > 0 && (
+                        {item.href === '/applications' && appCount > 0 && !active && !suppressApps && (
                           <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {appCount > 99 ? '99+' : appCount}
                           </span>
                         )}
-                        {item.href === '/services' && svcCount > 0 && (
+                        {item.href === '/services' && svcCount > 0 && !active && !suppressSvcs && (
                           <span className="ml-1 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {svcCount > 99 ? '99+' : svcCount}
                           </span>

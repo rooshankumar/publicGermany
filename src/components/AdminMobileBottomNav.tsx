@@ -10,6 +10,8 @@ const AdminMobileBottomNav = () => {
   const [open, setOpen] = useState(false);
   const [openRequests, setOpenRequests] = useState(0);
   const [pendingReviews, setPendingReviews] = useState(0);
+  const [suppressRequests, setSuppressRequests] = useState(false);
+  const [suppressReviews, setSuppressReviews] = useState(false);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -30,11 +32,11 @@ const AdminMobileBottomNav = () => {
 
     const rch = supabase
       .channel('mb-admin-req')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => { setSuppressRequests(false); fetchCounts(); })
       .subscribe();
     const vch = supabase
       .channel('mb-admin-rev')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => { setSuppressReviews(false); fetchCounts(); })
       .subscribe();
 
     fetchCounts();
@@ -75,12 +77,12 @@ const AdminMobileBottomNav = () => {
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => {
-                    if (item.href === '/admin/requests') setOpenRequests(0);
+                    if (item.href === '/admin/requests') { setOpenRequests(0); setSuppressRequests(true); }
                   }}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="leading-none">{item.label}</span>
-                  {item.href === '/admin/requests' && openRequests > 0 && (
+                  {item.href === '/admin/requests' && openRequests > 0 && !isActive(item.href) && !suppressRequests && (
                     <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                       {openRequests > 99 ? '99+' : openRequests}
                     </span>
@@ -110,12 +112,12 @@ const AdminMobileBottomNav = () => {
                       <Link
                         key={item.href}
                         to={item.href}
-                        onClick={() => setOpen(false)}
+                        onClick={() => { setOpen(false); if (item.href === '/admin/reviews') setPendingReviews(0); }}
                         className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30 relative"
                       >
                         <Icon className="h-5 w-5" />
                         <span className="text-sm font-medium">{item.label}</span>
-                        {item.href === '/admin/reviews' && pendingReviews > 0 && (
+                        {item.href === '/admin/reviews' && pendingReviews > 0 && !(location.pathname === '/admin/reviews' || location.pathname.startsWith('/admin/reviews/')) && (
                           <span className="absolute top-2 right-2 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {pendingReviews > 99 ? '99+' : pendingReviews}
                           </span>

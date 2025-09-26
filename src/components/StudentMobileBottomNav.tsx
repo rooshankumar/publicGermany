@@ -13,6 +13,9 @@ const StudentMobileBottomNav = () => {
   const [docCount, setDocCount] = useState(0);
   const [appCount, setAppCount] = useState(0);
   const [svcCount, setSvcCount] = useState(0);
+  const [suppressDocs, setSuppressDocs] = useState(false);
+  const [suppressApps, setSuppressApps] = useState(false);
+  const [suppressSvcs, setSuppressSvcs] = useState(false);
 
   useEffect(() => {
     if (!profile?.user_id) return;
@@ -43,15 +46,15 @@ const StudentMobileBottomNav = () => {
 
     const dch = supabase
       .channel(`sm-docs-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, () => { setSuppressDocs(false); fetchCounts(); })
       .subscribe();
     const ach = supabase
       .channel(`sm-apps-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, () => { setSuppressApps(false); fetchCounts(); })
       .subscribe();
     const sch = supabase
       .channel(`sm-svc-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, () => { setSuppressSvcs(false); fetchCounts(); })
       .subscribe();
 
     fetchCounts();
@@ -61,6 +64,14 @@ const StudentMobileBottomNav = () => {
       supabase.removeChannel(sch);
     };
   }, [profile?.user_id]);
+
+  // Hide badges after visiting their routes; reset only when new updates come in
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/documents' || path.startsWith('/documents/')) { setDocCount(0); setSuppressDocs(true); }
+    if (path === '/applications' || path.startsWith('/applications/')) { setAppCount(0); setSuppressApps(true); }
+    if (path === '/services' || path.startsWith('/services/')) { setSvcCount(0); setSuppressSvcs(true); }
+  }, [location.pathname]);
 
   const primary = [
     { href: '/profile', label: 'Profile', icon: User },
@@ -94,24 +105,24 @@ const StudentMobileBottomNav = () => {
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => {
-                    if (item.href === '/documents') setDocCount(0);
-                    if (item.href === '/applications') setAppCount(0);
-                    if (item.href === '/services') setSvcCount(0);
+                    if (item.href === '/documents') { setDocCount(0); setSuppressDocs(true); }
+                    if (item.href === '/applications') { setAppCount(0); setSuppressApps(true); }
+                    if (item.href === '/services') { setSvcCount(0); setSuppressSvcs(true); }
                   }}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="leading-none">{item.label}</span>
-                  {item.href === '/documents' && docCount > 0 && (
+                  {item.href === '/documents' && docCount > 0 && !active && !suppressDocs && (
                     <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                       {docCount > 99 ? '99+' : docCount}
                     </span>
                   )}
-                  {item.href === '/applications' && appCount > 0 && (
+                  {item.href === '/applications' && appCount > 0 && !active && !suppressApps && (
                     <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                       {appCount > 99 ? '99+' : appCount}
                     </span>
                   )}
-                  {item.href === '/services' && svcCount > 0 && (
+                  {item.href === '/services' && svcCount > 0 && !active && !suppressSvcs && (
                     <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                       {svcCount > 99 ? '99+' : svcCount}
                     </span>
