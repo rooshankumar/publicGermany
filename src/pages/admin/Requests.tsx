@@ -21,6 +21,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { sendEmail } from '@/lib/sendEmail';
 
 type ServiceRequest = Database['public']['Tables']['service_requests']['Row'] & {
   profiles?: any;
@@ -183,6 +184,29 @@ export default function Requests() {
         if (userId) {
           const title = `Service request ${req?.service_type || ''} → ${status}`.trim();
           await (supabase as any).from('notifications').insert({ user_id: userId, title, type: 'service_request', ref_id: requestId });
+        }
+      } catch {}
+
+      // Fire-and-forget: email the student about the status/response update
+      try {
+        const req = requests.find(r => r.id === requestId);
+        const userId = req?.profiles?.user_id;
+        const to = userId ? await resolveEmail(userId) : null;
+        if (to) {
+          const lines: string[] = [];
+          const prettyStatus = (status || '').replace('_', ' ');
+          const studentName = (req as any)?.profiles?.full_name || '';
+          lines.push(`<p>Hi ${studentName || 'there'},</p>`);
+          lines.push(`<p>Your service request <strong>${req?.service_type || ''}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
+          if (response) {
+            lines.push(`<p><strong>Admin response:</strong><br/>${(response || '').replace(/\n/g, '<br/>')}</p>`);
+          }
+          const link = (updates as any)?.deliverable_url || (finalDeliverableUrl || null);
+          if (link) {
+            lines.push(`<p><strong>Deliverable:</strong> <a href="${link}">${link}</a></p>`);
+          }
+          lines.push(`<p>— publicGermany Team</p>`);
+          await sendEmail(to, 'Service request update', lines.join('\n'));
         }
       } catch {}
     } catch (error: any) {
