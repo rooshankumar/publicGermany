@@ -158,15 +158,32 @@ export default function Payments() {
         title: "Payment updated",
         description: "Payment details updated successfully",
       });
-      setEditState((s) => { const n = { ...s }; delete n[requestId]; return n; });
       fetchPayments();
 
       // Fire-and-forget email notifications (user + admin)
       try {
         const userEmail = await resolveEmail(userId);
-        const statusText = (payload.status || 'pending') as string;
-        const resolvedAmount = (payload.amount ?? defaultAmount);
-        const amountText = resolvedAmount != null ? `${defaultCurrency || 'INR'} ${Number(resolvedAmount)}` : '—';
+        // Fetch current stored payment values when updating existing row so emails show accurate, latest info
+        let currentAmount: number | null | undefined = undefined;
+        let currentCurrency: string | null | undefined = undefined;
+        let currentStatus: string | null | undefined = undefined;
+        if (existingPaymentId) {
+          try {
+            const { data: cur } = await supabase
+              .from('service_payments' as any)
+              .select('amount, currency, status')
+              .eq('id', existingPaymentId)
+              .single();
+            currentAmount = (cur as any)?.amount ?? undefined;
+            currentCurrency = (cur as any)?.currency ?? undefined;
+            currentStatus = (cur as any)?.status ?? undefined;
+          } catch {}
+        }
+
+        const statusText = (payload.status ?? currentStatus ?? 'pending') as string;
+        const resolvedAmount = (payload.amount ?? currentAmount ?? defaultAmount);
+        const resolvedCurrency = (currentCurrency ?? defaultCurrency ?? 'INR');
+        const amountText = resolvedAmount != null ? `${resolvedCurrency} ${Number(resolvedAmount)}` : '—';
         const loginUrl = 'https://publicgermany.vercel.app/';
         const safeName = studentName || 'Student';
         const safeService = (serviceType || '').split('_').join(' ') || 'Service';
