@@ -545,7 +545,7 @@ const Services = () => {
       const { data, error } = await supabase
         .from('service_requests' as any)
         .select(`
-          id, user_id, service_type, service_price, service_currency, request_details, preferred_timeline, status, admin_response, created_at,
+          id, user_id, service_type, service_price, service_currency, target_total_amount, target_currency, request_details, preferred_timeline, status, admin_response, created_at,
           service_payments (
             id, amount, currency, status, paid_at
           )
@@ -1156,6 +1156,24 @@ const Services = () => {
                           );
                         })()}
                       </div>
+
+                      {/* Totals Breakdown */}
+                      {(() => {
+                        const paymentsArr = ((request as any).service_payments || []) as Array<{ amount: number|null; status: string|null }>;
+                        const receivedSum = paymentsArr
+                          .filter((sp) => (sp?.status || '').toLowerCase() === 'received')
+                          .reduce((acc, sp) => acc + (Number(sp?.amount) || 0), 0);
+                        const totalTarget = Number(((request as any).target_total_amount ?? request.service_price) ?? 0);
+                        const curr = (request as any).target_currency || request.service_currency || 'INR';
+                        const remaining = Math.max(0, totalTarget - receivedSum);
+                        return (
+                          <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                            <span><strong>Total Amount:</strong> {curr} {isNaN(totalTarget) ? '-' : totalTarget.toLocaleString()}</span>
+                            <span><strong>Amount Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
+                            <span><strong>Amount Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
+                          </div>
+                        );
+                      })()}
 
                       {/* Show deliverable actions when completed */}
                       {(() => { const url = request.status === 'completed' ? (getDeliverableUrl(request) || deliverables[request.id]) : null; return url; })() && (

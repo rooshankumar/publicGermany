@@ -21,6 +21,8 @@ export default function Payments() {
     status?: string;
     admin_note?: string | null;
     proof_url?: string | null;
+    target_total_amount?: number | null;
+    target_currency?: string | null;
   }>>({});
 
   // Simple debounce hook
@@ -72,6 +74,8 @@ export default function Payments() {
         service_type,
         service_price,
         service_currency,
+        target_total_amount,
+        target_currency,
         created_at,
         profiles:profiles!inner(user_id, full_name),
         service_payments (
@@ -147,6 +151,22 @@ export default function Payments() {
       error = res.error;
     }
 
+    // If target_total_amount or target_currency were edited, persist on parent service_request
+    if (!error && (typeof payload.target_total_amount === 'number' || typeof payload.target_currency === 'string')) {
+      const updateFields: any = {};
+      if (typeof payload.target_total_amount === 'number') updateFields.target_total_amount = payload.target_total_amount;
+      if (typeof payload.target_currency === 'string') updateFields.target_currency = payload.target_currency;
+      if (Object.keys(updateFields).length > 0) {
+        const { error: totalErr } = await supabase
+          .from('service_requests' as any)
+          .update(updateFields)
+          .eq('id', requestId);
+        if (totalErr) {
+          toast({ title: 'Totals not saved', description: totalErr.message, variant: 'destructive' });
+        }
+      }
+    }
+
     if (error) {
       toast({
         title: "Error updating payment",
@@ -183,7 +203,41 @@ export default function Payments() {
         const statusText = (payload.status ?? currentStatus ?? 'pending') as string;
         const resolvedAmount = (payload.amount ?? currentAmount ?? defaultAmount);
         const resolvedCurrency = (currentCurrency ?? defaultCurrency ?? 'INR');
-        const amountText = resolvedAmount != null ? `${resolvedCurrency} ${Number(resolvedAmount)}` : '—';
+        const amountText = resolvedAmount != null ? `${resolvedCurrency} ${Number(resolvedAmount).toLocaleString()}` : '—';
+
+        // Compute totals
+        // 1) Received sum for this request (status = 'received')
+        let receivedSum = 0;
+        try {
+          const { data: rows } = await supabase
+            .from('service_payments' as any)
+            .select('amount, status')
+            .eq('service_id', requestId);
+          receivedSum = (rows || [])
+            .filter((r: any) => (r.status || '').toLowerCase() === 'received')
+            .reduce((acc: number, r: any) => acc + (Number(r.amount) || 0), 0);
+        } catch {}
+        // 2) Target total from parent service_requests
+        let targetTotal: number | null = null;
+        let targetCurr: string = resolvedCurrency;
+        try {
+          const { data: parent } = await supabase
+            .from('service_requests' as any)
+            .select('target_total_amount, target_currency, service_price, service_currency')
+            .eq('id', requestId)
+            .single();
+          targetTotal = (parent as any)?.target_total_amount ?? (parent as any)?.service_price ?? null;
+          targetCurr = (parent as any)?.target_currency ?? (parent as any)?.service_currency ?? resolvedCurrency;
+        } catch {}
+        const remaining = targetTotal != null ? Math.max(0, Number(targetTotal) - Number(receivedSum)) : null;
+        const totalsHtml = `
+          <p style="margin-top:8px;color:#444">Totals</p>
+          <ul style="margin:4px 0 0 16px;padding:0;color:#444">
+            ${targetTotal != null ? `<li><strong>Total Amount:</strong> ${targetCurr} ${Number(targetTotal).toLocaleString()}</li>` : ''}
+            <li><strong>Amount Received:</strong> ${targetCurr} ${receivedSum.toLocaleString()}</li>
+            ${targetTotal != null ? `<li><strong>Amount Remaining:</strong> ${targetCurr} ${remaining!.toLocaleString()}</li>` : ''}
+          </ul>
+        `;
         const loginUrl = 'https://publicgermany.vercel.app/';
         const safeName = studentName || 'Student';
         const safeService = (serviceType || '').split('_').join(' ') || 'Service';
@@ -198,7 +252,8 @@ export default function Payments() {
                <p>Your payment status has been <strong>${statusText}</strong>.</p>
                <p><strong>Name:</strong> ${safeName}</p>
                <p><strong>Service:</strong> ${safeService}</p>
-               <p><strong>Amount:</strong> ${amountText}</p>
+               <p><strong>Amount Received (this update):</strong> ${amountText}</p>
+               ${totalsHtml}
                ${adminNote ? `<p><strong>Admin Notes:</strong> ${adminNote}</p>` : ''}
                <div style="margin-top:12px;">${buttonHtml}</div>
              </div>`
@@ -304,7 +359,7 @@ export default function Payments() {
                       <th className="text-left p-3 font-medium">Request ID</th>
                       <th className="text-left p-3 font-medium">Student</th>
                       <th className="text-left p-3 font-medium">Service</th>
-                      <th className="text-left p-3 font-medium">Amount</th>
+                      <th className="text-left p-3 font-medium">Amount / Totals</th>
                       <th className="text-left p-3 font-medium">Proof</th>
                       <th className="text-left p-3 font-medium">Status</th>
                       <th className="text-left p-3 font-medium">Admin Note</th>
@@ -334,16 +389,68 @@ export default function Payments() {
                           </div>
                         </td>
                         <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').split('_').join(' ')}</td>
-                        <td className="p-3 whitespace-nowrap">
-                          <Input
-                            type="number"
-                            defaultValue={payment?.amount ?? row.service_price}
-                            onChange={(e) => setEditState((s) => ({
-                              ...s,
-                              [row.id]: { ...s[row.id], amount: Number(e.target.value) }
-                            }))}
-                            className="w-28"
-                          /> {payment?.currency || row.service_currency || ''}
+                        <td className="p-3 whitespace-nowrap align-top">
+                          <div className="rounded-md border p-2 bg-muted/40">
+                            <div className="flex items-center gap-2 mb-2">
+                              <label className="text-xs text-muted-foreground">Amount Received (this update)</label>
+                              <div className="ml-auto text-xs text-muted-foreground">{payment?.currency || row.target_currency || row.service_currency || ''}</div>
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Input
+                                type="number"
+                                defaultValue={payment?.amount ?? row.service_price}
+                                onChange={(e) => setEditState((s) => ({
+                                  ...s,
+                                  [row.id]: { ...s[row.id], amount: Number(e.target.value) }
+                                }))}
+                                className="w-32"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <label className="text-xs text-muted-foreground">Total Amount</label>
+                              <Input
+                                type="number"
+                                defaultValue={row.target_total_amount ?? row.service_price ?? ''}
+                                onChange={(e) => setEditState((s) => ({
+                                  ...s,
+                                  [row.id]: { ...s[row.id], target_total_amount: e.target.value === '' ? null : Number(e.target.value) }
+                                }))}
+                                className="w-32"
+                              />
+                              <Select
+                                defaultValue={(row.target_currency || row.service_currency || 'INR')}
+                                onValueChange={(val) => setEditState((s) => ({
+                                  ...s,
+                                  [row.id]: { ...s[row.id], target_currency: val }
+                                }))}
+                              >
+                                <SelectTrigger className="w-28 h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="INR">INR</SelectItem>
+                                  <SelectItem value="EUR">EUR</SelectItem>
+                                  <SelectItem value="USD">USD</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {(() => {
+                              const paymentsArr = (row.service_payments || []) as any[];
+                              const receivedSum = paymentsArr
+                                .filter((p) => (p?.status || '').toLowerCase() === 'received')
+                                .reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
+                              const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
+                              const curr = row.target_currency || row.service_currency || '';
+                              const remaining = Math.max(0, targetTotal - receivedSum);
+                              return (
+                                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                                  <span><strong>Total Amount:</strong> {curr} {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}</span>
+                                  <span><strong>Amount Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
+                                  <span><strong>Amount Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </td>
                         <td className="p-3">
                           {payment?.proof_url ? (
