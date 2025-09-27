@@ -10,9 +10,9 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      value: 'roshlingua@gmail.com',
+      value: 'publicgermany@outlook.com',
       description: 'Send us an email for detailed inquiries',
-      href: 'mailto:roshlingua@gmail.com',
+      href: 'mailto:publicgermany@outlook.com',
     }
   ];
 

@@ -71,7 +71,7 @@ const Terms: React.FC = () => {
         <h2 className="text-2xl font-semibold mt-10 mb-3">Contact</h2>
         <p className="mb-6">
           For any questions regarding these Terms, email
-          <a className="text-primary hover:underline ml-1" href="mailto:roshlingua@gmail.com">roshlingua@gmail.com</a>.
+          <a className="text-primary hover:underline ml-1" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>.
         </p>
       </div>
     </div>

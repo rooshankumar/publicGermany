@@ -24,19 +24,17 @@ export const ContactForm = () => {
   const EMAILJS_ADMIN_TEMPLATE_ID = (import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string) || 'template_1rr96tj';
   const EMAILJS_USER_TEMPLATE_ID = (import.meta.env.VITE_EMAILJS_USER_TEMPLATE_ID as string) || 'template_e2zjahq';
   const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
-  const ADMIN_EMAIL = (import.meta.env.VITE_CONTACT_ADMIN_EMAIL as string) || 'roshlingua@gmail.com';
+  const ADMIN_EMAIL = (import.meta.env.VITE_CONTACT_ADMIN_EMAIL as string) || 'publicgermany@outlook.com';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       // Validate required fields
       if (!formData.inquiry_type) {
         toast({
           title: "Inquiry type required",
           description: "Please select an inquiry type before sending.",
-          variant: "destructive",
         });
         setIsSubmitting(false);
         return;

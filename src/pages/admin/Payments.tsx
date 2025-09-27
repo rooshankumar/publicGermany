@@ -191,7 +191,7 @@ export default function Payments() {
         // Admin notification (include Name, Service, Amount, Date)
         const nowText = new Date().toLocaleString();
         await sendEmail(
-          'roshlingua@gmail.com',
+          'publicgermany@outlook.com',
           `Admin notice: payment ${existingPaymentId ? 'updated' : 'created'} (${statusText})`,
           `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
              <p>A payment was <strong>${existingPaymentId ? 'updated' : 'created'}</strong>.</p>

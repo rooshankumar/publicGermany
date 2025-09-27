@@ -123,7 +123,7 @@ const Services = () => {
 
   // Map of requestId -> discovered deliverable URL (from storage)
   const [deliverables, setDeliverables] = useState<Record<string, string>>({});
-  const [paymentEmail, setPaymentEmail] = useState<string>('roshlingua@gmail.com');
+  const [paymentEmail, setPaymentEmail] = useState<string>('publicgermany@outlook.com');
 
   // Parse stored service_type into clean list of service names (handles package + "Extras:")
   const parseServiceNames = (text: string = ''): string[] => {
@@ -177,9 +177,9 @@ const Services = () => {
       .select('value')
       .eq('key', 'payment_contact')
       .single();
-    if (error) return 'roshlingua@gmail.com';
+    if (error) return 'publicgermany@outlook.com';
     const email = (data?.value?.email || data?.value?.contact || '').toString();
-    return email || 'roshlingua@gmail.com';
+    return email || 'publicgermany@outlook.com';
   }
 
   // DB-backed services list (individual services only)
@@ -633,7 +633,7 @@ const Services = () => {
         const studentEmail = user.email || '';
         const profileUrl = `${window.location.origin}/admin/students/${user.id}`;
         await sendEmail(
-          'roshlingua@gmail.com',
+          'publicgermany@outlook.com',
           'New Service Request',
           `<p>A new service request has been created.</p>
            <p><strong>Student:</strong> ${studentName || '(unknown)'}<br/>

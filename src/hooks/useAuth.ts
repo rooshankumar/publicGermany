@@ -215,7 +215,7 @@ export const useAuth = () => {
         // Notify admin(s) of new signup
         try {
           await sendEmail(
-            'roshlingua@gmail.com',
+            'publicgermany@outlook.com',
             'New student signed up',
             `<p>A new student just signed up.</p>
              <p><strong>Name:</strong> ${fullName || ''}<br/>
