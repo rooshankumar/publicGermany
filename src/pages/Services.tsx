@@ -625,14 +625,15 @@ const Services = () => {
       if (error) throw error;
 
       toast({ title: "Success", description: "Service request submitted" });
-      // Notify admin(s) via email (bell notifications handled by DB trigger)
+      // Notify admin(s) via email and also send a confirmation to the student
       try {
         const studentName = (profile?.full_name && profile.full_name.trim())
           ? profile.full_name.trim()
           : (user.email ? user.email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()) : '');
         const studentEmail = user.email || '';
         const profileUrl = `${window.location.origin}/admin/students/${user.id}`;
-        await sendEmail(
+        const dashboardUrl = `${window.location.origin}/dashboard`;
+        const adminEmailPromise = sendEmail(
           'publicgermany@outlook.com',
           'New Service Request',
           `<p>A new service request has been created.</p>
@@ -643,6 +644,23 @@ const Services = () => {
            <strong>Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>
            <strong>User ID:</strong> ${user.id}</p>`
         );
+        const userEmailPromise = studentEmail
+          ? sendEmail(
+              studentEmail,
+              'We received your service request',
+              `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
+                 <p>Hi ${studentName || 'there'},</p>
+                 <p>Thanks for submitting your service request. Our team will review it and get back to you shortly.</p>
+                 <p><strong>Requested Services:</strong> ${serviceNames || '(none)'}<br/>
+                 <strong>Estimated Total:</strong> ₹${calculateTotalPrice().toLocaleString()}</p>
+                 <div style="margin-top:12px;">
+                   <a href="${dashboardUrl}" style="display:inline-block;padding:10px 16px;background:#D00000;color:#ffffff;text-decoration:none;border-radius:6px;">Open My Dashboard</a>
+                 </div>
+                 <p style="margin-top:12px;color:#666">If you have any questions, reply to this email or contact us at publicgermany@outlook.com.</p>
+               </div>`
+            )
+          : Promise.resolve();
+        await Promise.allSettled([adminEmailPromise, userEmailPromise]);
       } catch (_) { /* ignore admin email errors */ }
       setShowRequestDialog(false);
       setSelectedServices([]);
