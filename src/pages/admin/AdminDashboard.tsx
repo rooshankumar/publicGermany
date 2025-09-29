@@ -340,16 +340,10 @@ const AdminDashboard = () => {
                   Moderate Reviews
                 </Link>
               </Button>
-              <Button asChild className="h-16 flex-col" variant="outline">
-                <Link to="/admin/exports">
-                  <Settings className="h-5 w-5 mb-1.5" />
-                  Exports
-                </Link>
-              </Button>
               <Button asChild className="h-16 flex-col" variant="secondary">
-                <Link to="/admin/email-logs">
+                <Link to="/admin/resources">
                   <TrendingUp className="h-5 w-5 mb-1.5" />
-                  Email Logs
+                  Resources
                 </Link>
               </Button>
               <Button

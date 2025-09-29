@@ -25,7 +25,7 @@ const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const Exports = lazy(() => import("./pages/admin/Exports"));
 const Universities = lazy(() => import("./pages/admin/Universities"));
 const AdminReviews = lazy(() => import("./pages/admin/Reviews"));
-const EmailLogs = lazy(() => import("./pages/admin/EmailLogs"));
+const AdminResources = lazy(() => import("./pages/admin/Resources"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Documents = lazy(() => import("./pages/Documents"));
@@ -81,7 +81,7 @@ const AppRoutes = () => {
         import('./pages/admin/Exports');
         import('./pages/admin/Universities');
         import('./pages/admin/Reviews');
-        import('./pages/admin/EmailLogs');
+        import('./pages/admin/Resources');
       }
     }
   }, [loading, user, profile?.role]);
@@ -184,9 +184,9 @@ const AppRoutes = () => {
             <AdminReviews />
           </ProtectedRoute>
         } />
-        <Route path="/admin/email-logs" element={
+        <Route path="/admin/resources" element={
           <ProtectedRoute requiredRole="admin">
-            <EmailLogs />
+            <AdminResources />
           </ProtectedRoute>
         } />
         <Route path="/documents" element={

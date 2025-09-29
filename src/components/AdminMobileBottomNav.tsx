@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, Mail } from 'lucide-react';
+import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, BookOpen } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,7 +56,7 @@ const AdminMobileBottomNav = () => {
   const more = [
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
-    { href: '/admin/email-logs', label: 'Email Logs', icon: Mail },
+    { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
