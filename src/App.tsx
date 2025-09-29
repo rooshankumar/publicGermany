@@ -58,7 +58,6 @@ const AppRoutes = () => {
     import('./pages/Index');
     import('./pages/Contact');
     import('./pages/Help');
-    import('./pages/Resources');
 
     if (user) {
       // Student side preloads
@@ -128,7 +127,11 @@ const AppRoutes = () => {
             <Services />
           </ProtectedRoute>
         } />
-        <Route path="/resources" element={<Resources />} />
+        <Route path="/resources" element={
+          <ProtectedRoute>
+            <Resources />
+          </ProtectedRoute>
+        } />
         {/* Make Contact public so it's accessible from the home page */}
         <Route path="/contact" element={<Contact />} />
         {/* Public Help Center */}
