@@ -56,6 +56,13 @@
     --shadow-soft: 0 4px 12px hsl(215 20% 20% / 0.08);
     --shadow-medium: 0 8px 25px hsl(215 20% 20% / 0.12);
     --shadow-strong: 0 16px 40px hsl(215 20% 20% / 0.16);
+    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.15);
+    
+    /* Glassmorphism */
+    --glass-bg: hsla(0, 0%, 100%, 0.75);
+    --glass-border: hsla(0, 0%, 100%, 0.18);
+    --glass-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.1);
+    --blur-amount: 12px;
 
     /* Sidebar styling */
     --sidebar-background: 0 0% 98%;
@@ -180,6 +187,13 @@
     --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.25);
     --shadow-medium: 0 8px 25px hsl(0 0% 0% / 0.35);
     --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.45);
+    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.25);
+    
+    /* Glassmorphism Dark Mode */
+    --glass-bg: hsla(0, 0%, 10%, 0.75);
+    --glass-border: hsla(0, 0%, 100%, 0.08);
+    --glass-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.4);
+    --blur-amount: 16px;
 
     /* Bright Accent adjusted to neutral */
     --bright-accent: 0 0% 60%;
@@ -203,6 +217,30 @@
     @apply inline-block px-3 py-1 text-sm rounded-full font-semibold;
     background-color: hsl(var(--bright-accent));
     color: hsl(var(--bright-accent-foreground));
+  }
+  
+  /* Glassmorphism Utilities */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .glass-card {
+    @apply glass rounded-2xl;
+  }
+  
+  .glass-panel {
+    @apply glass rounded-xl;
+  }
+  
+  .glass-subtle {
+    background: hsla(var(--background) / 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border) / 0.3);
   }
   
   /* Removed brand-logo styles per design request */

@@ -317,7 +317,7 @@ export default function Payments() {
           <CardHeader>
             <CardTitle>Search & Filter</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6">
+          <CardContent className="space-y-4 p-4 md:p-6 glass-subtle">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
                 placeholder="Search by student name, service type, or user ID..."

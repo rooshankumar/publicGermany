@@ -202,24 +202,27 @@ const Resources = () => {
   const renderMaterialsGrid = (materials: StudyMaterial[], accent: string) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mt-6 animate-fadein">
       {materials.map((mat) => (
-        <Card key={mat.id} className={`hover:shadow-xl transition-shadow flex flex-col h-full`}>
-          <CardHeader className="p-0 overflow-hidden">
+        <Card key={mat.id} className="glass-card border-border/30 hover:shadow-glass-dark transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] flex flex-col h-full group">
+          <CardHeader className="p-0 overflow-hidden relative">
             {mat.image_url && (
-              <img
-                src={mat.image_url}
-                alt={mat.title}
-                className="w-full h-44 object-contain bg-white rounded-t-lg border-b border-dashed"
-              />
+              <div className="relative overflow-hidden">
+                <img
+                  src={mat.image_url}
+                  alt={mat.title}
+                  className="w-full h-44 object-contain bg-gradient-to-br from-background to-muted/30 rounded-t-xl border-b transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
             )}
           </CardHeader>
           <CardContent className="flex flex-col flex-grow p-5">
-            <CardTitle className="text-lg font-semibold line-clamp-2 mb-1">{mat.title}</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground line-clamp-3 mb-2">{mat.description}</CardDescription>
-            <div className="flex flex-wrap gap-1 mt-auto mb-2">
-              <Badge variant="secondary" className="text-xs">{mat.exam}</Badge>
-              <Badge variant="outline" className="text-xs">{mat.level}</Badge>
+            <CardTitle className="text-lg font-bold line-clamp-2 mb-2 text-foreground group-hover:text-primary transition-colors">{mat.title}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground line-clamp-3 mb-3 leading-relaxed">{mat.description}</CardDescription>
+            <div className="flex flex-wrap gap-1.5 mt-auto mb-3">
+              <Badge variant="secondary" className="text-xs font-semibold bg-primary/10 text-primary border-primary/20">{mat.exam}</Badge>
+              <Badge variant="outline" className="text-xs font-medium border-border/40">{mat.level}</Badge>
               {mat.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                <Badge key={tag} variant="secondary" className="text-xs bg-accent/10 text-foreground/80">{tag}</Badge>
               ))}
             </div>
             {renderMaterialActions(mat)}
@@ -233,25 +236,25 @@ const Resources = () => {
   const renderAdditionalGrid = (resources: Resource[], accent: string) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mt-6 animate-fadein">
       {resources.map((res) => (
-        <Card key={res.id} className={`hover:shadow-xl transition-shadow flex flex-col h-full`}>
+        <Card key={res.id} className="glass-card border-border/30 hover:shadow-glass-dark transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] flex flex-col h-full group">
           <CardContent className="flex flex-col flex-grow p-5">
-            <CardTitle className="text-lg font-semibold mb-1">
+            <CardTitle className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
               <a
                 href={res.external_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-primary"
+                className="hover:underline"
               >
                 {res.title}
               </a>
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground line-clamp-3 mb-2">{res.description}</CardDescription>
-            <div className="flex flex-wrap gap-1 mt-auto mb-2">
+            <CardDescription className="text-sm text-muted-foreground line-clamp-3 mb-3 leading-relaxed">{res.description}</CardDescription>
+            <div className="flex flex-wrap gap-1.5 mt-auto mb-3">
               {res.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                <Badge key={tag} variant="secondary" className="text-xs bg-accent/10 text-foreground/80">{tag}</Badge>
               ))}
             </div>
-            <Button asChild variant="outline" className="mt-2 w-full">
+            <Button asChild variant="outline" className="mt-2 w-full glass-subtle border-border/40 hover:bg-primary/10 hover:text-primary font-semibold transition-all">
               <a href={res.external_url} target="_blank" rel="noopener noreferrer">
                 Visit <ExternalLink className="inline ml-1 h-4 w-4" />
               </a>
@@ -265,8 +268,8 @@ const Resources = () => {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto px-2 sm:px-6 py-10 space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Resources</h1>
+        <div className="glass-panel p-6 border-border/30">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Resources</h1>
           <p className="text-muted-foreground">
             Explore major study material sets and all official portals for your exam and university needs.
           </p>
@@ -277,13 +280,13 @@ const Resources = () => {
             <button
               key={sec.key}
               type="button"
-              className={`flex-grow px-6 py-4 rounded-xl shadow-sm font-semibold bg-white hover:${sec.bg} focus:${sec.bg} border-2 
-                ${activeSection === sec.key ? `${sec.accent} border-solid` : 'border-transparent'} flex flex-col gap-1 items-center transition-all group`}
+              className={`flex-grow px-6 py-4 glass-panel shadow-glass font-semibold hover:shadow-glass-dark focus:shadow-glass-dark border-2 
+                ${activeSection === sec.key ? `${sec.accent} border-primary/50` : 'border-transparent'} flex flex-col gap-1 items-center transition-all group hover:-translate-y-0.5`}
               onClick={() => setActiveSection(sec.key as typeof activeSection)}
               tabIndex={0}
             >
               {sec.icon}
-              <span className={`mt-2 text-base ${activeSection === sec.key ? 'text-primary' : 'text-muted-foreground'}`}>
+              <span className={`mt-2 text-base font-semibold ${activeSection === sec.key ? 'text-primary' : 'text-muted-foreground'}`}>
                 {sec.label}
               </span>
               <ArrowRight className={`group-hover:translate-x-2 transition ml-0 h-5 w-5 opacity-60`} />

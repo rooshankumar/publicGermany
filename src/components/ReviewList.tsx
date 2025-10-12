@@ -146,12 +146,12 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
       
       <div className="space-y-4">
         {reviews.map((review) => (
-          <Card key={review.id} className="overflow-hidden">
+          <Card key={review.id} className="glass-card overflow-hidden border-border/30 hover:shadow-glass-dark transition-all duration-300 hover:-translate-y-0.5">
             <CardContent className="p-6">
               <div className="flex items-start gap-4 flex-wrap">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-12 w-12 border-2 border-primary/20 shadow-md">
                   <AvatarImage src={review.profiles?.avatar_url} alt={review.profiles?.full_name} />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
                     {review.profiles?.full_name
                       ?.split(' ')
                       .map((n) => n[0])
@@ -159,28 +159,28 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <h4 className="font-medium truncate max-w-[70%] sm:max-w-none">
+                  <div className="flex items-center justify-between gap-2 min-w-0 mb-1">
+                    <h4 className="font-bold text-foreground truncate max-w-[70%] sm:max-w-none">
                       {review.profiles?.full_name || 'Anonymous'}
                     </h4>
-                    <span className="text-sm text-muted-foreground shrink-0">
+                    <span className="text-xs text-muted-foreground shrink-0 font-medium">
                       {formatDate(review.created_at)}
                     </span>
                   </div>
-                  <div className="flex items-center mt-1 mb-2">
-                    <div className="flex">
+                  <div className="flex items-center mt-1 mb-3">
+                    <div className="flex gap-0.5">
                       {renderStars(review.rating)}
                     </div>
-                    <span className="ml-2 text-sm text-muted-foreground">
+                    <span className="ml-2 text-sm font-semibold text-foreground/70">
                       {review.rating.toFixed(1)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">
+                  <p className="text-sm text-foreground/90 break-words whitespace-pre-wrap leading-relaxed">
                     {review.review_text}
                   </p>
                   {review.service_type && review.service_type !== 'general' && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    <div className="mt-3">
+                      <span className="inline-flex items-center rounded-full glass-subtle px-3 py-1 text-xs font-semibold text-primary border border-primary/20">
                         {review.service_type}
                       </span>
                     </div>

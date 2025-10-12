@@ -212,7 +212,7 @@ const Dashboard = () => {
 
         // Fetch recent service requests with payment info (left join)
         const { data: srWithPayments, error: payErr } = await supabase
-          .from('service_requests')
+          .from('service_requests' as any)
           .select(`
             id,
             service_type,
@@ -232,7 +232,7 @@ const Dashboard = () => {
           .limit(5);
 
         if (payErr) throw payErr;
-        setRecentPayments(srWithPayments || []);
+        setRecentPayments(srWithPayments as any || []);
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

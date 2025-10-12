@@ -26,7 +26,7 @@ const NotFound = () => {
         <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <img src={logo} alt="publicgermany Logo" className="h-12 w-12" />
+              <img src={logos} alt="publicgermany Logo" className="h-12 w-12" />
               <span className="font-bold text-xl text-foreground">publicgermany</span>
             </div>
             <CardTitle className="text-6xl font-bold text-primary mb-2">404</CardTitle>

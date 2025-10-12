@@ -100,6 +100,13 @@ export default {
         soft: "0 4px 12px hsl(215 20% 20% / 0.08)",
         medium: "0 8px 25px hsl(215 20% 20% / 0.12)",
         strong: "0 16px 40px hsl(215 20% 20% / 0.16)",
+        glass: "0 8px 32px 0 hsla(0, 0%, 0%, 0.1)",
+        "glass-dark": "0 8px 32px 0 hsla(0, 0%, 0%, 0.25)",
+      },
+      backdropBlur: {
+        xs: "2px",
+        glass: "12px",
+        "glass-strong": "24px",
       },
       keyframes: {
         "accordion-down": {
