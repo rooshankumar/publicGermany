@@ -5,7 +5,7 @@ import logos from "@/assets/logos.png";
 export default function LandingHero({ onGetStarted, onSignIn }: { onGetStarted?: () => void; onSignIn?: () => void }) {
   return (
     <section className="relative py-20 md:py-32 overflow-hidden">
-      {/* Hero Background */}
+      {/* Hero Background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-glow to-success"></div>
       <div className="absolute inset-0 opacity-20">
         <div className="w-full h-full bg-white/5" style={{
@@ -14,57 +14,59 @@ export default function LandingHero({ onGetStarted, onSignIn }: { onGetStarted?:
         }}></div>
       </div>
       
+      {/* Floating gradient orbs for depth */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-yellow-400/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      
       {/* Content */}
       <div className="relative container mx-auto px-6 text-center">
-        <div className="flex justify-center mb-8">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+        <div className="flex justify-center mb-8 animate-fade-in">
+          <div className="glass-card p-4 border-white/20 shadow-glass-dark">
             <img src={logos} alt="publicgermany Logo" className="h-16 w-auto" />
           </div>
         </div>
         
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-fade-in-up">
           Your Trusted Path to
-          <span className="block bg-gradient-to-r from-yellow-300 to-yellow-400 bg-clip-text text-transparent">
+          <span className="block bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent drop-shadow-lg">
             Study in Germany 🇩🇪
           </span>
         </h1>
         
-        <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
           Navigate your journey from APS documents to university admission with expert guidance, personalized checklists, and trusted resources.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <Button 
             size="lg" 
-            className="text-lg px-8 py-4 bg-white text-primary hover:bg-white/90 shadow-strong" 
+            className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90 shadow-glass-dark hover:scale-105 transition-all duration-300 font-bold" 
             onClick={onGetStarted}
           >
-            Start Your Journey
+            Start Your Journey →
           </Button>
           <Button 
             size="lg" 
             variant="outline" 
-            className="text-lg px-8 py-4 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm" 
+            className="text-lg px-8 py-6 glass-subtle border-white/30 text-white hover:bg-white/20 backdrop-blur-md hover:scale-105 transition-all duration-300 font-semibold" 
             onClick={onSignIn}
           >
             Sign In
           </Button>
         </div>
         
-        {/* Trust Indicators */}
-        <div className="flex flex-wrap justify-center items-center gap-8 text-white/80">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🏛️</span>
-            <span className="text-sm font-medium">Official APS Partner</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📄</span>
-            <span className="text-sm font-medium">DAAD Recognized</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🔒</span>
-            <span className="text-sm font-medium">Secure & Trusted</span>
-          </div>
+        {/* Trust Indicators with glass effect */}
+        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          {[
+            { icon: '🏛️', text: 'Official APS Partner' },
+            { icon: '📄', text: 'DAAD Recognized' },
+            { icon: '🔒', text: 'Secure & Trusted' }
+          ].map((item, idx) => (
+            <div key={idx} className="glass-subtle px-4 py-3 rounded-full border border-white/20 flex items-center gap-2 hover:scale-105 transition-transform duration-300">
+              <span className="text-2xl">{item.icon}</span>
+              <span className="text-sm font-semibold text-white">{item.text}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
