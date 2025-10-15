@@ -13,6 +13,7 @@ const AuthCallback = lazy(() => import("./components/AuthCallback"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Converter = lazy(() => import("./pages/Converter"));
 const Applications = lazy(() => import("./pages/Applications"));
+const GradeConverter = lazy(() => import("./pages/tools/grade-converter"));
 const Services = lazy(() => import("./pages/Services"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -109,6 +110,11 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/converter" element={<Converter />} />
+        <Route path="/tools/grade-converter" element={
+          <ProtectedRoute>
+            <GradeConverter />
+          </ProtectedRoute>
+        } />
         <Route path="/dashboard" element={
           <ProtectedRoute disallowRole="admin">
             <Dashboard />

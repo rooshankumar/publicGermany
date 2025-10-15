@@ -13,6 +13,7 @@ import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle }
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
+import { ExcelUpload } from '@/components/ExcelUpload';
 
 interface Application {
   id: string;
@@ -29,6 +30,7 @@ interface Application {
   status: 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected';
   notes: string | null;
   created_at: string;
+  application_end_date: string | null; // Added property
 }
 
 const Applications = () => {
@@ -41,6 +43,39 @@ const Applications = () => {
   const [importing, setImporting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+
+  const handleExcelUpload = async (data: any[]) => {
+    if (!profile?.user_id) {
+      toast({ title: 'Error', description: 'You must be logged in to upload applications', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const applications = data.map(row => ({
+        user_id: profile.user_id,
+        university_name: row.university_name,
+        program_name: row.program_name,
+        ielts_requirement: row.ielts_requirement,
+        german_requirement: row.german_requirement,
+        fees_eur: row.fees_eur,
+        end_date: row.end_date,
+        application_method: row.application_method,
+        status: row.status || 'draft'
+      }));
+
+      const { error } = await supabase
+        .from('applications')
+        .insert(applications);
+
+      if (error) throw error;
+
+      toast({ title: 'Success', description: `${applications.length} applications imported successfully` });
+      fetchApplications();
+    } catch (err) {
+      console.error('Error importing applications:', err);
+      toast({ title: 'Error', description: 'Failed to import applications', variant: 'destructive' });
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -336,10 +371,7 @@ const Applications = () => {
           </div>
           
           <div className="flex gap-2">
-            <Button onClick={handleImportUniversities} disabled={importing} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              {importing ? 'Importing...' : 'Import from Excel'}
-            </Button>
+            <ExcelUpload onUpload={handleExcelUpload} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
                 <Button>
