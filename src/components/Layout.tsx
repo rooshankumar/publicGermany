@@ -468,12 +468,6 @@ const Layout = ({ children }: LayoutProps) => {
                     </Link>
                   );
                 })}
-                <Link
-                  to="/tools/grade-converter"
-                  className="relative pb-0.5 text-sm font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity text-foreground/90 hover:text-primary hover:after:opacity-60"
-                >
-                  Grade Converter
-                </Link>
               </nav>
 
               {/* Right: Theme, Notifications, Avatar, Sign out */}

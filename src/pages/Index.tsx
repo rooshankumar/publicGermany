@@ -156,7 +156,6 @@ function Navbar() {
           <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
           <a href="#faq" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
-          <Link to="/tools/grade-converter" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
           <ThemeToggle variant="icon" />
           <Button variant="outline" asChild>
             <Link to="/auth" className="text-base">Sign In</Link>
@@ -189,7 +188,6 @@ function Navbar() {
             <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
             <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
             <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
-            <Link to="/tools/grade-converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
             <div className="flex flex-col gap-2 pt-4">
               <Button variant="outline" asChild className="w-full">
                 <Link to="/auth" className="text-base">Sign In</Link>
