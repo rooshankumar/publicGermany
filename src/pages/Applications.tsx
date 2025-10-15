@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
@@ -38,6 +38,7 @@ const Applications = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editApp, setEditApp] = useState<Application | null>(null);
   const [editValues, setEditValues] = useState<Record<string, any>>({});
+  const [importing, setImporting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -136,6 +137,54 @@ const Applications = () => {
       console.error('Error updating application:', err);
       toast({ title: 'Error', description: 'Failed to update application', variant: 'destructive' });
     }
+  };
+
+  const handleImportUniversities = async () => {
+    setImporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error } = await supabase.functions.invoke('import-universities', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Import Complete",
+        description: `Imported ${data.inserted} applications, updated ${data.updated}, skipped ${data.skipped}`,
+      });
+
+      fetchApplications();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Helper to check if application is complete
+  const isApplicationComplete = (app: Application): boolean => {
+    return !!(
+      app.university_name &&
+      app.program_name &&
+      app.ielts_requirement &&
+      app.german_requirement &&
+      app.fees_eur !== null &&
+      app.application_end_date &&
+      app.application_method &&
+      app.portal_link
+    );
   };
 
   useEffect(() => {
@@ -280,19 +329,24 @@ const Applications = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Applications</h1>
             <p className="text-muted-foreground">Track your university applications</p>
           </div>
           
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Application
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button onClick={handleImportUniversities} disabled={importing} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              {importing ? 'Importing...' : 'Import from Excel'}
+            </Button>
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Application
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Application</DialogTitle>
@@ -483,6 +537,7 @@ const Applications = () => {
               )}
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Card>

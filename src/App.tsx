@@ -11,6 +11,7 @@ import AppShellFallback from "./components/AppShellFallback";
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./components/AuthCallback"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Converter = lazy(() => import("./pages/Converter"));
 const Applications = lazy(() => import("./pages/Applications"));
 const Services = lazy(() => import("./pages/Services"));
 const Resources = lazy(() => import("./pages/Resources"));
@@ -107,6 +108,7 @@ const AppRoutes = () => {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/converter" element={<Converter />} />
         <Route path="/dashboard" element={
           <ProtectedRoute disallowRole="admin">
             <Dashboard />

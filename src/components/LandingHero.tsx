@@ -37,7 +37,7 @@ export default function LandingHero({ onGetStarted, onSignIn }: { onGetStarted?:
           Navigate your journey from APS documents to university admission with expert guidance, personalized checklists, and trusted resources.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <Button 
             size="lg" 
             className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90 shadow-glass-dark hover:scale-105 transition-all duration-300 font-bold" 
@@ -53,6 +53,13 @@ export default function LandingHero({ onGetStarted, onSignIn }: { onGetStarted?:
           >
             Sign In
           </Button>
+        </div>
+        
+        {/* Grade Converter Link */}
+        <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          <a href="/converter" className="inline-flex items-center gap-2 glass-subtle px-6 py-3 rounded-full border border-white/30 text-white hover:bg-white/20 backdrop-blur-md hover:scale-105 transition-all duration-300 font-semibold">
+            🧮 German Grade Converter
+          </a>
         </div>
         
         {/* Trust Indicators with glass effect */}
