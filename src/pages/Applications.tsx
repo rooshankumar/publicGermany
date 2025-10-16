@@ -370,33 +370,34 @@ const Applications = () => {
             <p className="text-muted-foreground">Track your university applications</p>
           </div>
           
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="secondary" 
-              onClick={handleImportUniversities}
-              disabled={importing}
-            >
-              {importing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Import from Database
-                </>
-              )}
-            </Button>
-            <ExcelUpload onUpload={handleExcelUpload} />
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Application
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                variant="secondary" 
+                onClick={handleImportUniversities}
+                disabled={importing}
+              >
+                {importing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Import from Database
+                  </>
+                )}
+              </Button>
+              <ExcelUpload onUpload={handleExcelUpload} />
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Application
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Application</DialogTitle>
                 <DialogDescription>
@@ -482,6 +483,7 @@ const Applications = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
 
           {/* Edit Application Dialog */}
           <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setEditApp(null); setEditValues({}); } }}>
@@ -586,6 +588,17 @@ const Applications = () => {
               )}
             </DialogContent>
           </Dialog>
+          </div>
+          
+          {/* Import Instructions */}
+          <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border">
+            <p className="font-medium mb-1">📋 Import Tips:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>Import from Database:</strong> Fetches pre-loaded universities from our database (recommended)</li>
+              <li><strong>Manual Excel Upload:</strong> Upload your own Excel file with columns: University Name, Program, IELTS, German, Fees, Deadline, Status</li>
+              <li>Ensure all dates are in format: YYYY-MM-DD (e.g., 2025-06-15)</li>
+              <li>Status should be one of: Applied, Pending, Accepted, Rejected, Waitlisted</li>
+            </ul>
           </div>
         </div>
 

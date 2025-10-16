@@ -3,13 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, Info } from 'lucide-react';
+import { Calculator, Info, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import logos from '@/assets/logos.png';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
+import { Shield } from 'lucide-react';
 
 const Converter = () => {
+  const { profile } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isAuthenticated = !!profile;
+  
   // German Grade Converter States
   const [maxMarks, setMaxMarks] = useState<string>('');
   const [minMarks, setMinMarks] = useState<string>('');
@@ -111,20 +118,86 @@ const Converter = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b glass-morphism py-3 px-4 md:px-6">
+      {/* Header - Different for authenticated vs public users */}
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm py-3 px-4 md:px-6">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-md overflow-hidden shrink-0">
               <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col leading-tight">
+              {!isAuthenticated && (
+                <Badge className="inline-flex self-start mb-0.5 text-[10px] px-2 py-0 h-5">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Trusted
+                </Badge>
+              )}
               <span className="font-bold text-lg text-foreground">publicgermany</span>
               <span className="text-xs text-muted-foreground">Grade Converter</span>
             </div>
           </Link>
-          <ThemeToggle variant="icon" />
+
+          {/* Desktop Navigation */}
+          {!isAuthenticated && (
+            <div className="hidden lg:flex items-center gap-4">
+              <Link to="/services" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors">Services</Link>
+              <Link to="/help" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors">Help Center</Link>
+              <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors">Resources</Link>
+              <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors">Contact</Link>
+              <ThemeToggle variant="icon" />
+              <Button variant="outline" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+              <Button asChild className="btn-cta">
+                <Link to="/auth">Get Started Free</Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Authenticated user - just theme toggle */}
+          {isAuthenticated && (
+            <div className="flex items-center gap-2">
+              <ThemeToggle variant="icon" />
+              <Button variant="outline" asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Mobile menu button for public users */}
+          {!isAuthenticated && (
+            <div className="lg:hidden flex items-center gap-2">
+              <ThemeToggle variant="icon" />
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-foreground hover:text-primary"
+                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Mobile Navigation for public users */}
+        {!isAuthenticated && isMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg">
+            <div className="px-4 py-3 space-y-3">
+              <Link to="/services" className="block text-base font-medium text-foreground hover:text-primary">Services</Link>
+              <Link to="/help" className="block text-base font-medium text-foreground hover:text-primary">Help Center</Link>
+              <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary">Resources</Link>
+              <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary">Contact</Link>
+              <div className="flex flex-col gap-2 pt-4 border-t">
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button asChild className="w-full btn-cta">
+                  <Link to="/auth">Get Started Free</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}

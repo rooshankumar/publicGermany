@@ -154,6 +154,7 @@ function Navbar() {
           <Link to="/services" onMouseEnter={prefetchServices} className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
           <Link to="/help" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
           <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
+          <Link to="/converter" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
           <a href="#faq" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
           <ThemeToggle variant="icon" />
@@ -186,6 +187,7 @@ function Navbar() {
             <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
             <Link to="/help" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
             <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
+            <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
             <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
             <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
             <div className="flex flex-col gap-2 pt-4">

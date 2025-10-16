@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Briefcase, GraduationCap, FileText, MoreHorizontal, Home, BookOpen, Bell, Star, User } from 'lucide-react';
+import { Briefcase, GraduationCap, FileText, MoreHorizontal, Home, BookOpen, Bell, Star, User, Calculator } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,6 +83,7 @@ const StudentMobileBottomNav = () => {
   const more = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/resources', label: 'Resources', icon: BookOpen },
+    { href: '/converter', label: 'Grade Converter', icon: Calculator },
     { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/reviews', label: 'Reviews', icon: Star },
   ];
