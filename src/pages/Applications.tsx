@@ -370,7 +370,24 @@ const Applications = () => {
             <p className="text-muted-foreground">Track your university applications</p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button 
+              variant="secondary" 
+              onClick={handleImportUniversities}
+              disabled={importing}
+            >
+              {importing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Import from Database
+                </>
+              )}
+            </Button>
             <ExcelUpload onUpload={handleExcelUpload} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -590,11 +607,12 @@ const Applications = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>University</TableHead>
                       <TableHead>Program</TableHead>
+                      <TableHead>Completeness</TableHead>
                       <TableHead>IELTS</TableHead>
                       <TableHead>German</TableHead>
                       <TableHead>Fees (EUR)</TableHead>
@@ -609,6 +627,19 @@ const Applications = () => {
                       <TableRow key={app.id}>
                         <TableCell className="font-medium">{app.university_name}</TableCell>
                         <TableCell>{app.program_name}</TableCell>
+                        <TableCell>
+                          {isApplicationComplete(app) ? (
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Complete
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Draft
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{app.ielts_requirement || '-'}</TableCell>
                         <TableCell>{app.german_requirement || '-'}</TableCell>
                         <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
