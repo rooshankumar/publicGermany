@@ -211,14 +211,33 @@ export default function Requests() {
               lines.push(`<p><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}</p>`);
             }
           }
-          const dashboardUrl = `${process.env.VITE_APP_URL || window.location.origin}/dashboard`;
+          const baseUrl = `${process.env.VITE_APP_URL || window.location.origin}`;
           const buttonStyle = 'display:inline-block;padding:10px 16px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;';
+          const containerStyle = 'margin:16px 0;display:flex;flex-direction:column;gap:12px;';
           
-          if (status === 'completed') {
-            lines.push(`<p>You can view or download your document(s) through your dashboard:</p>`);
-            lines.push(`<div style="margin:16px 0;">
-              <a href="${dashboardUrl}" style="${buttonStyle}">View Documents</a>
-            </div>`);
+          if (status === 'completed' && uploadedUrls.length > 0) {
+            lines.push(`<p>You can download your document(s) using the secure links below:</p>`);
+            lines.push(`<div style="${containerStyle}">`);
+            
+            // Add download buttons for each file
+            uploadedUrls.forEach((url, index) => {
+              const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `Document ${index + 1}`;
+              // Create a secure download link that requires authentication
+              const secureDownloadUrl = `${baseUrl}/api/download?requestId=${requestId}&fileIndex=${index}`;
+              lines.push(`
+                <a href="${secureDownloadUrl}" style="${buttonStyle}">
+                  📥 Download ${fileName}
+                </a>
+              `);
+            });
+            
+            lines.push(`</div>`);
+            
+            // Add a link to dashboard as backup
+            lines.push(`<p style="margin-top:16px;font-size:14px;color:#666;">
+              You can also access these documents anytime from your 
+              <a href="${baseUrl}/dashboard" style="color:#0066CC;text-decoration:underline;">dashboard</a>.
+            </p>`);
           }
           
           lines.push(`<p>— publicGermany Team</p>`);
