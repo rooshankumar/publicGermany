@@ -168,12 +168,17 @@ export default function Requests() {
         (updates as any).deliverable_url = uploadedUrls[0]; // Keep for backward compatibility
       }
 
+      console.log('💾 Updating service request with:', updates);
       const { error } = await supabase
         .from('service_requests')
         .update(updates)
         .eq('id', requestId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database update error:', error);
+        throw error;
+      }
+      console.log('✅ Database updated successfully');
 
       toast({ title: "Request updated", description: "Changes saved successfully" });
       
@@ -197,8 +202,33 @@ export default function Requests() {
       try {
         const req = requests.find(r => r.id === requestId);
         const userId = req?.profiles?.user_id;
+        console.log('📧 Email check - userId:', userId);
         const to = userId ? await resolveEmail(userId) : null;
+        console.log('📧 Email check - recipient email:', to);
         if (to) {
+          // Get all existing files from storage to include in email
+          let allDeliverableUrls = [...uploadedUrls];
+          if (selectedRequest) {
+            try {
+              const { data: storageFiles } = await supabase.storage
+                .from('documents')
+                .list(`service_requests/${selectedRequest.id}`, { limit: 20 });
+              
+              if (storageFiles && storageFiles.length > 0) {
+                const existingUrls = storageFiles.map(file => {
+                  const { data: publicUrl } = supabase.storage
+                    .from('documents')
+                    .getPublicUrl(`service_requests/${selectedRequest.id}/${file.name}`);
+                  return publicUrl.publicUrl;
+                });
+                // Combine new uploads with existing files, remove duplicates
+                allDeliverableUrls = [...new Set([...uploadedUrls, ...existingUrls])];
+              }
+            } catch (e) {
+              console.error('Error fetching existing files for email:', e);
+            }
+          }
+
           const lines: string[] = [];
           const prettyStatus = (status || '').replace('_', ' ');
           const studentName = (req as any)?.profiles?.full_name || '';
@@ -213,7 +243,10 @@ export default function Requests() {
             }
           }
 
-          if (status === 'completed' && uploadedUrls.length > 0) {
+          console.log('📧 Email check - status:', status, 'files count:', allDeliverableUrls.length);
+          
+          // Send document links if status is completed AND there are any deliverable files (new or existing)
+          if (status === 'completed' && allDeliverableUrls.length > 0) {
             const baseUrl = `${process.env.VITE_APP_URL || window.location.origin}`;
             const styles = {
               button: 'display:inline-block;padding:12px 20px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;text-align:center;font-weight:500;box-shadow:0 2px 4px rgba(0,0,0,0.1);width:100%;box-sizing:border-box;',
@@ -228,7 +261,7 @@ export default function Requests() {
             lines.push(`<div style="${styles.fileContainer}">`);
             
             // Add secure download buttons for each file
-            uploadedUrls.forEach((url, index) => {
+            allDeliverableUrls.forEach((url, index) => {
               const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `Document ${index + 1}`;
               const secureDownloadUrl = `${baseUrl}/api/download?requestId=${requestId}&fileIndex=${index}`;
               
@@ -264,9 +297,22 @@ export default function Requests() {
           }
           
           lines.push(`<p>— publicGermany Team</p>`);
+          console.log('📧 Sending email to:', to, 'with', lines.length, 'lines');
           await sendEmail(to, 'Service request update', lines.join('\n'));
+          console.log('✅ Email sent successfully');
+        } else {
+          console.log('⚠️ Email not sent - no recipient email found');
         }
-      } catch {}
+      } catch (emailError: any) {
+        console.error('❌ Email sending failed:', emailError);
+        console.error('Error details:', emailError.message, emailError.stack);
+        // Show toast to admin so they know email failed
+        toast({
+          title: "Email notification failed",
+          description: `Could not send email: ${emailError.message || 'Unknown error'}`,
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error updating request",
