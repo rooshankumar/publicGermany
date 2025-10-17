@@ -204,6 +204,7 @@ export default function Requests() {
           const studentName = (req as any)?.profiles?.full_name || '';
           lines.push(`<p>Hi ${studentName || 'there'},</p>`);
           lines.push(`<p>Your service request <strong>${req?.service_type || ''}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
+          
           if (response) {
             // Remove any Supabase storage URLs from the admin response
             const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').replace(/\n\s*\n/g, '\n').trim();
@@ -211,21 +212,30 @@ export default function Requests() {
               lines.push(`<p><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}</p>`);
             }
           }
-          const baseUrl = `${process.env.VITE_APP_URL || window.location.origin}`;
-          const buttonStyle = 'display:inline-block;padding:10px 16px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;';
-          const containerStyle = 'margin:16px 0;display:flex;flex-direction:column;gap:12px;';
-          
+
           if (status === 'completed' && uploadedUrls.length > 0) {
-            lines.push(`<p>You can download your document(s) using the secure links below:</p>`);
-            lines.push(`<div style="${containerStyle}">`);
+            const baseUrl = `${process.env.VITE_APP_URL || window.location.origin}`;
+            const styles = {
+              button: 'display:inline-block;padding:12px 20px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;text-align:center;font-weight:500;box-shadow:0 2px 4px rgba(0,0,0,0.1);width:100%;box-sizing:border-box;',
+              container: 'margin:24px 0;padding:20px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;',
+              heading: 'margin:0 0 16px 0;color:#1a1a1a;font-size:16px;font-weight:500;',
+              fileContainer: 'display:flex;flex-direction:column;gap:12px;',
+              notice: 'margin-top:20px;padding:12px;background:#e7f5ff;border-radius:6px;border:1px solid #74c0fc;color:#1864ab;font-size:14px;'
+            };
+
+            lines.push(`<div style="${styles.container}">`);
+            lines.push(`<h3 style="${styles.heading}">📎 Your documents are ready</h3>`);
+            lines.push(`<div style="${styles.fileContainer}">`);
             
-            // Add download buttons for each file
+            // Add secure download buttons for each file
             uploadedUrls.forEach((url, index) => {
               const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `Document ${index + 1}`;
-              // Create a secure download link that requires authentication
               const secureDownloadUrl = `${baseUrl}/api/download?requestId=${requestId}&fileIndex=${index}`;
+              
               lines.push(`
-                <a href="${secureDownloadUrl}" style="${buttonStyle}">
+                <a href="${secureDownloadUrl}" 
+                   style="${styles.button}"
+                   target="_blank">
                   📥 Download ${fileName}
                 </a>
               `);
@@ -233,11 +243,24 @@ export default function Requests() {
             
             lines.push(`</div>`);
             
-            // Add a link to dashboard as backup
-            lines.push(`<p style="margin-top:16px;font-size:14px;color:#666;">
-              You can also access these documents anytime from your 
-              <a href="${baseUrl}/dashboard" style="color:#0066CC;text-decoration:underline;">dashboard</a>.
-            </p>`);
+            // Add security notice and dashboard backup
+            lines.push(`
+              <div style="${styles.notice}">
+                <p style="margin:0 0 8px 0;">
+                  🔒 For your security:
+                  <br>• Download links require authentication
+                  <br>• Links expire after 24 hours for safety
+                </p>
+                <p style="margin:0;">
+                  You can always access your documents from your 
+                  <a href="${baseUrl}/dashboard" 
+                     style="color:#0066CC;font-weight:500;text-decoration:underline;">
+                    dashboard
+                  </a>
+                </p>
+              </div>
+            </div>
+            `);
           }
           
           lines.push(`<p>— publicGermany Team</p>`);

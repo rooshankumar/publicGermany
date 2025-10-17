@@ -1,40 +1,31 @@
+import { Router } from 'express';
 import { supabase } from '@/integrations/supabase/client';
-import { Request, Response } from 'express';
-import type { ParsedQs } from 'qs';
 
-function isValidId(id: any): id is string {
-  return typeof id === 'string' && id.length > 0;
-}
+const router = Router();
 
-// Helper function to ensure we have a valid file index
-function parseFileIndex(index: any): number {
-  if (typeof index === 'string') {
-    const parsed = parseInt(index, 10);
-    return isNaN(parsed) ? 0 : parsed;
-  }
-  if (typeof index === 'number') {
-    return index;
-  }
-  return 0;
-}
-
-export async function handleDownload(req: Request, res: Response) {
+router.get('/documents/:token', async (req, res) => {
   try {
-    const { requestId, fileIndex } = req.query;
-    
-    // Validate requestId
-    if (!isValidId(requestId)) {
-      return res.status(400).json({ error: 'Missing or invalid requestId' });
+    // Decode and validate the token
+    let fileInfo;
+    try {
+      const decoded = atob(req.params.token);
+      fileInfo = JSON.parse(decoded);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid download token' });
     }
 
-    // Parse file index
-    const fileIndexNum = parseFileIndex(fileIndex);
+    const { requestId, fileIndex, timestamp } = fileInfo;
+
+    // Check if token is expired (valid for 24 hours)
+    if (Date.now() - timestamp > 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ error: 'Download link expired' });
+    }
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
-      // Redirect to login if not authenticated
-      const loginUrl = `/auth?redirectTo=${encodeURIComponent(req.originalUrl)}`;
+      // If not authenticated, redirect to login with return URL
+      const loginUrl = `${req.protocol}://${req.get('host')}/auth?redirectTo=${encodeURIComponent(req.originalUrl)}`;
       return res.redirect(loginUrl);
     }
 
@@ -59,12 +50,12 @@ export async function handleDownload(req: Request, res: Response) {
       .from('documents')
       .list(`service_requests/${requestId}`);
 
-    if (storageError || !files || !files[fileIndexNum]) {
+    if (storageError || !files || !files[fileIndex]) {
       return res.status(404).json({ error: 'File not found' });
     }
 
     // Generate signed URL for the file (valid for 60 seconds)
-    const file = files[fileIndexNum];
+    const file = files[fileIndex];
     const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
       .from('documents')
       .createSignedUrl(`service_requests/${requestId}/${file.name}`, 60);
@@ -74,9 +65,11 @@ export async function handleDownload(req: Request, res: Response) {
     }
 
     // Redirect to signed URL for download
-    return res.redirect(signedUrl);
+    res.redirect(signedUrl);
   } catch (error) {
     console.error('Download error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
-}
+});
+
+export default router;

@@ -1,41 +1,26 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Request, Response } from 'express';
-import type { ParsedQs } from 'qs';
-
-function isValidId(id: any): id is string {
-  return typeof id === 'string' && id.length > 0;
-}
-
-// Helper function to ensure we have a valid file index
-function parseFileIndex(index: any): number {
-  if (typeof index === 'string') {
-    const parsed = parseInt(index, 10);
-    return isNaN(parsed) ? 0 : parsed;
-  }
-  if (typeof index === 'number') {
-    return index;
-  }
-  return 0;
-}
+import { ParsedQs } from 'qs';
 
 export async function handleDownload(req: Request, res: Response) {
   try {
-    const { requestId, fileIndex } = req.query;
-    
-    // Validate requestId
-    if (!isValidId(requestId)) {
+    // Get query parameters and ensure they're strings
+    const requestId = Array.isArray(req.query.requestId) 
+      ? req.query.requestId[0] 
+      : (req.query.requestId as string | undefined);
+    const fileIndex = Array.isArray(req.query.fileIndex) 
+      ? req.query.fileIndex[0] 
+      : (req.query.fileIndex as string | undefined);
+    const fileIndexNum = parseInt(String(fileIndex || '0'), 10);
+
+    if (!requestId || typeof requestId !== 'string') {
       return res.status(400).json({ error: 'Missing or invalid requestId' });
     }
-
-    // Parse file index
-    const fileIndexNum = parseFileIndex(fileIndex);
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
-      // Redirect to login if not authenticated
-      const loginUrl = `/auth?redirectTo=${encodeURIComponent(req.originalUrl)}`;
-      return res.redirect(loginUrl);
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Get service request to verify ownership
@@ -73,7 +58,7 @@ export async function handleDownload(req: Request, res: Response) {
       return res.status(500).json({ error: 'Could not generate download URL' });
     }
 
-    // Redirect to signed URL for download
+    // Redirect to the signed URL
     return res.redirect(signedUrl);
   } catch (error) {
     console.error('Download error:', error);
