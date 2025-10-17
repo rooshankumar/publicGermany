@@ -375,14 +375,18 @@ const Applications = () => {
             <p className="text-muted-foreground">Track your university applications</p>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             
-            {/* Import Tips */}
-            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm">
-              <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">📋 Quick Import:</p>
-              <p className="text-blue-800 dark:text-blue-200 text-xs">
-                1. Download template → 2. Fill in your applications → 3. Upload Excel file
-              </p>
+            {/* Compact Info Banners */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-xs">
+                <span className="font-medium text-blue-900 dark:text-blue-100">📋 Quick Import:</span>
+                <span className="text-blue-800 dark:text-blue-200 ml-1">Download → Fill → Upload</span>
+              </div>
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-2 text-xs">
+                <span className="font-medium text-green-900 dark:text-green-100">📧 Auto Reminders:</span>
+                <span className="text-green-800 dark:text-green-200 ml-1">Get email alerts before deadlines</span>
+              </div>
             </div>
 
             <div className="flex gap-2 flex-wrap">
@@ -644,7 +648,19 @@ const Applications = () => {
                                 title="Open Portal"
                               >
                                 <a 
-                                  href={app.portal_link.startsWith('http') ? app.portal_link : `https://${app.portal_link}`} 
+                                  href={(() => {
+                                    const link = app.portal_link.trim();
+                                    // If already has protocol, use as-is
+                                    if (link.startsWith('http://') || link.startsWith('https://')) {
+                                      return link;
+                                    }
+                                    // If it looks like a full URL without protocol, add https://
+                                    if (link.includes('.') || link.includes('/')) {
+                                      return `https://${link}`;
+                                    }
+                                    // Otherwise, it's just text, add https://
+                                    return `https://${link}`;
+                                  })()} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                 >
