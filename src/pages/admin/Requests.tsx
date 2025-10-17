@@ -162,12 +162,10 @@ export default function Requests() {
       const updates: any = { status };
       if (response) updates.admin_response = response;
       
-      // Handle multiple deliverable URLs
+      // Store deliverable URLs in the database but don't include them in the admin response
       if (uploadedUrls.length > 0) {
-        const deliverableLinks = uploadedUrls.map(url => `Deliverable: ${url}`).join('\n');
-        updates.admin_response = [response || '', deliverableLinks].filter(Boolean).join('\n');
-        // Store the first URL as primary deliverable for backward compatibility
-        (updates as any).deliverable_url = uploadedUrls[0];
+        updates.deliverable_urls = uploadedUrls; // Store all URLs
+        (updates as any).deliverable_url = uploadedUrls[0]; // Keep for backward compatibility
       }
 
       const { error } = await supabase
@@ -207,7 +205,11 @@ export default function Requests() {
           lines.push(`<p>Hi ${studentName || 'there'},</p>`);
           lines.push(`<p>Your service request <strong>${req?.service_type || ''}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
           if (response) {
-            lines.push(`<p><strong>Admin response:</strong><br/>${(response || '').replace(/\n/g, '<br/>')}</p>`);
+            // Remove any Supabase storage URLs from the admin response
+            const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').replace(/\n\s*\n/g, '\n').trim();
+            if (cleanResponse) {
+              lines.push(`<p><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}</p>`);
+            }
           }
           const dashboardUrl = `${process.env.VITE_APP_URL || window.location.origin}/dashboard`;
           const buttonStyle = 'display:inline-block;padding:10px 16px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;';
