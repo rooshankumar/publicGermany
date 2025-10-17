@@ -1,19 +1,33 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.ed7192266d3e418fb8f92bcd173c43d9',
-  appName: 'my-germany-path',
+  appId: 'com.publicgermany.app',
+  appName: 'publicGermany',
   webDir: 'dist',
   server: {
-    url: 'https://ed719226-6d3e-418f-b8f9-2bcd173c43d9.lovableproject.com?forceHideBadge=true',
+    url: 'https://publicgermany.vercel.app',
     cleartext: true
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: '#D00000',
-      showSpinner: false
+      backgroundColor: '#ffffff',
+      showSpinner: true,
+      spinnerColor: '#0066cc',
+      androidSpinnerStyle: 'large',
+      iosSpinnerStyle: 'large',
+      splashFullScreen: true,
+      splashImmersive: true
+    },
+    StatusBar: {
+      style: 'light',
+      backgroundColor: '#0066cc'
     }
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false
   }
 };
 
