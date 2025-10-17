@@ -12,7 +12,8 @@ interface ExcelData {
   ielts_requirement: string | null;
   german_requirement: string | null;
   fees_eur: number | null;
-  application_end_date: string | null;
+  start_date: string | null;
+  end_date: string | null;
   application_method: string | null;
   required_tests: string | null;
   portal_link: string | null;
@@ -120,36 +121,62 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
               ''
             ).toString().trim();
             
-            // Smart date parsing - handle multiple formats
+            // Smart date parsing - handle multiple formats and extract BOTH start and end dates
+            let startDate = null;
+            let endDate = null;
             let appDate = row.application_end_date || row.Deadline || row.end_date || row.deadline || row.DATE || null;
-            if (appDate && typeof appDate === 'string') {
-              // Normalize different dash characters (-, –, —) to standard dash
-              appDate = appDate.replace(/[–—]/g, '-');
-              
-              const monthMap: any = {
-                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-                'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-              };
-              
-              // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15", "Aug 1 - Nov 15"
-              const dateRangeMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
-              if (dateRangeMatch) {
-                const [, , , endMonth, endDay] = dateRangeMatch;
-                const month = monthMap[endMonth] || '01';
-                appDate = `2025-${month}-${endDay.padStart(2, '0')}`;
+            
+            if (appDate !== null && appDate !== undefined && appDate !== '') {
+              // Check if it's an Excel serial number (number type or numeric string)
+              if (typeof appDate === 'number' || (typeof appDate === 'string' && /^\d+$/.test(appDate))) {
+                // Convert Excel serial date to JavaScript Date
+                const excelEpoch = new Date(1899, 11, 30);
+                const serialNumber = typeof appDate === 'number' ? appDate : parseInt(appDate);
+                const jsDate = new Date(excelEpoch.getTime() + serialNumber * 86400000);
+                
+                // Format as YYYY-MM-DD
+                const year = jsDate.getFullYear();
+                const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                const day = String(jsDate.getDate()).padStart(2, '0');
+                endDate = `${year}-${month}-${day}`;
               }
-              // Handle single date like "Nov 15", "Oct 31"
-              else {
-                const singleDateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)/);
-                if (singleDateMatch) {
-                  const [, month, day] = singleDateMatch;
-                  const monthNum = monthMap[month] || '01';
-                  appDate = `2025-${monthNum}-${day.padStart(2, '0')}`;
+              // Handle string dates
+              else if (typeof appDate === 'string') {
+                // Normalize different dash characters (-, –, —) to standard dash
+                appDate = appDate.replace(/[–—]/g, '-');
+                
+                const monthMap: any = {
+                  'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+                  'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                };
+                
+                // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15", "Aug 1 - Nov 15"
+                const dateRangeMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
+                if (dateRangeMatch) {
+                  const [, startMonth, startDay, endMonth, endDay] = dateRangeMatch;
+                  
+                  // Parse start date
+                  const startMonthNum = monthMap[startMonth] || '01';
+                  startDate = `2025-${startMonthNum}-${startDay.padStart(2, '0')}`;
+                  
+                  // Parse end date
+                  const endMonthNum = monthMap[endMonth] || '01';
+                  endDate = `2025-${endMonthNum}-${endDay.padStart(2, '0')}`;
                 }
-                // If already in YYYY-MM-DD format, keep it
-                else if (!/^\d{4}-\d{2}-\d{2}$/.test(appDate)) {
-                  // Invalid format, set to null
-                  appDate = null;
+                // Handle single date like "Nov 15", "Oct 31"
+                else {
+                  const singleDateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)/);
+                  if (singleDateMatch) {
+                    const [, month, day] = singleDateMatch;
+                    const monthNum = monthMap[month] || '01';
+                    endDate = `2025-${monthNum}-${day.padStart(2, '0')}`;
+                    // If only one date, assume it's the deadline (end date)
+                    startDate = null;
+                  }
+                  // If already in YYYY-MM-DD format, use as end date
+                  else if (/^\d{4}-\d{2}-\d{2}$/.test(appDate)) {
+                    endDate = appDate;
+                  }
                 }
               }
             }
@@ -206,7 +233,8 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
               ielts_requirement: ielts,
               german_requirement: german,
               fees_eur: fees,
-              application_end_date: appDate,
+              start_date: startDate,
+              end_date: endDate,
               application_method: row.application_method || row.Application || row.Method || null,
               required_tests: row.required_tests || row.Test || row.Tests || null,
               portal_link: row.portal_link || row['Portal Link'] || row.link || row.Link || null,
@@ -225,7 +253,8 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
         console.log('✅ Valid rows:', transformedData.length);
         console.log('📅 Parsed dates:', transformedData.map(r => ({ 
           uni: r.university_name, 
-          date: r.application_end_date 
+          start: r.start_date,
+          end: r.end_date 
         })));
 
         if (transformedData.length === 0) {
@@ -287,7 +316,8 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
                   <TableHead>IELTS</TableHead>
                   <TableHead>German</TableHead>
                   <TableHead>Fees (EUR)</TableHead>
-                  <TableHead>Deadline</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead>Tests</TableHead>
                   <TableHead>Status</TableHead>
@@ -301,7 +331,8 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
                     <TableCell>{row.ielts_requirement || '-'}</TableCell>
                     <TableCell>{row.german_requirement || '-'}</TableCell>
                     <TableCell>{row.fees_eur || '-'}</TableCell>
-                    <TableCell>{row.application_end_date || '-'}</TableCell>
+                    <TableCell>{row.start_date || '-'}</TableCell>
+                    <TableCell>{row.end_date || '-'}</TableCell>
                     <TableCell>{row.application_method || '-'}</TableCell>
                     <TableCell>{row.required_tests || '-'}</TableCell>
                     <TableCell>{row.status}</TableCell>
