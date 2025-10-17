@@ -201,10 +201,16 @@ export default function Requests() {
           if (response) {
             lines.push(`<p><strong>Admin response:</strong><br/>${(response || '').replace(/\n/g, '<br/>')}</p>`);
           }
-          const link = (updates as any)?.deliverable_url || (finalDeliverableUrl || null);
-          if (link) {
-            lines.push(`<p><strong>Deliverable:</strong> <a href="${link}">${link}</a></p>`);
+          const dashboardUrl = `${process.env.VITE_APP_URL || window.location.origin}/dashboard`;
+          const buttonStyle = 'display:inline-block;padding:10px 16px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;';
+          
+          if (updates.status === 'completed') {
+            lines.push(`<p>You can view or download your document(s) through your dashboard:</p>`);
+            lines.push(`<div style="margin:16px 0;">
+              <a href="${dashboardUrl}" style="${buttonStyle}">View Documents</a>
+            </div>`);
           }
+          
           lines.push(`<p>— publicGermany Team</p>`);
           await sendEmail(to, 'Service request update', lines.join('\n'));
         }
