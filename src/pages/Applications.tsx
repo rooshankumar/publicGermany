@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
 import { ExcelUpload } from '@/components/ExcelUpload';
+import { ExcelTemplate } from '@/components/ExcelTemplate';
 
 interface Application {
   id: string;
@@ -58,8 +59,11 @@ const Applications = () => {
         ielts_requirement: row.ielts_requirement,
         german_requirement: row.german_requirement,
         fees_eur: row.fees_eur,
-        end_date: row.end_date,
+        application_end_date: row.application_end_date,
         application_method: row.application_method,
+        required_tests: row.required_tests,
+        portal_link: row.portal_link,
+        notes: row.notes,
         status: row.status || 'draft'
       }));
 
@@ -370,16 +374,48 @@ const Applications = () => {
             <p className="text-muted-foreground">Track your university applications</p>
           </div>
           
-          <div className="flex gap-2">
-            <ExcelUpload onUpload={handleExcelUpload} />
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Application
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="space-y-3">
+            
+            {/* Import Tips */}
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Import Tips:</h4>
+              <ul className="text-blue-800 dark:text-blue-200 space-y-1 text-xs">
+                <li>• Download our template first to see the expected format</li>
+                <li>• Required columns: university_name, program_name</li>
+                <li>• Optional: ielts_requirement, german_requirement, fees_eur, application_end_date, application_method, required_tests, portal_link, notes</li>
+                <li>• Status values: draft, submitted, interview, offer, rejected (defaults to draft)</li>
+                <li>• Import from Database uses pre-loaded university data from our system</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <ExcelTemplate />
+              <ExcelUpload onUpload={handleExcelUpload} />
+              <Button 
+                variant="secondary" 
+                onClick={handleImportUniversities}
+                disabled={importing}
+              >
+                {importing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Import from Database
+                  </>
+                )}
+              </Button>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Application
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Application</DialogTitle>
                 <DialogDescription>
@@ -465,6 +501,7 @@ const Applications = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
 
           {/* Edit Application Dialog */}
           <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setEditApp(null); setEditValues({}); } }}>
@@ -570,6 +607,17 @@ const Applications = () => {
             </DialogContent>
           </Dialog>
           </div>
+          
+          {/* Import Instructions */}
+          <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border">
+            <p className="font-medium mb-1">📋 Import Tips:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li><strong>Import from Database:</strong> Fetches pre-loaded universities from our database (recommended)</li>
+              <li><strong>Manual Excel Upload:</strong> Upload your own Excel file with columns: University Name, Program, IELTS, German, Fees, Deadline, Status</li>
+              <li>Ensure all dates are in format: YYYY-MM-DD (e.g., 2025-06-15)</li>
+              <li>Status should be one of: Applied, Pending, Accepted, Rejected, Waitlisted</li>
+            </ul>
+          </div>
         </div>
 
         <Card>
@@ -590,11 +638,12 @@ const Applications = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>University</TableHead>
                       <TableHead>Program</TableHead>
+                      <TableHead>Completeness</TableHead>
                       <TableHead>IELTS</TableHead>
                       <TableHead>German</TableHead>
                       <TableHead>Fees (EUR)</TableHead>
@@ -609,6 +658,19 @@ const Applications = () => {
                       <TableRow key={app.id}>
                         <TableCell className="font-medium">{app.university_name}</TableCell>
                         <TableCell>{app.program_name}</TableCell>
+                        <TableCell>
+                          {isApplicationComplete(app) ? (
+                            <Badge variant="default" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Complete
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Draft
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{app.ielts_requirement || '-'}</TableCell>
                         <TableCell>{app.german_requirement || '-'}</TableCell>
                         <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>

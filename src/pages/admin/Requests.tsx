@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Calendar
 } from 'lucide-react';
+import { MultiFileUpload } from '@/components/MultiFileUpload';
 import { Database } from '@/integrations/supabase/types';
 import { sendEmail } from '@/lib/sendEmail';
 
@@ -50,7 +51,8 @@ export default function Requests() {
   const [deliverableUploading, setDeliverableUploading] = useState(false);
   const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<string>('');
-  const [pendingDeliverableFile, setPendingDeliverableFile] = useState<File | null>(null);
+  const [pendingDeliverableFiles, setPendingDeliverableFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<Array<{ name: string; url: string }>>([]);
   const { toast } = useToast();
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -139,28 +141,33 @@ export default function Requests() {
 
   const saveRequestChanges = async (requestId: string, status: string, response?: string) => {
     try {
-      // If a file is staged, upload it first and derive URL
-      let finalDeliverableUrl = deliverableUrl;
-      if (pendingDeliverableFile && selectedRequest) {
+      // Upload multiple files if selected
+      let uploadedUrls: string[] = [];
+      if (pendingDeliverableFiles.length > 0 && selectedRequest) {
         setDeliverableUploading(true);
-        const safeName = `${Date.now()}-${pendingDeliverableFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const path = `service_requests/${selectedRequest.id}/${safeName}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('documents')
-          .upload(path, pendingDeliverableFile, { upsert: true, contentType: pendingDeliverableFile.type, cacheControl: '3600' });
-        if (uploadErr) throw uploadErr;
-        const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
-        finalDeliverableUrl = publicData.publicUrl;
-        setDeliverableUrl(finalDeliverableUrl);
+        
+        for (const file of pendingDeliverableFiles) {
+          const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const path = `service_requests/${selectedRequest.id}/${safeName}`;
+          const { error: uploadErr } = await supabase.storage
+            .from('documents')
+            .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+          if (uploadErr) throw uploadErr;
+          
+          const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
+          uploadedUrls.push(publicData.publicUrl);
+        }
       }
 
       const updates: any = { status };
       if (response) updates.admin_response = response;
-      if (finalDeliverableUrl) {
-        // Prefer dedicated column if present
-        (updates as any).deliverable_url = finalDeliverableUrl;
-        // Also include link in admin_response for compatibility
-        updates.admin_response = [response || '', `Deliverable: ${finalDeliverableUrl}`].filter(Boolean).join('\n');
+      
+      // Handle multiple deliverable URLs
+      if (uploadedUrls.length > 0) {
+        const deliverableLinks = uploadedUrls.map(url => `Deliverable: ${url}`).join('\n');
+        updates.admin_response = [response || '', deliverableLinks].filter(Boolean).join('\n');
+        // Store the first URL as primary deliverable for backward compatibility
+        (updates as any).deliverable_url = uploadedUrls[0];
       }
 
       const { error } = await supabase
@@ -175,7 +182,8 @@ export default function Requests() {
       setSelectedRequest(null);
       setAdminResponse('');
       setDeliverableUrl(null);
-      setPendingDeliverableFile(null);
+      setPendingDeliverableFiles([]);
+      setExistingFiles([]);
       fetchRequests();
       // Add in-app notification for the student (bell)
       try {
@@ -204,7 +212,7 @@ export default function Requests() {
           const dashboardUrl = `${process.env.VITE_APP_URL || window.location.origin}/dashboard`;
           const buttonStyle = 'display:inline-block;padding:10px 16px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;';
           
-          if (updates.status === 'completed') {
+          if (status === 'completed') {
             lines.push(`<p>You can view or download your document(s) through your dashboard:</p>`);
             lines.push(`<div style="margin:16px 0;">
               <a href="${dashboardUrl}" style="${buttonStyle}">View Documents</a>
@@ -408,11 +416,33 @@ export default function Requests() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedRequest(request);
                                 setAdminResponse(request.admin_response || '');
                                 setPendingStatus(request.status);
                                 setDeliverableUrl(request.deliverable_url || null);
+                                
+                                // Load existing files for this request
+                                try {
+                                  const { data, error } = await supabase.storage
+                                    .from('documents')
+                                    .list(`service_requests/${request.id}`, { limit: 10 });
+                                  
+                                  if (!error && data) {
+                                    const files = data.map(file => {
+                                      const { data: publicUrl } = supabase.storage
+                                        .from('documents')
+                                        .getPublicUrl(`service_requests/${request.id}/${file.name}`);
+                                      return {
+                                        name: file.name,
+                                        url: publicUrl.publicUrl
+                                      };
+                                    });
+                                    setExistingFiles(files);
+                                  }
+                                } catch (e) {
+                                  console.error('Error loading existing files:', e);
+                                }
                               }}
                             >
                               Manage
@@ -475,34 +505,28 @@ export default function Requests() {
                       className="min-h-[100px]"
                     />
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Final Document (Optional)</label>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0] || null;
-                          setPendingDeliverableFile(file);
-                          if (file) {
-                            toast({ title: 'File selected', description: `${file.name} will upload on Save.` });
+                      <label className="text-sm font-medium">Deliverable Files</label>
+                      <MultiFileUpload
+                        onFilesSelected={setPendingDeliverableFiles}
+                        maxFiles={5}
+                        existingFiles={existingFiles}
+                        onRemoveExisting={async (url) => {
+                          try {
+                            // Extract file path from URL to delete from storage
+                            const urlPath = url.split('/').slice(-2).join('/');
+                            await supabase.storage.from('documents').remove([urlPath]);
+                            setExistingFiles(files => files.filter(f => f.url !== url));
+                            toast({ title: 'File removed', description: 'File deleted successfully' });
+                          } catch (e) {
+                            toast({ title: 'Error', description: 'Failed to remove file', variant: 'destructive' });
                           }
                         }}
-                        className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                       />
                       {deliverableUploading && (
-                        <p className="text-xs text-muted-foreground">Uploading...</p>
-                      )}
-                      {pendingDeliverableFile && (
-                        <div className="text-xs text-muted-foreground">
-                          Selected: {pendingDeliverableFile.name}
-                        </div>
-                      )}
-                      {deliverableUrl && !pendingDeliverableFile && (
-                        <div className="text-xs">
-                          <a href={deliverableUrl} target="_blank" rel="noreferrer" className="underline">View uploaded deliverable</a>
-                        </div>
+                        <p className="text-xs text-muted-foreground">Uploading files...</p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Upload a final document that the student can access after completion
+                        Upload final documents that the student can access after completion
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -518,7 +542,8 @@ export default function Requests() {
                           setAdminResponse('');
                           setPendingStatus('');
                           setDeliverableUrl(null);
-                          setPendingDeliverableFile(null);
+                          setPendingDeliverableFiles([]);
+                          setExistingFiles([]);
                         }}
                       >
                         Cancel

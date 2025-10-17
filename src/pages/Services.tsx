@@ -1175,32 +1175,55 @@ const Services = () => {
                         );
                       })()}
 
-                      {/* Show deliverable actions when completed */}
-                      {(() => { const url = request.status === 'completed' ? (getDeliverableUrl(request) || deliverables[request.id]) : null; return url; })() && (
-                        <div className="mt-2 p-3 border rounded-md bg-green-50 border-green-200">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-green-700">
-                              <CheckCircle className="h-4 w-4" />
-                              <span className="text-sm font-medium">Delivered</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <Button size="sm" variant="default">View</Button>
-                              </a>
-                              <a
-                                href={(getDeliverableUrl(request) || deliverables[request.id]) as string}
-                                download
-                              >
-                                <Button size="sm" variant="outline">Download</Button>
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                       {/* Show deliverable actions when completed */}
+                       {request.status === 'completed' && (
+                         <div className="mt-2 p-3 border rounded-md bg-green-50 border-green-200">
+                           <div className="flex items-center gap-2 text-green-700 mb-2">
+                             <CheckCircle className="h-4 w-4" />
+                             <span className="text-sm font-medium">Delivered</span>
+                           </div>
+                           {(() => {
+                             // Get all deliverable URLs from admin response
+                             const response = request.admin_response || '';
+                             const urls = response.match(/https?:[^\s)]+/gi) || [];
+                             const primaryUrl = getDeliverableUrl(request) || deliverables[request.id];
+                             const allUrls = primaryUrl ? [primaryUrl, ...urls.filter(u => u !== primaryUrl)] : urls;
+                             
+                             if (allUrls.length === 0) {
+                               return (
+                                 <Button 
+                                   size="sm" 
+                                   variant="outline" 
+                                   onClick={() => discoverDeliverableFor(request, setDeliverables, toast)}
+                                 >
+                                   Check for Files
+                                 </Button>
+                               );
+                             }
+                             
+                             return (
+                               <div className="space-y-2">
+                                 {allUrls.map((url, index) => {
+                                   const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `File ${index + 1}`;
+                                   return (
+                                     <div key={index} className="flex items-center justify-between gap-3 p-2 bg-white rounded border">
+                                       <span className="text-xs text-gray-600 truncate flex-1">{fileName}</span>
+                                       <div className="flex items-center gap-1">
+                                         <a href={url} target="_blank" rel="noreferrer">
+                                           <Button size="sm" variant="default" className="text-xs px-2 py-1">View</Button>
+                                         </a>
+                                         <a href={url} download>
+                                           <Button size="sm" variant="outline" className="text-xs px-2 py-1">Download</Button>
+                                         </a>
+                                       </div>
+                                     </div>
+                                   );
+                                 })}
+                               </div>
+                             );
+                           })()}
+                         </div>
+                       )}
 
                       {/* Fallback: allow user to check storage for deliverable if completed but no link */}
                       {request.status === 'completed' && !(getDeliverableUrl(request) || deliverables[request.id]) && (

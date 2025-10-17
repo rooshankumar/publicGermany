@@ -110,6 +110,8 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/converter" element={<Converter />} />
+        {/* Redirect old /grade-converter to new /converter */}
+        <Route path="/grade-converter" element={<Navigate to="/converter" replace />} />
         <Route path="/tools/grade-converter" element={
           <ProtectedRoute>
             <GradeConverter />
