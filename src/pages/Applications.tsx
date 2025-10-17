@@ -631,7 +631,7 @@ const Applications = () => {
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => { setEditApp(app); setShowEditDialog(true); }}
+                              onClick={() => openEditDialog(app)}
                               title="Edit"
                             >
                               <Edit className="h-4 w-4" />
