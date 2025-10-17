@@ -123,29 +123,33 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
             // Smart date parsing - handle multiple formats
             let appDate = row.application_end_date || row.Deadline || row.end_date || row.deadline || row.DATE || null;
             if (appDate && typeof appDate === 'string') {
-              // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15"
-              const dateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
-              if (dateMatch) {
-                const [, , , endMonth, endDay] = dateMatch;
-                const monthMap: any = {
-                  'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-                  'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                };
+              // Normalize different dash characters (-, –, —) to standard dash
+              appDate = appDate.replace(/[–—]/g, '-');
+              
+              const monthMap: any = {
+                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+                'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+              };
+              
+              // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15", "Aug 1 - Nov 15"
+              const dateRangeMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
+              if (dateRangeMatch) {
+                const [, , , endMonth, endDay] = dateRangeMatch;
                 const month = monthMap[endMonth] || '01';
                 appDate = `2025-${month}-${endDay.padStart(2, '0')}`;
               }
-              // Handle "Oct 15 - Nov 30" format
-              else if (appDate.includes('-')) {
-                const parts = appDate.split('-').map(p => p.trim());
-                const lastPart = parts[parts.length - 1];
-                const monthMatch = lastPart.match(/([A-Za-z]+)\s+(\d+)/);
-                if (monthMatch) {
-                  const monthMap: any = {
-                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-                    'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                  };
-                  const month = monthMap[monthMatch[1]] || '01';
-                  appDate = `2025-${month}-${monthMatch[2].padStart(2, '0')}`;
+              // Handle single date like "Nov 15", "Oct 31"
+              else {
+                const singleDateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)/);
+                if (singleDateMatch) {
+                  const [, month, day] = singleDateMatch;
+                  const monthNum = monthMap[month] || '01';
+                  appDate = `2025-${monthNum}-${day.padStart(2, '0')}`;
+                }
+                // If already in YYYY-MM-DD format, keep it
+                else if (!/^\d{4}-\d{2}-\d{2}$/.test(appDate)) {
+                  // Invalid format, set to null
+                  appDate = null;
                 }
               }
             }
@@ -219,6 +223,10 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
 
         console.log('✅ Filtered data:', transformedData);
         console.log('✅ Valid rows:', transformedData.length);
+        console.log('📅 Parsed dates:', transformedData.map(r => ({ 
+          uni: r.university_name, 
+          date: r.application_end_date 
+        })));
 
         if (transformedData.length === 0) {
           toast({
