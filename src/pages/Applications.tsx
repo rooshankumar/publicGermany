@@ -610,43 +610,80 @@ const Applications = () => {
                   <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Actions</TableHead>
                       <TableHead>University</TableHead>
                       <TableHead>Program</TableHead>
-                      <TableHead>Completeness</TableHead>
                       <TableHead>IELTS</TableHead>
                       <TableHead>German</TableHead>
                       <TableHead>Fees (EUR)</TableHead>
+                      <TableHead>Start Date</TableHead>
                       <TableHead>End Date</TableHead>
                       <TableHead>Method</TableHead>
+                      <TableHead>Tests</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {applications.map((app) => (
                       <TableRow key={app.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => { setEditApp(app); setShowEditDialog(true); }}
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {app.portal_link ? (
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                asChild
+                                title="Open Portal"
+                              >
+                                <a 
+                                  href={app.portal_link.startsWith('http') ? app.portal_link : `https://${app.portal_link}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                disabled
+                                title="No portal link"
+                              >
+                                <ExternalLink className="h-4 w-4 opacity-30" />
+                              </Button>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => deleteApplication(app.id)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">{app.university_name}</TableCell>
                         <TableCell>{app.program_name}</TableCell>
-                        <TableCell>
-                          {isApplicationComplete(app) ? (
-                            <Badge variant="default" className="gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Complete
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              Draft
-                            </Badge>
-                          )}
-                        </TableCell>
                         <TableCell>{app.ielts_requirement || '-'}</TableCell>
                         <TableCell>{app.german_requirement || '-'}</TableCell>
                         <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
                         <TableCell>
+                          {app.start_date ? new Date(app.start_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell>
                           {app.end_date ? new Date(app.end_date).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell>{app.application_method || '-'}</TableCell>
+                        <TableCell>{app.required_tests || '-'}</TableCell>
                         <TableCell>
                           <Select 
                             value={app.status} 
@@ -667,35 +704,6 @@ const Applications = () => {
                               <SelectItem value="rejected">Rejected</SelectItem>
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            {app.portal_link && (
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                asChild
-                              >
-                                <a href={app.portal_link} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => deleteApplication(app.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(app)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
