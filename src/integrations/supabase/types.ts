@@ -782,6 +782,7 @@ export type Database = {
           admin_response: string | null
           created_at: string
           deliverable_url: string | null
+          deliverable_urls: string[] | null
           id: string
           payment_reference: string | null
           preferred_timeline: string | null
@@ -799,6 +800,7 @@ export type Database = {
           admin_response?: string | null
           created_at?: string
           deliverable_url?: string | null
+          deliverable_urls?: string[] | null
           id?: string
           payment_reference?: string | null
           preferred_timeline?: string | null
@@ -816,6 +818,7 @@ export type Database = {
           admin_response?: string | null
           created_at?: string
           deliverable_url?: string | null
+          deliverable_urls?: string[] | null
           id?: string
           payment_reference?: string | null
           preferred_timeline?: string | null

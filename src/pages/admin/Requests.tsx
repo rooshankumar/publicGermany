@@ -557,12 +557,21 @@ export default function Requests() {
                         onRemoveExisting={async (url) => {
                           try {
                             // Extract file path from URL to delete from storage
-                            const urlPath = url.split('/').slice(-2).join('/');
-                            await supabase.storage.from('documents').remove([urlPath]);
+                            // URL format: https://.../storage/v1/object/public/documents/service_requests/{id}/{filename}
+                            const urlParts = url.split('/documents/');
+                            if (urlParts.length < 2) {
+                              throw new Error('Invalid URL format');
+                            }
+                            const filePath = urlParts[1]; // This gives us: service_requests/{id}/{filename}
+                            
+                            const { error } = await supabase.storage.from('documents').remove([filePath]);
+                            if (error) throw error;
+                            
                             setExistingFiles(files => files.filter(f => f.url !== url));
                             toast({ title: 'File removed', description: 'File deleted successfully' });
-                          } catch (e) {
-                            toast({ title: 'Error', description: 'Failed to remove file', variant: 'destructive' });
+                          } catch (e: any) {
+                            console.error('Delete error:', e);
+                            toast({ title: 'Error', description: e.message || 'Failed to remove file', variant: 'destructive' });
                           }
                         }}
                       />
