@@ -569,7 +569,7 @@ const Services = () => {
       const { data, error } = await supabase
         .from('service_requests' as any)
         .select(`
-          id, user_id, service_type, service_price, service_currency, target_total_amount, target_currency, request_details, preferred_timeline, status, admin_response, created_at,
+          id, user_id, service_type, service_price, service_currency, target_total_amount, target_currency, request_details, preferred_timeline, status, admin_response, deliverable_urls, created_at,
           service_payments (
             id, amount, currency, status, paid_at
           )
