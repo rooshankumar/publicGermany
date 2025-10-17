@@ -8,23 +8,36 @@ interface ExcelTemplateProps {
 
 export function ExcelTemplate({ onDownload }: ExcelTemplateProps) {
   const downloadTemplate = () => {
-    // Template data structure with example and empty rows
+    // Template data structure with example rows
     const templateData = [
       {
-        university_name: 'TUM',
-        program_name: 'MSc Computer Science',
-        ielts_requirement: '6.5',
-        german_requirement: 'B2',
-        fees_eur: 500,
-        application_end_date: '2025-07-15',
+        university_name: 'TU Dortmund University',
+        program_name: 'M.Sc. Data Science',
+        ielts_requirement: 'B2',
+        german_requirement: 'NA',
+        fees_eur: 300,
+        application_end_date: '2025-01-15',
         application_method: 'Uni-assist',
-        required_tests: 'TestAS',
-        portal_link: 'https://example.com',
-        notes: 'Example application',
+        required_tests: 'Yes',
+        portal_link: 'https://my.uni-assist.de',
+        notes: 'Online self-assessment test required',
         status: 'draft'
       },
-      // Add a few empty rows for users to fill
-      ...Array(5).fill(null).map(() => ({
+      {
+        university_name: 'Trier University',
+        program_name: 'M.Sc. Data Science',
+        ielts_requirement: '6.0',
+        german_requirement: 'NA',
+        fees_eur: 380,
+        application_end_date: '2025-01-15',
+        application_method: 'Direct',
+        required_tests: 'NA',
+        portal_link: 'https://www.uni-trier.de',
+        notes: '',
+        status: 'draft'
+      },
+      // Add empty rows for users to fill
+      ...Array(10).fill(null).map(() => ({
         university_name: '',
         program_name: '',
         ielts_requirement: '',
