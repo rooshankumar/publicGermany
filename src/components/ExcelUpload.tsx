@@ -155,13 +155,27 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
                 if (dateRangeMatch) {
                   const [, startMonth, startDay, endMonth, endDay] = dateRangeMatch;
                   
+                  const startMonthNum = parseInt(monthMap[startMonth] || '01');
+                  const endMonthNum = parseInt(monthMap[endMonth] || '01');
+                  
+                  // Smart year detection based on current date
+                  const now = new Date();
+                  const currentYear = now.getFullYear();
+                  const currentMonth = now.getMonth() + 1; // 0-indexed, so add 1
+                  
+                  // Start date: if month is before current month, assume next year
+                  // Otherwise, use current year
+                  let startYear = startMonthNum < currentMonth ? currentYear + 1 : currentYear;
+                  
+                  // End date: if end month is before start month, it's next year after start
+                  // Otherwise, same year as start
+                  let endYear = endMonthNum < startMonthNum ? startYear + 1 : startYear;
+                  
                   // Parse start date
-                  const startMonthNum = monthMap[startMonth] || '01';
-                  startDate = `2025-${startMonthNum}-${startDay.padStart(2, '0')}`;
+                  startDate = `${startYear}-${startMonthNum.toString().padStart(2, '0')}-${startDay.padStart(2, '0')}`;
                   
                   // Parse end date
-                  const endMonthNum = monthMap[endMonth] || '01';
-                  endDate = `2025-${endMonthNum}-${endDay.padStart(2, '0')}`;
+                  endDate = `${endYear}-${endMonthNum.toString().padStart(2, '0')}-${endDay.padStart(2, '0')}`;
                 }
                 // Handle single date like "Nov 15", "Oct 31"
                 else {

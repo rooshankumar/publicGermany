@@ -693,10 +693,10 @@ const Applications = () => {
                         <TableCell>{app.german_requirement || '-'}</TableCell>
                         <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
                         <TableCell>
-                          {app.start_date ? new Date(app.start_date).toLocaleDateString() : '-'}
+                          {app.start_date ? new Date(app.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
                         </TableCell>
                         <TableCell>
-                          {app.end_date ? new Date(app.end_date).toLocaleDateString() : '-'}
+                          {app.end_date ? new Date(app.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
                         </TableCell>
                         <TableCell>{app.application_method || '-'}</TableCell>
                         <TableCell>{app.required_tests || '-'}</TableCell>
