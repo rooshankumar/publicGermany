@@ -229,6 +229,19 @@ const Services = () => {
     if (paymentContactQuery.data) setPaymentEmail(paymentContactQuery.data);
   }, [paymentContactQuery.data]);
 
+  // Mark Services page as viewed to clear badge
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      const key = `badge_seen_at:${user.id}:svcs`;
+      const suppressKey = `badge_suppress:${user.id}:svcs`;
+      localStorage.setItem(key, Date.now().toString());
+      localStorage.setItem(suppressKey, '1');
+    } catch (e) {
+      console.error('Failed to mark services as viewed:', e);
+    }
+  }, [user?.id]);
+
   // Minimal promo popups (once per session)
   const promoExpert = usePromoOncePerSession('expert-help', 6 * 60 * 60 * 1000);
   const promoPackages = usePromoOncePerSession('packages-push', 6 * 60 * 60 * 1000);

@@ -180,13 +180,14 @@ const Layout = ({ children }: LayoutProps) => {
           .in('status', ['submitted', 'interview']);
         setAppCount(aCount || 0);
 
-        // Services: new, in_review, payment_pending, in_progress
-        const { count: sCount } = await (supabase as any)
+        // Services: Show badge for completed requests updated after last view
+        const { data: svcData } = await (supabase as any)
           .from('service_requests')
-          .select('*', { count: 'exact', head: true })
+          .select('updated_at, status')
           .eq('user_id', profile.user_id)
-          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
-        setSvcCount(sCount || 0);
+          .eq('status', 'completed')
+          .gt('updated_at', new Date(seenSvcsAt || 0).toISOString());
+        setSvcCount(svcData?.length || 0);
       } catch {}
     };
 
