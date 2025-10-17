@@ -232,6 +232,26 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-md transition-shadow border-dashed">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Testing Links</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Link to="/applications" className="block text-sm text-primary hover:underline">
+                  → Student Applications Page
+                </Link>
+                <Link to="/services" className="block text-sm text-primary hover:underline">
+                  → Student Services Page
+                </Link>
+                <Link to="/dashboard" className="block text-sm text-primary hover:underline">
+                  → Student Dashboard
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

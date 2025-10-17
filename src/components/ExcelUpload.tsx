@@ -42,20 +42,42 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelData[];
 
-        // Transform data to match required format
-        const transformedData = jsonData.map((row: any) => ({
-          university_name: row.university_name || row.University || '',
-          program_name: row.program_name || row.Program || '',
-          ielts_requirement: row.ielts_requirement || row.IELTS || null,
-          german_requirement: row.german_requirement || row.German || null,
-          fees_eur: row.fees_eur || row.Fees ? Number(row.fees_eur || row.Fees) : null,
-          application_end_date: row.application_end_date || row.Deadline || row.end_date || null,
-          application_method: row.application_method || row.Application || null,
-          required_tests: row.required_tests || row.Test || null,
-          portal_link: row.portal_link || row['Portal Link'] || null,
-          notes: row.notes || row.NOTE || row.Notes || null,
-          status: (row.status as ExcelData['status']) || 'draft'
-        }));
+        // Transform data to match required format and filter out blank rows
+        const transformedData = jsonData
+          .map((row: any) => {
+            // Get university and program names
+            const uniName = (row.university_name || row.University || '').toString().trim();
+            const progName = (row.program_name || row.Program || '').toString().trim();
+            
+            return {
+              university_name: uniName,
+              program_name: progName,
+              ielts_requirement: row.ielts_requirement || row.IELTS || null,
+              german_requirement: row.german_requirement || row.German || null,
+              fees_eur: row.fees_eur || row.Fees ? Number(row.fees_eur || row.Fees) : null,
+              application_end_date: row.application_end_date || row.Deadline || row.end_date || null,
+              application_method: row.application_method || row.Application || null,
+              required_tests: row.required_tests || row.Test || null,
+              portal_link: row.portal_link || row['Portal Link'] || null,
+              notes: row.notes || row.NOTE || row.Notes || null,
+              status: (row.status as ExcelData['status']) || 'draft'
+            };
+          })
+          .filter(row => {
+            // Filter out completely blank rows or rows with only whitespace
+            const hasUni = row.university_name && row.university_name.length > 0;
+            const hasProg = row.program_name && row.program_name.length > 0;
+            return hasUni && hasProg;
+          }); // Filter out blank rows
+
+        if (transformedData.length === 0) {
+          toast({
+            title: 'No valid data',
+            description: 'Excel file must have university_name and program_name columns with data.',
+            variant: 'destructive'
+          });
+          return;
+        }
 
         setPreviewData(transformedData);
         setIsPreviewOpen(true);
