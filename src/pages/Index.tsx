@@ -148,21 +148,20 @@ function Navbar() {
         </div>
         
         {/* Desktop Navigation (show from lg and up). Only requested links */}
-        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
-          <a href="#features" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
-          <a href="#testimonials" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
-          <Link to="/services" onMouseEnter={prefetchServices} className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
-          <Link to="/help" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Help Center</Link>
-          <Link to="/resources" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
-          <Link to="/converter" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
-          <a href="#faq" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
-          <Link to="/contact" className="text-base font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
+        <div className="hidden lg:flex items-center gap-3 xl:gap-4">
+          <a href="#features" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
+          <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
+          <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
+          <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
+          <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
+          <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
+          <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
           <ThemeToggle variant="icon" />
-          <Button variant="outline" asChild>
-            <Link to="/auth" className="text-base">Sign In</Link>
+          <Button variant="outline" asChild className="text-sm px-3 py-1.5">
+            <Link to="/auth">Sign In</Link>
           </Button>
-          <Button asChild className="btn-cta">
-            <Link to="/auth" className="text-base">Get Started Free</Link>
+          <Button asChild className="btn-cta text-sm px-3 py-1.5">
+            <Link to="/auth">Get Started Free</Link>
           </Button>
         </div>
 
@@ -178,29 +177,28 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation (active below lg) */}
-      {isMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
-          <div className="px-4 py-3 space-y-3">
-            <a href="#features" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
-            <a href="#testimonials" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
-            <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
-            <Link to="/help" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Help Center</Link>
-            <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
-            <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
-            <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
-            <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
-            <div className="flex flex-col gap-2 pt-4">
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/auth" className="text-base">Sign In</Link>
-              </Button>
-              <Button asChild className="w-full btn-cta">
-                <Link to="/auth" className="text-base">Get Started Free</Link>
-              </Button>
+        {/* Mobile Navigation (active below lg) */}
+        {isMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
+            <div className="px-4 py-3 space-y-3">
+              <a href="#features" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
+              <a href="#testimonials" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
+              <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
+              <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
+              <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
+              <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
+              <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
+              <div className="flex flex-col gap-2 pt-4">
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/auth" className="text-base">Sign In</Link>
+                </Button>
+                <Button asChild className="w-full btn-cta">
+                  <Link to="/auth" className="text-base">Get Started Free</Link>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </nav>
   );
 }

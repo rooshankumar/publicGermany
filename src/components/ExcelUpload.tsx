@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Upload } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExcelData {
   university_name: string;
@@ -11,8 +12,11 @@ interface ExcelData {
   ielts_requirement: string | null;
   german_requirement: string | null;
   fees_eur: number | null;
-  end_date: string | null;
+  application_end_date: string | null;
   application_method: string | null;
+  required_tests: string | null;
+  portal_link: string | null;
+  notes: string | null;
   status: 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected';
 }
 
@@ -23,6 +27,7 @@ interface ExcelUploadProps {
 export function ExcelUpload({ onUpload }: ExcelUploadProps) {
   const [previewData, setPreviewData] = useState<ExcelData[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -38,14 +43,17 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelData[];
 
         // Transform data to match required format
-        const transformedData = jsonData.map(row => ({
-          university_name: row.university_name || '',
-          program_name: row.program_name || '',
-          ielts_requirement: row.ielts_requirement || null,
-          german_requirement: row.german_requirement || null,
-          fees_eur: row.fees_eur ? Number(row.fees_eur) : null,
-          end_date: row.end_date || null,
-          application_method: row.application_method || null,
+        const transformedData = jsonData.map((row: any) => ({
+          university_name: row.university_name || row.University || '',
+          program_name: row.program_name || row.Program || '',
+          ielts_requirement: row.ielts_requirement || row.IELTS || null,
+          german_requirement: row.german_requirement || row.German || null,
+          fees_eur: row.fees_eur || row.Fees ? Number(row.fees_eur || row.Fees) : null,
+          application_end_date: row.application_end_date || row.Deadline || row.end_date || null,
+          application_method: row.application_method || row.Application || null,
+          required_tests: row.required_tests || row.Test || null,
+          portal_link: row.portal_link || row['Portal Link'] || null,
+          notes: row.notes || row.NOTE || row.Notes || null,
           status: (row.status as ExcelData['status']) || 'draft'
         }));
 
@@ -53,6 +61,11 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
         setIsPreviewOpen(true);
       } catch (error) {
         console.error('Error parsing Excel file:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to parse Excel file. Please check the format.',
+          variant: 'destructive'
+        });
       }
     };
     reader.readAsBinaryString(file);
@@ -94,8 +107,9 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
                   <TableHead>IELTS</TableHead>
                   <TableHead>German</TableHead>
                   <TableHead>Fees (EUR)</TableHead>
-                  <TableHead>End Date</TableHead>
+                  <TableHead>Deadline</TableHead>
                   <TableHead>Method</TableHead>
+                  <TableHead>Tests</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -107,8 +121,9 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
                     <TableCell>{row.ielts_requirement || '-'}</TableCell>
                     <TableCell>{row.german_requirement || '-'}</TableCell>
                     <TableCell>{row.fees_eur || '-'}</TableCell>
-                    <TableCell>{row.end_date || '-'}</TableCell>
+                    <TableCell>{row.application_end_date || '-'}</TableCell>
                     <TableCell>{row.application_method || '-'}</TableCell>
+                    <TableCell>{row.required_tests || '-'}</TableCell>
                     <TableCell>{row.status}</TableCell>
                   </TableRow>
                 ))}

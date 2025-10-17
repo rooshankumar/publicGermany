@@ -10,7 +10,7 @@ import logos from '@/assets/logos.png';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
-import { Shield } from 'lucide-react';
+import { Shield, ArrowLeft } from 'lucide-react';
 
 const Converter = () => {
   const { profile } = useAuth();
@@ -202,6 +202,18 @@ const Converter = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
 import { ExcelUpload } from '@/components/ExcelUpload';
+import { ExcelTemplate } from '@/components/ExcelTemplate';
 
 interface Application {
   id: string;
@@ -58,8 +59,11 @@ const Applications = () => {
         ielts_requirement: row.ielts_requirement,
         german_requirement: row.german_requirement,
         fees_eur: row.fees_eur,
-        end_date: row.end_date,
+        application_end_date: row.application_end_date,
         application_method: row.application_method,
+        required_tests: row.required_tests,
+        portal_link: row.portal_link,
+        notes: row.notes,
         status: row.status || 'draft'
       }));
 
@@ -371,7 +375,22 @@ const Applications = () => {
           </div>
           
           <div className="space-y-3">
+            
+            {/* Import Tips */}
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Import Tips:</h4>
+              <ul className="text-blue-800 dark:text-blue-200 space-y-1 text-xs">
+                <li>• Download our template first to see the expected format</li>
+                <li>• Required columns: university_name, program_name</li>
+                <li>• Optional: ielts_requirement, german_requirement, fees_eur, application_end_date, application_method, required_tests, portal_link, notes</li>
+                <li>• Status values: draft, submitted, interview, offer, rejected (defaults to draft)</li>
+                <li>• Import from Database uses pre-loaded university data from our system</li>
+              </ul>
+            </div>
+
             <div className="flex gap-2 flex-wrap">
+              <ExcelTemplate />
+              <ExcelUpload onUpload={handleExcelUpload} />
               <Button 
                 variant="secondary" 
                 onClick={handleImportUniversities}
@@ -389,7 +408,6 @@ const Applications = () => {
                   </>
                 )}
               </Button>
-              <ExcelUpload onUpload={handleExcelUpload} />
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogTrigger asChild>
                   <Button>
