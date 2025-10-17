@@ -35,19 +35,43 @@ interface ServiceRequest {
   preferred_timeline: string | null;
   status: 'new' | 'in_review' | 'payment_pending' | 'in_progress' | 'completed';
   admin_response?: string | null;
+  deliverable_urls?: string[] | null;
   created_at: string;
 }
 
-const getDeliverableUrl = (req: ServiceRequest) => {
+// Get all deliverable URLs from the request
+const getAllDeliverableUrls = (req: ServiceRequest): string[] => {
   const anyReq = req as any;
+  const urls: string[] = [];
+  
+  // First priority: deliverable_urls array (new system)
+  if (anyReq.deliverable_urls && Array.isArray(anyReq.deliverable_urls)) {
+    urls.push(...anyReq.deliverable_urls);
+  }
+  
+  // Second priority: single deliverable_url (backward compatibility)
   if (anyReq.deliverable_url && typeof anyReq.deliverable_url === 'string') {
-    return anyReq.deliverable_url as string;
+    if (!urls.includes(anyReq.deliverable_url)) {
+      urls.push(anyReq.deliverable_url);
+    }
   }
+  
+  // Third priority: URLs in admin response (legacy)
   if (req.admin_response && req.admin_response.includes('http')) {
-    const match = req.admin_response.match(/https?:[^\s)]+/i);
-    if (match) return match[0];
+    const matches = req.admin_response.match(/https?:[^\s)]+/gi) || [];
+    matches.forEach(url => {
+      if (!urls.includes(url)) {
+        urls.push(url);
+      }
+    });
   }
-  return null;
+  
+  return urls;
+};
+
+const getDeliverableUrl = (req: ServiceRequest) => {
+  const urls = getAllDeliverableUrls(req);
+  return urls.length > 0 ? urls[0] : null;
 };
 
 // Manually discover deliverable for a single request
@@ -1183,11 +1207,13 @@ const Services = () => {
                              <span className="text-sm font-medium">Delivered</span>
                            </div>
                            {(() => {
-                             // Get all deliverable URLs from admin response
-                             const response = request.admin_response || '';
-                             const urls = response.match(/https?:[^\s)]+/gi) || [];
-                             const primaryUrl = getDeliverableUrl(request) || deliverables[request.id];
-                             const allUrls = primaryUrl ? [primaryUrl, ...urls.filter(u => u !== primaryUrl)] : urls;
+                             // Get all deliverable URLs from the database array
+                             const allUrls = getAllDeliverableUrls(request);
+                             
+                             // Add any discovered URLs from storage
+                             if (deliverables[request.id] && !allUrls.includes(deliverables[request.id])) {
+                               allUrls.push(deliverables[request.id]);
+                             }
                              
                              if (allUrls.length === 0) {
                                return (
@@ -1226,7 +1252,7 @@ const Services = () => {
                        )}
 
                       {/* Fallback: allow user to check storage for deliverable if completed but no link */}
-                      {request.status === 'completed' && !(getDeliverableUrl(request) || deliverables[request.id]) && (
+                      {request.status === 'completed' && getAllDeliverableUrls(request).length === 0 && !deliverables[request.id] && (
                         <div className="mt-2">
                           <Button size="sm" variant="outline" onClick={() => discoverDeliverableFor(request, setDeliverables, toast)}>
                             Check Deliverable

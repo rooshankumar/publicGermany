@@ -162,10 +162,33 @@ export default function Requests() {
       const updates: any = { status };
       if (response) updates.admin_response = response;
       
-      // Store deliverable URLs in the database but don't include them in the admin response
-      if (uploadedUrls.length > 0) {
-        updates.deliverable_urls = uploadedUrls; // Store all URLs
-        (updates as any).deliverable_url = uploadedUrls[0]; // Keep for backward compatibility
+      // Get all existing files from storage to save complete list
+      let allFileUrls: string[] = [...uploadedUrls];
+      if (selectedRequest) {
+        try {
+          const { data: storageFiles } = await supabase.storage
+            .from('documents')
+            .list(`service_requests/${selectedRequest.id}`, { limit: 20 });
+          
+          if (storageFiles && storageFiles.length > 0) {
+            const existingUrls = storageFiles.map(file => {
+              const { data: publicUrl } = supabase.storage
+                .from('documents')
+                .getPublicUrl(`service_requests/${selectedRequest.id}/${file.name}`);
+              return publicUrl.publicUrl;
+            });
+            // Combine new uploads with existing files, remove duplicates
+            allFileUrls = [...new Set([...uploadedUrls, ...existingUrls])];
+          }
+        } catch (e) {
+          console.error('Error fetching files for database update:', e);
+        }
+      }
+      
+      // Store ALL deliverable URLs in the database
+      if (allFileUrls.length > 0) {
+        updates.deliverable_urls = allFileUrls; // Store all URLs as array
+        updates.deliverable_url = allFileUrls[0]; // Keep first one for backward compatibility
       }
 
       console.log('💾 Updating service request with:', updates);
@@ -230,10 +253,13 @@ export default function Requests() {
           }
 
           const lines: string[] = [];
-          const prettyStatus = (status || '').replace('_', ' ');
+          const prettyStatus = (status || '').replace(/_/g, ' ');
           const studentName = (req as any)?.profiles?.full_name || '';
-          lines.push(`<p>Hi ${studentName || 'there'},</p>`);
-          lines.push(`<p>Your service request <strong>${req?.service_type || ''}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
+          const serviceType = (req?.service_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          
+          // Simple email template
+          lines.push(`<p>Hi ${studentName},</p>`);
+          lines.push(`<p>Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
           
           if (response) {
             // Remove any Supabase storage URLs from the admin response
@@ -247,56 +273,13 @@ export default function Requests() {
           
           // Send document links if status is completed AND there are any deliverable files (new or existing)
           if (status === 'completed' && allDeliverableUrls.length > 0) {
-            const baseUrl = `${process.env.VITE_APP_URL || window.location.origin}`;
-            const styles = {
-              button: 'display:inline-block;padding:12px 20px;background:#0066CC;color:#ffffff;text-decoration:none;border-radius:6px;margin:8px 0;text-align:center;font-weight:500;box-shadow:0 2px 4px rgba(0,0,0,0.1);width:100%;box-sizing:border-box;',
-              container: 'margin:24px 0;padding:20px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;',
-              heading: 'margin:0 0 16px 0;color:#1a1a1a;font-size:16px;font-weight:500;',
-              fileContainer: 'display:flex;flex-direction:column;gap:12px;',
-              notice: 'margin-top:20px;padding:12px;background:#e7f5ff;border-radius:6px;border:1px solid #74c0fc;color:#1864ab;font-size:14px;'
-            };
-
-            lines.push(`<div style="${styles.container}">`);
-            lines.push(`<h3 style="${styles.heading}">📎 Your documents are ready</h3>`);
-            lines.push(`<div style="${styles.fileContainer}">`);
-            
-            // Add secure download buttons for each file
-            allDeliverableUrls.forEach((url, index) => {
-              const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `Document ${index + 1}`;
-              const secureDownloadUrl = `${baseUrl}/api/download?requestId=${requestId}&fileIndex=${index}`;
-              
-              lines.push(`
-                <a href="${secureDownloadUrl}" 
-                   style="${styles.button}"
-                   target="_blank">
-                  📥 Download ${fileName}
-                </a>
-              `);
-            });
-            
-            lines.push(`</div>`);
-            
-            // Add security notice and dashboard backup
-            lines.push(`
-              <div style="${styles.notice}">
-                <p style="margin:0 0 8px 0;">
-                  🔒 For your security:
-                  <br>• Download links require authentication
-                  <br>• Links expire after 24 hours for safety
-                </p>
-                <p style="margin:0;">
-                  You can always access your documents from your 
-                  <a href="${baseUrl}/dashboard" 
-                     style="color:#0066CC;font-weight:500;text-decoration:underline;">
-                    dashboard
-                  </a>
-                </p>
-              </div>
-            </div>
-            `);
+            const baseUrl = 'https://publicgermany.vercel.app';
+            lines.push(`<p><strong>Your documents are ready!</strong><br/>`);
+            lines.push(`Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.</p>`);
           }
           
           lines.push(`<p>— publicGermany Team</p>`);
+          
           console.log('📧 Sending email to:', to, 'with', lines.length, 'lines');
           await sendEmail(to, 'Service request update', lines.join('\n'));
           console.log('✅ Email sent successfully');
