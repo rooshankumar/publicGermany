@@ -27,6 +27,9 @@ export async function sendDeadlineReminders() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    console.log('🔔 Starting deadline reminder check at:', new Date().toISOString());
+    console.log('📅 Today (local):', today.toISOString().split('T')[0]);
+
     // Calculate reminder dates
     const reminderDays = [14, 7, 3, 2, 1]; // 2 weeks, 1 week, 3 days, 2 days, 1 day
     const reminderDates = reminderDays.map(days => {
@@ -35,7 +38,7 @@ export async function sendDeadlineReminders() {
       return date.toISOString().split('T')[0];
     });
 
-    console.log('🔔 Checking deadlines for:', reminderDates);
+    console.log('🔔 Checking deadlines for dates:', reminderDates);
 
     // Get all applications with deadlines matching reminder dates
     const { data: applications, error: appsError } = await supabase
@@ -51,10 +54,16 @@ export async function sendDeadlineReminders() {
 
     if (!applications || applications.length === 0) {
       console.log('✅ No deadlines to remind today');
+      console.log('ℹ️  Checked dates:', reminderDates);
       return;
     }
 
     console.log(`📧 Found ${applications.length} applications with upcoming deadlines`);
+    console.log('📋 Applications:', applications.map(a => ({
+      university: a.university_name,
+      deadline: a.end_date,
+      user_id: a.user_id
+    })));
 
     // Group applications by user
     const userApplications = new Map<string, Application[]>();
@@ -75,32 +84,51 @@ export async function sendDeadlineReminders() {
       .in('user_id', userIds);
 
     if (profilesError || !profiles) {
-      console.error('Error fetching profiles:', profilesError);
+      console.error('❌ Error fetching profiles:', profilesError);
       return;
     }
+
+    console.log(`👥 Found ${profiles.length} user profiles`);
 
     // Get auth users to get emails
     const profilesWithEmails: UserProfile[] = [];
     for (const profile of profiles) {
-      const { data: authData } = await supabase.auth.admin.getUserById(profile.user_id);
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
+      if (authError) {
+        console.error(`❌ Error fetching auth data for user ${profile.user_id}:`, authError);
+        continue;
+      }
       if (authData?.user?.email) {
         profilesWithEmails.push({
           user_id: profile.user_id,
           email: authData.user.email,
           full_name: profile.full_name || 'Student'
         });
+        console.log(`✅ Found email for user ${profile.user_id}: ${authData.user.email}`);
+      } else {
+        console.warn(`⚠️  No email found for user ${profile.user_id}`);
       }
     }
 
     // Send emails to each user
+    console.log(`📤 Sending emails to ${profilesWithEmails.length} users...`);
+    let successCount = 0;
+    let failCount = 0;
+    
     for (const profile of profilesWithEmails) {
       const apps = userApplications.get(profile.user_id);
       if (!apps) continue;
 
-      await sendDeadlineReminderEmail(profile, apps, today);
+      try {
+        await sendDeadlineReminderEmail(profile, apps, today);
+        successCount++;
+      } catch (error) {
+        console.error(`❌ Failed to send email to ${profile.email}:`, error);
+        failCount++;
+      }
     }
 
-    console.log('✅ Deadline reminders sent successfully');
+    console.log(`✅ Deadline reminders completed: ${successCount} sent, ${failCount} failed`);
   } catch (error) {
     console.error('❌ Error sending deadline reminders:', error);
   }

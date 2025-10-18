@@ -16,12 +16,22 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            storeFile file("D:/Roshan/my-germany-path/publicgermany.keystore")
+            storePassword "@Riddle123"
+            keyAlias "publicgermany"
+            keyPassword "@Riddle123"
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    setProperty("archivesBaseName", "publicgermany")
 }
 
 repositories {

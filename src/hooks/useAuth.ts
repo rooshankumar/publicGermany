@@ -253,9 +253,15 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Always redirect back to our dedicated OAuth callback route
-      // Supabase will append the authorization code or tokens which we handle there
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      // Detect if running in Capacitor (mobile app)
+      const isCapacitor = window.location.protocol === 'capacitor:' || 
+                         window.location.protocol === 'ionic:' ||
+                         (window as any).Capacitor !== undefined;
+      
+      // Use custom scheme for mobile, web URL for browser
+      const redirectUrl = isCapacitor 
+        ? 'com.publicgermany.app://auth/callback'
+        : `${window.location.origin}/auth/callback`;
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
