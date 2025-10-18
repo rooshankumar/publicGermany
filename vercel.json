@@ -5,8 +5,7 @@
   "crons": [
     {
       "path": "/api/cron/deadline-reminders",
-      "schedule": "40 11 * * *",
-      "comment": "TEST: Runs at 11:40 AM UTC = 5:10 PM IST (for testing only)"
+      "schedule": "40 11 * * *"
     }
   ]
 }
