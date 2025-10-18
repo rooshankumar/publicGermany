@@ -10,9 +10,14 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Temporarily disabled auth for testing
-  // TODO: Re-enable auth after testing
-  console.log('⚠️ WARNING: Auth temporarily disabled for testing');
+  // Only allow in development or with secret key
+  const isDev = process.env.NODE_ENV === 'development';
+  const testSecret = process.env.TEST_SECRET || 'test-secret-123';
+  const authHeader = req.headers.authorization;
+
+  if (!isDev && authHeader !== `Bearer ${testSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized - Use Bearer token or run in development' });
+  }
 
   try {
     // Import the deadline reminders function
