@@ -20,21 +20,21 @@ export async function sendDeadlineReminders() {
     console.log('🔔 Starting deadline reminder check at:', new Date().toISOString());
     console.log('📅 Today (local):', today.toISOString().split('T')[0]);
 
-    // Calculate reminder dates
-    const reminderDays = [14, 7, 3, 2, 1]; // 2 weeks, 1 week, 3 days, 2 days, 1 day
-    const reminderDates = reminderDays.map(days => {
+    // Calculate reminder dates for deadlines (end_date)
+    const deadlineReminderDays = [30, 14, 7, 3, 2, 1]; // 30 days, 2 weeks, 1 week, 3 days, 2 days, 1 day
+    const deadlineReminderDates = deadlineReminderDays.map(days => {
       const date = new Date(today);
       date.setDate(date.getDate() + days);
       return date.toISOString().split('T')[0];
     });
 
-    console.log('🔔 Checking deadlines for dates:', reminderDates);
+    console.log('🔔 Checking deadlines for dates:', deadlineReminderDates);
 
     // Get all applications with deadlines matching reminder dates
     const { data: applications, error: appsError } = await supabase
       .from('applications')
       .select('id, user_id, university_name, program_name, end_date, start_date, application_method, portal_link')
-      .in('end_date', reminderDates)
+      .in('end_date', deadlineReminderDates)
       .in('status', ['draft', 'submitted']); // Only remind for active applications
 
     if (appsError) {
@@ -44,7 +44,7 @@ export async function sendDeadlineReminders() {
 
     if (!applications || applications.length === 0) {
       console.log('✅ No deadlines to remind today');
-      console.log('ℹ️  Checked dates:', reminderDates);
+      console.log('ℹ️  Checked dates:', deadlineReminderDates);
       return;
     }
 

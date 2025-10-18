@@ -25,7 +25,7 @@ export default async function handler(
       success: true, 
       message: 'Test completed! Check your email and server logs.',
       timestamp: new Date().toISOString(),
-      note: 'Emails sent for deadlines in 14, 7, 3, 2, or 1 days from today'
+      note: 'Emails sent for deadlines in 30, 14, 7, 3, 2, or 1 days from today'
     });
   } catch (error: any) {
     console.error('Error in test endpoint:', error);
