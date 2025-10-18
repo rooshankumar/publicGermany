@@ -16,7 +16,7 @@ export default async function handler(
 
   try {
     // Import the deadline reminders function
-    const { sendDeadlineReminders } = await import('../src/lib/deadlineReminders');
+    const { sendDeadlineReminders } = await import('./lib/deadlineReminders');
     
     console.log('🧪 Manual test: Sending deadline reminders...');
     await sendDeadlineReminders();
