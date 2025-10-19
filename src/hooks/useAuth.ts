@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sendEmail } from '@/lib/sendEmail';
-import { signInWithGoogleNative, initializeGoogleAuth } from '@/lib/nativeGoogleAuth';
 
 export interface Document {
   id: string;
@@ -131,9 +130,6 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Initialize Google Auth for native platforms
-    initializeGoogleAuth();
-
     // 0) Hydrate cached profile to render app shell immediately
     try {
       const cached = localStorage.getItem('pg_profile');
@@ -257,11 +253,17 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const { data, error } = await signInWithGoogleNative();
+      // Web OAuth flow for browser
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
       
       if (error) {
         setLoading(false);
-        return { error };
+        return { error: error.message };
       }
       
       // Don't set loading to false here - auth state change will handle it
