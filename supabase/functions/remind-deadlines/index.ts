@@ -46,8 +46,8 @@ serve(async (_req: Request) => {
     const deadlines = targets.map(t => t.isoDate);
     const { data: apps, error: appsErr } = await supabase
       .from('applications')
-      .select(`id, user_id, university_name, program_name, application_end_date, status, profiles!applications_user_id_fkey(full_name)`)
-      .in('application_end_date', deadlines);
+      .select(`id, user_id, university_name, program_name, end_date, status, profiles!applications_user_id_fkey(full_name)`)
+      .in('end_date', deadlines);
     if (appsErr) throw appsErr;
 
     if (!apps || apps.length === 0) return json({ ok: true, processed: 0, sent: 0 });
@@ -73,7 +73,7 @@ serve(async (_req: Request) => {
     let sent = 0;
 
     for (const app of apps as any[]) {
-      const deadlineISO = new Date(app.application_end_date).toISOString().slice(0, 10);
+      const deadlineISO = new Date(app.end_date).toISOString().slice(0, 10);
       const target = targets.find(t => t.isoDate === deadlineISO);
       if (!target) continue;
 
@@ -89,7 +89,7 @@ serve(async (_req: Request) => {
         `<p>Hi ${app.profiles?.full_name || ''},</p>`,
         `<p>This is a friendly reminder that the deadline for <strong>${app.university_name}</strong>` +
           (app.program_name ? ` — <em>${app.program_name}</em>` : '') + ` is in <strong>${target.days} day${target.days === 1 ? '' : 's'}</strong>.</p>`,
-        `<p>Deadline: ${new Date(app.application_end_date).toLocaleDateString()}</p>`,
+        `<p>Deadline: ${new Date(app.end_date).toLocaleDateString()}</p>`,
         `<p>Current status: <strong>${String(app.status || 'draft').replace('_',' ')}</strong></p>`,
         `<p>Please make sure your documents and application are complete on time.</p>`,
         `<p>— publicGermany Team</p>`

@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { ExcelTemplate } from '@/components/ExcelTemplate';
+import { sendEmail } from '@/lib/sendEmail';
 
 interface Application {
   id: string;

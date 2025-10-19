@@ -5,10 +5,14 @@ const config: CapacitorConfig = {
   appName: 'publicGermany',
   webDir: 'dist',
   server: {
-    url: 'https://publicgermany.vercel.app',
-    cleartext: true
+    androidScheme: 'https'
   },
   plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#ffffff',
