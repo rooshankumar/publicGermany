@@ -8,13 +8,15 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Verify cron secret to prevent unauthorized access
+  // Allow Vercel Cron (User-Agent: vercel-cron/1.0) or Bearer token
+  const userAgent = String(req.headers['user-agent'] || '');
+  const isVercelCron = userAgent.includes('vercel-cron');
   const cronSecret = process.env.CRON_SECRET || '';
   const authHeader = req.headers.authorization;
-  const isVercelCron = Boolean((req.headers as any)['x-vercel-cron']);
+  const hasValidToken = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  if (!(isVercelCron || (cronSecret && authHeader === `Bearer ${cronSecret}`))) {
-    return res.status(401).json({ error: 'Unauthorized - missing x-vercel-cron or valid Authorization' });
+  if (!(isVercelCron || hasValidToken)) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
