@@ -1,0 +1,9 @@
+{
+  "project_id": "rzbnrlfujjxyrypbafdp",
+  "functions": [
+    {
+      "slug": "remind-deadlines",
+      "schedule": "20 6 * * *"
+    }
+  ]
+}

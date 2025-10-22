@@ -33,6 +33,9 @@ serve(async (_req: Request) => {
 
     // Compute target dates
     const today = new Date();
+    console.log(`📅 Today (UTC): ${today.toISOString()}`);
+    console.log(`📅 Today (date only): ${today.toISOString().split('T')[0]}`);
+    
     const targets = dayOffsets.map((d) => {
       const t = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
       t.setUTCDate(t.getUTCDate() + d);
@@ -42,6 +45,8 @@ serve(async (_req: Request) => {
       const dd = String(t.getUTCDate()).padStart(2, '0');
       return { days: d, isoDate: `${yyyy}-${mm}-${dd}` };
     });
+    
+    console.log(`🎯 Target dates for reminders:`, targets.map(t => `${t.days} days: ${t.isoDate}`).join(' | '));
 
     // Fetch applications with deadlines on target dates
     const deadlines = targets.map(t => t.isoDate);
@@ -51,7 +56,22 @@ serve(async (_req: Request) => {
       .in('end_date', deadlines);
     if (appsErr) throw appsErr;
 
-    if (!apps || apps.length === 0) return json({ ok: true, processed: 0, sent: 0 });
+    console.log(`📊 Query results: Found ${apps?.length || 0} applications with matching deadlines`);
+    if (apps && apps.length > 0) {
+      console.log(`📋 Applications found:`, apps.map((a: any) => ({
+        id: a.id,
+        university: a.university_name,
+        program: a.program_name,
+        deadline: a.end_date,
+        status: a.status,
+        studentName: a.profiles?.full_name
+      })));
+    }
+
+    if (!apps || apps.length === 0) {
+      console.log(`✅ No applications found for target dates. Exiting.`);
+      return json({ ok: true, processed: 0, sent: 0 });
+    }
 
     // Fetch already sent reminders
     const { data: sentRows } = await supabase
@@ -107,6 +127,7 @@ serve(async (_req: Request) => {
 
       // Send via Brevo HTTP API
       attempted++;
+      console.log(`📧 Sending email to ${to} for ${app.university_name}...`);
       const brevoRes = await fetch(BREVO_API_URL, {
         method: 'POST',
         headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
@@ -120,6 +141,10 @@ serve(async (_req: Request) => {
 
       // Log and record reminder
       const brevoJson = await brevoRes.json().catch(() => ({}));
+      console.log(`📬 Brevo response: ${brevoRes.status} ${brevoRes.statusText}`, brevoRes.ok ? '✅ Success' : '❌ Failed');
+      if (!brevoRes.ok) {
+        console.error(`   Error details:`, brevoJson);
+      }
 
       try {
         await supabase.from('emails_log').insert({
