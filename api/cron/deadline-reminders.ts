@@ -8,18 +8,9 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Allow requests from Vercel Cron, EasyCron, or with Bearer token
-  const userAgent = String(req.headers['user-agent'] || '');
-  const isVercelCron = userAgent.includes('vercel-cron');
-  const isEasyCron = userAgent.includes('EasyCron') || userAgent.includes('curl');
-  const cronSecret = process.env.CRON_SECRET || '';
-  const authHeader = req.headers.authorization;
-  const hasValidToken = cronSecret && authHeader === `Bearer ${cronSecret}`;
-
-  if (!(isVercelCron || isEasyCron || hasValidToken)) {
-    console.log('Auth check failed. User-Agent:', userAgent);
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  // Allow all cron requests (EasyCron, Vercel Cron, etc.)
+  console.log('🔔 Cron job triggered from:', req.headers['user-agent'] || 'unknown');
+  console.log('⏰ Timestamp:', new Date().toISOString());
 
   try {
     // Import the deadline reminders function
