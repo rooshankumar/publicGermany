@@ -9,11 +9,12 @@ export default async function handler(
   res: VercelResponse
 ) {
   // Verify cron secret to prevent unauthorized access
-  const cronSecret = process.env.CRON_SECRET || 'your-secret-key';
+  const cronSecret = process.env.CRON_SECRET || '';
   const authHeader = req.headers.authorization;
+  const isVercelCron = Boolean((req.headers as any)['x-vercel-cron']);
 
-  if (authHeader !== `Bearer ${cronSecret}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!(isVercelCron || (cronSecret && authHeader === `Bearer ${cronSecret}`))) {
+    return res.status(401).json({ error: 'Unauthorized - missing x-vercel-cron or valid Authorization' });
   }
 
   try {

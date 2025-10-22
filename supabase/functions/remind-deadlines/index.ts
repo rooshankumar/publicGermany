@@ -58,12 +58,12 @@ serve(async (_req: Request) => {
       .select('application_id, day_offset');
     const sentSet = new Set((sentRows || []).map(r => `${r.application_id}:${r.day_offset}`));
 
-    // Helper to resolve student email via RPC (safer than auth.users join here)
     const resolveEmail = async (userId: string): Promise<string | null> => {
       try {
-        const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: userId });
+        const { data, error } = await (supabase as any).auth.admin.getUserById(userId);
         if (error) return null;
-        return (data as string) || null;
+        const email = (data as any)?.user?.email || null;
+        return email;
       } catch {
         return null;
       }
