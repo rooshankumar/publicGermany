@@ -19,6 +19,7 @@ const dayOffsets = [7, 3, 1];
 
 serve(async (_req: Request) => {
   try {
+    console.log('🔔 [remind-deadlines] Starting deadline reminder check at:', new Date().toISOString());
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const apiKey = Deno.env.get("BREVO_API_KEY");
@@ -61,10 +62,19 @@ serve(async (_req: Request) => {
     const resolveEmail = async (userId: string): Promise<string | null> => {
       try {
         const { data, error } = await (supabase as any).auth.admin.getUserById(userId);
-        if (error) return null;
+        if (error) {
+          console.error(`❌ Failed to get user ${userId}:`, error.message);
+          return null;
+        }
         const email = (data as any)?.user?.email || null;
+        if (email) {
+          console.log(`✅ Resolved email for ${userId}: ${email}`);
+        } else {
+          console.warn(`⚠️ No email found for user ${userId}`);
+        }
         return email;
-      } catch {
+      } catch (err) {
+        console.error(`❌ Exception resolving email for ${userId}:`, err);
         return null;
       }
     };
@@ -134,8 +144,10 @@ serve(async (_req: Request) => {
       }
     }
 
+    console.log(`✅ [remind-deadlines] Completed: ${attempted} attempted, ${sent} sent`);
     return json({ ok: true, processed: attempted, sent });
   } catch (e) {
+    console.error('❌ [remind-deadlines] Error:', String(e));
     return json({ error: String(e) }, 500);
   }
 });
