@@ -3,7 +3,7 @@
   "functions": [
     {
       "slug": "remind-deadlines",
-      "schedule": "33 6 * * *"
+      "schedule": "6 7 * * *"
     }
   ]
 }

@@ -17,17 +17,27 @@ function json(body: unknown, status = 200) {
 
 const dayOffsets = [7, 3, 1];
 
-serve(async (_req: Request) => {
+serve(async (req: Request) => {
   try {
+    // Check API key from query parameter or header
+    const url = new URL(req.url);
+    const apiKey = url.searchParams.get('key') || req.headers.get('x-api-key');
+    const expectedKey = Deno.env.get('CRON_API_KEY');
+    
+    if (apiKey !== expectedKey) {
+      console.error('❌ Invalid or missing API key');
+      return json({ error: 'Unauthorized - Invalid API key' }, 401);
+    }
+    
     console.log('🔔 [remind-deadlines] Starting deadline reminder check at:', new Date().toISOString());
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const apiKey = Deno.env.get("BREVO_API_KEY");
+    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     const fromEmail = Deno.env.get("FROM_EMAIL");
     const fromName = Deno.env.get("FROM_NAME") || "publicGermany";
 
     if (!supabaseUrl || !serviceRole) return json({ error: "Missing SUPABASE_URL or SERVICE_ROLE" }, 500);
-    if (!apiKey || !fromEmail) return json({ error: "Missing BREVO_API_KEY or FROM_EMAIL" }, 500);
+    if (!brevoApiKey || !fromEmail) return json({ error: "Missing BREVO_API_KEY or FROM_EMAIL" }, 500);
 
     const supabase = createClient(supabaseUrl, serviceRole);
 
@@ -142,7 +152,7 @@ serve(async (_req: Request) => {
       console.log(`📧 Sending email to ${to} for ${app.university_name}...`);
       const brevoRes = await fetch(BREVO_API_URL, {
         method: 'POST',
-        headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
+        headers: { 'api-key': brevoApiKey, 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({
           sender: { email: fromEmail, name: fromName },
           to: [{ email: to }],
