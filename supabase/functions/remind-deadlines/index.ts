@@ -103,15 +103,27 @@ serve(async (_req: Request) => {
     let sent = 0;
 
     for (const app of apps as any[]) {
+      console.log(`\n📌 Processing application: ${app.university_name}`);
       const deadlineISO = new Date(app.end_date).toISOString().slice(0, 10);
       const target = targets.find(t => t.isoDate === deadlineISO);
-      if (!target) continue;
+      if (!target) {
+        console.log(`   ⏭️ Skipped: No matching target date`);
+        continue;
+      }
 
       const key = `${app.id}:${target.days}`;
-      if (sentSet.has(key)) continue; // already sent this offset
+      if (sentSet.has(key)) {
+        console.log(`   ⏭️ Skipped: Reminder already sent for ${target.days}-day offset`);
+        continue;
+      }
 
+      console.log(`   🔍 Resolving email for user ${app.user_id}...`);
       const to = await resolveEmail(app.user_id);
-      if (!to) continue;
+      if (!to) {
+        console.log(`   ⏭️ Skipped: Could not resolve email address`);
+        continue;
+      }
+      console.log(`   ✅ Email resolved: ${to}`);
 
       // Compose email
       const subject = `Reminder: ${app.university_name} deadline in ${target.days} day${target.days === 1 ? '' : 's'}`;
