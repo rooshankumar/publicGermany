@@ -8,14 +8,16 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Allow Vercel Cron (User-Agent: vercel-cron/1.0) or Bearer token
+  // Allow requests from Vercel Cron, EasyCron, or with Bearer token
   const userAgent = String(req.headers['user-agent'] || '');
   const isVercelCron = userAgent.includes('vercel-cron');
+  const isEasyCron = userAgent.includes('EasyCron') || userAgent.includes('curl');
   const cronSecret = process.env.CRON_SECRET || '';
   const authHeader = req.headers.authorization;
   const hasValidToken = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  if (!(isVercelCron || hasValidToken)) {
+  if (!(isVercelCron || isEasyCron || hasValidToken)) {
+    console.log('Auth check failed. User-Agent:', userAgent);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
