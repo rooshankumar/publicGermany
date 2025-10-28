@@ -111,6 +111,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (profile) {
+      console.log('Loading profile data:', profile);
       setFormData({
         full_name: profile.full_name || '',
         date_of_birth: profile.date_of_birth || '',
@@ -195,12 +196,13 @@ const Profile = () => {
 
       if (error) throw error;
 
+      // Refetch profile to get updated data
+      await refetchProfile();
+
       toast({
         title: "Profile updated successfully!",
         description: "Your changes have been saved.",
       });
-
-      await refetchProfile();
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
