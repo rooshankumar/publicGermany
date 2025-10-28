@@ -415,21 +415,21 @@ const Layout = ({ children }: LayoutProps) => {
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Student Top Navbar (Desktop) */}
-          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-3 px-4 md:px-6">
-            <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
+          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-3 md:px-4">
+            <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-3">
               {/* Left: Brand */}
-              <Link to="/dashboard" className="flex items-center gap-3" aria-label="Student home">
-                <div className="h-10 w-10 rounded-md overflow-hidden shrink-0">
+              <Link to="/dashboard" className="flex items-center gap-2 shrink-0" aria-label="Student home">
+                <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                 </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
-                  <span className="text-xs text-muted-foreground">Student</span>
+                <div className="hidden xl:flex flex-col leading-tight">
+                  <span className="font-bold text-base text-foreground tracking-tight">publicgermany</span>
+                  <span className="text-[10px] text-muted-foreground">Student</span>
                 </div>
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-nowrap overflow-x-auto whitespace-nowrap max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+              <nav className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center overflow-hidden">
                 {studentNavItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
@@ -437,7 +437,7 @@ const Layout = ({ children }: LayoutProps) => {
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "relative pb-0.5 text-sm font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
+                        "relative pb-0.5 px-1.5 xl:px-2 text-xs xl:text-sm font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
                         active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
                       )}
                       aria-current={active ? 'page' : undefined}
@@ -472,7 +472,7 @@ const Layout = ({ children }: LayoutProps) => {
               </nav>
 
               {/* Right: Theme, Notifications, Avatar, Sign out */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 shrink-0">
                 <ThemeToggle variant="icon" />
                 <div className="relative">
                   <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="relative">
@@ -534,10 +534,10 @@ const Layout = ({ children }: LayoutProps) => {
                     onClick={async () => { await signOut(); navigate('/auth'); }}
                     variant="outline"
                     size="sm"
-                    className="hidden md:inline-flex"
+                    className="hidden xl:inline-flex"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                    <span className="text-xs">Sign Out</span>
                   </Button>
                 </div>
               </div>

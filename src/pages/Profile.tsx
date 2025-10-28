@@ -10,8 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { User, GraduationCap, Globe, Award, Briefcase, Upload, Save, FileText, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { DocumentUpload } from '@/components/DocumentUpload';
-import { useAutoSave } from '@/hooks/useAutoSave';
-import { AutoSaveIndicator } from '@/components/AutoSaveIndicator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 
@@ -74,14 +72,7 @@ const Profile = () => {
     avatar_url: '',
   });
 
-  // Initialize auto-save
-  const autoSave = useAutoSave({
-    tableName: 'profiles',
-    userId: profile?.user_id,
-    onSuccess: () => {
-      refetchProfile();
-    }
-  });
+  // Auto-save removed - using manual save only
 
   // Auto-save disabled. Use manual save instead.
   const saveProfile = async () => {
@@ -150,25 +141,7 @@ const Profile = () => {
   }, [profile]);
 
   const handleInputChange = (field: string, value: string) => {
-    const newData = { ...formData, [field]: value };
-    setFormData(newData);
-    
-    // Trigger auto-save with processed data
-    const updateData = {
-      ...newData,
-      date_of_birth: newData.date_of_birth === '' ? null : newData.date_of_birth,
-      bachelor_credits_ects: newData.bachelor_credits_ects ? parseInt(newData.bachelor_credits_ects) : null,
-      bachelor_duration_years: newData.bachelor_duration_years ? parseInt(newData.bachelor_duration_years) : null,
-      work_experience_years: newData.work_experience_years ? parseInt(newData.work_experience_years) : null,
-      aps_pathway: newData.aps_pathway === '' ? null : newData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
-      german_level: newData.german_level === '' ? null : newData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
-      has_aps_certificate: newData.has_aps_certificate === '' ? null : newData.has_aps_certificate === 'yes',
-      state_of_education: newData.state_of_education || null,
-      avatar_url: newData.avatar_url || null,
-      country_of_education: newData.country_of_education || null,
-    };
-    
-    autoSave.debouncedSave(updateData);
+    setFormData({ ...formData, [field]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,10 +207,6 @@ const Profile = () => {
               <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Profile Settings</h1>
               <p className="text-sm md:text-base text-foreground">Manage your personal information and academic details</p>
             </div>
-            <AutoSaveIndicator 
-              status={autoSave.status} 
-              lastSaved={autoSave.lastSaved}
-            />
           </div>
         </div>
 
