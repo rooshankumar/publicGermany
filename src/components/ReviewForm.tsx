@@ -99,7 +99,7 @@ export function ReviewForm({
               key={star}
               type="button"
               className={`p-1 focus:outline-none ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
+                star <= rating ? 'text-yellow-400' : 'text-muted-foreground'
               }`}
               onClick={() => handleRatingClick(star)}
               disabled={isSubmitting}

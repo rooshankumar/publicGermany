@@ -3,6 +3,7 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
@@ -351,34 +352,34 @@ export default function StudentProfile() {
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                  <input
+                  <Input
                     type="date"
-                    className="input input-bordered w-full"
+                    className="w-full"
                     value={editFields.date_of_birth ? (editFields.date_of_birth as string).slice(0, 10) : ''}
                     onChange={e => setEditFields(f => ({ ...f, date_of_birth: e.target.value }))}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
-                  <input
+                  <Input
                     type="text"
-                    className="input input-bordered w-full"
+                    className="w-full"
                     value={editFields.country_of_education || ''}
                     onChange={e => setEditFields(f => ({ ...f, country_of_education: e.target.value }))}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                  <input
+                  <Input
                     type="number"
-                    className="input input-bordered w-24 mr-2"
+                    className="w-24 mr-2"
                     placeholder="Years"
                     value={editFields.work_experience_years || ''}
                     onChange={e => setEditFields(f => ({ ...f, work_experience_years: e.target.value ? Number(e.target.value) : null }))}
                   />
-                  <input
+                  <Input
                     type="text"
-                    className="input input-bordered w-48"
+                    className="w-48"
                     placeholder="Field"
                     value={editFields.work_experience_field || ''}
                     onChange={e => setEditFields(f => ({ ...f, work_experience_field: e.target.value }))}
@@ -401,23 +402,23 @@ export default function StudentProfile() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="10th marks"
                       value={editFields.class_10_marks || ''}
                       onChange={e => setEditFields(f => ({ ...f, class_10_marks: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="12th marks"
                       value={editFields.class_12_marks || ''}
                       onChange={e => setEditFields(f => ({ ...f, class_12_marks: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-24"
+                      className="w-24"
                       placeholder="12th stream"
                       value={editFields.class_12_stream || ''}
                       onChange={e => setEditFields(f => ({ ...f, class_12_stream: e.target.value }))}
@@ -427,37 +428,37 @@ export default function StudentProfile() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
                   <div className="flex flex-wrap gap-2">
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-36"
+                      className="w-36"
                       placeholder="Degree name"
                       value={editFields.bachelor_degree_name || ''}
                       onChange={e => setEditFields(f => ({ ...f, bachelor_degree_name: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-36"
+                      className="w-36"
                       placeholder="Field"
                       value={editFields.bachelor_field || ''}
                       onChange={e => setEditFields(f => ({ ...f, bachelor_field: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="CGPA/Percent"
                       value={editFields.bachelor_cgpa_percentage || ''}
                       onChange={e => setEditFields(f => ({ ...f, bachelor_cgpa_percentage: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="ECTS credits"
                       value={editFields.bachelor_credits_ects || ''}
                       onChange={e => setEditFields(f => ({ ...f, bachelor_credits_ects: e.target.value ? Number(e.target.value) : null }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="Years"
                       value={editFields.bachelor_duration_years || ''}
                       onChange={e => setEditFields(f => ({ ...f, bachelor_duration_years: e.target.value ? Number(e.target.value) : null }))}
@@ -467,23 +468,23 @@ export default function StudentProfile() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
                   <div className="flex flex-wrap gap-2">
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-36"
+                      className="w-36"
                       placeholder="Degree name"
                       value={editFields.master_degree_name || ''}
                       onChange={e => setEditFields(f => ({ ...f, master_degree_name: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-36"
+                      className="w-36"
                       placeholder="Field"
                       value={editFields.master_field || ''}
                       onChange={e => setEditFields(f => ({ ...f, master_field: e.target.value }))}
                     />
-                    <input
+                    <Input
                       type="text"
-                      className="input input-bordered w-20"
+                      className="w-20"
                       placeholder="CGPA/Percent"
                       value={editFields.master_cgpa_percentage || ''}
                       onChange={e => setEditFields(f => ({ ...f, master_cgpa_percentage: e.target.value }))}
@@ -492,9 +493,9 @@ export default function StudentProfile() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Language Score</label>
-                  <input
+                  <Input
                     type="text"
-                    className="input input-bordered w-36"
+                    className="w-36"
                     placeholder="IELTS/TOEFL"
                     value={editFields.ielts_toefl_score || ''}
                     onChange={e => setEditFields(f => ({ ...f, ielts_toefl_score: e.target.value }))}

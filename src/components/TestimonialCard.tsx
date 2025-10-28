@@ -24,7 +24,7 @@ function renderStars(rating: number) {
   for (let i = 1; i <= 5; i++) {
     if (i <= fullStars) stars.push(<Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
     else if (i === fullStars + 1 && hasHalf) stars.push(<StarHalf key={i} className="w-5 h-5 text-yellow-400 fill-current" />);
-    else stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
+    else stars.push(<Star key={i} className="w-5 h-5 text-muted-foreground" />);
   }
   return stars;
 }

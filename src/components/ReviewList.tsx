@@ -77,7 +77,7 @@ export function ReviewList({ limit = 5, serviceType, showTitle = true }: ReviewL
       } else if (i === fullStars + 1 && hasHalfStar) {
         stars.push(<StarHalf key={i} className="w-4 h-4 text-yellow-400 fill-current" />);
       } else {
-        stars.push(<Star key={i} className="w-4 h-4 text-gray-300" />);
+        stars.push(<Star key={i} className="w-4 h-4 text-muted-foreground" />);
       }
     }
 
