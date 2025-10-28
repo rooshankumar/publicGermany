@@ -453,14 +453,14 @@ export default function StudentProfile() {
                       className="input input-bordered w-20"
                       placeholder="ECTS credits"
                       value={editFields.bachelor_credits_ects || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_credits_ects: e.target.value }))}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_credits_ects: e.target.value ? Number(e.target.value) : null }))}
                     />
                     <input
                       type="text"
                       className="input input-bordered w-20"
                       placeholder="Years"
                       value={editFields.bachelor_duration_years || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_duration_years: e.target.value }))}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_duration_years: e.target.value ? Number(e.target.value) : null }))}
                     />
                   </div>
                 </div>
@@ -696,36 +696,33 @@ export default function StudentProfile() {
           </CardContent>
         </Card>
       </div>
-      <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6">
         <Button
           variant="default"
-          size="lg"
           disabled={saving}
           onClick={async () => {
-            setSaving(true);
             try {
-              const updates: any = { ...editFields };
-              // Remove non-editable keys
-              delete updates.id;
-              delete updates.user_id;
-              delete updates.created_at;
-              delete updates.updated_at;
+              setSaving(true);
+              if (!studentId) return;
+
               const { error } = await supabase
                 .from('profiles')
-                .update(updates)
+                .update(editFields)
                 .eq('user_id', studentId);
+
               if (error) throw error;
-              toast({ title: 'Profile updated', description: 'Student profile updated successfully' });
-              studentQuery.refetch();
+              toast({ title: 'Saved', description: 'Profile updated successfully.' });
+              await studentQuery.refetch();
             } catch (e: any) {
-              toast({ title: 'Error updating profile', description: e?.message || 'Unknown error', variant: 'destructive' });
+              toast({ title: 'Error', description: e.message || 'Failed to save changes', variant: 'destructive' });
+            } finally {
+              setSaving(false);
             }
-            setSaving(false);
           }}
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
-    </div>
-  </Layout>
-);
+    </Layout>
+  );
+}
