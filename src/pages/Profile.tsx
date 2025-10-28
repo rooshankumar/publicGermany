@@ -160,22 +160,38 @@ const Profile = () => {
 
     try {
       const updateData = {
-        ...formData,
+        full_name: formData.full_name || null,
         date_of_birth: formData.date_of_birth === '' ? null : formData.date_of_birth,
+        country_of_education: formData.country_of_education || null,
+        state_of_education: formData.state_of_education || null,
+        class_10_marks: formData.class_10_marks || null,
+        class_12_marks: formData.class_12_marks || null,
+        class_12_stream: formData.class_12_stream || null,
+        bachelor_degree_name: formData.bachelor_degree_name || null,
+        bachelor_field: formData.bachelor_field || null,
+        bachelor_cgpa_percentage: formData.bachelor_cgpa_percentage || null,
         bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
         bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
+        master_degree_name: formData.master_degree_name || null,
+        master_field: formData.master_field || null,
+        master_cgpa_percentage: formData.master_cgpa_percentage || null,
         work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
+        work_experience_field: formData.work_experience_field || null,
+        ielts_toefl_score: formData.ielts_toefl_score || null,
         aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as 'stk' | 'bachelor_2_semesters' | 'master_applicants' | null,
         german_level: formData.german_level === '' ? null : formData.german_level as 'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | 'c2' | null,
         has_aps_certificate: formData.has_aps_certificate === '' ? null : formData.has_aps_certificate === 'yes',
-        country_of_education: formData.country_of_education || null,
-        state_of_education: formData.state_of_education || null,
       };
 
-      const { error } = await supabase
+      console.log('Saving profile with data:', updateData);
+
+      const { data, error } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('user_id', profile.user_id);
+        .eq('user_id', profile.user_id)
+        .select();
+
+      console.log('Save result:', { data, error });
 
       if (error) throw error;
 
@@ -185,11 +201,11 @@ const Profile = () => {
       });
 
       await refetchProfile();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: "Error updating profile",
-        description: "Please try again.",
+        description: error?.message || "Please try again.",
         variant: "destructive",
       });
     } finally {
