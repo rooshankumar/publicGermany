@@ -49,6 +49,7 @@ export default function Students() {
   const [searchTerm, setSearchTerm] = useState('');
   const [apsFilter, setApsFilter] = useState('all');
   const [germanFilter, setGermanFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' or 'oldest'
   const { toast } = useToast();
 
   // Debounce search to limit filter recalculations while typing
@@ -72,7 +73,7 @@ export default function Students() {
 
   useEffect(() => {
     filterStudents();
-  }, [students, debouncedSearch, apsFilter, germanFilter]);
+  }, [students, debouncedSearch, apsFilter, germanFilter, sortBy]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -159,6 +160,13 @@ export default function Students() {
       filtered = filtered.filter(student => student.german_level === germanFilter);
     }
 
+    // Sort by creation date
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
     setFilteredStudents(filtered);
   };
 
@@ -235,7 +243,7 @@ export default function Students() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 p-3 md:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
               <Input
                 placeholder="Search by name, student ID, or user ID..."
                 value={searchTerm}
@@ -268,9 +276,19 @@ export default function Students() {
                   <SelectItem value="c2">C2</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <p>Showing {filteredStudents.length} of {students.length} students</p>
+              <p className="text-xs">Sorted by: <span className="font-medium">{sortBy === 'newest' ? 'Newest First' : 'Oldest First'}</span></p>
             </div>
           </CardContent>
         </Card>

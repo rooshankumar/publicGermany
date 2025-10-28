@@ -92,7 +92,9 @@ export function MultiFileUpload({
         <div className="space-y-2">
           <p className="text-sm font-medium">Existing Files:</p>
           <div className="flex flex-wrap gap-2">
-            {existingFiles.map((file, index) => (
+            {existingFiles.map((file, index) => {
+              const displayName = file.name.replace(/^\d+-/, '');
+              return (
               <Badge key={index} variant="secondary" className="gap-2 pr-1">
                 <File className="h-3 w-3" />
                 <a 
@@ -100,8 +102,9 @@ export function MultiFileUpload({
                   target="_blank" 
                   rel="noreferrer" 
                   className="hover:underline text-xs max-w-[100px] truncate"
+                  title={displayName}
                 >
-                  {file.name}
+                  {displayName}
                 </a>
                 {onRemoveExisting && (
                   <button
@@ -113,7 +116,8 @@ export function MultiFileUpload({
                   </button>
                 )}
               </Badge>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}
