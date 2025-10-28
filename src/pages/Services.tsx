@@ -1214,8 +1214,8 @@ const Services = () => {
 
                        {/* Show deliverable actions when completed */}
                        {request.status === 'completed' && (
-                         <div className="mt-2 p-3 border rounded-md bg-green-50 border-green-200">
-                           <div className="flex items-center gap-2 text-green-700 mb-2">
+                         <div className="mt-2 p-3 border rounded-md bg-green-50/10 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                           <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
                              <CheckCircle className="h-4 w-4" />
                              <span className="text-sm font-medium">Delivered</span>
                            </div>
@@ -1245,8 +1245,8 @@ const Services = () => {
                                  {allUrls.map((url, index) => {
                                    const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `File ${index + 1}`;
                                    return (
-                                     <div key={index} className="flex items-center justify-between gap-3 p-2 bg-white rounded border">
-                                       <span className="text-xs text-gray-600 truncate flex-1">{fileName}</span>
+                                     <div key={index} className="flex items-center justify-between gap-3 p-2 bg-background rounded border border-border">
+                                       <span className="text-xs text-muted-foreground truncate flex-1">{fileName}</span>
                                        <div className="flex items-center gap-1">
                                          <a href={url} target="_blank" rel="noreferrer">
                                            <Button size="sm" variant="default" className="text-xs px-2 py-1">View</Button>
