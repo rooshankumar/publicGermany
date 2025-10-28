@@ -52,24 +52,24 @@ export const useAuth = () => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // 1) Fetch minimal profile first (fast path for authZ checks)
-      const { data: minimal, error: profileError } = await supabase
+      // Fetch complete profile with all fields
+      const { data: fullProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('id,user_id,role,full_name,created_at,updated_at')
+        .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (profileError) throw profileError;
 
-      if (minimal) {
-        // Set minimal profile immediately so routes can authorize quickly
-        const nextProfile = (minimal as unknown) as Profile;
+      if (fullProfile) {
+        // Set complete profile
+        const nextProfile = (fullProfile as unknown) as Profile;
         setProfile(nextProfile);
         try {
           localStorage.setItem('pg_profile', JSON.stringify(nextProfile));
         } catch {}
 
-        // 2) Fetch heavy data (documents) in background without blocking
+        // Fetch documents in background
         supabase
           .from('documents')
           .select('*')
@@ -103,10 +103,10 @@ export const useAuth = () => {
               console.warn('Profile insert skipped/failed (likely race):', insertErr.message);
               setProfile(null);
             } else {
-              // Re-fetch minimal profile
+              // Re-fetch complete profile
               const { data: createdProfile } = await supabase
                 .from('profiles')
-                .select('id,user_id,role,full_name,created_at,updated_at')
+                .select('*')
                 .eq('user_id', user.id)
                 .maybeSingle();
               if (createdProfile) {
