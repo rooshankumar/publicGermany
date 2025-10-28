@@ -39,6 +39,9 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
 export default function StudentProfile() {
   const { studentId } = useParams();
   const [student, setStudent] = useState<StudentProfile | null>(null);
+  // Local editable state for form fields
+  const [editFields, setEditFields] = useState<Partial<StudentProfile>>({});
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
   const { toast } = useToast();
@@ -188,6 +191,7 @@ export default function StudentProfile() {
   useEffect(() => {
     if (studentQuery.data) {
       setStudent((studentQuery.data as any) || null);
+      setEditFields(studentQuery.data as any || {});
       resolveEmail();
       setLoading(false);
     } else if (studentQuery.isError) {
@@ -347,18 +351,38 @@ export default function StudentProfile() {
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                  <p className="text-sm">{student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'Not provided'}</p>
+                  <input
+                    type="date"
+                    className="input input-bordered w-full"
+                    value={editFields.date_of_birth ? (editFields.date_of_birth as string).slice(0, 10) : ''}
+                    onChange={e => setEditFields(f => ({ ...f, date_of_birth: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
-                  <p className="text-sm">{student.country_of_education || 'Not provided'}</p>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={editFields.country_of_education || ''}
+                    onChange={e => setEditFields(f => ({ ...f, country_of_education: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                  <p className="text-sm">
-                    {student.work_experience_years ? `${student.work_experience_years} years` : 'Not provided'}
-                    {student.work_experience_field && ` in ${student.work_experience_field}`}
-                  </p>
+                  <input
+                    type="number"
+                    className="input input-bordered w-24 mr-2"
+                    placeholder="Years"
+                    value={editFields.work_experience_years || ''}
+                    onChange={e => setEditFields(f => ({ ...f, work_experience_years: e.target.value ? Number(e.target.value) : null }))}
+                  />
+                  <input
+                    type="text"
+                    className="input input-bordered w-48"
+                    placeholder="Field"
+                    value={editFields.work_experience_field || ''}
+                    onChange={e => setEditFields(f => ({ ...f, work_experience_field: e.target.value }))}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -376,37 +400,105 @@ export default function StudentProfile() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
-                  <p className="text-sm">
-                    10th: {student.class_10_marks || 'N/A'} | 
-                    12th: {student.class_12_marks || 'N/A'} ({student.class_12_stream || 'N/A'})
-                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="10th marks"
+                      value={editFields.class_10_marks || ''}
+                      onChange={e => setEditFields(f => ({ ...f, class_10_marks: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="12th marks"
+                      value={editFields.class_12_marks || ''}
+                      onChange={e => setEditFields(f => ({ ...f, class_12_marks: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-24"
+                      placeholder="12th stream"
+                      value={editFields.class_12_stream || ''}
+                      onChange={e => setEditFields(f => ({ ...f, class_12_stream: e.target.value }))}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
-                  <p className="text-sm">
-                    {student.bachelor_degree_name || 'Not provided'} 
-                    {student.bachelor_field && ` in ${student.bachelor_field}`}
-                    {student.bachelor_cgpa_percentage && ` - ${student.bachelor_cgpa_percentage}`}
-                  </p>
-                  {student.bachelor_credits_ects && (
-                    <p className="text-xs text-muted-foreground">
-                      {student.bachelor_credits_ects} ECTS credits, {student.bachelor_duration_years} years
-                    </p>
-                  )}
-                </div>
-                {student.master_degree_name && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
-                    <p className="text-sm">
-                      {student.master_degree_name} 
-                      {student.master_field && ` in ${student.master_field}`}
-                      {student.master_cgpa_percentage && ` - ${student.master_cgpa_percentage}`}
-                    </p>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      type="text"
+                      className="input input-bordered w-36"
+                      placeholder="Degree name"
+                      value={editFields.bachelor_degree_name || ''}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_degree_name: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-36"
+                      placeholder="Field"
+                      value={editFields.bachelor_field || ''}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_field: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="CGPA/Percent"
+                      value={editFields.bachelor_cgpa_percentage || ''}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_cgpa_percentage: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="ECTS credits"
+                      value={editFields.bachelor_credits_ects || ''}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_credits_ects: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="Years"
+                      value={editFields.bachelor_duration_years || ''}
+                      onChange={e => setEditFields(f => ({ ...f, bachelor_duration_years: e.target.value }))}
+                    />
                   </div>
-                )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      type="text"
+                      className="input input-bordered w-36"
+                      placeholder="Degree name"
+                      value={editFields.master_degree_name || ''}
+                      onChange={e => setEditFields(f => ({ ...f, master_degree_name: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-36"
+                      placeholder="Field"
+                      value={editFields.master_field || ''}
+                      onChange={e => setEditFields(f => ({ ...f, master_field: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-20"
+                      placeholder="CGPA/Percent"
+                      value={editFields.master_cgpa_percentage || ''}
+                      onChange={e => setEditFields(f => ({ ...f, master_cgpa_percentage: e.target.value }))}
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Language Score</label>
-                  <p className="text-sm">{student.ielts_toefl_score || 'Not provided'}</p>
+                  <input
+                    type="text"
+                    className="input input-bordered w-36"
+                    placeholder="IELTS/TOEFL"
+                    value={editFields.ielts_toefl_score || ''}
+                    onChange={e => setEditFields(f => ({ ...f, ielts_toefl_score: e.target.value }))}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -604,6 +696,36 @@ export default function StudentProfile() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
-  );
-}
+      <div className="flex justify-end mt-6">
+        <Button
+          variant="default"
+          size="lg"
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              const updates: any = { ...editFields };
+              // Remove non-editable keys
+              delete updates.id;
+              delete updates.user_id;
+              delete updates.created_at;
+              delete updates.updated_at;
+              const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('user_id', studentId);
+              if (error) throw error;
+              toast({ title: 'Profile updated', description: 'Student profile updated successfully' });
+              studentQuery.refetch();
+            } catch (e: any) {
+              toast({ title: 'Error updating profile', description: e?.message || 'Unknown error', variant: 'destructive' });
+            }
+            setSaving(false);
+          }}
+        >
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+    </div>
+  </Layout>
+);
