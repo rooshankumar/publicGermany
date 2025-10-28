@@ -429,7 +429,7 @@ const Layout = ({ children }: LayoutProps) => {
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-wrap overflow-x-hidden">
+              <nav className="hidden lg:flex items-center gap-2 xl:gap-4 flex-nowrap overflow-x-auto whitespace-nowrap max-w-full scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                 {studentNavItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
