@@ -138,10 +138,9 @@ const Documents = () => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // Pre-fill with original filename without extension
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-      setCustomFileName(nameWithoutExt);
-      console.log('File selected:', file.name, 'Name set to:', nameWithoutExt);
+      // Pre-fill with original filename (keep extension for display)
+      setCustomFileName(file.name);
+      console.log('File selected:', file.name);
     }
   };
 
@@ -176,8 +175,16 @@ const Documents = () => {
       const fileExt = selectedFile.name.split('.').pop();
       // Get user's first name from profile
       const firstName = profile?.full_name?.split(' ')[0] || 'user';
-      const sanitizedName = customFileName.replace(/[^a-zA-Z0-9]/g, '_');
-      const fileName = `${firstName}_${sanitizedName}.${fileExt}`;
+      
+      // If user's custom name already has extension, use it. Otherwise add the original extension
+      let finalFileName = customFileName.trim();
+      const hasExtension = /\.[a-zA-Z0-9]+$/.test(finalFileName);
+      if (!hasExtension && fileExt) {
+        finalFileName = `${finalFileName}.${fileExt}`;
+      }
+      
+      const sanitizedName = finalFileName.replace(/[^a-zA-Z0-9.]/g, '_');
+      const fileName = `${firstName}_${sanitizedName}`;
       const filePath = `additional/${profile.user_id}/${fileName}`;
 
       // Upload to storage

@@ -154,11 +154,21 @@ function APSRequiredDocuments({ displayName }: APSProps) {
       const fileName = `${Date.now()}-${storedFileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `${profile.user_id}/${key}/${fileName}`;
       
+      // Check if there's an existing document and delete old file from storage
+      const existingDoc = (docs[key] as any);
+      if (existingDoc?.upload_path) {
+        try {
+          await supabase.storage.from('documents').remove([existingDoc.upload_path]);
+        } catch (e) {
+          console.warn('Failed to delete old file:', e);
+        }
+      }
+      
       // Upload the file to storage
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file, { 
-          upsert: true,
+          upsert: false,
           cacheControl: '3600',
         });
       
