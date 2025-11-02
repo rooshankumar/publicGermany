@@ -154,8 +154,20 @@ const Documents = () => {
 
   // Upload additional document
   const handleUploadAdditional = async () => {
-    if (!selectedFile || !customFileName.trim() || !profile?.user_id) {
-      toast({ title: 'Error', description: 'Please select a file and provide a name', variant: 'destructive' });
+    console.log('Upload clicked:', { selectedFile, customFileName, userId: profile?.user_id });
+    
+    if (!selectedFile) {
+      toast({ title: 'Error', description: 'Please select a file', variant: 'destructive' });
+      return;
+    }
+    
+    if (!customFileName || !customFileName.trim()) {
+      toast({ title: 'Error', description: 'Please provide a document name', variant: 'destructive' });
+      return;
+    }
+    
+    if (!profile?.user_id) {
+      toast({ title: 'Error', description: 'User not authenticated', variant: 'destructive' });
       return;
     }
 
