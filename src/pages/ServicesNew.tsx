@@ -118,6 +118,21 @@ const ServicesNew = () => {
     }, 0);
   };
 
+  const getPackagePrice = () => {
+    if (!packageRequestName) return 0;
+    const pkg = packages.find(p => p.name === packageRequestName);
+    // For packages, we'll use the minimum of the range or 0 if not specified
+    // Admin will adjust the final price
+    if (pkg?.price_inr) return pkg.price_inr;
+    return 0;
+  };
+
+  const getTotalAmount = () => {
+    const extrasTotal = calculateTotalPrice();
+    const packagePrice = getPackagePrice();
+    return extrasTotal + packagePrice;
+  };
+
   const handleRequestSubmit = async () => {
     if (selectedServices.length === 0 && !packageRequestName) {
       toast({ title: "Error", description: "Please select at least one service or package", variant: "destructive" });
@@ -139,13 +154,15 @@ const ServicesNew = () => {
       ? [packageRequestName, ...(selectedExtras.length ? ["Extras: " + selectedExtras.join(', ')] : [])].join(' | ')
       : selectedExtras.join(', ');
 
+    const totalAmount = getTotalAmount();
+
     try {
       const { error } = await supabase
         .from('service_requests')
         .insert([{
           user_id: user.id,
           service_type: serviceNames,
-          service_price: calculateTotalPrice(),
+          service_price: totalAmount,
           service_currency: 'INR',
           request_details: requestDetails,
           preferred_timeline: timeline,
@@ -159,12 +176,18 @@ const ServicesNew = () => {
       // Send emails
       try {
         const studentName = profile?.full_name || user.email?.split('@')[0] || 'Student';
+        const pkg = packages.find(p => p.name === packageRequestName);
+        const priceInfo = packageRequestName && pkg?.price_range_inr
+          ? `Package Range: ₹${pkg.price_range_inr}`
+          : `Total: ₹${totalAmount.toLocaleString()}`;
+        
         await sendEmail(
           'publicgermany@outlook.com',
           'New Service Request',
           `<p>New service request from ${studentName}</p>
            <p><strong>Services:</strong> ${serviceNames}<br/>
-           <strong>Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>
+           <strong>${priceInfo}</strong><br/>
+           ${selectedServices.length > 0 ? `<strong>Extras Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>` : ''}
            <strong>Timeline:</strong> ${timeline}</p>`
         );
       } catch {}
@@ -341,22 +364,31 @@ const ServicesNew = () => {
                 ) : (
                   <div className="space-y-3">
                     {filteredServices.map(service => (
-                      <Card key={service.id} className="border-border/60">
+                      <Card 
+                        key={service.id} 
+                        className="border-border/60 cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => handleServiceSelection(service.id, !selectedServices.includes(service.id))}
+                      >
                         <CardContent className="pt-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 flex-1">
+                          <div className="flex items-start gap-3">
+                            <div className="pt-0.5">
                               <Checkbox
                                 checked={selectedServices.includes(service.id)}
-                                onCheckedChange={(checked) => handleServiceSelection(service.id, checked as boolean)}
+                                onCheckedChange={(checked) => {
+                                  handleServiceSelection(service.id, checked as boolean);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
                               />
-                              <div className="flex-1">
-                                <h3 className="font-semibold">{service.name}</h3>
-                                <p className="text-sm text-muted-foreground">{service.description}</p>
-                              </div>
                             </div>
-                            <Badge variant="secondary">
-                              ₹{service.price_inr?.toLocaleString() || '—'}
-                            </Badge>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-3 mb-1">
+                                <h3 className="font-semibold text-base">{service.name}</h3>
+                                <Badge variant="secondary" className="flex-shrink-0">
+                                  ₹{service.price_inr?.toLocaleString() || '—'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{service.description}</p>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -516,9 +548,22 @@ const ServicesNew = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              {packageRequestName && (
+                <div className="bg-primary/5 p-3 rounded-lg">
+                  <Label>Package Selected:</Label>
+                  <p className="font-semibold mt-1">{packageRequestName}</p>
+                  {(() => {
+                    const pkg = packages.find(p => p.name === packageRequestName);
+                    return pkg?.price_range_inr ? (
+                      <p className="text-sm text-muted-foreground">Price Range: ₹{pkg.price_range_inr}</p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+
               {selectedServices.length > 0 && (
                 <div>
-                  <Label>Selected Services:</Label>
+                  <Label>{packageRequestName ? 'Additional Services:' : 'Selected Services:'}</Label>
                   <ul className="list-disc list-inside text-sm text-muted-foreground mt-1">
                     {selectedServices.map(id => {
                       const service = services.find(s => s.id === id);
@@ -549,10 +594,35 @@ const ServicesNew = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-4">
-                <p className="font-semibold">
-                  Total: ₹{calculateTotalPrice().toLocaleString()}
-                </p>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div>
+                  {packageRequestName ? (
+                    <>
+                      {(() => {
+                        const pkg = packages.find(p => p.name === packageRequestName);
+                        return pkg?.price_range_inr ? (
+                          <>
+                            <p className="text-sm text-muted-foreground">Estimated Range</p>
+                            <p className="font-semibold text-lg">₹{pkg.price_range_inr}</p>
+                            {selectedServices.length > 0 && (
+                              <p className="text-xs text-muted-foreground">+ ₹{calculateTotalPrice().toLocaleString()} extras</p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-muted-foreground">Total Amount</p>
+                            <p className="font-semibold text-lg">₹{getTotalAmount().toLocaleString()}</p>
+                          </>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">Total Amount</p>
+                      <p className="font-semibold text-lg">₹{calculateTotalPrice().toLocaleString()}</p>
+                    </>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
                     Cancel
