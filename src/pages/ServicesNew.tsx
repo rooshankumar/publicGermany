@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   ShoppingCart, 
@@ -19,7 +20,8 @@ import {
   Download,
   Package,
   AlertCircle,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
@@ -89,6 +91,31 @@ const ServicesNew = () => {
     },
     enabled: !!user,
   });
+
+  // Real-time subscription for service requests
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('service-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          requestsQuery.refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, requestsQuery]);
 
   const services = catalogQuery.data || [];
   const packages = services.filter(s => s.kind === 'package');
@@ -176,20 +203,40 @@ const ServicesNew = () => {
       // Send emails
       try {
         const studentName = profile?.full_name || user.email?.split('@')[0] || 'Student';
+        const studentEmail = user.email || '';
         const pkg = packages.find(p => p.name === packageRequestName);
         const priceInfo = packageRequestName && pkg?.price_range_inr
           ? `Package Range: ₹${pkg.price_range_inr}`
           : `Total: ₹${totalAmount.toLocaleString()}`;
         
-        await sendEmail(
+        // Email to admin
+        const adminEmailPromise = sendEmail(
           'publicgermany@outlook.com',
           'New Service Request',
           `<p>New service request from ${studentName}</p>
-           <p><strong>Services:</strong> ${serviceNames}<br/>
+           <p><strong>Email:</strong> ${studentEmail}<br/>
+           <strong>Services:</strong> ${serviceNames}<br/>
            <strong>${priceInfo}</strong><br/>
            ${selectedServices.length > 0 ? `<strong>Extras Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>` : ''}
            <strong>Timeline:</strong> ${timeline}</p>`
         );
+
+        // Email to student
+        const studentEmailPromise = studentEmail ? sendEmail(
+          studentEmail,
+          'Service Request Received',
+          `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
+             <p>Hi ${studentName},</p>
+             <p>We've received your service request and our team will review it shortly.</p>
+             <p><strong>Requested Services:</strong> ${serviceNames}<br/>
+             <strong>${priceInfo}</strong><br/>
+             <strong>Timeline:</strong> ${timeline}</p>
+             <p style="margin-top:12px;color:#666">You can track your request status in the Services page.</p>
+             <p>— publicGermany Team</p>
+           </div>`
+        ) : Promise.resolve();
+
+        await Promise.allSettled([adminEmailPromise, studentEmailPromise]);
       } catch {}
 
       // Reset and close
@@ -201,6 +248,25 @@ const ServicesNew = () => {
       requestsQuery.refetch();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm('Are you sure you want to delete this request? This cannot be undone.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('service_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Success', description: 'Request deleted successfully' });
+      requestsQuery.refetch();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -441,7 +507,17 @@ const ServicesNew = () => {
                           Requested on {new Date(request.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      {getStatusBadge(request.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(request.status)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteRequest(request.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -514,19 +590,72 @@ const ServicesNew = () => {
                                 <span className="text-xs md:text-sm font-medium truncate">{getFileNameFromUrl(url)}</span>
                               </div>
                               <div className="flex gap-2 flex-shrink-0">
-                                <Button size="sm" variant="outline" className="text-xs h-8" asChild>
-                                  <a href={url} target="_blank" rel="noopener noreferrer">
-                                    <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                    <span className="hidden sm:inline">View</span>
-                                    <span className="sm:hidden">View</span>
-                                  </a>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-xs h-8"
+                                  onClick={async () => {
+                                    try {
+                                      const urlParts = url.split('/documents/');
+                                      const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                      const { data, error } = await supabase.storage
+                                        .from('documents')
+                                        .createSignedUrl(filePath, 3600);
+                                      if (error || !data?.signedUrl) {
+                                        window.open(url, '_blank');
+                                      } else {
+                                        window.open(data.signedUrl, '_blank');
+                                      }
+                                    } catch (e) {
+                                      window.open(url, '_blank');
+                                    }
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                  <span className="hidden sm:inline">View</span>
+                                  <span className="sm:hidden">View</span>
                                 </Button>
-                                <Button size="sm" variant="ghost" className="text-xs h-8" asChild>
-                                  <a href={url} download>
-                                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                    <span className="hidden sm:inline">Download</span>
-                                    <span className="sm:hidden">Get</span>
-                                  </a>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="text-xs h-8"
+                                  onClick={async () => {
+                                    try {
+                                      const urlParts = url.split('/documents/');
+                                      const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                      const fileName = getFileNameFromUrl(url);
+                                      const { data, error } = await supabase.storage
+                                        .from('documents')
+                                        .createSignedUrl(filePath, 3600, { download: fileName });
+                                      if (error || !data?.signedUrl) {
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = fileName;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                      } else {
+                                        const a = document.createElement('a');
+                                        a.href = data.signedUrl;
+                                        a.download = fileName;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                      }
+                                    } catch (e) {
+                                      const fileName = getFileNameFromUrl(url);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = fileName;
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      a.remove();
+                                    }
+                                  }}
+                                >
+                                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                  <span className="hidden sm:inline">Download</span>
+                                  <span className="sm:hidden">Get</span>
                                 </Button>
                               </div>
                             </div>
@@ -578,12 +707,18 @@ const ServicesNew = () => {
 
               <div>
                 <Label htmlFor="timeline">Preferred Timeline *</Label>
-                <Input
-                  id="timeline"
-                  placeholder="e.g., Within 1 week, ASAP, etc."
-                  value={timeline}
-                  onChange={(e) => setTimeline(e.target.value)}
-                />
+                <Select value={timeline} onValueChange={setTimeline}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select timeline" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-3 days">1-3 days</SelectItem>
+                    <SelectItem value="1 week">1 week</SelectItem>
+                    <SelectItem value="2 weeks">2 weeks</SelectItem>
+                    <SelectItem value="1 month">1 month</SelectItem>
+                    <SelectItem value="flexible">Flexible</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

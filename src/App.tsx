@@ -14,8 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Converter = lazy(() => import("./pages/Converter"));
 const Applications = lazy(() => import("./pages/Applications"));
 const GradeConverter = lazy(() => import("./pages/tools/grade-converter"));
-const Services = lazy(() => import("./pages/Services"));
-const ServicesNew = lazy(() => import("./pages/ServicesNew"));
+const Services = lazy(() => import("./pages/ServicesNew"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
@@ -72,7 +71,7 @@ const AppRoutes = () => {
       if (profile?.role !== 'admin') {
         import('./pages/Dashboard');
         import('./pages/Applications');
-        import('./pages/Services');
+        import('./pages/ServicesNew');
         import('./pages/Resources');
         import('./pages/Documents');
         import('./pages/Reviews');
@@ -140,7 +139,7 @@ const AppRoutes = () => {
         } />
         <Route path="/services" element={
           <ProtectedRoute disallowRole="admin">
-            <ServicesNew />
+            <Services />
           </ProtectedRoute>
         } />
         <Route path="/resources" element={
