@@ -253,11 +253,15 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Web OAuth flow for browser
+      // Web OAuth flow for browser with account selection prompt
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account', // Force Google account selection
+          },
         },
       });
       
@@ -293,11 +297,16 @@ export const useAuth = () => {
       // Network or other unexpected error; continue clearing local state to ensure UI signs out
       console.warn('Sign out request threw, proceeding anyway:', e);
     } finally {
-      // Clear local state and app-specific cached data; avoid nuking unrelated storage (e.g., theme)
+      // Clear local state and app-specific cached data
       setUser(null);
       setSession(null);
       setProfile(null);
-      try { localStorage.removeItem('pg_profile'); } catch {}
+      try { 
+        localStorage.removeItem('pg_profile');
+        // Clear all Supabase auth storage to force re-authentication
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+      } catch {}
     }
   };
 
