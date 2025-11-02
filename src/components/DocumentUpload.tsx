@@ -104,17 +104,19 @@ export const DocumentUpload = ({
           .from('documents')
           .getPublicUrl(fileName);
 
-        // Save to database using existing files table
+        // Save to database using documents table
         const { data: dbData, error: dbError } = await supabase
-          .from('files')
+          .from('documents')
           .insert({
             user_id: profile.user_id,
             file_name: file.name,
+            upload_path: fileName,
+            file_url: publicUrl,
             file_size: file.size,
             file_type: file.type,
-            file_path: fileName,
+            category: category,
             module: category,
-            mime_type: file.type
+            status: 'pending'
           })
           .select()
           .single();
@@ -168,9 +170,9 @@ export const DocumentUpload = ({
         .from('documents')
         .remove([filePath]);
 
-      // Delete from database using files table
+      // Delete from database using documents table
       const { error: dbError } = await supabase
-        .from('files')
+        .from('documents')
         .delete()
         .eq('id', fileId);
 

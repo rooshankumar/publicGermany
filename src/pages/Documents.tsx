@@ -116,12 +116,12 @@ const Documents = () => {
     }
   };
 
-  // Fetch additional documents (files table)
+  // Fetch additional documents (documents table with module='additional_documents')
   useEffect(() => {
     if (!profile?.user_id) return;
     const fetchAdditionalDocs = async () => {
       const { data, error } = await supabase
-        .from('files')
+        .from('documents')
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('module', 'additional_documents')
@@ -199,16 +199,19 @@ const Documents = () => {
         .from('documents')
         .getPublicUrl(filePath);
 
-      // Save to files table with formatted filename
+      // Save to documents table with module='additional_documents'
       const { error: dbError } = await supabase
-        .from('files')
+        .from('documents')
         .insert({
           user_id: profile.user_id,
-          file_name: fileName, // Use the formatted filename (firstname_docname.ext)
-          file_path: filePath,
+          file_name: fileName,
+          upload_path: filePath,
+          file_url: publicUrl,
           file_size: selectedFile.size,
           file_type: selectedFile.type,
-          module: 'additional_documents'
+          category: 'additional',
+          module: 'additional_documents',
+          status: 'pending'
         });
 
       if (dbError) throw dbError;
@@ -217,7 +220,7 @@ const Documents = () => {
       
       // Refresh list
       const { data } = await supabase
-        .from('files')
+        .from('documents')
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('module', 'additional_documents')
@@ -241,11 +244,11 @@ const Documents = () => {
 
     try {
       // Delete from storage
-      await supabase.storage.from('documents').remove([doc.file_path]);
+      await supabase.storage.from('documents').remove([doc.upload_path]);
 
       // Delete from database
       const { error } = await supabase
-        .from('files')
+        .from('documents')
         .delete()
         .eq('id', doc.id);
 
@@ -441,7 +444,7 @@ const Documents = () => {
                         onClick={async () => {
                           const { data } = await supabase.storage
                             .from('documents')
-                            .createSignedUrl(doc.file_path, 300);
+                            .createSignedUrl(doc.upload_path, 300);
                           if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                         }}
                       >

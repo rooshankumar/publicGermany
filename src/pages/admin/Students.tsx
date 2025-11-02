@@ -45,7 +45,7 @@ export default function Students() {
   const [filteredStudents, setFilteredStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [docsOpen, setDocsOpen] = useState(false);
-  const [docsForStudent, setDocsForStudent] = useState<{full_name?: string|null; documents: any[]; files: any[]} | null>(null);
+  const [docsForStudent, setDocsForStudent] = useState<{full_name?: string|null; documents: any[]} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [apsFilter, setApsFilter] = useState('all');
   const [germanFilter, setGermanFilter] = useState('all');
@@ -62,6 +62,9 @@ export default function Students() {
     const channel = supabase
       .channel('students-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStudents();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => {
         fetchStudents();
       })
       .subscribe();
@@ -90,28 +93,17 @@ export default function Students() {
 
       if (error) throw error;
 
-      // Fetch documents in bulk by user_id to avoid ambiguous relationships
+      // Fetch all documents in bulk by user_id (includes both APS required and additional docs)
       const userIds = (data || []).map((s: any) => s.user_id).filter(Boolean);
       let docsByUser: Record<string, any[]> = {};
-      let filesByUser: Record<string, any[]> = {};
       if (userIds.length > 0) {
         const { data: docsData } = await supabase
           .from('documents' as any)
-          .select('id,user_id,category,file_name,file_url,created_at')
+          .select('id,user_id,category,file_name,file_url,upload_path,module,status,created_at')
           .in('user_id', userIds);
         (docsData || []).forEach((d: any) => {
           if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
           docsByUser[d.user_id].push(d);
-        });
-
-        // Fetch files uploaded via files table
-        const { data: filesData } = await supabase
-          .from('files' as any)
-          .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
-          .in('user_id', userIds);
-        (filesData || []).forEach((f: any) => {
-          if (!filesByUser[f.user_id]) filesByUser[f.user_id] = [];
-          filesByUser[f.user_id].push(f);
         });
       }
 
@@ -120,7 +112,6 @@ export default function Students() {
         ...student,
         applications: Array.isArray(student.applications) ? student.applications : [],
         documents: docsByUser[student.user_id] || [],
-        files: filesByUser[student.user_id] || [],
         service_requests: Array.isArray(student.service_requests) ? student.service_requests : []
       }));
 
@@ -376,10 +367,10 @@ export default function Students() {
                           <td className="p-1.5">
                             <div className="flex items-center gap-2">
                               <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{(student.documents?.length || 0) + (student.files?.length || 0)}</span>
-                              {(student.documents && student.documents.length > 0) || (student.files && student.files.length > 0) ? (
+                              <span className="text-sm">{student.documents?.length || 0}</span>
+                              {student.documents && student.documents.length > 0 ? (
                                 <Button size="sm" variant="outline" className="h-7" onClick={() => {
-                                  setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [], files: (student.files as any) || [] });
+                                  setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [] });
                                   setDocsOpen(true);
                                 }}>View</Button>
                               ) : null}
@@ -434,86 +425,65 @@ export default function Students() {
           <DialogHeader>
             <DialogTitle>Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 max-h-[60vh] overflow-y-auto">
-            <div className="space-y-3">
-              <p className="text-sm font-medium">From documents table</p>
-              {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
-                <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-              )}
-              {docsForStudent?.documents?.map((doc: any) => {
-                const url = doc.file_url || null;
-                const handleDownload = () => {
-                  if (!url) return;
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = doc.file_name || 'document';
-                  link.click();
-                };
-                return (
-                  <div key={`doc-${doc.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
-                    <div className="min-w-0">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded.</p>
+            )}
+            {docsForStudent?.documents?.map((doc: any) => {
+              const handleOpen = async () => {
+                try {
+                  const { data } = await supabase.storage
+                    .from('documents')
+                    .createSignedUrl(doc.upload_path, 300);
+                  if (data?.signedUrl) {
+                    window.open(data.signedUrl, '_blank');
+                  }
+                } catch (e) {
+                  console.error('Error opening document:', e);
+                }
+              };
+              const handleDownload = async () => {
+                try {
+                  const { data } = await supabase.storage
+                    .from('documents')
+                    .createSignedUrl(doc.upload_path, 300);
+                  if (data?.signedUrl) {
+                    const link = document.createElement('a');
+                    link.href = data.signedUrl;
+                    link.download = doc.file_name || 'document';
+                    link.click();
+                  }
+                } catch (e) {
+                  console.error('Error downloading document:', e);
+                }
+              };
+              return (
+                <div key={`doc-${doc.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
                       <p className="font-medium text-sm break-words whitespace-normal">{doc.file_name || 'Document'}</p>
-                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{doc.category || 'uncategorized'}</p>
+                      <Badge 
+                        variant={
+                          doc.status === 'approved' ? 'secondary' : 
+                          doc.status === 'rejected' ? 'destructive' : 
+                          'outline'
+                        } 
+                        className="capitalize text-xs"
+                      >
+                        {doc.status || 'pending'}
+                      </Badge>
                     </div>
-                    {url ? (
-                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                        <a href={url} target="_blank" rel="noreferrer">
-                          <Button size="sm" variant="outline" className="w-full sm:w-auto">Open</Button>
-                        </a>
-                        <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No link available</span>
-                    )}
+                    <p className="text-xs text-muted-foreground break-words whitespace-normal">
+                      {doc.module === 'additional_documents' ? 'Additional Document' : doc.category || 'APS Required'}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium">From files table</p>
-              {(!docsForStudent?.files || docsForStudent.files.length === 0) && (
-                <p className="text-sm text-muted-foreground">No files uploaded.</p>
-              )}
-              {docsForStudent?.files?.map((file: any) => {
-                // Create a signed URL for storage path when opening/downloading via UI
-                const handleOpen = async () => {
-                  try {
-                    const { data } = await supabase.storage
-                      .from('documents')
-                      .createSignedUrl(file.file_path, 300);
-                    if (data?.signedUrl) {
-                      window.open(data.signedUrl, '_blank');
-                    }
-                  } catch (e) {}
-                };
-                const handleDownload = async () => {
-                  try {
-                    const { data } = await supabase.storage
-                      .from('documents')
-                      .createSignedUrl(file.file_path, 300);
-                    if (data?.signedUrl) {
-                      const link = document.createElement('a');
-                      link.href = data.signedUrl;
-                      link.download = file.file_name || 'file';
-                      link.click();
-                    }
-                  } catch (e) {}
-                };
-                return (
-                  <div key={`file-${file.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm break-words whitespace-normal">{file.file_name || 'File'}</p>
-                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{file.module || 'general'}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpen}>Open</Button>
-                      <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
-                    </div>
+                  <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpen}>Open</Button>
+                    <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>

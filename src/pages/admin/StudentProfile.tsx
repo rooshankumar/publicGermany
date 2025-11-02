@@ -62,26 +62,13 @@ export default function StudentProfile() {
       .single();
     if (error) throw error;
 
-    // Documents via RPC (if present) else fallback
-    let docsData: any[] = [];
-    const { data: docsRpc, error: docsRpcErr } = await (supabase as any)
-      .rpc('admin_get_user_documents', { p_user_id: studentId });
-    if (!docsRpcErr && Array.isArray(docsRpc)) {
-      docsData = docsRpc;
-    } else {
-      const { data: docsDirect } = await supabase
-        .from('documents' as any)
-        .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,status,reviewed_by,reviewed_at,admin_notes')
-        .eq('user_id', studentId);
-      docsData = docsDirect || [];
-    }
-
-    const { data: filesData } = await supabase
-      .from('files' as any)
-      .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module,status,admin_notes')
+    // Fetch all documents (includes both APS required and additional docs)
+    const { data: docsData } = await supabase
+      .from('documents' as any)
+      .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,module,status,reviewed_by,reviewed_at,admin_notes')
       .eq('user_id', studentId);
 
-    return { ...(data as any), documents: docsData || [], files: filesData || [] } as StudentProfile;
+    return { ...(data as any), documents: docsData || [] } as StudentProfile;
   };
 
   // Resolve the student's email using the Postgres RPC at send time (no CORS)
@@ -243,7 +230,6 @@ export default function StudentProfile() {
     const channel = supabase
       .channel(`student-docs-${studentId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'files', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [studentId]);
@@ -677,29 +663,29 @@ export default function StudentProfile() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Additional Documents ({student.files?.filter(f => f.module === 'additional_documents').length || 0})
+              Additional Documents ({student.documents?.filter((d: any) => d.module === 'additional_documents').length || 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {student.files && student.files.filter(f => f.module === 'additional_documents').length > 0 ? (
+            {student.documents && student.documents.filter((d: any) => d.module === 'additional_documents').length > 0 ? (
               <div className="space-y-2">
-                {student.files.filter(f => f.module === 'additional_documents').map((file: any) => (
-                  <div key={file.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg">
+                {student.documents.filter((d: any) => d.module === 'additional_documents').map((doc: any) => (
+                  <div key={doc.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{file.file_name}</p>
+                        <p className="font-medium text-sm truncate">{doc.file_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Uploaded {new Date(file.created_at).toLocaleDateString()}
+                          Uploaded {new Date(doc.created_at).toLocaleDateString()}
                         </p>
-                        {file.admin_notes && (
-                          <p className="text-xs text-destructive mt-1">Note: {file.admin_notes}</p>
+                        {doc.admin_notes && (
+                          <p className="text-xs text-destructive mt-1">Note: {doc.admin_notes}</p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={(file.status === 'approved' ? 'secondary' : file.status === 'rejected' ? 'destructive' : 'outline')} className="capitalize">
-                        {file.status || 'pending'}
+                      <Badge variant={(doc.status === 'approved' ? 'secondary' : doc.status === 'rejected' ? 'destructive' : 'outline')} className="capitalize">
+                        {doc.status || 'pending'}
                       </Badge>
                       <Button
                         size="sm"
@@ -707,7 +693,7 @@ export default function StudentProfile() {
                         onClick={async () => {
                           const { data } = await supabase.storage
                             .from('documents')
-                            .createSignedUrl(file.file_path, 300);
+                            .createSignedUrl(doc.upload_path, 300);
                           if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                         }}
                         title="View"
@@ -721,11 +707,11 @@ export default function StudentProfile() {
                         onClick={async () => {
                           const { data } = await supabase.storage
                             .from('documents')
-                            .createSignedUrl(file.file_path, 300, { download: file.file_name });
+                            .createSignedUrl(doc.upload_path, 300, { download: doc.file_name });
                           if (data?.signedUrl) {
                             const a = document.createElement('a');
                             a.href = data.signedUrl;
-                            a.download = file.file_name;
+                            a.download = doc.file_name;
                             a.click();
                           }
                         }}
@@ -735,13 +721,13 @@ export default function StudentProfile() {
                         <Download className="h-3 w-3" />
                       </Button>
                       <Select 
-                        value={file.status || 'pending'} 
+                        value={doc.status || 'pending'} 
                         onValueChange={async (value: 'pending' | 'approved' | 'rejected') => {
                           try {
                             const { error } = await supabase
-                              .from('files')
+                              .from('documents')
                               .update({ status: value } as any)
-                              .eq('id', file.id);
+                              .eq('id', doc.id);
                             
                             if (error) throw error;
                             
