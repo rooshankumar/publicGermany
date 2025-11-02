@@ -43,9 +43,6 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
 export default function StudentProfile() {
   const { studentId } = useParams();
   const [student, setStudent] = useState<StudentProfile | null>(null);
-  // Local editable state for form fields
-  const [editFields, setEditFields] = useState<Partial<StudentProfile>>({});
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
@@ -227,7 +224,6 @@ export default function StudentProfile() {
   useEffect(() => {
     if (studentQuery.data) {
       setStudent(studentQuery.data);
-      setEditFields(studentQuery.data);
       resolveEmail();
       fetchPaymentSummary();
       setLoading(false);
@@ -467,41 +463,21 @@ export default function StudentProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                  <Input
-                    type="date"
-                    className="w-full"
-                    value={editFields.date_of_birth ? (editFields.date_of_birth as string).slice(0, 10) : ''}
-                    onChange={e => setEditFields(f => ({ ...f, date_of_birth: e.target.value }))}
-                  />
+                  <p className="text-sm mt-1">{student.date_of_birth || 'Not provided'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
-                  <Input
-                    type="text"
-                    className="w-full"
-                    value={editFields.country_of_education || ''}
-                    onChange={e => setEditFields(f => ({ ...f, country_of_education: e.target.value }))}
-                  />
+                  <p className="text-sm mt-1">{student.country_of_education || 'Not provided'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                  <Input
-                    type="number"
-                    className="w-24 mr-2"
-                    placeholder="Years"
-                    value={editFields.work_experience_years || ''}
-                    onChange={e => setEditFields(f => ({ ...f, work_experience_years: e.target.value ? Number(e.target.value) : null }))}
-                  />
-                  <Input
-                    type="text"
-                    className="w-48"
-                    placeholder="Field"
-                    value={editFields.work_experience_field || ''}
-                    onChange={e => setEditFields(f => ({ ...f, work_experience_field: e.target.value }))}
-                  />
+                  <p className="text-sm mt-1">
+                    {student.work_experience_years ? `${student.work_experience_years} years` : 'Not provided'}
+                    {student.work_experience_field && ` in ${student.work_experience_field}`}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -519,105 +495,27 @@ export default function StudentProfile() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="10th marks"
-                      value={editFields.class_10_marks || ''}
-                      onChange={e => setEditFields(f => ({ ...f, class_10_marks: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="12th marks"
-                      value={editFields.class_12_marks || ''}
-                      onChange={e => setEditFields(f => ({ ...f, class_12_marks: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-24"
-                      placeholder="12th stream"
-                      value={editFields.class_12_stream || ''}
-                      onChange={e => setEditFields(f => ({ ...f, class_12_stream: e.target.value }))}
-                    />
-                  </div>
+                  <p className="text-sm mt-1">
+                    10th: {student.class_10_marks || 'N/A'} | 12th: {student.class_12_marks || 'N/A'} ({student.class_12_stream || 'N/A'})
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
-                  <div className="flex flex-wrap gap-2">
-                    <Input
-                      type="text"
-                      className="w-36"
-                      placeholder="Degree name"
-                      value={editFields.bachelor_degree_name || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_degree_name: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-36"
-                      placeholder="Field"
-                      value={editFields.bachelor_field || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_field: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="CGPA/Percent"
-                      value={editFields.bachelor_cgpa_percentage || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_cgpa_percentage: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="ECTS credits"
-                      value={editFields.bachelor_credits_ects || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_credits_ects: e.target.value ? Number(e.target.value) : null }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="Years"
-                      value={editFields.bachelor_duration_years || ''}
-                      onChange={e => setEditFields(f => ({ ...f, bachelor_duration_years: e.target.value ? Number(e.target.value) : null }))}
-                    />
-                  </div>
+                  <p className="text-sm mt-1">
+                    {student.bachelor_degree_name || 'N/A'} in {student.bachelor_field || 'N/A'}<br/>
+                    CGPA: {student.bachelor_cgpa_percentage || 'N/A'} | Credits: {student.bachelor_credits_ects || 'N/A'} | Duration: {student.bachelor_duration_years || 'N/A'} years
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
-                  <div className="flex flex-wrap gap-2">
-                    <Input
-                      type="text"
-                      className="w-36"
-                      placeholder="Degree name"
-                      value={editFields.master_degree_name || ''}
-                      onChange={e => setEditFields(f => ({ ...f, master_degree_name: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-36"
-                      placeholder="Field"
-                      value={editFields.master_field || ''}
-                      onChange={e => setEditFields(f => ({ ...f, master_field: e.target.value }))}
-                    />
-                    <Input
-                      type="text"
-                      className="w-20"
-                      placeholder="CGPA/Percent"
-                      value={editFields.master_cgpa_percentage || ''}
-                      onChange={e => setEditFields(f => ({ ...f, master_cgpa_percentage: e.target.value }))}
-                    />
-                  </div>
+                  <p className="text-sm mt-1">
+                    {student.master_degree_name || 'N/A'} in {student.master_field || 'N/A'}<br/>
+                    CGPA: {student.master_cgpa_percentage || 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Language Score</label>
-                  <Input
-                    type="text"
-                    className="w-36"
-                    placeholder="IELTS/TOEFL"
-                    value={editFields.ielts_toefl_score || ''}
-                    onChange={e => setEditFields(f => ({ ...f, ielts_toefl_score: e.target.value }))}
-                  />
+                  <p className="text-sm mt-1">{student.ielts_toefl_score || 'Not provided'}</p>
                 </div>
               </div>
             </CardContent>
@@ -773,7 +671,69 @@ export default function StudentProfile() {
           </CardContent>
         </Card>
 
-        
+        {/* Additional Documents */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Additional Documents ({student.files?.filter(f => f.module === 'additional_documents').length || 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {student.files && student.files.filter(f => f.module === 'additional_documents').length > 0 ? (
+              <div className="space-y-2">
+                {student.files.filter(f => f.module === 'additional_documents').map((file) => (
+                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{file.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Uploaded {new Date(file.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          const { data } = await supabase.storage
+                            .from('documents')
+                            .createSignedUrl(file.file_path, 300);
+                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                        }}
+                        title="View"
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          const { data } = await supabase.storage
+                            .from('documents')
+                            .createSignedUrl(file.file_path, 300, { download: file.file_name });
+                          if (data?.signedUrl) {
+                            const a = document.createElement('a');
+                            a.href = data.signedUrl;
+                            a.download = file.file_name;
+                            a.click();
+                          }
+                        }}
+                        title="Download"
+                      >
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No additional documents uploaded</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Service Requests */}
         <Card>
@@ -814,33 +774,6 @@ export default function StudentProfile() {
             )}
           </CardContent>
         </Card>
-      </div>
-            <div className="flex justify-end mt-6">
-        <Button
-          variant="default"
-          disabled={saving}
-          onClick={async () => {
-            try {
-              setSaving(true);
-              if (!studentId) return;
-
-              const { error } = await supabase
-                .from('profiles')
-                .update(editFields)
-                .eq('user_id', studentId);
-
-              if (error) throw error;
-              toast({ title: 'Saved', description: 'Profile updated successfully.' });
-              await studentQuery.refetch();
-            } catch (e: any) {
-              toast({ title: 'Error', description: e.message || 'Failed to save changes', variant: 'destructive' });
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
       </div>
     </Layout>
   );
