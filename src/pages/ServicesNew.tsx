@@ -305,10 +305,20 @@ const ServicesNew = () => {
     try {
       const pathname = new URL(url).pathname;
       const last = pathname.substring(pathname.lastIndexOf('/') + 1);
-      return decodeURIComponent(last) || 'download';
+      let fileName = decodeURIComponent(last) || 'download';
+      
+      // Remove timestamp prefix (e.g., "1762083264940-" or "1761644307660-")
+      fileName = fileName.replace(/^\d+-/, '');
+      
+      return fileName;
     } catch {
       const parts = url.split('/');
-      return decodeURIComponent(parts[parts.length - 1] || 'download');
+      let fileName = decodeURIComponent(parts[parts.length - 1] || 'download');
+      
+      // Remove timestamp prefix
+      fileName = fileName.replace(/^\d+-/, '');
+      
+      return fileName;
     }
   };
 
@@ -514,14 +524,16 @@ const ServicesNew = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         {getStatusBadge(request.status)}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteRequest(request.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {request.status !== 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteRequest(request.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -592,16 +604,16 @@ const ServicesNew = () => {
                             {files.map((url, idx) => {
                               const fileName = getFileNameFromUrl(url);
                               return (
-                                <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-xs">
                                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                     <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="truncate font-medium">{fileName}</span>
+                                    <span className="truncate font-medium text-xs">{fileName}</span>
                                   </div>
-                                  <div className="flex gap-1 flex-shrink-0">
+                                  <div className="flex gap-1 flex-shrink-0 ml-5 sm:ml-0">
                                     <Button 
                                       size="sm" 
                                       variant="outline" 
-                                      className="h-6 px-2 text-xs"
+                                      className="h-6 px-2 text-[10px] sm:text-xs"
                                       onClick={async () => {
                                         try {
                                           const urlParts = url.split('/documents/');
@@ -624,7 +636,7 @@ const ServicesNew = () => {
                                     <Button 
                                       size="sm" 
                                       variant="ghost" 
-                                      className="h-6 px-2 text-xs"
+                                      className="h-6 px-2 text-[10px] sm:text-xs"
                                       onClick={async () => {
                                         try {
                                           const urlParts = url.split('/documents/');
