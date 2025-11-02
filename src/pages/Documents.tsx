@@ -192,12 +192,12 @@ const Documents = () => {
         .from('documents')
         .getPublicUrl(filePath);
 
-      // Save to files table
+      // Save to files table with formatted filename
       const { error: dbError } = await supabase
         .from('files')
         .insert({
           user_id: profile.user_id,
-          file_name: customFileName,
+          file_name: fileName, // Use the formatted filename (firstname_docname.ext)
           file_path: filePath,
           file_size: selectedFile.size,
           file_type: selectedFile.type,

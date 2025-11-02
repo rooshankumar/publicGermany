@@ -146,8 +146,11 @@ function APSRequiredDocuments({ displayName }: APSProps) {
         return dot >= 0 ? file.name.slice(dot) : '';
       })();
       const base = CATEGORY_BASE_FILENAME[key] || key;
-      const safeBaseName = base.replace(/[^a-zA-Z0-9-_ ()]/g, '');
-      const storedFileName = `${safeBaseName}${originalExt || ''}`; // e.g., "Passport.pdf"
+      // Get user's first name from profile
+      const firstName = profile?.full_name?.split(' ')[0] || 'user';
+      const safeBaseName = base.replace(/[^a-zA-Z0-9-_ ()]/g, '_');
+      // Format: firstname_documentname.ext (e.g., "roshan_Passport.pdf")
+      const storedFileName = `${firstName}_${safeBaseName}${originalExt || ''}`;
       const fileName = `${Date.now()}-${storedFileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `${profile.user_id}/${key}/${fileName}`;
       
