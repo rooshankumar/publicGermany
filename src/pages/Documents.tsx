@@ -141,7 +141,15 @@ const Documents = () => {
       // Pre-fill with original filename without extension
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
       setCustomFileName(nameWithoutExt);
+      console.log('File selected:', file.name, 'Name set to:', nameWithoutExt);
     }
+  };
+
+  // Reset form when dialog opens
+  const handleOpenDialog = () => {
+    setSelectedFile(null);
+    setCustomFileName('');
+    setShowUploadDialog(true);
   };
 
   // Upload additional document
@@ -361,7 +369,7 @@ const Documents = () => {
                   Upload any other documents you want to share (transcripts, certificates, etc.)
                 </CardDescription>
               </div>
-              <Button onClick={() => setShowUploadDialog(true)} size="sm">
+              <Button onClick={handleOpenDialog} size="sm">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload
               </Button>
