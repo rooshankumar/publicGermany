@@ -147,6 +147,8 @@ const Services = () => {
 
   // Map of requestId -> discovered deliverable URL (from storage)
   const [deliverables, setDeliverables] = useState<Record<string, string>>({});
+  // Cache signed URLs to avoid regenerating on every render
+  const [signedUrlCache, setSignedUrlCache] = useState<Record<string, { url: string; expiry: number }>>({});
   const [paymentEmail, setPaymentEmail] = useState<string>('publicgermany@outlook.com');
 
   // Parse stored service_type into clean list of service names (handles package + "Extras:")
@@ -210,10 +212,10 @@ const Services = () => {
   const catalogQuery = useQuery({
     queryKey: ['services_catalog_active'],
     queryFn: fetchCatalog,
-    staleTime: 60 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes - catalog doesn't change often
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: 'always',
+    refetchOnMount: false,
   });
 
   const paymentContactQuery = useQuery({
@@ -332,20 +334,20 @@ const Services = () => {
   const paymentsQuery = useQuery({
     queryKey: ['service_payments', user?.id],
     queryFn: fetchUserPayments,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: 'always',
+    refetchOnMount: false,
     enabled: !!user?.id,
   });
 
   const serviceRequestsQuery = useQuery({
     queryKey: ['service_requests', user?.id],
     queryFn: fetchServiceRequests,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes instead of 30 seconds
+    refetchOnWindowFocus: false, // Don't refetch on every window focus
     refetchOnReconnect: true,
-    refetchOnMount: 'always',
+    refetchOnMount: false, // Don't always refetch on mount
     enabled: !!user?.id,
   });
 
@@ -353,9 +355,9 @@ const Services = () => {
     queryKey: ['reviews_public_and_me', user?.id],
     queryFn: fetchReviews,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: 'always',
+    refetchOnMount: false,
     enabled: !!user?.id,
   });
 
@@ -424,7 +426,10 @@ const Services = () => {
   }, []);
 
   // When requests load/update, try to discover deliverables in storage for completed ones
+  // Only run once when serviceRequests first loads
   useEffect(() => {
+    if (serviceRequests.length === 0) return;
+    
     const discover = async () => {
       const candidates = serviceRequests.filter(r => r.status === 'completed' && !getDeliverableUrl(r) && !deliverables[r.id]);
       if (candidates.length === 0) return;
@@ -449,9 +454,15 @@ const Services = () => {
         setDeliverables(prev => ({ ...prev, ...entries }));
       }
     };
-    discover();
+    
+    // Only discover once when data first loads
+    const hasDiscovered = sessionStorage.getItem('deliverables_discovered');
+    if (!hasDiscovered) {
+      discover();
+      sessionStorage.setItem('deliverables_discovered', 'true');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceRequests]);
+  }, [serviceRequests.length > 0]);
 
   // (Removed) QR payment and proof upload flow. Users should email for payments instead.
 
@@ -1168,6 +1179,14 @@ const Services = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-2">
+                      {/* Request Details */}
+                      {request.request_details && (
+                        <div className="mb-3 p-3 bg-muted/30 rounded-lg">
+                          <p className="text-sm font-medium mb-1">Request Details:</p>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{request.request_details}</p>
+                        </div>
+                      )}
+                      
                       <div className="text-sm">
                         <span className="font-medium">
                           {request.service_currency || 'INR'} {request.service_price?.toLocaleString()}
@@ -1254,19 +1273,30 @@ const Services = () => {
                                           className="text-xs px-2 py-1"
                                           onClick={async () => {
                                             try {
-                                              // Extract path from URL
                                               const urlParts = url.split('/documents/');
                                               const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                              const cacheKey = `view_${filePath}`;
                                               
-                                              // Get signed URL for secure access
+                                              // Check cache first
+                                              const cached = signedUrlCache[cacheKey];
+                                              if (cached && cached.expiry > Date.now()) {
+                                                window.open(cached.url, '_blank');
+                                                return;
+                                              }
+                                              
+                                              // Generate new signed URL
                                               const { data, error } = await supabase.storage
                                                 .from('documents')
-                                                .createSignedUrl(filePath, 3600); // 1 hour expiry
+                                                .createSignedUrl(filePath, 3600);
                                               
                                               if (error || !data?.signedUrl) {
-                                                // Fallback to direct URL
                                                 window.open(url, '_blank');
                                               } else {
+                                                // Cache for 50 minutes (before expiry)
+                                                setSignedUrlCache(prev => ({
+                                                  ...prev,
+                                                  [cacheKey]: { url: data.signedUrl, expiry: Date.now() + 50 * 60 * 1000 }
+                                                }));
                                                 window.open(data.signedUrl, '_blank');
                                               }
                                             } catch (e) {
@@ -1282,17 +1312,28 @@ const Services = () => {
                                           className="text-xs px-2 py-1"
                                           onClick={async () => {
                                             try {
-                                              // Extract path from URL
                                               const urlParts = url.split('/documents/');
                                               const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                              const cacheKey = `download_${filePath}`;
                                               
-                                              // Get signed URL for secure download
+                                              // Check cache first
+                                              const cached = signedUrlCache[cacheKey];
+                                              if (cached && cached.expiry > Date.now()) {
+                                                const a = document.createElement('a');
+                                                a.href = cached.url;
+                                                a.download = fileName;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                a.remove();
+                                                return;
+                                              }
+                                              
+                                              // Generate new signed URL
                                               const { data, error } = await supabase.storage
                                                 .from('documents')
                                                 .createSignedUrl(filePath, 3600, { download: fileName });
                                               
                                               if (error || !data?.signedUrl) {
-                                                // Fallback to direct download
                                                 const a = document.createElement('a');
                                                 a.href = url;
                                                 a.download = fileName;
@@ -1300,6 +1341,11 @@ const Services = () => {
                                                 a.click();
                                                 a.remove();
                                               } else {
+                                                // Cache for 50 minutes
+                                                setSignedUrlCache(prev => ({
+                                                  ...prev,
+                                                  [cacheKey]: { url: data.signedUrl, expiry: Date.now() + 50 * 60 * 1000 }
+                                                }));
                                                 const a = document.createElement('a');
                                                 a.href = data.signedUrl;
                                                 a.download = fileName;
