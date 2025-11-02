@@ -78,7 +78,7 @@ export default function StudentProfile() {
 
     const { data: filesData } = await supabase
       .from('files' as any)
-      .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module')
+      .select('id,user_id,file_name,file_path,file_size,file_type,created_at,module,status,admin_notes')
       .eq('user_id', studentId);
 
     return { ...(data as any), documents: docsData || [], files: filesData || [] } as StudentProfile;
@@ -233,8 +233,8 @@ export default function StudentProfile() {
     }
   }, [studentQuery.data, studentQuery.isError]);
 
-  // Realtime updates for student's documents
-  // Debounced realtime updates for documents under this student
+  // Realtime updates for student's documents and files
+  // Debounced realtime updates for documents and files under this student
   useEffect(() => {
     if (!studentId) return;
     const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
@@ -243,6 +243,7 @@ export default function StudentProfile() {
     const channel = supabase
       .channel(`student-docs-${studentId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'files', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [studentId]);
@@ -682,8 +683,8 @@ export default function StudentProfile() {
           <CardContent>
             {student.files && student.files.filter(f => f.module === 'additional_documents').length > 0 ? (
               <div className="space-y-2">
-                {student.files.filter(f => f.module === 'additional_documents').map((file) => (
-                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
+                {student.files.filter(f => f.module === 'additional_documents').map((file: any) => (
+                  <div key={file.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -691,9 +692,15 @@ export default function StudentProfile() {
                         <p className="text-xs text-muted-foreground">
                           Uploaded {new Date(file.created_at).toLocaleDateString()}
                         </p>
+                        {file.admin_notes && (
+                          <p className="text-xs text-destructive mt-1">Note: {file.admin_notes}</p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={(file.status === 'approved' ? 'secondary' : file.status === 'rejected' ? 'destructive' : 'outline')} className="capitalize">
+                        {file.status || 'pending'}
+                      </Badge>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -704,6 +711,7 @@ export default function StudentProfile() {
                           if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                         }}
                         title="View"
+                        className="px-2"
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
@@ -722,9 +730,45 @@ export default function StudentProfile() {
                           }
                         }}
                         title="Download"
+                        className="px-2"
                       >
                         <Download className="h-3 w-3" />
                       </Button>
+                      <Select 
+                        value={file.status || 'pending'} 
+                        onValueChange={async (value: 'pending' | 'approved' | 'rejected') => {
+                          try {
+                            const { error } = await supabase
+                              .from('files')
+                              .update({ status: value } as any)
+                              .eq('id', file.id);
+                            
+                            if (error) throw error;
+                            
+                            toast({ 
+                              title: 'Status Updated', 
+                              description: `Document ${value}` 
+                            });
+                            
+                            await studentQuery.refetch();
+                          } catch (error: any) {
+                            toast({ 
+                              title: 'Error', 
+                              description: error.message, 
+                              variant: 'destructive' 
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="approved">Approve</SelectItem>
+                          <SelectItem value="rejected">Reject</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 ))}
