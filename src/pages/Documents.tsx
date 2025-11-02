@@ -33,6 +33,7 @@ const Documents = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [customFileName, setCustomFileName] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [additionalUploadProgress, setAdditionalUploadProgress] = useState(0);
   const [additionalDocs, setAdditionalDocs] = useState<any[]>([]);
 
   const queryClient = useQueryClient();
@@ -120,14 +121,14 @@ const Documents = () => {
   useEffect(() => {
     if (!profile?.user_id) return;
     const fetchAdditionalDocs = async () => {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('documents')
-        .select('*')
+        .select('id, user_id, file_name, upload_path, file_url, file_size, file_type, category, module, status, admin_notes, created_at, updated_at')
         .eq('user_id', profile.user_id)
         .eq('module', 'additional_documents')
         .order('created_at', { ascending: false });
-      if (!error && data) {
-        setAdditionalDocs(data);
+      if (!result.error && result.data) {
+        setAdditionalDocs(result.data as any[]);
       }
     };
     fetchAdditionalDocs();
@@ -148,6 +149,7 @@ const Documents = () => {
   const handleOpenDialog = () => {
     setSelectedFile(null);
     setCustomFileName('');
+    setAdditionalUploadProgress(0);
     setShowUploadDialog(true);
   };
 
@@ -172,6 +174,8 @@ const Documents = () => {
 
     try {
       setUploading(true);
+      setAdditionalUploadProgress(10);
+      
       const fileExt = selectedFile.name.split('.').pop();
       // Get user's first name from profile
       const firstName = profile?.full_name?.split(' ')[0] || 'user';
@@ -187,18 +191,24 @@ const Documents = () => {
       const fileName = `${firstName}_${sanitizedName}`;
       const filePath = `additional/${profile.user_id}/${fileName}`;
 
+      setAdditionalUploadProgress(30);
+      
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
+      
+      setAdditionalUploadProgress(60);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
+      setAdditionalUploadProgress(75);
+      
       // Save to documents table with module='additional_documents'
       const { error: dbError } = await supabase
         .from('documents')
@@ -216,17 +226,22 @@ const Documents = () => {
 
       if (dbError) throw dbError;
 
+      setAdditionalUploadProgress(90);
+      
       toast({ title: 'Success', description: 'Document uploaded successfully' });
       
       // Refresh list
-      const { data } = await supabase
+      // @ts-ignore - Supabase type inference issue with documents table
+      const result = await supabase
         .from('documents')
-        .select('*')
+        .select('id, user_id, file_name, upload_path, file_url, file_size, file_type, category, module, status, admin_notes, created_at, updated_at')
         .eq('user_id', profile.user_id)
         .eq('module', 'additional_documents')
         .order('created_at', { ascending: false });
-      if (data) setAdditionalDocs(data);
+      if (result.data) setAdditionalDocs(result.data as any[]);
 
+      setAdditionalUploadProgress(100);
+      
       // Reset
       setSelectedFile(null);
       setCustomFileName('');
@@ -235,6 +250,7 @@ const Documents = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setUploading(false);
+      setAdditionalUploadProgress(0);
     }
   };
 
@@ -417,14 +433,26 @@ const Documents = () => {
                   placeholder="e.g., Bachelor Transcript Semester 1"
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
+                  disabled={uploading}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Give this document a descriptive name
                 </p>
               </div>
+              
+              {/* Upload Progress */}
+              {uploading && additionalUploadProgress > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Uploading...</span>
+                    <span>{additionalUploadProgress}%</span>
+                  </div>
+                  <Progress value={additionalUploadProgress} className="h-1.5" />
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+              <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={uploading}>
                 Cancel
               </Button>
               <Button onClick={handleUploadAdditional} disabled={uploading || !selectedFile || !customFileName.trim()}>
