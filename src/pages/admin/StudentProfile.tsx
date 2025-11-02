@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, 
@@ -20,11 +21,13 @@ import {
   FileText,
   Download,
   Eye,
-  MapPin,
   Award,
   BookOpen,
   Briefcase,
-  RefreshCw
+  RefreshCw,
+  DollarSign,
+  FileCheck,
+  ExternalLink
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
@@ -45,7 +48,9 @@ export default function StudentProfile() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchStudentProfile = async () => {
     if (!studentId) return null;
@@ -90,6 +95,36 @@ export default function StudentProfile() {
       if (!error && data) return data as string;
     } catch {}
     return email;
+  };
+
+  const fetchPaymentSummary = async () => {
+    if (!studentId) return;
+    
+    const { data, error } = await supabase
+      .from('service_requests' as any)
+      .select(`
+        id,
+        service_payments (
+          amount,
+          status
+        )
+      `)
+      .eq('user_id', studentId);
+
+    if (!error && data) {
+      let total = 0, received = 0, pending = 0;
+      
+      (data as any[]).forEach(request => {
+        (request.service_payments || []).forEach((p: any) => {
+          const amount = Number(p.amount) || 0;
+          total += amount;
+          if (p.status === 'received') received += amount;
+          if (p.status === 'pending') pending += amount;
+        });
+      });
+
+      setPaymentSummary({ total, received, pending });
+    }
   };
 
   const updateDocumentStatus = async (docId: string, nextStatus: 'pending' | 'approved' | 'rejected') => {
@@ -191,12 +226,13 @@ export default function StudentProfile() {
 
   useEffect(() => {
     if (studentQuery.data) {
-      setStudent((studentQuery.data as any) || null);
-      setEditFields(studentQuery.data as any || {});
+      setStudent(studentQuery.data);
+      setEditFields(studentQuery.data);
       resolveEmail();
+      fetchPaymentSummary();
       setLoading(false);
-    } else if (studentQuery.isError) {
-      toast({ title: 'Error', description: 'Failed to fetch student profile', variant: 'destructive' });
+    }
+    if (studentQuery.isError) {
       setLoading(false);
     }
   }, [studentQuery.data, studentQuery.isError]);
@@ -305,9 +341,9 @@ export default function StudentProfile() {
           </Link>
         </div>
 
-        {/* Student Header */}
+        {/* Student Header with Quick Actions */}
         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {student.full_name || 'Unknown Student'}
@@ -327,16 +363,98 @@ export default function StudentProfile() {
                   <span className="text-sm">Joined {new Date(student.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
+              <div className="flex gap-2 mt-3">
+                <Badge variant={student.aps_pathway ? 'default' : 'secondary'}>
+                  {student.aps_pathway || 'No APS Pathway'}
+                </Badge>
+                <Badge variant="outline">
+                  German: {student.german_level || 'None'}
+                </Badge>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Badge variant={student.aps_pathway ? 'default' : 'secondary'}>
-                {student.aps_pathway || 'No APS Pathway'}
-              </Badge>
-              <Badge variant="outline">
-                German: {student.german_level || 'None'}
-              </Badge>
+
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/admin/payments/${studentId}`)}
+                className="gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                View Payments
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/admin/requests/${studentId}`)}
+                className="gap-2"
+              >
+                <Briefcase className="h-4 w-4" />
+                View Requests
+              </Button>
             </div>
           </div>
+        </div>
+
+        {/* Summary Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Applications</p>
+                  <p className="text-2xl font-bold">{student.applications?.length || 0}</p>
+                </div>
+                <BookOpen className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Documents</p>
+                  <p className="text-2xl font-bold">
+                    {(student.documents || []).filter((d: any) => d.status === 'approved').length}/{DOCUMENTS.length}
+                  </p>
+                </div>
+                <FileCheck className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Services</p>
+                  <p className="text-2xl font-bold">{student.service_requests?.length || 0}</p>
+                </div>
+                <Briefcase className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Payments</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    ₹{paymentSummary.received.toLocaleString()}
+                  </p>
+                  {paymentSummary.pending > 0 && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      ₹{paymentSummary.pending.toLocaleString()} pending
+                    </p>
+                  )}
+                </div>
+                <DollarSign className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

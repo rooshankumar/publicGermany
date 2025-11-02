@@ -15,14 +15,20 @@ const Converter = lazy(() => import("./pages/Converter"));
 const Applications = lazy(() => import("./pages/Applications"));
 const GradeConverter = lazy(() => import("./pages/tools/grade-converter"));
 const Services = lazy(() => import("./pages/Services"));
+const ServicesNew = lazy(() => import("./pages/ServicesNew"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Requests = lazy(() => import("./pages/admin/Requests"));
+const RequestStudents = lazy(() => import("./pages/admin/RequestStudents"));
+const StudentRequests = lazy(() => import("./pages/admin/StudentRequests"));
 const Students = lazy(() => import("./pages/admin/Students"));
+const StudentsList = lazy(() => import("./pages/admin/StudentsList"));
 const Payments = lazy(() => import("./pages/admin/Payments"));
+const PaymentStudents = lazy(() => import("./pages/admin/PaymentStudents"));
+const StudentPayments = lazy(() => import("./pages/admin/StudentPayments"));
 const StudentProfile = lazy(() => import("./pages/admin/StudentProfile"));
 const Exports = lazy(() => import("./pages/admin/Exports"));
 const Universities = lazy(() => import("./pages/admin/Universities"));
@@ -76,9 +82,9 @@ const AppRoutes = () => {
       // Admin side preloads
       if (profile?.role === 'admin') {
         import('./pages/admin/AdminDashboard');
-        import('./pages/admin/Requests');
-        import('./pages/admin/Students');
-        import('./pages/admin/Payments');
+        import('./pages/admin/RequestStudents');
+        import('./pages/admin/PaymentStudents');
+        import('./pages/admin/StudentsList');
         import('./pages/admin/StudentProfile');
         import('./pages/admin/Exports');
         import('./pages/admin/Universities');
@@ -134,7 +140,7 @@ const AppRoutes = () => {
         } />
         <Route path="/services" element={
           <ProtectedRoute disallowRole="admin">
-            <Services />
+            <ServicesNew />
           </ProtectedRoute>
         } />
         <Route path="/resources" element={
@@ -153,12 +159,17 @@ const AppRoutes = () => {
         } />
         <Route path="/admin/requests" element={
           <ProtectedRoute requiredRole="admin">
-            <Requests />
+            <RequestStudents />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/requests/:studentId" element={
+          <ProtectedRoute requiredRole="admin">
+            <StudentRequests />
           </ProtectedRoute>
         } />
         <Route path="/admin/students" element={
           <ProtectedRoute requiredRole="admin">
-            <Students />
+            <StudentsList />
           </ProtectedRoute>
         } />
         <Route path="/admin/students/:studentId" element={
@@ -171,7 +182,12 @@ const AppRoutes = () => {
         
         <Route path="/admin/payments" element={
           <ProtectedRoute requiredRole="admin">
-            <Payments />
+            <PaymentStudents />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/payments/:studentId" element={
+          <ProtectedRoute requiredRole="admin">
+            <StudentPayments />
           </ProtectedRoute>
         } />
         <Route path="/admin/student-profile" element={

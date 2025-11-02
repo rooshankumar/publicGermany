@@ -15,11 +15,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Settings
+  AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { sendEmail } from '@/lib/sendEmail';
 
 interface DashboardStats {
   totalStudents: number;
@@ -30,6 +28,8 @@ interface DashboardStats {
   urgentTasks: any[];
   pendingPayments: number;
   receivedPayments: number;
+  pendingDocuments: number;
+  recentStudents: any[];
 }
 
 const AdminDashboard = () => {
@@ -41,7 +41,9 @@ const AdminDashboard = () => {
     recentPayments: [],
     urgentTasks: [],
     pendingPayments: 0,
-    receivedPayments: 0
+    receivedPayments: 0,
+    pendingDocuments: 0,
+    recentStudents: []
   });
   const [loading, setLoading] = useState(true);
   const initialLoadDoneRef = useRef(false);
@@ -91,8 +93,10 @@ const AdminDashboard = () => {
         receivedPaymentsCountRes,
         recentPaymentsRes,
         urgentAppsRes,
+        pendingDocsRes,
+        recentStudentsRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('applications').select('id', { count: 'exact', head: true }).neq('status', 'rejected'),
         supabase.from('service_requests').select('id', { count: 'exact', head: true }).in('status', ['new', 'in_progress']),
         supabase.from('service_payments' as any).select('amount').eq('status', 'received'),
@@ -100,6 +104,8 @@ const AdminDashboard = () => {
         supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'received'),
         supabase.from('service_payments' as any).select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(5),
         supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(10),
+        supabase.from('documents' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profiles').select('id, full_name, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
       ]);
 
       const studentsCount = studentsCountRes.count || 0;
@@ -111,6 +117,8 @@ const AdminDashboard = () => {
       const receivedPayments = receivedPaymentsCountRes.count || 0;
       const recentPayments = recentPaymentsRes.data || [];
       const urgentApps = urgentAppsRes.data || [];
+      const pendingDocs = pendingDocsRes.count || 0;
+      const recentStudents = recentStudentsRes.data || [];
 
       setStats({
         totalStudents: studentsCount || 0,
@@ -120,7 +128,9 @@ const AdminDashboard = () => {
         recentPayments: recentPayments || [],
         urgentTasks: urgentApps || [],
         pendingPayments: pendingPayments || 0,
-        receivedPayments: receivedPayments || 0
+        receivedPayments: receivedPayments || 0,
+        pendingDocuments: pendingDocs || 0,
+        recentStudents: recentStudents || []
       });
 
     } catch (error: any) {
@@ -167,89 +177,54 @@ const AdminDashboard = () => {
         </div>
         
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalStudents}</div>
-              <p className="text-xs text-muted-foreground">
-                <Link to="/admin/students" className="hover:underline">View all students</Link>
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link to="/admin/students">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                <Users className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalStudents}</div>
+                <p className="text-xs text-muted-foreground mt-1">Click to manage</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/admin/requests">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+                <GraduationCap className="h-5 w-5 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pendingRequests}</div>
+                <p className="text-xs text-muted-foreground mt-1">Needs attention</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/admin/payments">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Revenue Received</CardTitle>
+                <CreditCard className="h-5 w-5 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">₹{stats.totalRevenue.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">{stats.pendingPayments} pending</p>
+              </CardContent>
+            </Card>
+          </Link>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Applications</CardTitle>
-              <FileText className="h-4 w-4 text-secondary" />
+              <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
+              <FileText className="h-5 w-5 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-secondary">{stats.activeApplications}</div>
-              <p className="text-xs text-muted-foreground">
-                <Link to="/admin" className="hover:underline">Manage applications</Link>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-              <GraduationCap className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-accent">{stats.pendingRequests}</div>
-              <p className="text-xs text-muted-foreground">
-                <Link to="/admin/requests" className="hover:underline">Handle requests</Link>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-              <CreditCard className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">₹{stats.totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                <Link to="/admin/payments" className="hover:underline">View payments</Link>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-              <Clock className="h-4 w-4 text-warning" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-warning">{stats.pendingPayments}</div>
-              <p className="text-xs text-muted-foreground">
-                <Link to="/admin/payments" className="hover:underline">Resolve now</Link>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow border-dashed">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Testing Links</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Link to="/applications" className="block text-sm text-primary hover:underline">
-                  → Student Applications Page
-                </Link>
-                <Link to="/services" className="block text-sm text-primary hover:underline">
-                  → Student Services Page
-                </Link>
-                <Link to="/dashboard" className="block text-sm text-primary hover:underline">
-                  → Student Dashboard
-                </Link>
-              </div>
+              <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
+              <p className="text-xs text-muted-foreground mt-1">Awaiting review</p>
             </CardContent>
           </Card>
         </div>
@@ -328,66 +303,40 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* Recent Students */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Recent Students
+            </CardTitle>
+            <CardDescription>Latest student registrations</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button asChild className="h-16 flex-col">
-                <Link to="/admin/students">
-                  <Users className="h-5 w-5 mb-1.5" />
-                  Manage Students
-                </Link>
-              </Button>
-              <Button asChild className="h-16 flex-col" variant="outline">
-                <Link to="/admin/requests">
-                  <GraduationCap className="h-5 w-5 mb-1.5" />
-                  Service Requests
-                </Link>
-              </Button>
-              <Button asChild className="h-16 flex-col" variant="ghost">
-                <Link to="/admin/payments">
-                  <CreditCard className="h-5 w-5 mb-1.5" />
-                  Payment Records
-                </Link>
-              </Button>
-              <Button asChild className="h-16 flex-col" variant="secondary">
-                <Link to="/admin/reviews">
-                  <TrendingUp className="h-5 w-5 mb-1.5" />
-                  Moderate Reviews
-                </Link>
-              </Button>
-              <Button asChild className="h-16 flex-col" variant="secondary">
-                <Link to="/admin/resources">
-                  <TrendingUp className="h-5 w-5 mb-1.5" />
-                  Resources
-                </Link>
-              </Button>
-              <Button
-                className="h-16 flex-col"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const to = window.prompt('Enter recipient email for test:');
-                    if (!to) return;
-                    await sendEmail(
-                      to,
-                      'Test Alert 🚀',
-                      '<p>Hello from publicGermany via Supabase Edge Function (Brevo)!</p>'
-                    );
-                    toast({ title: 'Email sent', description: `Test email sent to ${to}` });
-                  } catch (e: any) {
-                    toast({ title: 'Send failed', description: e?.message || 'Unable to send email', variant: 'destructive' });
-                  }
-                }}
-              >
-                <Settings className="h-6 w-6 mb-2" />
-                Send Test Email
-              </Button>
-            </div>
+            {stats.recentStudents.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No recent students</p>
+            ) : (
+              <div className="space-y-3">
+                {stats.recentStudents.map((student: any) => (
+                  <Link key={student.id} to={`/admin/students/${student.id}`}>
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{student.full_name || 'Unknown'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(student.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">New</Badge>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
