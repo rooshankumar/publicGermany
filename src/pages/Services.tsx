@@ -1241,25 +1241,90 @@ const Services = () => {
                              }
                              
                              return (
-                               <div className="space-y-2">
-                                 {allUrls.map((url, index) => {
-                                   const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `File ${index + 1}`;
-                                   return (
-                                     <div key={index} className="flex items-center justify-between gap-3 p-2 bg-background rounded border border-border">
-                                       <span className="text-xs text-muted-foreground truncate flex-1">{fileName}</span>
-                                       <div className="flex items-center gap-1">
-                                         <a href={url} target="_blank" rel="noreferrer">
-                                           <Button size="sm" variant="default" className="text-xs px-2 py-1">View</Button>
-                                         </a>
-                                         <a href={url} download>
-                                           <Button size="sm" variant="outline" className="text-xs px-2 py-1">Download</Button>
-                                         </a>
-                                       </div>
-                                     </div>
-                                   );
-                                 })}
-                               </div>
-                             );
+                              <div className="space-y-2">
+                                {allUrls.map((url, index) => {
+                                  const fileName = url.split('/').pop()?.replace(/^\d+-/, '') || `File ${index + 1}`;
+                                  return (
+                                    <div key={index} className="flex items-center justify-between gap-3 p-2 bg-background rounded border border-border">
+                                      <span className="text-xs text-muted-foreground truncate flex-1">{fileName}</span>
+                                      <div className="flex items-center gap-1">
+                                        <Button 
+                                          size="sm" 
+                                          variant="default" 
+                                          className="text-xs px-2 py-1"
+                                          onClick={async () => {
+                                            try {
+                                              // Extract path from URL
+                                              const urlParts = url.split('/documents/');
+                                              const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                              
+                                              // Get signed URL for secure access
+                                              const { data, error } = await supabase.storage
+                                                .from('documents')
+                                                .createSignedUrl(filePath, 3600); // 1 hour expiry
+                                              
+                                              if (error || !data?.signedUrl) {
+                                                // Fallback to direct URL
+                                                window.open(url, '_blank');
+                                              } else {
+                                                window.open(data.signedUrl, '_blank');
+                                              }
+                                            } catch (e) {
+                                              window.open(url, '_blank');
+                                            }
+                                          }}
+                                        >
+                                          View
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="text-xs px-2 py-1"
+                                          onClick={async () => {
+                                            try {
+                                              // Extract path from URL
+                                              const urlParts = url.split('/documents/');
+                                              const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                              
+                                              // Get signed URL for secure download
+                                              const { data, error } = await supabase.storage
+                                                .from('documents')
+                                                .createSignedUrl(filePath, 3600, { download: fileName });
+                                              
+                                              if (error || !data?.signedUrl) {
+                                                // Fallback to direct download
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = fileName;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                a.remove();
+                                              } else {
+                                                const a = document.createElement('a');
+                                                a.href = data.signedUrl;
+                                                a.download = fileName;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                a.remove();
+                                              }
+                                            } catch (e) {
+                                              const a = document.createElement('a');
+                                              a.href = url;
+                                              a.download = fileName;
+                                              document.body.appendChild(a);
+                                              a.click();
+                                              a.remove();
+                                            }
+                                          }}
+                                        >
+                                          Download
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
                            })()}
                          </div>
                        )}
