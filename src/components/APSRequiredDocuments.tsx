@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CheckCircle, Upload, Trash2, Eye } from 'lucide-react';
+import { CheckCircle, Upload, Trash2, Eye, Plus, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { sendEmail } from '@/lib/sendEmail';
+import { Badge } from '@/components/ui/badge';
 
 export const DOCUMENTS = [
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
@@ -59,9 +60,12 @@ interface DocumentMeta {
 
 interface APSProps {
   displayName?: string;
+  additionalDocs?: any[];
+  onUploadAdditional?: () => void;
+  onDeleteAdditional?: (doc: any) => void;
 }
 
-function APSRequiredDocuments({ displayName }: APSProps) {
+function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditional, onDeleteAdditional }: APSProps) {
   const { profile } = useAuth();
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
   const [loading, setLoading] = useState<string | null>(null);
@@ -462,6 +466,89 @@ function APSRequiredDocuments({ displayName }: APSProps) {
             ))}
           </Accordion>
         </div>
+
+        {/* Additional Documents Section - After Master's Degree */}
+        {onUploadAdditional && (
+          <div className="mt-6 pt-6 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Additional Documents
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                  Upload any other documents you want to share (transcripts, certificates, etc.)
+                </p>
+              </div>
+              <Button onClick={onUploadAdditional} size="sm" variant="default">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </div>
+
+            {additionalDocs.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">
+                <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No additional documents uploaded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {additionalDocs.map((doc: any) => (
+                  <div key={doc.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg bg-background">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">{doc.file_name}</p>
+                          <Badge 
+                            variant={
+                              doc.status === 'approved' ? 'secondary' : 
+                              doc.status === 'rejected' ? 'destructive' : 
+                              'outline'
+                            } 
+                            className="capitalize text-xs"
+                          >
+                            {doc.status || 'pending'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Uploaded {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                        {doc.admin_notes && doc.status === 'rejected' && (
+                          <p className="text-xs text-destructive mt-1">
+                            Admin: {doc.admin_notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const { data } = await supabase.storage
+                            .from('documents')
+                            .createSignedUrl(doc.upload_path, 300);
+                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                        }}
+                      >
+                        <Eye className="h-4 w-4 md:mr-1" />
+                        <span className="hidden md:inline">View</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onDeleteAdditional?.(doc)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
