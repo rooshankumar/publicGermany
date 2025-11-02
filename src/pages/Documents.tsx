@@ -174,7 +174,10 @@ const Documents = () => {
     try {
       setUploading(true);
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${customFileName.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`;
+      // Get user's first name from profile
+      const firstName = profile?.full_name?.split(' ')[0] || 'user';
+      const sanitizedName = customFileName.replace(/[^a-zA-Z0-9]/g, '_');
+      const fileName = `${firstName}_${sanitizedName}.${fileExt}`;
       const filePath = `additional/${profile.user_id}/${fileName}`;
 
       // Upload to storage
@@ -264,59 +267,59 @@ const Documents = () => {
         </div>
 
         {/* Document Stats */}
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           <Card className="bg-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Total</CardTitle>
+              <FileText className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{documentStats.total}</div>
-              <p className="text-xs text-muted-foreground">Required for your application</p>
+            <CardContent className="pb-2 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold">{documentStats.total}</div>
+              <p className="text-xs text-muted-foreground hidden md:block">Required docs</p>
             </CardContent>
           </Card>
           <Card className="bg-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <FileCheck className="h-4 w-4 text-pg-success" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Approved</CardTitle>
+              <FileCheck className="h-3 w-3 md:h-4 md:w-4 text-pg-success" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{documentStats.uploaded}</div>
-              <p className="text-xs text-muted-foreground">Approved and verified</p>
+            <CardContent className="pb-2 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold">{documentStats.uploaded}</div>
+              <p className="text-xs text-muted-foreground hidden md:block">Verified</p>
             </CardContent>
           </Card>
           <Card className="bg-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-              <FileClock className="h-4 w-4 text-pg-gold" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Pending</CardTitle>
+              <FileClock className="h-3 w-3 md:h-4 md:w-4 text-pg-gold" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{documentStats.pending}</div>
-              <p className="text-xs text-muted-foreground">Awaiting verification</p>
+            <CardContent className="pb-2 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold">{documentStats.pending}</div>
+              <p className="text-xs text-muted-foreground hidden md:block">In review</p>
             </CardContent>
           </Card>
           <Card className="bg-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <FileX className="h-4 w-4 text-pg-error" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Rejected</CardTitle>
+              <FileX className="h-3 w-3 md:h-4 md:w-4 text-pg-error" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{documentStats.rejected}</div>
-              <p className="text-xs text-muted-foreground">Needs attention</p>
+            <CardContent className="pb-2 md:pb-4">
+              <div className="text-xl md:text-2xl font-bold">{documentStats.rejected}</div>
+              <p className="text-xs text-muted-foreground hidden md:block">Fix needed</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Progress Bar */}
         <Card className="bg-background">
-          <CardHeader>
-            <div className="flex justify-between items-center">
+          <CardHeader className="pb-3 md:pb-6">
+            <div className="flex justify-between items-start md:items-center gap-2">
               <div className="flex items-center gap-2">
-                <CardTitle>Document Completion</CardTitle>
+                <CardTitle className="text-sm md:text-base">Progress</CardTitle>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <Info className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[240px] text-xs">
                       Upload all required documents to reach 100% completion. Admins will review and approve your uploads.
@@ -324,37 +327,38 @@ const Documents = () => {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Badge variant="outline" className="font-normal">
-                {uploadProgress}% Complete
+              <Badge variant="outline" className="font-normal text-xs">
+                {uploadProgress}%
               </Badge>
             </div>
-            <CardDescription>
-              Track your document upload progress for a complete application
+            <CardDescription className="hidden md:block text-xs">
+              Track your document upload progress
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
+          <CardContent className="pb-3 md:pb-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>
-                  <Badge variant="secondary" className="mr-2">{documentStats.uploaded}</Badge>
-                  of {documentStats.total} documents uploaded
+                  <Badge variant="secondary" className="mr-1 text-xs">{documentStats.uploaded}</Badge>
+                  of {documentStats.total}
                 </span>
                 <span>
-                  <Badge variant="secondary" className="mr-2">{documentStats.total - documentStats.uploaded}</Badge>
-                  remaining
+                  <Badge variant="secondary" className="mr-1 text-xs">{documentStats.total - documentStats.uploaded}</Badge>
+                  left
                 </span>
               </div>
               <Progress value={uploadProgress} className="h-2 rounded-full" />
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
+          <CardFooter className="flex justify-end pt-0 pb-3 md:pb-4">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={refreshDocuments}
               disabled={loading}
+              className="text-xs h-8"
             >
-              {loading ? 'Refreshing...' : 'Refresh Status'}
+              {loading ? 'Refreshing...' : 'Refresh'}
             </Button>
           </CardFooter>
         </Card>

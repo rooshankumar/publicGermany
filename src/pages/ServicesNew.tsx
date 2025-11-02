@@ -243,46 +243,46 @@ const ServicesNew = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Services</h1>
-          <p className="text-muted-foreground">Explore our services and track your requests</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Services</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Explore our services and track your requests</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
                 <div>
-                  <p className="text-sm text-muted-foreground">Active Requests</p>
-                  <p className="text-2xl font-bold">{activeRequests.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Active</p>
+                  <p className="text-xl md:text-2xl font-bold">{activeRequests.length}</p>
                 </div>
-                <Clock className="h-8 w-8 text-muted-foreground" />
+                <Clock className="hidden md:block h-8 w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
                 <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{completedRequests.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Done</p>
+                  <p className="text-xl md:text-2xl font-bold">{completedRequests.length}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="hidden md:block h-8 w-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
                 <div>
-                  <p className="text-sm text-muted-foreground">Files Ready</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xs md:text-sm text-muted-foreground">Files</p>
+                  <p className="text-xl md:text-2xl font-bold">
                     {completedRequests.reduce((sum, r) => sum + getAllDeliverableUrls(r).length, 0)}
                   </p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-600" />
+                <FileText className="hidden md:block h-8 w-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -414,14 +414,15 @@ const ServicesNew = () => {
           </TabsContent>
 
           {/* TAB 2: My Requests */}
-          <TabsContent value="requests" className="space-y-4">
+          <TabsContent value="requests" className="space-y-3 md:space-y-4">
             {activeRequests.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No active requests</p>
+                  <p className="text-sm md:text-base text-muted-foreground">No active requests</p>
                   <Button
                     variant="outline"
+                    size="sm"
                     className="mt-4"
                     onClick={() => document.querySelector('[value="browse"]')?.dispatchEvent(new Event('click', { bubbles: true }))}
                   >
@@ -432,11 +433,11 @@ const ServicesNew = () => {
             ) : (
               activeRequests.map(request => (
                 <Card key={request.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{request.service_type}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base md:text-lg truncate">{request.service_type}</CardTitle>
+                        <p className="text-xs md:text-sm text-muted-foreground mt-1">
                           Requested on {new Date(request.created_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -446,24 +447,24 @@ const ServicesNew = () => {
                   <CardContent className="space-y-3">
                     {request.request_details && (
                       <div>
-                        <p className="text-sm font-medium">Details:</p>
-                        <p className="text-sm text-muted-foreground">{request.request_details}</p>
+                        <p className="text-xs md:text-sm font-medium">Details:</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{request.request_details}</p>
                       </div>
                     )}
                     {request.preferred_timeline && (
                       <div>
-                        <p className="text-sm font-medium">Timeline:</p>
-                        <p className="text-sm text-muted-foreground">{request.preferred_timeline}</p>
+                        <p className="text-xs md:text-sm font-medium">Timeline:</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{request.preferred_timeline}</p>
                       </div>
                     )}
                     {request.admin_response && (
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="text-sm font-medium mb-1">Admin Response:</p>
-                        <p className="text-sm">{request.admin_response}</p>
+                      <div className="bg-muted/50 p-2 md:p-3 rounded-lg">
+                        <p className="text-xs md:text-sm font-medium mb-1">Admin Response:</p>
+                        <p className="text-xs md:text-sm">{request.admin_response}</p>
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-2">
-                      <p className="text-sm font-medium">
+                      <p className="text-xs md:text-sm font-medium">
                         Amount: ₹{request.service_price.toLocaleString()}
                       </p>
                     </div>
@@ -474,12 +475,12 @@ const ServicesNew = () => {
           </TabsContent>
 
           {/* TAB 3: Delivered Files */}
-          <TabsContent value="delivered" className="space-y-4">
+          <TabsContent value="delivered" className="space-y-3 md:space-y-4">
             {completedRequests.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No delivered files yet</p>
+                  <p className="text-sm md:text-base text-muted-foreground">No delivered files yet</p>
                 </CardContent>
               </Card>
             ) : (
@@ -487,14 +488,14 @@ const ServicesNew = () => {
                 const files = getAllDeliverableUrls(request);
                 return (
                   <Card key={request.id} className="border-green-200 dark:border-green-800">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                            {request.service_type}
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600 flex-shrink-0" />
+                            <span className="truncate">{request.service_type}</span>
                           </CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs md:text-sm text-muted-foreground mt-1">
                             Delivered on {new Date(request.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -502,27 +503,29 @@ const ServicesNew = () => {
                     </CardHeader>
                     <CardContent>
                       {files.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No files attached</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">No files attached</p>
                       ) : (
                         <div className="space-y-2">
-                          <p className="text-sm font-medium mb-2">Files:</p>
+                          <p className="text-xs md:text-sm font-medium mb-2">Files:</p>
                           {files.map((url, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{getFileNameFromUrl(url)}</span>
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 md:p-3 bg-muted/30 rounded-lg">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs md:text-sm font-medium truncate">{getFileNameFromUrl(url)}</span>
                               </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" asChild>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <Button size="sm" variant="outline" className="text-xs h-8" asChild>
                                   <a href={url} target="_blank" rel="noopener noreferrer">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
+                                    <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                    <span className="hidden sm:inline">View</span>
+                                    <span className="sm:hidden">View</span>
                                   </a>
                                 </Button>
-                                <Button size="sm" variant="ghost" asChild>
+                                <Button size="sm" variant="ghost" className="text-xs h-8" asChild>
                                   <a href={url} download>
-                                    <Download className="h-4 w-4 mr-1" />
-                                    Download
+                                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                    <span className="hidden sm:inline">Download</span>
+                                    <span className="sm:hidden">Get</span>
                                   </a>
                                 </Button>
                               </div>
