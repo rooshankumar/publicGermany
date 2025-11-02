@@ -76,14 +76,19 @@ const ServicesNew = () => {
     },
   });
 
-  // Fetch user's service requests
+  // Fetch user's service requests with payment data
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('service_requests')
-        .select('*')
+        .select(`
+          *,
+          service_payments (
+            id, amount, currency, status, paid_at
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -122,7 +127,7 @@ const ServicesNew = () => {
   const individualServices = services.filter(s => s.kind === 'individual');
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter(r => r.status === 'completed');
-  const activeRequests = requests.filter(r => r.status !== 'completed');
+  const activeRequests = requests; // Show ALL requests in My Requests tab
 
   // Filter services by search
   const filteredServices = individualServices.filter(s =>
@@ -321,8 +326,8 @@ const ServicesNew = () => {
             <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
                 <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Active</p>
-                  <p className="text-xl md:text-2xl font-bold">{activeRequests.length}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Total</p>
+                  <p className="text-xl md:text-2xl font-bold">{requests.length}</p>
                 </div>
                 <Clock className="hidden md:block h-8 w-8 text-muted-foreground" />
               </div>
@@ -359,7 +364,7 @@ const ServicesNew = () => {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="browse">Browse Services</TabsTrigger>
             <TabsTrigger value="requests">
-              My Requests {activeRequests.length > 0 && `(${activeRequests.length})`}
+              My Requests {requests.length > 0 && `(${requests.length})`}
             </TabsTrigger>
             <TabsTrigger value="delivered">
               Delivered {completedRequests.length > 0 && `(${completedRequests.length})`}
@@ -481,11 +486,11 @@ const ServicesNew = () => {
 
           {/* TAB 2: My Requests */}
           <TabsContent value="requests" className="space-y-3 md:space-y-4">
-            {activeRequests.length === 0 ? (
+            {requests.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm md:text-base text-muted-foreground">No active requests</p>
+                  <p className="text-sm md:text-base text-muted-foreground">No requests yet</p>
                   <Button
                     variant="outline"
                     size="sm"
@@ -497,7 +502,7 @@ const ServicesNew = () => {
                 </CardContent>
               </Card>
             ) : (
-              activeRequests.map(request => (
+              requests.map(request => (
                 <Card key={request.id}>
                   <CardHeader className="pb-3">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -539,11 +544,129 @@ const ServicesNew = () => {
                         <p className="text-xs md:text-sm">{request.admin_response}</p>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2">
-                      <p className="text-xs md:text-sm font-medium">
-                        Amount: ₹{request.service_price.toLocaleString()}
-                      </p>
-                    </div>
+                    
+                    {/* Payment Breakdown */}
+                    {(() => {
+                      const paymentsArr = ((request as any).service_payments || []) as Array<{ amount: number|null; status: string|null }>;
+                      const receivedSum = paymentsArr
+                        .filter((sp) => (sp?.status || '').toLowerCase() === 'received')
+                        .reduce((acc, sp) => acc + (Number(sp?.amount) || 0), 0);
+                      const totalTarget = Number(((request as any).target_total_amount ?? request.service_price) ?? 0);
+                      const curr = (request as any).target_currency || request.service_currency || 'INR';
+                      const remaining = Math.max(0, totalTarget - receivedSum);
+                      
+                      return (
+                        <div className="mt-3 p-2 md:p-3 bg-muted/30 rounded-lg">
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <p className="text-muted-foreground mb-1">Total Amount</p>
+                              <p className="font-semibold">{curr} {isNaN(totalTarget) ? '-' : totalTarget.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground mb-1">Paid</p>
+                              <p className="font-semibold text-green-600">{curr} {receivedSum.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground mb-1">Remaining</p>
+                              <p className="font-semibold text-orange-600">{curr} {remaining.toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Delivered Files - Compact Version */}
+                    {request.status === 'completed' && (() => {
+                      const files = getAllDeliverableUrls(request);
+                      if (files.length === 0) return null;
+                      
+                      return (
+                        <div className="mt-3 p-2 md:p-3 bg-green-50/10 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <p className="text-xs md:text-sm font-medium text-green-700 dark:text-green-400">
+                              {files.length} File{files.length > 1 ? 's' : ''} Delivered
+                            </p>
+                          </div>
+                          <div className="space-y-1.5">
+                            {files.map((url, idx) => {
+                              const fileName = getFileNameFromUrl(url);
+                              return (
+                                <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="truncate font-medium">{fileName}</span>
+                                  </div>
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-6 px-2 text-xs"
+                                      onClick={async () => {
+                                        try {
+                                          const urlParts = url.split('/documents/');
+                                          const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                          const { data, error } = await supabase.storage
+                                            .from('documents')
+                                            .createSignedUrl(filePath, 3600);
+                                          if (error || !data?.signedUrl) {
+                                            window.open(url, '_blank');
+                                          } else {
+                                            window.open(data.signedUrl, '_blank');
+                                          }
+                                        } catch (e) {
+                                          window.open(url, '_blank');
+                                        }
+                                      }}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="h-6 px-2 text-xs"
+                                      onClick={async () => {
+                                        try {
+                                          const urlParts = url.split('/documents/');
+                                          const filePath = urlParts.length > 1 ? urlParts[1] : url;
+                                          const { data, error } = await supabase.storage
+                                            .from('documents')
+                                            .createSignedUrl(filePath, 3600, { download: fileName });
+                                          if (error || !data?.signedUrl) {
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = fileName;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                          } else {
+                                            const a = document.createElement('a');
+                                            a.href = data.signedUrl;
+                                            a.download = fileName;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                          }
+                                        } catch (e) {
+                                          const a = document.createElement('a');
+                                          a.href = url;
+                                          a.download = fileName;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          a.remove();
+                                        }
+                                      }}
+                                    >
+                                      <Download className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               ))
