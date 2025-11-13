@@ -1,7 +1,5 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import OfferPopup from '@/components/OfferPopup';
-import { usePromoOncePerSession } from '@/hooks/usePromo';
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -718,8 +716,6 @@ const Index = () => {
     navigate('/auth');
   };
 
-  // Single offer popup (once per session) — 2 hours cooldown
-  const promoOffer = usePromoOncePerSession('home-offer', 2 * 60 * 60 * 1000);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -728,8 +724,6 @@ const Index = () => {
       </ErrorBoundary>
       <GermanyFlagBar />
       <main className="flex-1">
-        {/* Offer popup (once per session) */}
-        <OfferPopup open={promoOffer.shouldShow} onClose={promoOffer.markShown} />
         <HeroSection onGetStarted={handleGetStarted} />
         {/* Testimonials highlighted section */}
         <TestimonialsSection />
