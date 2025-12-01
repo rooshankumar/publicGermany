@@ -78,7 +78,7 @@ export type Database = {
           application_start_date: string | null
           created_at: string
           end_date: string | null
-          fees_eur: number | null
+          fees_eur: string | null
           fees_eur_per_semester: number | null
           german_requirement: string | null
           id: string
@@ -88,7 +88,7 @@ export type Database = {
           program_name: string
           required_tests: string | null
           start_date: string | null
-          status: Database["public"]["Enums"]["application_status"]
+          status: string
           university_name: string
           updated_at: string
           user_id: string
@@ -99,7 +99,7 @@ export type Database = {
           application_start_date?: string | null
           created_at?: string
           end_date?: string | null
-          fees_eur?: number | null
+          fees_eur?: string | null
           fees_eur_per_semester?: number | null
           german_requirement?: string | null
           id?: string
@@ -109,7 +109,7 @@ export type Database = {
           program_name: string
           required_tests?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["application_status"]
+          status?: string
           university_name: string
           updated_at?: string
           user_id: string
@@ -120,7 +120,7 @@ export type Database = {
           application_start_date?: string | null
           created_at?: string
           end_date?: string | null
-          fees_eur?: number | null
+          fees_eur?: string | null
           fees_eur_per_semester?: number | null
           german_requirement?: string | null
           id?: string
@@ -130,7 +130,7 @@ export type Database = {
           program_name?: string
           required_tests?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["application_status"]
+          status?: string
           university_name?: string
           updated_at?: string
           user_id?: string
@@ -264,6 +264,7 @@ export type Database = {
           file_type: string
           file_url: string
           id: string
+          module: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -280,6 +281,7 @@ export type Database = {
           file_type: string
           file_url: string
           id?: string
+          module?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -296,6 +298,7 @@ export type Database = {
           file_type?: string
           file_url?: string
           id?: string
+          module?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -411,50 +414,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      files: {
-        Row: {
-          created_at: string
-          file_name: string
-          file_path: string
-          file_size: number | null
-          file_type: string | null
-          id: string
-          mime_type: string | null
-          module: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          file_name: string
-          file_path: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          mime_type?: string | null
-          module?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          mime_type?: string | null
-          module?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "files_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
       }
       notifications: {
         Row: {
@@ -1034,6 +993,7 @@ export type Database = {
           file_type: string
           file_url: string
           id: string
+          module: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -1041,19 +1001,16 @@ export type Database = {
           upload_path: string
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "documents"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      get_user_email: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_admin_new: {
-        Args: { uid: string }
-        Returns: boolean
-      }
+      get_user_email: { Args: { p_user_id: string }; Returns: string }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_admin_new: { Args: { uid: string }; Returns: boolean }
     }
     Enums: {
       admin_note_visibility: "admin_only" | "shared"
@@ -1064,6 +1021,7 @@ export type Database = {
         | "interview"
         | "offer"
         | "rejected"
+        | "Applied"
       aps_pathway: "stk" | "bachelor_2_semesters" | "master_applicants"
       checklist_status: "not_started" | "in_progress" | "completed"
       german_level: "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2"
@@ -1210,6 +1168,7 @@ export const Constants = {
         "interview",
         "offer",
         "rejected",
+        "Applied",
       ],
       aps_pathway: ["stk", "bachelor_2_semesters", "master_applicants"],
       checklist_status: ["not_started", "in_progress", "completed"],

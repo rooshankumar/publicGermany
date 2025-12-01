@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logos from '@/assets/logos.png';
 import ThemeToggle from '@/components/ThemeToggle';
+import { PWAInstallButton, PWAInstallPopup } from '@/components/PWAInstallPrompt';
 import { 
   GraduationCap, 
   Shield, 
@@ -154,6 +155,7 @@ function Navbar() {
           <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
+          <PWAInstallButton />
           <ThemeToggle variant="icon" />
           <Button variant="outline" asChild className="text-sm px-3 py-1.5">
             <Link to="/auth">Sign In</Link>
@@ -165,6 +167,7 @@ function Navbar() {
 
         {/* Mobile menu button (show until lg) */}
         <div className="lg:hidden flex items-center gap-1">
+          <PWAInstallButton />
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-2 text-foreground hover:text-primary"
@@ -719,6 +722,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <PWAInstallPopup />
       <ErrorBoundary>
         <Navbar />
       </ErrorBoundary>
