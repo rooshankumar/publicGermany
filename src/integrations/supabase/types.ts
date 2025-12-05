@@ -225,6 +225,96 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          admin_signature_url: string | null
+          admin_signed_at: string | null
+          contract_html: string
+          contract_reference: string
+          created_at: string
+          expected_end_date: string | null
+          id: string
+          payment_structure: string | null
+          sent_at: string | null
+          service_description: string | null
+          service_fee: string
+          service_package: string
+          service_request_id: string | null
+          start_date: string | null
+          status: string
+          student_email: string
+          student_id: string
+          student_name: string
+          student_phone: string | null
+          student_signature_url: string | null
+          student_signed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_signature_url?: string | null
+          admin_signed_at?: string | null
+          contract_html: string
+          contract_reference: string
+          created_at?: string
+          expected_end_date?: string | null
+          id?: string
+          payment_structure?: string | null
+          sent_at?: string | null
+          service_description?: string | null
+          service_fee: string
+          service_package: string
+          service_request_id?: string | null
+          start_date?: string | null
+          status?: string
+          student_email: string
+          student_id: string
+          student_name: string
+          student_phone?: string | null
+          student_signature_url?: string | null
+          student_signed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_signature_url?: string | null
+          admin_signed_at?: string | null
+          contract_html?: string
+          contract_reference?: string
+          created_at?: string
+          expected_end_date?: string | null
+          id?: string
+          payment_structure?: string | null
+          sent_at?: string | null
+          service_description?: string | null
+          service_fee?: string
+          service_package?: string
+          service_request_id?: string | null
+          start_date?: string | null
+          status?: string
+          student_email?: string
+          student_id?: string
+          student_name?: string
+          student_phone?: string | null
+          student_signature_url?: string | null
+          student_signed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "v_service_requests_with_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deadline_reminders: {
         Row: {
           application_id: string
