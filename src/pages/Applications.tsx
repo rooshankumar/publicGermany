@@ -23,7 +23,7 @@ interface Application {
   program_name: string;
   ielts_requirement: string | null;
   german_requirement: string | null;
-  fees_eur: number | null;
+  fees_eur: string | null;
   start_date: string | null;
   end_date: string | null;
   application_method: string | null;
@@ -32,7 +32,7 @@ interface Application {
   status: 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected';
   notes: string | null;
   created_at: string;
-  application_end_date: string | null; // Added property
+  application_end_date: string | null;
 }
 
 const Applications = () => {
@@ -98,7 +98,7 @@ const Applications = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications(data || []);
+      setApplications((data || []) as Application[]);
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast({
@@ -145,7 +145,7 @@ const Applications = () => {
         program_name: editValues.program_name,
         ielts_requirement: editValues.ielts_requirement || null,
         german_requirement: editValues.german_requirement || null,
-        fees_eur: editValues.fees_eur === '' ? null : Number(editValues.fees_eur),
+        fees_eur: editValues.fees_eur === '' ? null : String(editValues.fees_eur),
         start_date: editValues.start_date || null,
         end_date: editValues.end_date || null,
         application_method: editValues.application_method === 'none' ? null : (editValues.application_method || null),
@@ -259,7 +259,7 @@ const Applications = () => {
       program_name: formData.get('program_name') as string,
       ielts_requirement: formData.get('ielts_requirement') as string || null,
       german_requirement: formData.get('german_requirement') as string || null,
-      fees_eur: formData.get('fees_eur') ? parseInt(formData.get('fees_eur') as string) : null,
+      fees_eur: formData.get('fees_eur') ? String(formData.get('fees_eur')) : null,
       start_date: formData.get('start_date') as string || null,
       end_date: formData.get('end_date') as string || null,
       application_method: formData.get('application_method') as string || null,

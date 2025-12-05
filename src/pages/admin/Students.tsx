@@ -27,7 +27,6 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
   documents?: Database['public']['Tables']['documents']['Row'][];
   service_requests?: Database['public']['Tables']['service_requests']['Row'][];
-  files?: Database['public']['Tables']['files']['Row'][];
 };
 
 // Simple debounce hook to avoid filtering on every keystroke
