@@ -24,6 +24,9 @@ export function generateContractHTML(data: ContractData): string {
   const contractDate = format(new Date(), 'MMMM d, yyyy'); // Always use today's date
   const contractRef = data.contractReference || generateContractReference();
   
+  // Get the QR code as base64 or use the public path
+  const qrCodeUrl = '/qr-code.png';
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -33,17 +36,18 @@ export function generateContractHTML(data: ContractData): string {
   <style>
     @page { 
       size: A4; 
-      margin: 15mm; 
+      margin: 12mm; 
     }
     @media print { 
       .page-break { page-break-before: always; }
       .no-print { display: none; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 
       font-family: 'Georgia', 'Times New Roman', serif; 
       font-size: 10pt; 
-      line-height: 1.6; 
+      line-height: 1.5; 
       color: #1a1a1a; 
       background: #fff;
     }
@@ -53,39 +57,53 @@ export function generateContractHTML(data: ContractData): string {
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      padding: 25mm 20mm;
+      padding: 20mm 18mm;
       background: #fff;
       overflow: hidden;
     }
     
-    /* Watermark */
+    /* Watermark - Faint centered logo text */
     .watermark {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 120pt;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 72pt;
       font-weight: bold;
-      color: rgba(26, 26, 46, 0.06);
-      letter-spacing: 8px;
+      color: rgba(26, 26, 46, 0.04);
+      letter-spacing: 12px;
       white-space: nowrap;
       pointer-events: none;
       z-index: 0;
       font-family: 'Georgia', serif;
+      text-transform: lowercase;
     }
     
-    /* Corner Accents */
+    /* Corner Accents - Thin geometric design */
     .corner-accent {
       position: absolute;
-      width: 60px;
-      height: 60px;
+      width: 40px;
+      height: 40px;
       pointer-events: none;
       z-index: 1;
     }
-    .corner-tl { top: 10mm; left: 10mm; border-top: 3px solid #1a1a2e; border-left: 3px solid #1a1a2e; }
-    .corner-tr { top: 10mm; right: 10mm; border-top: 3px solid #1a1a2e; border-right: 3px solid #1a1a2e; }
-    .corner-bl { bottom: 10mm; left: 10mm; border-bottom: 3px solid #1a1a2e; border-left: 3px solid #1a1a2e; }
-    .corner-br { bottom: 10mm; right: 10mm; border-bottom: 3px solid #1a1a2e; border-right: 3px solid #1a1a2e; }
+    .corner-tl { top: 8mm; left: 8mm; border-top: 2px solid #1a1a2e; border-left: 2px solid #1a1a2e; }
+    .corner-tr { top: 8mm; right: 8mm; border-top: 2px solid #1a1a2e; border-right: 2px solid #1a1a2e; }
+    .corner-bl { bottom: 8mm; left: 8mm; border-bottom: 2px solid #1a1a2e; border-left: 2px solid #1a1a2e; }
+    .corner-br { bottom: 8mm; right: 8mm; border-bottom: 2px solid #1a1a2e; border-right: 2px solid #1a1a2e; }
+    
+    /* Inner corner accents */
+    .corner-accent::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #1a1a2e;
+    }
+    .corner-tl::after { top: -2px; left: -2px; }
+    .corner-tr::after { top: -2px; right: -2px; }
+    .corner-bl::after { bottom: -2px; left: -2px; }
+    .corner-br::after { bottom: -2px; right: -2px; }
     
     .content {
       position: relative;
@@ -94,59 +112,60 @@ export function generateContractHTML(data: ContractData): string {
     
     .header {
       text-align: center;
-      margin-bottom: 25px;
-      padding-bottom: 20px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
       border-bottom: 2px solid #1a1a2e;
     }
     
     .logo {
-      font-size: 28pt;
+      font-size: 26pt;
       font-weight: bold;
       color: #1a1a2e;
-      letter-spacing: 4px;
+      letter-spacing: 3px;
       text-transform: lowercase;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     
     .subtitle {
-      font-size: 12pt;
-      color: #4a4a5a;
-      font-weight: 500;
-      letter-spacing: 3px;
+      font-size: 11pt;
+      color: #1a1a2e;
+      font-weight: 600;
+      letter-spacing: 4px;
       text-transform: uppercase;
     }
     
     .contract-type {
-      font-size: 9pt;
+      font-size: 8pt;
       color: #666;
-      margin-top: 5px;
+      margin-top: 4px;
       font-style: italic;
+      letter-spacing: 1px;
     }
     
     .section {
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     
     .section-title {
-      font-size: 10pt;
+      font-size: 9pt;
       font-weight: bold;
       color: #1a1a2e;
       border-bottom: 1px solid #ccc;
-      padding-bottom: 4px;
-      margin-bottom: 12px;
+      padding-bottom: 3px;
+      margin-bottom: 10px;
       text-transform: uppercase;
       letter-spacing: 2px;
     }
     
     .info-row {
       display: flex;
-      margin-bottom: 6px;
-      font-size: 10pt;
+      margin-bottom: 5px;
+      font-size: 9pt;
     }
     
     .info-label {
       font-weight: 600;
-      min-width: 160px;
+      min-width: 140px;
       color: #444;
     }
     
@@ -158,44 +177,44 @@ export function generateContractHTML(data: ContractData): string {
     .party-title {
       font-weight: 700;
       color: #1a1a2e;
-      margin-bottom: 8px;
-      font-size: 10pt;
+      margin-bottom: 6px;
+      font-size: 9pt;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
     
     .party-block {
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       padding-left: 10px;
       border-left: 3px solid #e0e0e0;
     }
     
     .acknowledgment {
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      padding: 15px 18px;
-      border-radius: 4px;
-      margin: 20px 0;
-      border-left: 4px solid #1a1a2e;
+      padding: 12px 15px;
+      border-radius: 3px;
+      margin: 15px 0;
+      border-left: 3px solid #1a1a2e;
     }
     
     .acknowledgment-title {
       font-weight: 700;
       color: #1a1a2e;
-      margin-bottom: 8px;
-      font-size: 10pt;
+      margin-bottom: 6px;
+      font-size: 9pt;
     }
     
     .acknowledgment p {
-      font-size: 9pt;
+      font-size: 8pt;
       color: #333;
-      line-height: 1.5;
+      line-height: 1.4;
     }
     
     .signature-section {
       display: flex;
       justify-content: space-between;
-      margin-top: 30px;
-      gap: 30px;
+      margin-top: 25px;
+      gap: 25px;
     }
     
     .signature-box {
@@ -205,35 +224,35 @@ export function generateContractHTML(data: ContractData): string {
     
     .signature-line {
       border-bottom: 1px solid #333;
-      margin-bottom: 8px;
-      height: 45px;
+      margin-bottom: 6px;
+      height: 40px;
     }
     
     .signature-label {
-      font-size: 9pt;
+      font-size: 8pt;
       color: #555;
       line-height: 1.4;
     }
     
     .no-signature-note {
       background: #f0f4f8;
-      padding: 10px 15px;
-      border-radius: 4px;
-      font-size: 8pt;
+      padding: 8px 12px;
+      border-radius: 3px;
+      font-size: 7pt;
       color: #555;
       text-align: center;
-      margin-top: 15px;
+      margin-top: 12px;
       font-style: italic;
     }
     
     .confidentiality-warning {
       background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
       border: 1px solid #ffc107;
-      border-left: 4px solid #ff9800;
-      padding: 12px 15px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-size: 8pt;
+      border-left: 3px solid #ff9800;
+      padding: 10px 12px;
+      border-radius: 3px;
+      margin: 15px 0;
+      font-size: 7pt;
       color: #856404;
       font-weight: 500;
     }
@@ -244,57 +263,57 @@ export function generateContractHTML(data: ContractData): string {
     
     /* PAGE 2 STYLES */
     .terms-item {
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     
     .terms-item h4 {
-      font-size: 10pt;
+      font-size: 9pt;
       color: #1a1a2e;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       font-weight: 700;
     }
     
     .terms-item p, .terms-item ul {
-      font-size: 9pt;
+      font-size: 8pt;
       color: #333;
-      line-height: 1.5;
+      line-height: 1.4;
     }
     
     .terms-item ul {
-      padding-left: 18px;
-      margin-top: 5px;
+      padding-left: 16px;
+      margin-top: 4px;
     }
     
     .terms-item li {
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     
     .refund-highlight {
       background: #fff5f5;
       border: 1px solid #fed7d7;
-      padding: 8px 12px;
-      border-radius: 4px;
-      margin-top: 5px;
+      padding: 6px 10px;
+      border-radius: 3px;
+      margin-top: 4px;
     }
     
     .packages-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
-      font-size: 9pt;
+      margin: 12px 0;
+      font-size: 8pt;
     }
     
     .packages-table th {
       background: #1a1a2e;
       color: #fff;
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
       font-weight: 600;
       letter-spacing: 1px;
     }
     
     .packages-table td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid #e0e0e0;
     }
     
@@ -312,48 +331,41 @@ export function generateContractHTML(data: ContractData): string {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 15px;
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      padding: 15px 20px;
-      border-radius: 6px;
-      margin: 20px 0;
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin: 15px 0;
     }
     
-    .qr-placeholder {
-      width: 80px;
-      height: 80px;
-      border: 2px dashed #1a1a2e;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 8pt;
-      color: #666;
-      text-align: center;
-      background: #fff;
+    .qr-code {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
     }
     
     .qr-text {
-      font-size: 10pt;
+      font-size: 9pt;
       color: #1a1a2e;
     }
     
     .qr-text strong {
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     
     .qr-text a {
       color: #2563eb;
       text-decoration: none;
-      font-size: 9pt;
+      font-size: 8pt;
     }
     
     .footer {
       text-align: center;
-      margin-top: 25px;
-      padding-top: 15px;
+      margin-top: 15px;
+      padding-top: 12px;
       border-top: 1px solid #ddd;
-      font-size: 9pt;
+      font-size: 8pt;
       color: #666;
     }
     
@@ -365,17 +377,31 @@ export function generateContractHTML(data: ContractData): string {
     
     .page-number {
       position: absolute;
-      bottom: 12mm;
-      right: 20mm;
-      font-size: 8pt;
+      bottom: 10mm;
+      right: 18mm;
+      font-size: 7pt;
       color: #999;
+    }
+    
+    .final-reminder {
+      background: #f8f9fa;
+      border: 1px dashed #1a1a2e;
+      padding: 8px 12px;
+      border-radius: 3px;
+      font-size: 7pt;
+      color: #555;
+      text-align: center;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <!-- ==================== PAGE 1 ==================== -->
   <div class="page">
+    <!-- Faint centered watermark -->
     <div class="watermark">publicgermany</div>
+    
+    <!-- Corner design elements -->
     <div class="corner-accent corner-tl"></div>
     <div class="corner-accent corner-tr"></div>
     <div class="corner-accent corner-bl"></div>
@@ -421,12 +447,8 @@ export function generateContractHTML(data: ContractData): string {
         <div class="party-block">
           <div class="party-title">Service Provider (Freelancer)</div>
           <div class="info-row">
-            <span class="info-label">Name:</span>
-            <span class="info-value">Roshan Gupta</span>
-          </div>
-          <div class="info-row">
             <span class="info-label">Organization:</span>
-            <span class="info-value">publicgermany</span>
+            <span class="info-value"><strong>publicgermany</strong></span>
           </div>
           <div class="info-row">
             <span class="info-label">Email:</span>
@@ -463,13 +485,13 @@ export function generateContractHTML(data: ContractData): string {
         </div>
       </div>
 
-      <div class="acknowledgment">
-        <div class="acknowledgment-title">ACKNOWLEDGMENT</div>
-        <p>This agreement confirms that the student (client) has engaged publicgermany for the above-mentioned services. By signing below, the student acknowledges understanding and acceptance of the service terms. Complete terms and conditions are provided on Page 2 of this contract.</p>
+      <div class="confidentiality-warning">
+        <strong>⚠️ CONFIDENTIALITY NOTICE:</strong> This contract is strictly confidential and must not be shared or posted. Unauthorized sharing, posting, forwarding, or distributing this contract to any third party will result in <strong>immediate cancellation of services without refund</strong>.
       </div>
 
-      <div class="confidentiality-warning">
-        <strong>⚠️ CONFIDENTIALITY NOTICE:</strong> This contract is strictly confidential. Sharing, posting, forwarding, or distributing this contract to any third party will result in <strong>immediate cancellation of services</strong> without refund.
+      <div class="acknowledgment">
+        <div class="acknowledgment-title">ACKNOWLEDGMENT (PAGE 1)</div>
+        <p>This agreement confirms that the student (client) has engaged publicgermany for the above-mentioned services. By signing below, the student acknowledges understanding and acceptance of the service terms. Complete terms and conditions are provided on Page 2 of this contract.</p>
       </div>
 
       <div class="signature-section">
@@ -486,7 +508,7 @@ export function generateContractHTML(data: ContractData): string {
           <div class="signature-label">
             <strong>Service Provider</strong><br>
             publicgermany<br>
-            <em style="font-size: 8pt; color: #888;">No signature required</em>
+            <em style="font-size: 7pt; color: #888;">No signature required</em>
           </div>
         </div>
       </div>
@@ -499,9 +521,14 @@ export function generateContractHTML(data: ContractData): string {
     <div class="page-number">Page 1 of 2</div>
   </div>
 
+  <!-- ==================== PAGE BREAK ==================== -->
+
   <!-- ==================== PAGE 2 ==================== -->
   <div class="page page-break">
+    <!-- Faint centered watermark -->
     <div class="watermark">publicgermany</div>
+    
+    <!-- Corner design elements -->
     <div class="corner-accent corner-tl"></div>
     <div class="corner-accent corner-tr"></div>
     <div class="corner-accent corner-bl"></div>
@@ -541,7 +568,7 @@ export function generateContractHTML(data: ContractData): string {
           <div class="refund-highlight">
             <p><strong>⚠️ Advance payments are strictly NON-REFUNDABLE.</strong></p>
           </div>
-          <p style="margin-top: 8px;">Refunds will NOT be issued if: the student decides to drop for personal reasons, change of mood/interest/goals, delay in submitting documents, the student stops responding, disagreement with realistic options, external delays (APS, university, embassy), or any other unrealistic reasons. Refunds may only be considered if NO work has started, at the sole discretion of publicgermany.</p>
+          <p style="margin-top: 6px; font-size: 8pt;">Refunds will NOT be issued if: the student decides to drop for personal reasons, change of mood/interest/goals, delay in submitting documents, the student stops responding, disagreement with realistic options, external delays (APS, university, embassy), or any other unrealistic reasons. Refunds may only be considered if NO work has started, at the sole discretion of publicgermany.</p>
         </div>
 
         <div class="terms-item">
@@ -600,22 +627,20 @@ export function generateContractHTML(data: ContractData): string {
       </div>
 
       <div class="qr-section">
-        <div class="qr-placeholder">
-          <span>QR Code</span>
-        </div>
+        <img src="${qrCodeUrl}" alt="QR Code" class="qr-code" />
         <div class="qr-text">
-          <strong>📱 Scan to download our app</strong>
+          <strong>📱 Scan this QR to download our app</strong>
           <a href="https://publicgermany.app" target="_blank">publicgermany.app</a>
         </div>
       </div>
 
-      <div class="confidentiality-warning">
-        <strong>⚠️ REMINDER:</strong> This contract is confidential. Any unauthorized sharing or distribution will result in immediate service cancellation without refund.
+      <div class="final-reminder">
+        <strong>⚠️ REMINDER:</strong> This is a freelancing service contract. Sharing with third parties is strictly prohibited.
       </div>
 
       <div class="footer">
-        <p>Feel free to write to us at <a href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a></p>
-        <p style="margin-top: 8px; font-size: 8pt; color: #999;">© ${new Date().getFullYear()} publicgermany. All rights reserved.</p>
+        <p>For any questions, write to us at <a href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a></p>
+        <p style="margin-top: 6px; font-size: 7pt; color: #999;">© ${new Date().getFullYear()} publicgermany. All rights reserved.</p>
       </div>
     </div>
     
@@ -627,21 +652,48 @@ export function generateContractHTML(data: ContractData): string {
 }
 
 export function downloadContractPDF(html: string, filename: string): void {
-  const printWindow = window.open('', '_blank');
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
   if (printWindow) {
-    printWindow.document.write(html);
+    // Replace relative QR code URL with absolute URL for print window
+    const baseUrl = window.location.origin;
+    const htmlWithAbsoluteUrls = html.replace(/src="\/qr-code\.png"/g, `src="${baseUrl}/qr-code.png"`);
+    
+    printWindow.document.write(htmlWithAbsoluteUrls);
     printWindow.document.close();
-    printWindow.focus();
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 300);
+    };
+    
+    // Fallback if onload doesn't fire
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-    }, 500);
+    }, 800);
+  } else {
+    // Fallback: create a downloadable HTML file
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename.replace('.pdf', '.html');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }
 
 export function validateContractData(data: Partial<ContractData>): { valid: boolean; error?: string } {
-  // Allow generation even with missing fields - just show blanks
-  if (!data.studentName?.trim() && !data.studentEmail?.trim() && !data.servicePackage?.trim()) {
-    return { valid: false, error: 'Error: Missing required student information. Please provide at least a name, email, or service package.' };
+  // Allow generation even with missing student fields - just show blanks
+  // Only require service package and fee for basic contract generation
+  if (!data.servicePackage?.trim() || !data.serviceFee?.trim()) {
+    return { valid: false, error: 'Please enter service package and fee to generate contract.' };
   }
   return { valid: true };
 }
