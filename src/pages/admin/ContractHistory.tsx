@@ -4,14 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Search, Eye, Download, Send, Calendar, User, Filter } from 'lucide-react';
+import { FileText, Search, Eye, Download, Send, Calendar, User, Filter, Edit, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { downloadContractPDF } from '@/lib/contractGenerator';
+import { downloadContractPDF, generateContractHTML, generateContractReference } from '@/lib/contractGenerator';
 import InlineLoader from '@/components/InlineLoader';
 
 interface Contract {
@@ -19,10 +21,14 @@ interface Contract {
   contract_reference: string;
   student_name: string;
   student_email: string;
+  student_phone: string | null;
   service_package: string;
+  service_description: string | null;
   service_fee: string;
+  payment_structure: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
   sent_at: string | null;
   contract_html: string;
 }
@@ -51,6 +57,15 @@ export default function ContractHistory() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    servicePackage: '',
+    serviceDescription: '',
+    serviceFee: '',
+    paymentStructure: '',
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -104,6 +119,64 @@ export default function ContractHistory() {
 
   const handleDownload = (contract: Contract) => {
     downloadContractPDF(contract.contract_html, `Contract-${contract.contract_reference}.pdf`);
+  };
+
+  const handleEditContract = (contract: Contract) => {
+    if (contract.status !== 'draft') {
+      toast({ title: 'Cannot Edit', description: 'Only draft contracts can be edited', variant: 'destructive' });
+      return;
+    }
+    setEditingContract(contract);
+    setEditForm({
+      servicePackage: contract.service_package,
+      serviceDescription: contract.service_description || '',
+      serviceFee: contract.service_fee,
+      paymentStructure: contract.payment_structure || '',
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingContract) return;
+
+    setSaving(true);
+    try {
+      // Regenerate the contract HTML with updated data
+      const newHtml = generateContractHTML({
+        studentName: editingContract.student_name,
+        studentEmail: editingContract.student_email,
+        studentPhone: editingContract.student_phone || undefined,
+        servicePackage: editForm.servicePackage,
+        serviceDescription: editForm.serviceDescription,
+        serviceFee: editForm.serviceFee,
+        paymentStructure: editForm.paymentStructure,
+        contractReference: editingContract.contract_reference,
+      });
+
+      const { error } = await (supabase as any)
+        .from('contracts')
+        .update({
+          service_package: editForm.servicePackage,
+          service_description: editForm.serviceDescription || null,
+          service_fee: editForm.serviceFee,
+          payment_structure: editForm.paymentStructure || null,
+          contract_html: newHtml,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingContract.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Saved', description: 'Contract updated successfully' });
+      setShowEditDialog(false);
+      setEditingContract(null);
+      fetchContracts();
+    } catch (error: any) {
+      console.error('Error updating contract:', error);
+      toast({ title: 'Error', description: error.message || 'Failed to update contract', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -188,6 +261,7 @@ export default function ContractHistory() {
                       <TableHead>Fee</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
+                      <TableHead>Last Updated</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -217,18 +291,40 @@ export default function ContractHistory() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {contract.updated_at && contract.updated_at !== contract.created_at ? (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(contract.updated_at), 'MMM d, yyyy HH:mm')}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleViewContract(contract)}
+                              title="View"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            {contract.status === 'draft' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditContract(contract)}
+                                title="Edit Draft"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDownload(contract)}
+                              title="Download PDF"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -276,6 +372,15 @@ export default function ContractHistory() {
                 />
 
                 <div className="flex gap-2 justify-end">
+                  {selectedContract.status === 'draft' && (
+                    <Button variant="outline" onClick={() => {
+                      setShowPreview(false);
+                      handleEditContract(selectedContract);
+                    }}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Draft
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={() => handleDownload(selectedContract)}>
                     <Download className="h-4 w-4 mr-2" />
                     Download PDF
@@ -283,6 +388,66 @@ export default function ContractHistory() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Contract Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Draft Contract</DialogTitle>
+              <DialogDescription>
+                Update the contract details for {editingContract?.student_name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Service Package</Label>
+                <Input
+                  value={editForm.servicePackage}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, servicePackage: e.target.value }))}
+                  placeholder="e.g., Admission Package"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Service Fee</Label>
+                <Input
+                  value={editForm.serviceFee}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, serviceFee: e.target.value }))}
+                  placeholder="e.g., ₹25,000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Service Description</Label>
+                <Textarea
+                  value={editForm.serviceDescription}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, serviceDescription: e.target.value }))}
+                  placeholder="Describe the services..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment Structure</Label>
+                <Input
+                  value={editForm.paymentStructure}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, paymentStructure: e.target.value }))}
+                  placeholder="e.g., 50% Advance, 50% on Admission"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={saving || !editForm.servicePackage || !editForm.serviceFee}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
