@@ -323,3 +323,46 @@ export function validateContractData(data: Partial<ContractData>) {
   }
   return { valid: true };
 }
+
+// Download contract as PDF using print dialog
+export function downloadContractPDF(html: string, filename: string) {
+  // Create a hidden iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    // Fallback: open in new window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+    return;
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(html);
+  iframeDoc.close();
+
+  // Wait for content to load then print
+  setTimeout(() => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+    
+    // Remove iframe after print dialog closes
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
+  }, 500);
+}
