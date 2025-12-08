@@ -25,9 +25,11 @@ export function generateContractReference(): string {
 export function generateContractHTML(data: ContractData): string {
   const contractDate = format(new Date(), "MMMM d, yyyy");
   const contractRef = data.contractReference || generateContractReference();
-  const studentPhone = data.studentPhone || '__________________';
+  const studentPhone = data.studentPhone || '';
   const serviceDescription = data.serviceDescription || 'As discussed';
   const paymentStructure = data.paymentStructure || 'As agreed';
+  // Clean the fee - remove existing ₹ symbol if present
+  const cleanFee = data.serviceFee.replace(/₹/g, '').trim();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -37,24 +39,21 @@ export function generateContractHTML(data: ContractData): string {
 <title>publicgermany - Freelancing Service Agreement</title>
 
 <style>
-  @page { size: A4; margin: 0; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: A4; margin: 15mm; }
+  @media print { body { -webkit-print-color-adjust: exact; } }
 
   body {
     font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0; padding: 0;
     font-size: 12px; color: #222;
     background: #fff;
   }
 
   .page {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 15mm;
+    padding: 25px 20px;
+    min-height: 100vh;
     position: relative;
     page-break-after: always;
-    background: #fff;
   }
   .page:last-child { page-break-after: avoid; }
 
@@ -214,7 +213,7 @@ export function generateContractHTML(data: ContractData): string {
 
   <div class="info-row">
     <div class="label">Client (Student):</div>
-    <div class="value"><strong>${data.studentName}</strong><br>${data.studentEmail} | ${studentPhone}</div>
+    <div class="value"><strong>${data.studentName}</strong><br>${data.studentEmail}${studentPhone ? ` | ${studentPhone}` : ''}</div>
   </div>
 
   <div class="info-row">
@@ -226,7 +225,7 @@ export function generateContractHTML(data: ContractData): string {
 
   <div class="info-row"><div class="label">Package Selected:</div><div class="value"><strong>${data.servicePackage}</strong></div></div>
   <div class="info-row"><div class="label">Description:</div><div class="value">${serviceDescription}</div></div>
-  <div class="info-row"><div class="label">Total Fee:</div><div class="value"><span class="highlight">₹${data.serviceFee.replace(/₹/g, '')}</span></div></div>
+  <div class="info-row"><div class="label">Total Fee:</div><div class="value"><span class="highlight">₹${cleanFee}</span></div></div>
   <div class="info-row"><div class="label">Payment Terms:</div><div class="value">${paymentStructure}</div></div>
 
   <div class="success-box">
@@ -242,7 +241,7 @@ export function generateContractHTML(data: ContractData): string {
     <span>Date: ${contractDate}</span>
   </div>
 
-  <!-- VERIFICATION & REFERRAL SECTION -->
+  <!-- MOVED SECTION BELOW SIGNATURE -->
   <div class="section-title" style="margin-top:35px;">Verification & Referral</div>
 
   <p><strong>Identity Verification:</strong> Please attach a passport copy for KYC.</p>
