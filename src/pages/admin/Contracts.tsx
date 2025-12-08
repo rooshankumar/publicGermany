@@ -171,9 +171,16 @@ export default function Contracts() {
     setGenerating(false);
   };
 
-  const handleDownloadPDF = () => {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
     if (generatedHTML) {
-      downloadContractPDF(generatedHTML, `Contract-${contractRef}.pdf`);
+      setDownloading(true);
+      try {
+        await downloadContractPDF(generatedHTML, `Contract-${contractRef}.pdf`);
+      } finally {
+        setDownloading(false);
+      }
     }
   };
 

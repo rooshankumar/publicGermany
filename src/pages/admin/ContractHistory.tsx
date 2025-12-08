@@ -117,8 +117,15 @@ export default function ContractHistory() {
     setShowPreview(true);
   };
 
-  const handleDownload = (contract: Contract) => {
-    downloadContractPDF(contract.contract_html, `Contract-${contract.contract_reference}.pdf`);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (contract: Contract) => {
+    setDownloadingId(contract.id);
+    try {
+      await downloadContractPDF(contract.contract_html, `Contract-${contract.contract_reference}.pdf`);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleEditContract = (contract: Contract) => {

@@ -21,7 +21,7 @@ export function generateContractReference(): string {
   return `PG-${year}-${random}`;
 }
 
-// Main Contract HTML Generator - Uses exact premium template
+// Main Contract HTML Generator - Uses exact user template
 export function generateContractHTML(data: ContractData): string {
   const contractDate = format(new Date(), "MMMM d, yyyy");
   const contractRef = data.contractReference || generateContractReference();
@@ -37,21 +37,24 @@ export function generateContractHTML(data: ContractData): string {
 <title>publicgermany - Freelancing Service Agreement</title>
 
 <style>
-  @page { size: A4; margin: 15mm; }
-  @media print { body { -webkit-print-color-adjust: exact; } }
+  @page { size: A4; margin: 0; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: "Segoe UI", Arial, sans-serif;
-    margin: 0; padding: 0;
     font-size: 12px; color: #222;
     background: #fff;
   }
 
   .page {
-    padding: 25px 20px;
-    min-height: 100vh;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
     position: relative;
     page-break-after: always;
+    background: #fff;
   }
   .page:last-child { page-break-after: avoid; }
 
@@ -187,10 +190,10 @@ export function generateContractHTML(data: ContractData): string {
 
 <!-- PAGE 1 -->
 <div class="page">
-  <img class="watermark" src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png">
+  <img class="watermark" src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png" crossorigin="anonymous">
 
   <div class="header">
-    <img src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png">
+    <img src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png" crossorigin="anonymous">
     <div class="title">publicgermany</div>
     <div class="subtitle">Freelancing Service Agreement</div>
   </div>
@@ -223,7 +226,7 @@ export function generateContractHTML(data: ContractData): string {
 
   <div class="info-row"><div class="label">Package Selected:</div><div class="value"><strong>${data.servicePackage}</strong></div></div>
   <div class="info-row"><div class="label">Description:</div><div class="value">${serviceDescription}</div></div>
-  <div class="info-row"><div class="label">Total Fee:</div><div class="value"><span class="highlight">${data.serviceFee}</span></div></div>
+  <div class="info-row"><div class="label">Total Fee:</div><div class="value"><span class="highlight">₹${data.serviceFee.replace(/₹/g, '')}</span></div></div>
   <div class="info-row"><div class="label">Payment Terms:</div><div class="value">${paymentStructure}</div></div>
 
   <div class="success-box">
@@ -231,15 +234,27 @@ export function generateContractHTML(data: ContractData): string {
     Client engages publicgermany for specialized Germany study-abroad guidance.
   </div>
 
+  <!-- SIGNATURE (Physical Required) -->
   <div class="signature-box">
     <div style="margin-bottom: 10px;">Client Acknowledgment & Acceptance</div>
     <div class="signature-line"></div>
-    Digital Signature / Full Name<br>
+    Physical Signature Required<br>
     <span>Date: ${contractDate}</span>
   </div>
 
-  <p style="text-align:center; margin-top:15px; font-size:11px;">
-    ✓ Legally binding upon digital acceptance.
+  <!-- VERIFICATION & REFERRAL SECTION -->
+  <div class="section-title" style="margin-top:35px;">Verification & Referral</div>
+
+  <p><strong>Identity Verification:</strong> Please attach a passport copy for KYC.</p>
+
+  <p>
+    <strong>Referral Bonus:</strong>
+    Use referral code <span class="highlight">${contractRef}</span>
+    to receive 10% off when someone you refer purchases a service.
+  </p>
+
+  <p style="text-align:center; margin-top:18px; font-size:11px; color:#6b7280;">
+    This online version is valid and enforceable between the Client and Freelancer as per mutual agreement.
   </p>
 
   <div class="page-number">Page 1 of 2</div>
@@ -247,7 +262,7 @@ export function generateContractHTML(data: ContractData): string {
 
 <!-- PAGE 2 -->
 <div class="page">
-  <img class="watermark" src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png">
+  <img class="watermark" src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png" crossorigin="anonymous">
 
   <div class="header">
     <div class="title">publicgermany</div>
@@ -290,19 +305,9 @@ export function generateContractHTML(data: ContractData): string {
     <p><strong>Liability:</strong> Limited strictly to fee paid.</p>
   </div>
 
-  <div class="section-title">Verification & Referral</div>
-
-  <p><strong>Identity Verification:</strong> Please attach a passport copy for KYC.</p>
-
-  <p>
-    <strong>Referral Bonus:</strong>
-    Use referral code <span class="highlight">${contractRef}</span>
-    to receive 10% off when someone you refer purchases a service.
-  </p>
-
   <div class="qr-section">
     <p><strong>Scan to Visit publicgermany</strong></p>
-    <img src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/frame.png">
+    <img src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/frame.png" crossorigin="anonymous">
     <br>
     <strong>publicgermany.vercel.app</strong>
   </div>
@@ -326,29 +331,55 @@ export function validateContractData(data: Partial<ContractData>) {
   return { valid: true };
 }
 
-// Download contract as PDF - opens in new window for print to PDF
-export function downloadContractPDF(html: string, filename: string) {
-  const printWindow = window.open('', '_blank', 'width=800,height=600');
-  if (!printWindow) {
-    alert('Please allow popups to download the PDF. Then use Ctrl+P or Cmd+P and select "Save as PDF".');
-    return;
-  }
+// Download contract as PDF using html2pdf.js
+export async function downloadContractPDF(html: string, filename: string): Promise<void> {
+  const html2pdf = (await import('html2pdf.js')).default;
 
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.document.title = filename.replace('.pdf', '');
+  // Create container off-screen
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  document.body.appendChild(container);
 
-  // Wait for images to load then trigger print
-  printWindow.onload = () => {
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 500);
+  // Wait for images to load
+  const images = container.querySelectorAll('img');
+  await Promise.all(
+    Array.from(images).map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+          } else {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }
+        })
+    )
+  );
+
+  const opt = {
+    margin: [0, 0, 0, 0] as [number, number, number, number],
+    filename: filename,
+    image: { type: 'jpeg' as const, quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+    },
+    jsPDF: {
+      unit: 'mm' as const,
+      format: 'a4' as const,
+      orientation: 'portrait' as const,
+    },
+    pagebreak: {
+      mode: ['avoid-all', 'css', 'legacy'],
+      avoid: '.page',
+    },
   };
 
-  // Fallback if onload doesn't fire
-  setTimeout(() => {
-    printWindow.focus();
-    printWindow.print();
-  }, 1000);
+  await html2pdf().set(opt).from(container).save();
+  document.body.removeChild(container);
 }
