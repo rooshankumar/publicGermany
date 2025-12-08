@@ -5,6 +5,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 // Custom Progress component to replace the shadcn/ui one
 const Progress = ({ value, className = '', indicatorClassName = '' }: { 
   value: number; 
@@ -37,10 +38,13 @@ import {
   Calendar,
   Target,
   Star,
-  Loader2
+  Loader2,
+  Download,
+  X
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { downloadContractPDF } from '@/lib/contractGenerator';
 
 // Interface for user data
 interface UserData {
@@ -66,6 +70,23 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   due_date?: string;
   url: string;
+}
+
+// Interface for contract notification
+interface ContractNotification {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  ref_id: string;
+  meta: {
+    contract_reference: string;
+    service_package: string;
+    service_fee: string;
+    contract_html: string;
+  };
+  created_at: string;
+  seen: boolean;
 }
 
 const Dashboard = () => {
@@ -95,6 +116,13 @@ const Dashboard = () => {
       paid_at: string | null;
     }>
   }>>([]);
+
+  // Contract notification states
+  const [contractNotifications, setContractNotifications] = useState<ContractNotification[]>([]);
+  const [showContractPopup, setShowContractPopup] = useState(false);
+  const [activeContract, setActiveContract] = useState<ContractNotification | null>(null);
+  const [showContractPreview, setShowContractPreview] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Fetch dashboard data
   useEffect(() => {
@@ -234,6 +262,25 @@ const Dashboard = () => {
         if (payErr) throw payErr;
         setRecentPayments(srWithPayments as any || []);
 
+        // Fetch contract notifications
+        const { data: contractNotifs, error: notifErr } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('type', 'contract')
+          .order('created_at', { ascending: false });
+
+        if (!notifErr && contractNotifs) {
+          setContractNotifications(contractNotifs as unknown as ContractNotification[]);
+          
+          // Show popup for unseen contract notifications
+          const unseenContract = contractNotifs.find((n: any) => !n.seen);
+          if (unseenContract) {
+            setActiveContract(unseenContract as unknown as ContractNotification);
+            setShowContractPopup(true);
+          }
+        }
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast({
@@ -248,6 +295,39 @@ const Dashboard = () => {
 
     fetchDashboardData();
   }, [user]);
+
+  // Mark contract notification as seen
+  const handleDismissContractPopup = async () => {
+    if (activeContract) {
+      await supabase
+        .from('notifications')
+        .update({ seen: true })
+        .eq('id', activeContract.id);
+    }
+    setShowContractPopup(false);
+  };
+
+  // View full contract
+  const handleViewContract = (contract: ContractNotification) => {
+    setActiveContract(contract);
+    setShowContractPreview(true);
+    // Mark as seen
+    supabase.from('notifications').update({ seen: true }).eq('id', contract.id);
+  };
+
+  // Download contract PDF
+  const handleDownloadContract = async (contract: ContractNotification) => {
+    if (!contract.meta?.contract_html) return;
+    setDownloadingPdf(true);
+    try {
+      await downloadContractPDF(contract.meta.contract_html, `Contract-${contract.meta.contract_reference}.pdf`);
+      toast({ title: 'Success', description: 'Contract PDF downloaded' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   if (loading || !userData) {
     return (
@@ -307,6 +387,58 @@ const Dashboard = () => {
 
         {/* Main Dashboard Content */}
         <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 -mt-8 relative z-10">
+          
+          {/* Contract Notifications Section */}
+          {contractNotifications.length > 0 && (
+            <Card className="mb-6 md:mb-8 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Your Contracts
+                </CardTitle>
+                <CardDescription>
+                  Service contracts sent by publicgermany
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {contractNotifications.map((contract) => (
+                  <div 
+                    key={contract.id}
+                    className="flex items-center justify-between p-4 bg-background rounded-lg border hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{contract.meta?.service_package || 'Service Contract'}</span>
+                          {!contract.seen && (
+                            <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {contract.meta?.contract_reference} • {contract.meta?.service_fee}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleViewContract(contract)}>
+                        View Contract
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleDownloadContract(contract)}
+                        disabled={downloadingPdf}
+                      >
+                        {downloadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
           {/* Progress Overview */}
           <Card className="mb-6 md:mb-8 bg-gradient-to-r from-card to-accent/5 border-primary/20">
             <CardHeader>
@@ -774,6 +906,94 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Contract Popup Notification */}
+      <Dialog open={showContractPopup} onOpenChange={setShowContractPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              New Contract Received
+            </DialogTitle>
+            <DialogDescription>
+              You have received a new service contract from publicgermany
+            </DialogDescription>
+          </DialogHeader>
+          
+          {activeContract && (
+            <div className="space-y-4">
+              <div className="bg-primary/5 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Package:</span>
+                  <span className="font-medium">{activeContract.meta?.service_package}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Reference:</span>
+                  <span className="font-medium">{activeContract.meta?.contract_reference}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Fee:</span>
+                  <span className="font-semibold text-primary">{activeContract.meta?.service_fee}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleDismissContractPopup}
+                >
+                  View Later
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={() => {
+                    handleDismissContractPopup();
+                    handleViewContract(activeContract);
+                  }}
+                >
+                  View Contract
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Full Contract Preview Dialog */}
+      <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Service Contract
+            </DialogTitle>
+            <DialogDescription>
+              {activeContract?.meta?.contract_reference} • {activeContract?.meta?.service_package}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {activeContract?.meta?.contract_html && (
+            <div 
+              className="border rounded-lg overflow-hidden bg-white"
+              dangerouslySetInnerHTML={{ __html: activeContract.meta.contract_html }}
+            />
+          )}
+
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowContractPreview(false)}>
+              Close
+            </Button>
+            <Button 
+              onClick={() => activeContract && handleDownloadContract(activeContract)}
+              disabled={downloadingPdf}
+            >
+              {downloadingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              Download PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

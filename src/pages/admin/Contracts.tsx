@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Download, Send, Eye, User, Mail, Phone, Calendar, DollarSign, Package } from 'lucide-react';
+import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import ContractTemplate from '@/components/ContractTemplate';
 import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
 
@@ -31,6 +32,20 @@ interface ServiceRequest {
   target_total_amount: number | null;
 }
 
+interface DraftContract {
+  id: string;
+  student_id: string;
+  student_name: string;
+  student_email: string;
+  service_package: string;
+  service_fee: string;
+  contract_reference: string;
+  contract_html: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function Contracts() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
@@ -44,6 +59,11 @@ export default function Contracts() {
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [sendMessage, setSendMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [activeTab, setActiveTab] = useState('create');
+  const [drafts, setDrafts] = useState<DraftContract[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [editingDraft, setEditingDraft] = useState<DraftContract | null>(null);
   const { toast } = useToast();
 
   // Form fields
@@ -62,6 +82,7 @@ export default function Contracts() {
 
   useEffect(() => {
     fetchStudents();
+    fetchDrafts();
   }, []);
 
   useEffect(() => {
@@ -107,6 +128,24 @@ export default function Contracts() {
     }
   };
 
+  const fetchDrafts = async () => {
+    setLoadingDrafts(true);
+    try {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setDrafts(data || []);
+    } catch (error) {
+      console.error('Error fetching drafts:', error);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  };
+
   const fetchStudentEmail = async (userId: string) => {
     try {
       const { data, error } = await (supabase as any).rpc('get_user_email', { p_user_id: userId });
@@ -149,7 +188,7 @@ export default function Contracts() {
     }
 
     setGenerating(true);
-    const ref = generateContractReference();
+    const ref = editingDraft?.contract_reference || generateContractReference();
     setContractRef(ref);
     
     const html = generateContractHTML({
@@ -171,13 +210,14 @@ export default function Contracts() {
     setGenerating(false);
   };
 
-  const [downloading, setDownloading] = useState(false);
-
   const handleDownloadPDF = async () => {
     if (generatedHTML) {
       setDownloading(true);
       try {
         await downloadContractPDF(generatedHTML, `Contract-${contractRef}.pdf`);
+        toast({ title: 'Success', description: 'PDF downloaded successfully' });
+      } catch (error) {
+        toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
       } finally {
         setDownloading(false);
       }
@@ -188,27 +228,55 @@ export default function Contracts() {
     if (!selectedStudentId || !generatedHTML) return;
 
     try {
-      const { error } = await (supabase as any)
-        .from('contracts')
-        .insert({
-          student_id: selectedStudentId,
-          service_request_id: selectedServiceId || null,
-          contract_reference: contractRef,
-          student_name: selectedStudent?.full_name || '',
-          student_email: studentEmail,
-          student_phone: studentPhone || null,
-          service_package: formData.servicePackage,
-          service_description: formData.serviceDescription || null,
-          service_fee: formData.serviceFee,
-          payment_structure: formData.paymentStructure || null,
-          start_date: formData.startDate || null,
-          expected_end_date: formData.expectedEndDate || null,
-          contract_html: generatedHTML,
-          status: 'draft',
-        });
+      if (editingDraft) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('contracts')
+          .update({
+            student_name: selectedStudent?.full_name || '',
+            student_email: studentEmail,
+            student_phone: studentPhone || null,
+            service_package: formData.servicePackage,
+            service_description: formData.serviceDescription || null,
+            service_fee: formData.serviceFee,
+            payment_structure: formData.paymentStructure || null,
+            start_date: formData.startDate || null,
+            expected_end_date: formData.expectedEndDate || null,
+            contract_html: generatedHTML,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingDraft.id);
 
-      if (error) throw error;
-      toast({ title: 'Saved', description: 'Contract saved as draft' });
+        if (error) throw error;
+        toast({ title: 'Updated', description: 'Draft updated successfully' });
+      } else {
+        // Create new draft
+        const { error } = await supabase
+          .from('contracts')
+          .insert({
+            student_id: selectedStudentId,
+            service_request_id: selectedServiceId || null,
+            contract_reference: contractRef,
+            student_name: selectedStudent?.full_name || '',
+            student_email: studentEmail,
+            student_phone: studentPhone || null,
+            service_package: formData.servicePackage,
+            service_description: formData.serviceDescription || null,
+            service_fee: formData.serviceFee,
+            payment_structure: formData.paymentStructure || null,
+            start_date: formData.startDate || null,
+            expected_end_date: formData.expectedEndDate || null,
+            contract_html: generatedHTML,
+            status: 'draft',
+          });
+
+        if (error) throw error;
+        toast({ title: 'Saved', description: 'Contract saved as draft' });
+      }
+      
+      fetchDrafts();
+      setShowPreview(false);
+      resetForm();
     } catch (error: any) {
       console.error('Error saving contract:', error);
       toast({ title: 'Error', description: error.message || 'Failed to save contract', variant: 'destructive' });
@@ -220,30 +288,63 @@ export default function Contracts() {
 
     setSending(true);
     try {
-      // Save contract first
-      const { data: contractData, error: saveError } = await (supabase as any)
-        .from('contracts')
-        .insert({
-          student_id: selectedStudentId,
-          service_request_id: selectedServiceId || null,
-          contract_reference: contractRef,
-          student_name: selectedStudent?.full_name || '',
-          student_email: studentEmail,
-          student_phone: studentPhone || null,
-          service_package: formData.servicePackage,
-          service_description: formData.serviceDescription || null,
-          service_fee: formData.serviceFee,
-          payment_structure: formData.paymentStructure || null,
-          start_date: formData.startDate || null,
-          expected_end_date: formData.expectedEndDate || null,
-          contract_html: generatedHTML,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      let contractId = editingDraft?.id;
 
-      if (saveError) throw saveError;
+      if (editingDraft) {
+        // Update existing draft to sent
+        const { error } = await supabase
+          .from('contracts')
+          .update({
+            contract_html: generatedHTML,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          })
+          .eq('id', editingDraft.id);
+
+        if (error) throw error;
+      } else {
+        // Create new contract as sent
+        const { data, error } = await supabase
+          .from('contracts')
+          .insert({
+            student_id: selectedStudentId,
+            service_request_id: selectedServiceId || null,
+            contract_reference: contractRef,
+            student_name: selectedStudent?.full_name || '',
+            student_email: studentEmail,
+            student_phone: studentPhone || null,
+            service_package: formData.servicePackage,
+            service_description: formData.serviceDescription || null,
+            service_fee: formData.serviceFee,
+            payment_structure: formData.paymentStructure || null,
+            start_date: formData.startDate || null,
+            expected_end_date: formData.expectedEndDate || null,
+            contract_html: generatedHTML,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        contractId = data?.id;
+      }
+
+      // Create notification for student dashboard
+      await supabase.from('notifications').insert({
+        user_id: selectedStudentId,
+        title: 'New Contract Received',
+        body: `You have received a new service contract for ${formData.servicePackage}. Please review it on your dashboard.`,
+        type: 'contract',
+        ref_id: contractId,
+        recipient_role: 'student',
+        meta: {
+          contract_reference: contractRef,
+          service_package: formData.servicePackage,
+          service_fee: formData.serviceFee,
+          contract_html: generatedHTML,
+        },
+      });
 
       // Send email
       const emailHtml = `
@@ -252,6 +353,7 @@ export default function Contracts() {
         ${sendMessage ? `<p>${sendMessage}</p>` : ''}
         <p>Please find your service contract attached below. Review the terms and conditions carefully.</p>
         <p>Contract Reference: <strong>${contractRef}</strong></p>
+        <p>You can also view this contract on your dashboard.</p>
         <hr style="margin: 20px 0;" />
         ${generatedHTML}
         <hr style="margin: 20px 0;" />
@@ -268,27 +370,70 @@ export default function Contracts() {
       toast({ title: 'Sent', description: 'Contract sent to student successfully' });
       setShowSendDialog(false);
       setShowPreview(false);
-      
-      // Reset form
-      setSelectedStudentId('');
-      setSelectedServiceId('');
-      setStudentEmail('');
-      setStudentPhone('');
-      setFormData({
-        servicePackage: '',
-        serviceDescription: '',
-        serviceFee: '',
-        paymentStructure: '',
-        startDate: '',
-        expectedEndDate: '',
-      });
-      setGeneratedHTML('');
+      fetchDrafts();
+      resetForm();
     } catch (error: any) {
       console.error('Error sending contract:', error);
       toast({ title: 'Error', description: error.message || 'Failed to send contract', variant: 'destructive' });
     } finally {
       setSending(false);
     }
+  };
+
+  const handleEditDraft = (draft: DraftContract) => {
+    setEditingDraft(draft);
+    setSelectedStudentId(draft.student_id);
+    setStudentEmail(draft.student_email);
+    setFormData({
+      servicePackage: draft.service_package || '',
+      serviceDescription: (draft as any).service_description || '',
+      serviceFee: draft.service_fee || '',
+      paymentStructure: (draft as any).payment_structure || '',
+      startDate: (draft as any).start_date || '',
+      expectedEndDate: (draft as any).expected_end_date || '',
+    });
+    setContractRef(draft.contract_reference);
+    setGeneratedHTML(draft.contract_html);
+    setActiveTab('create');
+  };
+
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .delete()
+        .eq('id', draftId);
+
+      if (error) throw error;
+      toast({ title: 'Deleted', description: 'Draft deleted successfully' });
+      fetchDrafts();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to delete draft', variant: 'destructive' });
+    }
+  };
+
+  const handlePreviewDraft = (draft: DraftContract) => {
+    setGeneratedHTML(draft.contract_html);
+    setContractRef(draft.contract_reference);
+    setEditingDraft(draft);
+    setShowPreview(true);
+  };
+
+  const resetForm = () => {
+    setSelectedStudentId('');
+    setSelectedServiceId('');
+    setStudentEmail('');
+    setStudentPhone('');
+    setFormData({
+      servicePackage: '',
+      serviceDescription: '',
+      serviceFee: '',
+      paymentStructure: '',
+      startDate: '',
+      expectedEndDate: '',
+    });
+    setGeneratedHTML('');
+    setEditingDraft(null);
   };
 
   if (loading) {
@@ -306,162 +451,243 @@ export default function Contracts() {
     <Layout>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Generate Contract</h1>
-          <p className="text-muted-foreground">Create personalized service agreements for students</p>
+          <h1 className="text-3xl font-bold text-foreground">Contracts</h1>
+          <p className="text-muted-foreground">Create and manage service agreements</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Select Student
-            </CardTitle>
-            <CardDescription>Choose a student to generate a contract for</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Student</Label>
-                <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a student" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {students.map(student => (
-                      <SelectItem key={student.user_id} value={student.user_id}>
-                        {student.full_name || 'Unnamed Student'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">
+              <FileText className="h-4 w-4 mr-2" />
+              Create Contract
+            </TabsTrigger>
+            <TabsTrigger value="drafts">
+              <Edit className="h-4 w-4 mr-2" />
+              Saved Drafts ({drafts.length})
+            </TabsTrigger>
+          </TabsList>
 
-              {selectedStudentId && serviceRequests.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Service Request (Optional)</Label>
-                  <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Auto-fill from request" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {serviceRequests.map(sr => (
-                        <SelectItem key={sr.id} value={sr.id}>
-                          {sr.service_type} - {sr.service_currency || '₹'}{sr.service_price?.toLocaleString() || 'N/A'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          <TabsContent value="create" className="space-y-6">
+            {editingDraft && (
+              <Card className="border-warning bg-warning/5">
+                <CardContent className="py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Edit className="h-4 w-4 text-warning" />
+                    <span className="text-sm">Editing draft: <strong>{editingDraft.contract_reference}</strong></span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={resetForm}>
+                    Cancel Edit
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Select Student
+                </CardTitle>
+                <CardDescription>Choose a student to generate a contract for</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Student</Label>
+                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {students.map(student => (
+                          <SelectItem key={student.user_id} value={student.user_id}>
+                            {student.full_name || 'Unnamed Student'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedStudentId && serviceRequests.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Service Request (Optional)</Label>
+                      <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Auto-fill from request" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceRequests.map(sr => (
+                            <SelectItem key={sr.id} value={sr.id}>
+                              {sr.service_type} - {sr.service_currency || '₹'}{sr.service_price?.toLocaleString() || 'N/A'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {selectedStudentId && (
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Name:</span>
+                      <span>{selectedStudent?.full_name || 'Not available'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Email:</span>
+                      <span>{studentEmail || 'Fetching...'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Phone:</span>
+                      <Input 
+                        placeholder="Enter phone (optional)"
+                        value={studentPhone}
+                        onChange={(e) => setStudentPhone(e.target.value)}
+                        className="h-8 w-48"
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {selectedStudentId && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Name:</span>
-                  <span>{selectedStudent?.full_name || 'Not available'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Email:</span>
-                  <span>{studentEmail || 'Fetching...'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Phone:</span>
-                  <Input 
-                    placeholder="Enter phone (optional)"
-                    value={studentPhone}
-                    onChange={(e) => setStudentPhone(e.target.value)}
-                    className="h-8 w-48"
-                  />
-                </div>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Service Details
+                  </CardTitle>
+                  <CardDescription>Enter or modify the service package details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Service Package *</Label>
+                      <Input 
+                        placeholder="e.g., Admission Package"
+                        value={formData.servicePackage}
+                        onChange={(e) => setFormData(prev => ({ ...prev, servicePackage: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Total Service Fee *</Label>
+                      <Input 
+                        placeholder="e.g., ₹25,000"
+                        value={formData.serviceFee}
+                        onChange={(e) => setFormData(prev => ({ ...prev, serviceFee: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Service Description</Label>
+                    <Textarea 
+                      placeholder="Describe the services included..."
+                      value={formData.serviceDescription}
+                      onChange={(e) => setFormData(prev => ({ ...prev, serviceDescription: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Payment Structure</Label>
+                    <Input 
+                      placeholder="e.g., 50% Advance, 50% on Admission"
+                      value={formData.paymentStructure}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paymentStructure: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Input 
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Expected End Date</Label>
+                      <Input 
+                        type="date"
+                        value={formData.expectedEndDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleGenerateContract} 
+                    disabled={generating || !formData.servicePackage || !formData.serviceFee}
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {generating ? 'Generating...' : editingDraft ? 'Update Contract' : 'Generate Contract'}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {selectedStudentId && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Service Details
-              </CardTitle>
-              <CardDescription>Enter or modify the service package details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Service Package *</Label>
-                  <Input 
-                    placeholder="e.g., Admission Package"
-                    value={formData.servicePackage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, servicePackage: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Total Service Fee *</Label>
-                  <Input 
-                    placeholder="e.g., ₹25,000"
-                    value={formData.serviceFee}
-                    onChange={(e) => setFormData(prev => ({ ...prev, serviceFee: e.target.value }))}
-                  />
-                </div>
+          <TabsContent value="drafts" className="space-y-4">
+            {loadingDrafts ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
+            ) : drafts.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No saved drafts yet</p>
+                  <Button variant="link" onClick={() => setActiveTab('create')}>
+                    Create a new contract
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              drafts.map((draft) => (
+                <Card key={draft.id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{draft.student_name}</h3>
+                          <Badge variant="outline">{draft.contract_reference}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {draft.service_package} • {draft.service_fee}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Created: {format(new Date(draft.created_at), 'MMM d, yyyy h:mm a')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handlePreviewDraft(draft)}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEditDraft(draft)}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDraft(draft.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
 
-              <div className="space-y-2">
-                <Label>Service Description</Label>
-                <Textarea 
-                  placeholder="Describe the services included..."
-                  value={formData.serviceDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, serviceDescription: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Structure</Label>
-                <Input 
-                  placeholder="e.g., 50% Advance, 50% on Admission"
-                  value={formData.paymentStructure}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentStructure: e.target.value }))}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input 
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Expected End Date</Label>
-                  <Input 
-                    type="date"
-                    value={formData.expectedEndDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleGenerateContract} 
-                disabled={generating || !formData.servicePackage || !formData.serviceFee}
-                className="w-full"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                {generating ? 'Generating...' : 'Generate Contract'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Contract Preview Dialog */}
+        {/* Contract Preview Dialog - Using new HTML template */}
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -471,25 +697,15 @@ export default function Contracts() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="border rounded-lg overflow-hidden">
-              <ContractTemplate
-                studentName={selectedStudent?.full_name || ''}
-                studentEmail={studentEmail}
-                studentPhone={studentPhone}
-                servicePackage={formData.servicePackage}
-                serviceDescription={formData.serviceDescription}
-                serviceFee={formData.serviceFee}
-                paymentStructure={formData.paymentStructure}
-                startDate={formData.startDate ? format(new Date(formData.startDate), 'MMMM d, yyyy') : undefined}
-                expectedEndDate={formData.expectedEndDate ? format(new Date(formData.expectedEndDate), 'MMMM d, yyyy') : undefined}
-                contractReference={contractRef}
-                contractDate={contractDate}
-              />
-            </div>
+            {/* Render the new HTML template directly */}
+            <div 
+              className="border rounded-lg overflow-hidden bg-white"
+              dangerouslySetInnerHTML={{ __html: generatedHTML }}
+            />
 
             <div className="flex flex-wrap gap-2 justify-end mt-4">
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <Download className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleDownloadPDF} disabled={downloading}>
+                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                 Download PDF
               </Button>
               <Button variant="outline" onClick={handleSaveContract}>
@@ -509,7 +725,7 @@ export default function Contracts() {
             <DialogHeader>
               <DialogTitle>Send Contract</DialogTitle>
               <DialogDescription>
-                Send the contract to {selectedStudent?.full_name}
+                Send the contract to {selectedStudent?.full_name || editingDraft?.student_name}
               </DialogDescription>
             </DialogHeader>
             
@@ -517,11 +733,11 @@ export default function Contracts() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedStudent?.full_name}</span>
+                  <span>{selectedStudent?.full_name || editingDraft?.student_name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{studentEmail}</span>
+                  <span>{studentEmail || editingDraft?.student_email}</span>
                 </div>
               </div>
 
