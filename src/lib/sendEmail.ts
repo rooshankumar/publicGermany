@@ -6,6 +6,11 @@ export type SendEmailOptions = {
   params?: Record<string, unknown>;
   cc?: string[];
   bcc?: string[];
+  attachments?: Array<{
+    filename: string;
+    content: string; // base64 encoded
+    contentType?: string;
+  }>;
 };
 
 export async function sendEmail(
@@ -23,6 +28,7 @@ export async function sendEmail(
     params: options.params,
     cc: options.cc,
     bcc: options.bcc,
+    attachments: options.attachments,
   };
 
   const { data, error } = await supabase.functions.invoke("send-email", {

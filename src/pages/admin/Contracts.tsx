@@ -15,6 +15,8 @@ import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit
 import { format } from 'date-fns';
 import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface Student {
   user_id: string;
@@ -310,6 +312,43 @@ export default function Contracts() {
 
     setSending(true);
     try {
+      // Generate PDF as base64 for email attachment
+      let pdfBase64 = '';
+      try {
+        const canvas = await html2canvas(
+          (() => {
+            const div = document.createElement('div');
+            div.innerHTML = generatedHTML;
+            div.style.display = 'none';
+            document.body.appendChild(div);
+            return div;
+          })(),
+          { scale: 2, backgroundColor: '#ffffff' }
+        );
+        document.body.removeChild(canvas.parentElement!);
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgHeight = (canvas.height * pageWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        pdfBase64 = pdf.output('datauristring').split(',')[1];
+      } catch (pdfError) {
+        console.warn('PDF generation failed, will send HTML version', pdfError);
+      }
+
       let contractId = editingDraft?.id;
 
       if (editingDraft) {
@@ -356,7 +395,7 @@ export default function Contracts() {
       await supabase.from('notifications').insert({
         user_id: selectedStudentId,
         title: 'New Contract Received',
-        body: `You have received a new service contract for ${formData.servicePackage}. Please review it on your dashboard.`,
+        body: `You have received a new service contract for ${formData.servicePackage}. Download, review, and upload the signed copy.`,
         type: 'contract',
         ref_id: contractId,
         recipient_role: 'student',
@@ -364,35 +403,49 @@ export default function Contracts() {
           contract_reference: contractRef,
           service_package: formData.servicePackage,
           service_fee: formData.serviceFee,
-          contract_html: generatedHTML,
         },
       });
 
-      // Send email
+      // Send email with PDF attachment
       const emailHtml = `
         <h2>Service Contract from publicgermany</h2>
         <p>Dear ${selectedStudent?.full_name || 'Student'},</p>
         ${sendMessage ? `<p>${sendMessage}</p>` : ''}
-        <p>Please find your service contract attached below. Review the terms and conditions carefully.</p>
-        <p>Contract Reference: <strong>${contractRef}</strong></p>
-        <p>You can also view this contract on your dashboard.</p>
-        <hr style="margin: 20px 0;" />
-        ${generatedHTML}
-        <hr style="margin: 20px 0;" />
+        <p>Please find your service contract PDF attached. Review the terms and conditions carefully.</p>
+        <p><strong>Contract Reference:</strong> ${contractRef}</p>
+        <p>
+          <strong>Next Steps:</strong>
+          <ol>
+            <li>Download and review the attached PDF contract</li>
+            <li>Sign the contract</li>
+            <li>Upload the signed copy back through your dashboard</li>
+          </ol>
+        </p>
+        <p>You can also view and manage this contract on your dashboard: <a href="${window.location.origin}/dashboard">View on Dashboard</a></p>
         <p>If you have any questions, please reply to this email.</p>
         <p>Best regards,<br/>publicgermany Team</p>
       `;
 
+      const attachments = pdfBase64 ? [
+        {
+          filename: `Contract-${contractRef}.pdf`,
+          content: pdfBase64,
+          contentType: 'application/pdf',
+        }
+      ] : undefined;
+
       await sendEmail(
         studentEmail,
         `Service Contract - ${contractRef} | publicgermany`,
-        emailHtml
+        emailHtml,
+        { attachments }
       );
 
-      toast({ title: 'Sent', description: 'Contract sent to student successfully' });
+      toast({ title: 'Sent', description: 'Contract sent to student with PDF attachment' });
       setShowSendDialog(false);
       setShowPreview(false);
       fetchDrafts();
+      fetchContractsHistory();
       resetForm();
     } catch (error: any) {
       console.error('Error sending contract:', error);
@@ -484,12 +537,8 @@ export default function Contracts() {
               Create Contract
             </TabsTrigger>
             <TabsTrigger value="drafts">
-              <Edit className="h-4 w-4 mr-2" />
-              Saved Drafts ({drafts.length})
-            </TabsTrigger>
-            <TabsTrigger value="history">
               <Clock className="h-4 w-4 mr-2" />
-              History
+              Contracts ({drafts.length + contractsHistory.length})
             </TabsTrigger>
           </TabsList>
 
@@ -661,105 +710,114 @@ export default function Contracts() {
           </TabsContent>
 
           <TabsContent value="drafts" className="space-y-4">
-            {loadingDrafts ? (
+            {(loadingDrafts || loadingHistory) ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : drafts.length === 0 ? (
+            ) : drafts.length === 0 && contractsHistory.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No saved drafts yet</p>
+                  <p className="text-muted-foreground">No contracts yet</p>
                   <Button variant="link" onClick={() => setActiveTab('create')}>
                     Create a new contract
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              drafts.map((draft) => (
-                <Card key={draft.id}>
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{draft.student_name}</h3>
-                          <Badge variant="outline">{draft.contract_reference}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {draft.service_package} • {draft.service_fee}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Created: {format(new Date(draft.created_at), 'MMM d, yyyy h:mm a')}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handlePreviewDraft(draft)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Preview
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleEditDraft(draft)}>
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDraft(draft.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
+              <>
+                {/* Draft Contracts */}
+                {drafts.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Edit className="h-5 w-5 text-amber-600" />
+                      Draft Contracts ({drafts.length})
+                    </h2>
+                    {drafts.map((draft) => (
+                      <Card key={draft.id} className="border-l-4 border-l-amber-500 bg-amber-50/30">
+                        <CardContent className="py-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{draft.student_name}</h3>
+                                <Badge className="bg-amber-100 text-amber-800 border-amber-300">Draft</Badge>
+                                <Badge variant="outline">{draft.contract_reference}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {draft.service_package} • {draft.service_fee}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Created: {format(new Date(draft.created_at), 'MMM d, yyyy h:mm a')}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handlePreviewDraft(draft)}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                Preview
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleEditDraft(draft)}>
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDraft(draft.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
 
-          <TabsContent value="history" className="space-y-4">
-            {loadingHistory ? (
-              <div className="flex items-center justify-center py-8">Loading...</div>
-            ) : contractsHistory.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No contracts in history yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              contractsHistory.map((c) => (
-                <Card key={c.id}>
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{c.student_name}</h3>
-                          <Badge variant="outline">{c.contract_reference}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {c.service_package} • {c.service_fee}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Created: {format(new Date(c.created_at), 'MMM d, yyyy h:mm a')}
-                          {c.sent_at ? ` • Sent: ${format(new Date(c.sent_at), 'MMM d, yyyy')}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setSelectedHistoryContract(c); setShowHistoryPreview(true); }}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={async () => {
-                          try {
-                            await downloadContractPDF(c.contract_html, `Contract-${c.contract_reference}.pdf`);
-                            toast({ title: 'Downloaded', description: 'PDF downloaded' });
-                          } catch (e) {
-                            toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
-                          }
-                        }}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                {/* Sent/Successful Contracts */}
+                {contractsHistory.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-green-600" />
+                      Sent Contracts ({contractsHistory.length})
+                    </h2>
+                    {contractsHistory.map((c) => (
+                      <Card key={c.id} className="border-l-4 border-l-green-500 bg-green-50/30">
+                        <CardContent className="py-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{c.student_name}</h3>
+                                <Badge className="bg-green-100 text-green-800 border-green-300">Sent</Badge>
+                                <Badge variant="outline">{c.contract_reference}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {c.service_package} • {c.service_fee}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Created: {format(new Date(c.created_at), 'MMM d, yyyy h:mm a')}
+                                {c.sent_at ? ` • Sent: ${format(new Date(c.sent_at), 'MMM d, yyyy')}` : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={() => { setSelectedHistoryContract(c); setShowHistoryPreview(true); }}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={async () => {
+                                try {
+                                  await downloadContractPDF(c.contract_html, `Contract-${c.contract_reference}.pdf`);
+                                  toast({ title: 'Downloaded', description: 'PDF downloaded' });
+                                } catch (e) {
+                                  toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
+                                }
+                              }}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
@@ -838,6 +896,54 @@ export default function Contracts() {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* History Contract Preview Dialog */}
+        <Dialog open={showHistoryPreview} onOpenChange={setShowHistoryPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Contract: {selectedHistoryContract?.contract_reference}</DialogTitle>
+            </DialogHeader>
+
+            {selectedHistoryContract && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedHistoryContract.student_name}</span>
+                  </div>
+                  <Badge>
+                    {selectedHistoryContract.status}
+                  </Badge>
+                  {selectedHistoryContract.sent_at && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Send className="h-3 w-3" />
+                      Sent: {format(new Date(selectedHistoryContract.sent_at), 'MMM d, yyyy')}
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="border rounded-lg p-4 bg-white text-black"
+                  dangerouslySetInnerHTML={{ __html: selectedHistoryContract.contract_html }}
+                />
+
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={async () => {
+                    try {
+                      await downloadContractPDF(selectedHistoryContract.contract_html, `Contract-${selectedHistoryContract.contract_reference}.pdf`);
+                      toast({ title: 'Downloaded', description: 'PDF downloaded' });
+                    } catch (e) {
+                      toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
+                    }
+                  }}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

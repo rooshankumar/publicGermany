@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ContractCard } from '@/components/ContractCard';
 // Custom Progress component to replace the shadcn/ui one
 const Progress = ({ value, className = '', indicatorClassName = '' }: { 
   value: number; 
@@ -119,6 +120,7 @@ const Dashboard = () => {
 
   // Contract notification states
   const [contractNotifications, setContractNotifications] = useState<ContractNotification[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
   const [showContractPopup, setShowContractPopup] = useState(false);
   const [activeContract, setActiveContract] = useState<ContractNotification | null>(null);
   const [showContractPreview, setShowContractPreview] = useState(false);
@@ -262,6 +264,18 @@ const Dashboard = () => {
         if (payErr) throw payErr;
         setRecentPayments(srWithPayments as any || []);
 
+        // Fetch actual contracts from contracts table
+        const { data: contractData, error: contractErr } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('student_id', user.id)
+          .order('sent_at', { ascending: false })
+          .neq('status', 'draft');
+
+        if (!contractErr && contractData) {
+          setContracts(contractData || []);
+        }
+
         // Fetch contract notifications
         const { data: contractNotifs, error: notifErr } = await supabase
           .from('notifications')
@@ -389,7 +403,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 -mt-8 relative z-10">
           
           {/* Contract Notifications Section */}
-          {contractNotifications.length > 0 && (
+          {contracts.length > 0 && (
             <Card className="mb-6 md:mb-8 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
@@ -400,41 +414,26 @@ const Dashboard = () => {
                   Service contracts sent by publicgermany
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {contractNotifications.map((contract) => (
-                  <div 
+              <CardContent className="space-y-4">
+                {contracts.map((contract) => (
+                  <ContractCard 
                     key={contract.id}
-                    className="flex items-center justify-between p-4 bg-background rounded-lg border hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{contract.meta?.service_package || 'Service Contract'}</span>
-                          {!contract.seen && (
-                            <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {contract.meta?.contract_reference} • {contract.meta?.service_fee}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewContract(contract)}>
-                        View Contract
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleDownloadContract(contract)}
-                        disabled={downloadingPdf}
-                      >
-                        {downloadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
+                    contract={contract}
+                    userId={user?.id}
+                    onStatusChange={() => {
+                      // Refetch contracts after status update
+                      const refetch = async () => {
+                        const { data } = await supabase
+                          .from('contracts')
+                          .select('*')
+                          .eq('student_id', user?.id)
+                          .order('sent_at', { ascending: false })
+                          .neq('status', 'draft');
+                        if (data) setContracts(data);
+                      };
+                      refetch();
+                    }}
+                  />
                 ))}
               </CardContent>
             </Card>

@@ -27,7 +27,9 @@ import {
   RefreshCw,
   DollarSign,
   FileCheck,
-  ExternalLink
+  ExternalLink,
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
@@ -44,6 +46,8 @@ export default function StudentProfile() {
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [updatingContractId, setUpdatingContractId] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -107,6 +111,74 @@ export default function StudentProfile() {
       });
 
       setPaymentSummary({ total, received, pending });
+    }
+  };
+
+  const fetchContracts = async () => {
+    if (!studentId) return;
+    try {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+      setContracts(data || []);
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+    }
+  };
+
+  const updateContractStatus = async (contractId: string, newStatus: 'completed' | 'rejected') => {
+    try {
+      setUpdatingContractId(contractId);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error } = await supabase
+        .from('contracts')
+        .update({
+          status: newStatus,
+          reviewed_by: user?.id || null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', contractId);
+
+      if (error) throw error;
+
+      // Create notification for student
+      await supabase.from('notifications').insert({
+        user_id: studentId,
+        title: `Contract ${newStatus === 'completed' ? 'Approved' : 'Rejected'}`,
+        body: `Your contract has been ${newStatus === 'completed' ? 'approved' : 'rejected'} by the admin team.`,
+        type: 'contract',
+        ref_id: contractId,
+        recipient_role: 'student',
+      });
+
+      // Send email notification
+      const contract = contracts.find(c => c.id === contractId);
+      if (contract && email) {
+        try {
+          await sendEmail(
+            email,
+            `Contract ${newStatus === 'completed' ? 'Approved' : 'Rejected'}`,
+            `<p>Hi ${student?.full_name || 'Student'},</p>
+             <p>Your service contract <strong>${contract.contract_reference}</strong> has been <strong>${newStatus === 'completed' ? 'approved' : 'rejected'}</strong> by the admin team.</p>
+             <p>Contract Reference: <strong>${contract.contract_reference}</strong></p>
+             <p>You can view details on your dashboard.</p>
+             <p>Best regards,<br/>publicgermany Team</p>`
+          );
+        } catch (_) { /* ignore email errors */ }
+      }
+
+      toast({ title: 'Updated', description: `Contract marked as ${newStatus}` });
+      fetchContracts();
+    } catch (error: any) {
+      console.error('Error updating contract:', error);
+      toast({ title: 'Error', description: error.message || 'Failed to update contract', variant: 'destructive' });
+    } finally {
+      setUpdatingContractId(null);
     }
   };
 
@@ -212,6 +284,7 @@ export default function StudentProfile() {
       setStudent(studentQuery.data);
       resolveEmail();
       fetchPaymentSummary();
+      fetchContracts();
       setLoading(false);
     }
     if (studentQuery.isError) {
@@ -813,6 +886,104 @@ export default function StudentProfile() {
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-4">No service requests found</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contracts Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Service Contracts ({contracts.length})
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={fetchContracts}>
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {contracts.length > 0 ? (
+              <div className="space-y-3">
+                {contracts.map((contract) => (
+                  <div 
+                    key={contract.id}
+                    className={`border-l-4 rounded-lg p-4 ${
+                      contract.status === 'draft' ? 'border-l-amber-500 bg-amber-50/30' :
+                      contract.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
+                      contract.status === 'signed' ? 'border-l-orange-500 bg-orange-50/30' :
+                      'border-l-green-500 bg-green-50/30'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{contract.contract_reference}</h4>
+                          <Badge variant={
+                            contract.status === 'draft' ? 'secondary' :
+                            contract.status === 'sent' ? 'outline' :
+                            contract.status === 'signed' ? 'default' : 'default'
+                          }>
+                            {contract.status === 'draft' ? 'Draft' :
+                             contract.status === 'sent' ? 'Sent to Student' :
+                             contract.status === 'signed' ? 'Awaiting Approval' :
+                             'Approved'}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
+                          <p>Sent: {contract.sent_at ? new Date(contract.sent_at).toLocaleDateString() : 'Not sent'}</p>
+                          {contract.signed_at && (
+                            <p>Signed: {new Date(contract.signed_at).toLocaleDateString()}</p>
+                          )}
+                          {contract.signed_document_url && (
+                            <p>
+                              <a 
+                                href={contract.signed_document_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline text-xs flex items-center gap-1"
+                              >
+                                View Signed Contract
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {contract.status === 'signed' && (
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={updatingContractId === contract.id}
+                            onClick={() => updateContractStatus(contract.id, 'completed')}
+                            className="gap-2"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            {updatingContractId === contract.id ? 'Approving...' : 'Approve'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={updatingContractId === contract.id}
+                            onClick={() => updateContractStatus(contract.id, 'rejected')}
+                            className="gap-2"
+                          >
+                            <X className="h-4 w-4" />
+                            {updatingContractId === contract.id ? 'Rejecting...' : 'Reject'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No contracts found</p>
             )}
           </CardContent>
         </Card>
