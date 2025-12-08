@@ -166,7 +166,7 @@ export default function StudentProfile() {
             `<p>Hi ${student?.full_name || 'Student'},</p>
              <p>Your service contract <strong>${contract.contract_reference}</strong> has been <strong>${newStatus === 'completed' ? 'approved' : 'rejected'}</strong> by the admin team.</p>
              <p>Contract Reference: <strong>${contract.contract_reference}</strong></p>
-             <p>You can view details on your dashboard.</p>
+             <p>You can view details on your dashboard: <a href="https://publicgermany.vercel.app/dashboard">View on Dashboard</a></p>
              <p>Best regards,<br/>publicgermany Team</p>`
           );
         } catch (_) { /* ignore email errors */ }
@@ -302,6 +302,7 @@ export default function StudentProfile() {
     const channel = supabase
       .channel(`student-docs-${studentId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `student_id=eq.${studentId}` }, debounce(() => fetchContracts(), 400))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [studentId]);

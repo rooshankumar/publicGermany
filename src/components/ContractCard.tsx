@@ -17,6 +17,8 @@ interface ContractCardProps {
     sent_at: string;
     created_at: string;
     contract_html: string;
+    contract_pdf_url?: string;
+    student_id?: string;
   };
   onStatusChange?: () => void;
   userId?: string;
@@ -25,6 +27,7 @@ interface ContractCardProps {
 export function ContractCard({ contract, onStatusChange, userId }: ContractCardProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -44,19 +47,56 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
 
   const handleDownloadPDF = async () => {
     try {
-      // Convert HTML to canvas and then PDF
+      setDownloading(true);
+      
+      // If PDF URL is stored, download directly from storage
+      if (contract.contract_pdf_url) {
+        const link = document.createElement('a');
+        link.href = contract.contract_pdf_url;
+        link.download = `Contract-${contract.contract_reference}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: 'Downloaded', description: 'Contract PDF downloaded successfully' });
+        return;
+      }
+
+      // Fallback: Generate PDF from HTML if URL not available
       const { default: html2canvas } = await import('html2canvas');
       const { default: jsPDF } = await import('jspdf');
 
       const div = document.createElement('div');
       div.innerHTML = contract.contract_html;
-      div.style.display = 'none';
+      div.style.position = 'absolute';
+      div.style.left = '-9999px';
+      div.style.top = '-9999px';
+      div.style.width = '1000px';
+      div.style.backgroundColor = '#ffffff';
       document.body.appendChild(div);
 
-      const canvas = await html2canvas(div, { scale: 2, backgroundColor: '#ffffff' });
+      // Wait for images to load before capturing
+      const images = div.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        return new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+          } else {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }
+        });
+      });
+      await Promise.all(imagePromises);
+
+      const canvas = await html2canvas(div, { 
+        scale: 2, 
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        logging: false
+      });
       document.body.removeChild(div);
 
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageHeight = pdf.internal.pageSize.getHeight();
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -64,13 +104,15 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+      // Convert canvas to JPEG instead of PNG to avoid signature issues
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
@@ -79,6 +121,8 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({ title: 'Error', description: 'Failed to download contract PDF', variant: 'destructive' });
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -107,12 +151,22 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
         .from('contracts')
         .update({
           status: 'signed',
-          signed_contract_url: publicUrl,
+          signed_document_url: publicUrl,
           signed_at: new Date().toISOString(),
         })
         .eq('id', contract.id);
 
       if (updateErr) throw updateErr;
+
+      // Also create a notification for admin
+      await supabase.from('notifications').insert({
+        user_id: contract.student_id,
+        title: 'Contract Signed',
+        body: `Student has signed and uploaded contract ${contract.contract_reference}. Please review and approve.`,
+        type: 'contract',
+        ref_id: contract.id,
+        recipient_role: 'admin',
+      }).catch(() => null);
 
       toast({ title: 'Uploaded', description: 'Signed contract uploaded successfully. Awaiting admin approval.' });
       onStatusChange?.();
@@ -165,10 +219,11 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
             variant="outline"
             size="sm"
             onClick={handleDownloadPDF}
+            disabled={downloading}
             className="flex-1"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            {downloading ? 'Downloading...' : 'Download PDF'}
           </Button>
 
           {/* Upload Button - Only show if status is sent or pending_approval */}

@@ -312,44 +312,80 @@ export default function Contracts() {
 
     setSending(true);
     try {
-      // Generate PDF as base64 for email attachment
-      let pdfBase64 = '';
+      // Generate PDF and save to storage
+      let pdfStorageUrl = '';
+      let contractId = editingDraft?.id;
+
       try {
-        const canvas = await html2canvas(
-          (() => {
-            const div = document.createElement('div');
-            div.innerHTML = generatedHTML;
-            div.style.display = 'none';
-            document.body.appendChild(div);
-            return div;
-          })(),
-          { scale: 2, backgroundColor: '#ffffff' }
-        );
-        document.body.removeChild(canvas.parentElement!);
-        const imgData = canvas.toDataURL('image/png');
+        const div = document.createElement('div');
+        div.innerHTML = generatedHTML;
+        div.style.position = 'absolute';
+        div.style.left = '-9999px';
+        div.style.top = '-9999px';
+        div.style.width = '1000px';
+        div.style.backgroundColor = '#ffffff';
+        document.body.appendChild(div);
+
+        // Wait for images to load
+        const images = div.querySelectorAll('img');
+        const imagePromises = Array.from(images).map(img => {
+          return new Promise<void>((resolve) => {
+            if ((img as HTMLImageElement).complete) {
+              resolve();
+            } else {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            }
+          });
+        });
+        await Promise.all(imagePromises);
+
+        const canvas = await html2canvas(div, { 
+          scale: 2, 
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        });
+        document.body.removeChild(div);
+
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageHeight = pdf.internal.pageSize.getHeight();
         const pageWidth = pdf.internal.pageSize.getWidth();
         const imgHeight = (canvas.height * pageWidth) / canvas.width;
         let heightLeft = imgHeight;
         let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
         heightLeft -= pageHeight;
-        
+
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight);
+          pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
           heightLeft -= pageHeight;
         }
-        
-        pdfBase64 = pdf.output('datauristring').split(',')[1];
-      } catch (pdfError) {
-        console.warn('PDF generation failed, will send HTML version', pdfError);
-      }
 
-      let contractId = editingDraft?.id;
+        // Save PDF to storage
+        const pdfBlob = pdf.output('blob');
+        const fileName = `Contract-${contractRef}-${Date.now()}.pdf`;
+        const filePath = `contracts/${selectedStudentId}/${fileName}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from('documents')
+          .upload(filePath, pdfBlob, { upsert: false });
+
+        if (uploadErr) throw uploadErr;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('documents')
+          .getPublicUrl(filePath);
+
+        pdfStorageUrl = publicUrl;
+      } catch (pdfError) {
+        console.warn('PDF generation failed', pdfError);
+      }
 
       if (editingDraft) {
         // Update existing draft to sent
@@ -357,12 +393,14 @@ export default function Contracts() {
           .from('contracts')
           .update({
             contract_html: generatedHTML,
+            contract_pdf_url: pdfStorageUrl || null,
             status: 'sent',
             sent_at: new Date().toISOString(),
           })
           .eq('id', editingDraft.id);
 
         if (error) throw error;
+        contractId = editingDraft.id;
       } else {
         // Create new contract as sent
         const { data, error } = await supabase
@@ -381,6 +419,7 @@ export default function Contracts() {
             start_date: formData.startDate || null,
             expected_end_date: formData.expectedEndDate || null,
             contract_html: generatedHTML,
+            contract_pdf_url: pdfStorageUrl || null,
             status: 'sent',
             sent_at: new Date().toISOString(),
           })
@@ -406,42 +445,33 @@ export default function Contracts() {
         },
       });
 
-      // Send email with PDF attachment
+      // Send email with download link instead of attachment
       const emailHtml = `
         <h2>Service Contract from publicgermany</h2>
         <p>Dear ${selectedStudent?.full_name || 'Student'},</p>
         ${sendMessage ? `<p>${sendMessage}</p>` : ''}
-        <p>Please find your service contract PDF attached. Review the terms and conditions carefully.</p>
+        <p>You have received a new service contract. Please review it carefully.</p>
         <p><strong>Contract Reference:</strong> ${contractRef}</p>
         <p>
           <strong>Next Steps:</strong>
           <ol>
-            <li>Download and review the attached PDF contract</li>
+            <li><a href="${pdfStorageUrl || 'https://publicgermany.vercel.app/dashboard'}">Download and review the PDF contract</a></li>
             <li>Sign the contract</li>
             <li>Upload the signed copy back through your dashboard</li>
           </ol>
         </p>
-        <p>You can also view and manage this contract on your dashboard: <a href="${window.location.origin}/dashboard">View on Dashboard</a></p>
+        <p><a href="https://publicgermany.vercel.app/dashboard" style="background-color: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">View on Dashboard</a></p>
         <p>If you have any questions, please reply to this email.</p>
         <p>Best regards,<br/>publicgermany Team</p>
       `;
 
-      const attachments = pdfBase64 ? [
-        {
-          filename: `Contract-${contractRef}.pdf`,
-          content: pdfBase64,
-          contentType: 'application/pdf',
-        }
-      ] : undefined;
-
       await sendEmail(
         studentEmail,
         `Service Contract - ${contractRef} | publicgermany`,
-        emailHtml,
-        { attachments }
+        emailHtml
       );
 
-      toast({ title: 'Sent', description: 'Contract sent to student with PDF attachment' });
+      toast({ title: 'Sent', description: 'Contract sent to student with download link' });
       setShowSendDialog(false);
       setShowPreview(false);
       fetchDrafts();
@@ -809,6 +839,9 @@ export default function Contracts() {
                                 }
                               }}>
                                 <Download className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDraft(c.id)}>
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
