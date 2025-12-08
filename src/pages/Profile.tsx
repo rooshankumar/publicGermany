@@ -56,10 +56,14 @@ const Profile = () => {
     class_12_marks: '',
     class_12_stream: '',
     bachelor_degree_name: '',
+    bachelor_university: '',
     bachelor_field: '',
     bachelor_cgpa_percentage: '',
     bachelor_credits_ects: '',
     bachelor_duration_years: '',
+    intended_master_course: '',
+    intake: '',
+    contract_reference: '',
     master_degree_name: '',
     master_field: '',
     master_cgpa_percentage: '',
@@ -91,6 +95,10 @@ const Profile = () => {
       bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
       bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
       work_experience_years: formData.work_experience_years ? parseInt(formData.work_experience_years) : null,
+      bachelor_university: formData.bachelor_university || null,
+      intended_master_course: formData.intended_master_course || null,
+      intake: formData.intake || null,
+      contract_reference: formData.contract_reference || null,
       aps_pathway: formData.aps_pathway === '' ? null : formData.aps_pathway as "stk" | "bachelor_2_semesters" | "master_applicants",
       german_level: formData.german_level === '' ? null : formData.german_level as "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2",
       has_aps_certificate: formData.has_aps_certificate === '' ? null : formData.has_aps_certificate === 'yes',
@@ -121,10 +129,14 @@ const Profile = () => {
         class_12_marks: profile.class_12_marks || '',
         class_12_stream: profile.class_12_stream || '',
         bachelor_degree_name: profile.bachelor_degree_name || '',
+        bachelor_university: (profile as any).bachelor_university || '',
         bachelor_field: profile.bachelor_field || '',
         bachelor_cgpa_percentage: profile.bachelor_cgpa_percentage || '',
         bachelor_credits_ects: profile.bachelor_credits_ects?.toString() || '',
         bachelor_duration_years: profile.bachelor_duration_years?.toString() || '',
+        intended_master_course: (profile as any).intended_master_course || '',
+        intake: (profile as any).intake || '',
+        contract_reference: (profile as any).contract_reference || '',
         master_degree_name: profile.master_degree_name || '',
         master_field: profile.master_field || '',
         master_cgpa_percentage: profile.master_cgpa_percentage || '',
@@ -169,10 +181,14 @@ const Profile = () => {
         class_12_marks: formData.class_12_marks || null,
         class_12_stream: formData.class_12_stream || null,
         bachelor_degree_name: formData.bachelor_degree_name || null,
+        bachelor_university: formData.bachelor_university || null,
         bachelor_field: formData.bachelor_field || null,
         bachelor_cgpa_percentage: formData.bachelor_cgpa_percentage || null,
         bachelor_credits_ects: formData.bachelor_credits_ects ? parseInt(formData.bachelor_credits_ects) : null,
         bachelor_duration_years: formData.bachelor_duration_years ? parseInt(formData.bachelor_duration_years) : null,
+        intended_master_course: formData.intended_master_course || null,
+        intake: formData.intake || null,
+        contract_reference: formData.contract_reference || null,
         master_degree_name: formData.master_degree_name || null,
         master_field: formData.master_field || null,
         master_cgpa_percentage: formData.master_cgpa_percentage || null,
@@ -362,6 +378,48 @@ const Profile = () => {
                     value={formData.bachelor_field}
                     onChange={(e) => handleInputChange('bachelor_field', e.target.value)}
                     placeholder="e.g., Computer Science, Mechanical Engineering"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bachelor_university">Bachelor University</Label>
+                  <Input
+                    id="bachelor_university"
+                    value={formData.bachelor_university}
+                    onChange={(e) => handleInputChange('bachelor_university', e.target.value)}
+                    placeholder="e.g., University of Delhi"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="intended_master_course">Intended Master Course</Label>
+                  <Input
+                    id="intended_master_course"
+                    value={formData.intended_master_course}
+                    onChange={(e) => handleInputChange('intended_master_course', e.target.value)}
+                    placeholder="e.g., MSc Computer Science"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="intake">Intake</Label>
+                  <Input
+                    id="intake"
+                    value={formData.intake}
+                    onChange={(e) => handleInputChange('intake', e.target.value)}
+                    placeholder="e.g., Winter 2026"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contract_reference">Contract Reference</Label>
+                  <Input
+                    id="contract_reference"
+                    value={formData.contract_reference}
+                    onChange={(e) => handleInputChange('contract_reference', e.target.value)}
+                    placeholder="e.g., REF-12345"
                   />
                 </div>
               </div>

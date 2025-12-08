@@ -465,6 +465,10 @@ export default function StudentProfile() {
                     {student.work_experience_field && ` in ${student.work_experience_field}`}
                   </p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Contract Reference</label>
+                  <p className="text-sm mt-1">{(student as any).contract_reference || 'Not provided'}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -489,6 +493,7 @@ export default function StudentProfile() {
                   <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
                   <p className="text-sm mt-1">
                     {student.bachelor_degree_name || 'N/A'} in {student.bachelor_field || 'N/A'}<br/>
+                    University: {(student as any).bachelor_university || 'N/A'}<br/>
                     CGPA: {student.bachelor_cgpa_percentage || 'N/A'} | Credits: {student.bachelor_credits_ects || 'N/A'} | Duration: {student.bachelor_duration_years || 'N/A'} years
                   </p>
                 </div>
@@ -498,6 +503,14 @@ export default function StudentProfile() {
                     {student.master_degree_name || 'N/A'} in {student.master_field || 'N/A'}<br/>
                     CGPA: {student.master_cgpa_percentage || 'N/A'}
                   </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Intended Master Course</label>
+                  <p className="text-sm mt-1">{(student as any).intended_master_course || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Intake</label>
+                  <p className="text-sm mt-1">{(student as any).intake || 'Not provided'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Language Score</label>

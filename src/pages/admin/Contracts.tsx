@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2 } from 'lucide-react';
+import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
@@ -63,6 +63,10 @@ export default function Contracts() {
   const [activeTab, setActiveTab] = useState('create');
   const [drafts, setDrafts] = useState<DraftContract[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [contractsHistory, setContractsHistory] = useState<DraftContract[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedHistoryContract, setSelectedHistoryContract] = useState<DraftContract | null>(null);
+  const [showHistoryPreview, setShowHistoryPreview] = useState(false);
   const [editingDraft, setEditingDraft] = useState<DraftContract | null>(null);
   const { toast } = useToast();
 
@@ -83,6 +87,7 @@ export default function Contracts() {
   useEffect(() => {
     fetchStudents();
     fetchDrafts();
+    fetchContractsHistory();
   }, []);
 
   useEffect(() => {
@@ -143,6 +148,23 @@ export default function Contracts() {
       console.error('Error fetching drafts:', error);
     } finally {
       setLoadingDrafts(false);
+    }
+  };
+
+  const fetchContractsHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setContractsHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching contract history:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -465,6 +487,10 @@ export default function Contracts() {
               <Edit className="h-4 w-4 mr-2" />
               Saved Drafts ({drafts.length})
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <Clock className="h-4 w-4 mr-2" />
+              History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="create" className="space-y-6">
@@ -677,6 +703,57 @@ export default function Contracts() {
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteDraft(draft.id)}>
                           <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            {loadingHistory ? (
+              <div className="flex items-center justify-center py-8">Loading...</div>
+            ) : contractsHistory.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No contracts in history yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              contractsHistory.map((c) => (
+                <Card key={c.id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{c.student_name}</h3>
+                          <Badge variant="outline">{c.contract_reference}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {c.service_package} • {c.service_fee}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Created: {format(new Date(c.created_at), 'MMM d, yyyy h:mm a')}
+                          {c.sent_at ? ` • Sent: ${format(new Date(c.sent_at), 'MMM d, yyyy')}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedHistoryContract(c); setShowHistoryPreview(true); }}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={async () => {
+                          try {
+                            await downloadContractPDF(c.contract_html, `Contract-${c.contract_reference}.pdf`);
+                            toast({ title: 'Downloaded', description: 'PDF downloaded' });
+                          } catch (e) {
+                            toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
+                          }
+                        }}>
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

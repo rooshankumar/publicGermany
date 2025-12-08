@@ -4,6 +4,9 @@ export interface ContractData {
   studentName: string;
   studentEmail: string;
   studentPhone?: string;
+  intake?: string;
+  intendedMasterCourse?: string;
+  bachelorUniversity?: string;
   servicePackage: string;
   serviceDescription?: string;
   serviceFee: string;
@@ -26,6 +29,9 @@ export function generateContractHTML(data: ContractData): string {
   const contractDate = format(new Date(), "MMMM d, yyyy");
   const contractRef = data.contractReference || generateContractReference();
   const studentPhone = data.studentPhone || '';
+  const intake = data.intake || '';
+  const intendedMasterCourse = data.intendedMasterCourse || '';
+  const bachelorUniversity = data.bachelorUniversity || '';
   const serviceDescription = data.serviceDescription || 'As discussed';
   const paymentStructure = data.paymentStructure || 'As agreed';
   // Clean the fee - remove existing ₹ symbol if present
@@ -39,114 +45,203 @@ export function generateContractHTML(data: ContractData): string {
 <title>publicgermany - Freelancing Service Agreement</title>
 
 <style>
-  @page { size: A4; margin: 15mm; }
-  @media print { body { -webkit-print-color-adjust: exact; } }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
   body {
     font-family: "Segoe UI", Arial, sans-serif;
-    margin: 0; padding: 0;
-    font-size: 12px; color: #222;
+    font-size: 12px;
+    color: #222;
     background: #fff;
   }
 
   .page {
-    padding: 25px 20px;
-    min-height: 100vh;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
+    margin: 0;
+    background: #fff;
     position: relative;
     page-break-after: always;
   }
-  .page:last-child { page-break-after: avoid; }
+
+  .page:last-child {
+    page-break-after: avoid;
+  }
 
   .watermark {
     position: absolute;
-    top: 45%; left: 50%;
-    transform: translate(-50%, -50%) rotate(-25deg);
-    opacity: 0.06;
-    width: 300px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    opacity: 0.05;
+    width: 500px;
     pointer-events: none;
+    z-index: 0;
   }
 
-  .header { text-align: center; margin-bottom: 20px; }
-  .header img { width: 90px; opacity: 0.85; margin-bottom: 5px; }
+  .watermark img {
+    width: 100%;
+    opacity: 0.05;
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .header img {
+    width: 90px;
+    height: auto;
+    margin-bottom: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
   .title {
-    font-size: 26px; font-weight: bold;
-    color: #1e3a8a; letter-spacing: 1px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin: 5px 0;
   }
 
   .subtitle {
-    color: #555; font-size: 14px; margin-top: 4px;
+    font-size: 14px;
+    color: #666;
+    margin: 5px 0 0 0;
   }
 
   .section-title {
-    margin-top: 22px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     color: #1e3a8a;
     border-bottom: 2px solid #1e3a8a;
-    padding-bottom: 4px;
+    padding-bottom: 5px;
+    margin-top: 15px;
+    margin-bottom: 10px;
   }
 
   .info-row {
-    display: flex; margin: 6px 0;
+    display: flex;
+    margin: 8px 0;
+    position: relative;
+    z-index: 10;
   }
 
   .label {
-    width: 200px;
+    width: 150px;
     font-weight: 600;
     color: #374151;
+    flex-shrink: 0;
   }
 
-  .value { flex: 1; }
+  .value {
+    flex: 1;
+    word-break: break-word;
+  }
 
   .highlight {
     background: #fef3c7;
     padding: 2px 6px;
     border-radius: 3px;
     font-weight: 500;
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .generated-date {
+    position: absolute;
+    top: 15mm;
+    right: 15mm;
+    font-size: 11px;
+    color: #6b7280;
+    z-index: 11;
   }
 
   .success-box {
-    background: linear-gradient(90deg, #d1fae5, #a7f3d0);
+    background: #d1fae5;
     border-left: 4px solid #10b981;
     padding: 12px;
+    margin: 15px 0;
     border-radius: 4px;
-    margin-top: 15px;
+    position: relative;
+    z-index: 10;
   }
 
-  .signature-box { margin-top: 40px; text-align: center; }
+  .signature-box {
+    text-align: center;
+    margin-top: 30px;
+    position: relative;
+    z-index: 10;
+  }
 
   .signature-line {
-    width: 260px;
-    height: 30px;
+    width: 250px;
+    height: 1px;
     border-bottom: 1px solid #000;
-    margin: 0 auto 6px;
+    margin: 20px auto 5px;
   }
 
   .packages-table {
-    width: 100%; border-collapse: collapse; margin-top: 12px;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    position: relative;
+    z-index: 10;
   }
 
   .packages-table th {
-    background: linear-gradient(135deg, #1e3a8a, #1e40af);
-    color: #fff; padding: 12px; font-weight: 600;
+    background: #1e3a8a;
+    color: white;
+    padding: 10px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 11px;
   }
 
   .packages-table td {
-    padding: 12px;
+    padding: 8px;
     border-bottom: 1px solid #e5e7eb;
+    font-size: 11px;
   }
 
   .packages-table tr:nth-child(even) td {
     background: #f9fafb;
   }
 
-  .price { font-weight: bold; text-align: right; color: #059669; }
+  .price {
+    font-weight: bold;
+    text-align: right;
+    color: #059669;
+  }
+
+  .terms-list {
+    position: relative;
+    z-index: 10;
+  }
 
   .terms-list p {
-    margin: 10px 0;
-    padding-left: 20px;
+    margin: 8px 0;
+    padding-left: 18px;
     position: relative;
+    font-size: 11px;
   }
 
   .terms-list p::before {
@@ -154,33 +249,50 @@ export function generateContractHTML(data: ContractData): string {
     position: absolute;
     left: 0;
     color: #1e3a8a;
-    font-size: 16px;
+    font-weight: bold;
   }
 
   .qr-section {
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 25px;
-    background: #f8fafc;
-    text-align: center;
     border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 15px;
+    text-align: center;
+    margin-top: 20px;
+    background: #f8fafc;
+    position: relative;
+    z-index: 10;
   }
 
   .qr-section img {
-    width: 130px;
-    background: #fff;
-    padding: 6px;
-    border-radius: 6px;
+    width: 120px;
+    height: auto;
+    margin: 10px auto;
     border: 2px solid #1e3a8a;
-    margin-bottom: 8px;
+    border-radius: 4px;
   }
 
   .page-number {
     position: absolute;
-    bottom: 10px;
-    right: 20px;
-    font-weight: 600;
+    bottom: 15mm;
+    right: 15mm;
+    font-weight: bold;
     color: #1e3a8a;
+    font-size: 11px;
+  }
+
+  p {
+    margin: 8px 0;
+    line-height: 1.5;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  br {
+    display: block;
+    content: "";
+    margin: 2px 0;
   }
 </style>
 </head>
@@ -189,6 +301,7 @@ export function generateContractHTML(data: ContractData): string {
 
 <!-- PAGE 1 -->
 <div class="page">
+  <div class="generated-date">Generated on: ${contractDate}</div>
   <img class="watermark" src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png" crossorigin="anonymous">
 
   <div class="header">
@@ -238,7 +351,7 @@ export function generateContractHTML(data: ContractData): string {
     <div style="margin-bottom: 10px;">Client Acknowledgment & Acceptance</div>
     <div class="signature-line"></div>
     Physical Signature Required<br>
-    <span>Date: ${contractDate}</span>
+    <span>Date: ______________________</span>
   </div>
 
   <!-- MOVED SECTION BELOW SIGNATURE -->
@@ -330,55 +443,136 @@ export function validateContractData(data: Partial<ContractData>) {
   return { valid: true };
 }
 
-// Download contract as PDF using html2pdf.js
+// Download contract as PDF using html2canvas and jsPDF
 export async function downloadContractPDF(html: string, filename: string): Promise<void> {
-  const html2pdf = (await import('html2pdf.js')).default;
+  try {
+    console.log('Starting PDF generation:', filename);
+    
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
 
-  // Create container off-screen
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  document.body.appendChild(container);
+    // Create container
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '-10000px';
+    container.style.width = '210mm';
+    container.style.margin = '0';
+    container.style.padding = '0';
+    container.style.backgroundColor = '#fff';
 
-  // Wait for images to load
-  const images = container.querySelectorAll('img');
-  await Promise.all(
-    Array.from(images).map(
-      (img) =>
-        new Promise<void>((resolve) => {
-          if (img.complete) {
+    document.body.appendChild(container);
+    console.log('Container added to DOM');
+
+    // Wait for DOM to settle
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Wait for images to load
+    const images = container.querySelectorAll('img');
+    console.log('Found images:', images.length);
+
+    const imagePromises = Array.from(images).map((img: any, idx: number) => {
+      return new Promise<void>(resolve => {
+        if (img.complete) {
+          console.log(`Image ${idx} already loaded`);
+          resolve();
+        } else {
+          const timeout = setTimeout(() => {
+            console.warn(`Image ${idx} timeout`);
             resolve();
-          } else {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          }
-        })
-    )
-  );
+          }, 5000);
 
-  const opt = {
-    margin: [0, 0, 0, 0] as [number, number, number, number],
-    filename: filename,
-    image: { type: 'jpeg' as const, quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-    },
-    jsPDF: {
-      unit: 'mm' as const,
-      format: 'a4' as const,
-      orientation: 'portrait' as const,
-    },
-    pagebreak: {
-      mode: ['avoid-all', 'css', 'legacy'],
-      avoid: '.page',
-    },
-  };
+          const onLoad = () => {
+            clearTimeout(timeout);
+            console.log(`Image ${idx} loaded`);
+            resolve();
+          };
 
-  await html2pdf().set(opt).from(container).save();
-  document.body.removeChild(container);
+          const onError = () => {
+            clearTimeout(timeout);
+            console.warn(`Image ${idx} failed to load`);
+            resolve();
+          };
+
+          img.onload = onLoad;
+          img.onerror = onError;
+        }
+      });
+    });
+
+    await Promise.all(imagePromises);
+    console.log('All images processed');
+
+    // Wait for final rendering
+    await new Promise(r => setTimeout(r, 500));
+
+    // Get all pages
+    const pages = container.querySelectorAll('.page');
+    console.log('Found pages:', pages.length);
+
+    if (pages.length === 0) {
+      throw new Error('No pages found in contract');
+    }
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+
+    let firstPage = true;
+
+    // Process each page
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i] as HTMLElement;
+      console.log(`Processing page ${i + 1}`);
+
+      try {
+        // Convert page to canvas
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          windowHeight: page.scrollHeight,
+          windowWidth: page.scrollWidth
+        });
+
+        // Calculate image dimensions
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Add page to PDF
+        if (!firstPage) {
+          pdf.addPage();
+        }
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+        console.log(`Page ${i + 1} added to PDF`);
+        firstPage = false;
+
+      } catch (pageError) {
+        console.error(`Error processing page ${i + 1}:`, pageError);
+      }
+    }
+
+    // Save PDF
+    pdf.save(filename);
+    console.log('PDF saved successfully');
+
+    // Cleanup
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
