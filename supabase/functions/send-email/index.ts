@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { to, subject, html, text, templateId, params, cc, bcc } = await req.json();
+    const { to, subject, html, text, templateId, params, cc, bcc, attachments } = await req.json();
 
     if (!to || !subject || (!html && !text && !templateId)) {
       return jsonResponse({ error: "Missing required fields: to, subject, and one of html/text/templateId" }, { status: 400 });
@@ -59,6 +59,14 @@ Deno.serve(async (req: Request) => {
     if (templateId) {
       payload["templateId"] = Number(templateId);
       // For template-based emails, Brevo uses params for variables.
+    }
+
+    // Add attachments if provided
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      payload["attachment"] = attachments.map((att: any) => ({
+        name: att.filename,
+        content: att.content, // Should be base64 encoded
+      }));
     }
 
     const brevoRes = await fetch(BREVO_API_URL, {
