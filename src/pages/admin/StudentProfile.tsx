@@ -127,12 +127,17 @@ export default function StudentProfile() {
       if (error) throw error;
       console.log('Fetched contracts:', data);
       setContracts(data || []);
+      toast({ title: 'Refreshed', description: `Loaded ${data?.length || 0} contracts` });
       
       // Log signed contracts for debugging
       const signedContracts = (data || []).filter(c => c.signed_document_url || c.status === 'signed');
-      console.log('Signed contracts found:', signedContracts.length, signedContracts);
+      console.log('Signed contracts found:', signedContracts.length);
+      signedContracts.forEach(c => {
+        console.log('Signed contract:', c.contract_reference, 'Status:', c.status, 'URL:', c.signed_document_url);
+      });
     } catch (error) {
       console.error('Error fetching contracts:', error);
+      toast({ title: 'Error', description: 'Failed to fetch contracts', variant: 'destructive' });
     }
   };
 
@@ -320,15 +325,8 @@ export default function StudentProfile() {
       }, 400))
       .subscribe();
     
-    // Fallback: Poll for contract updates every 5 seconds
-    const pollInterval = setInterval(() => {
-      console.log('Polling for contract updates...');
-      fetchContracts();
-    }, 5000);
-    
     return () => { 
       supabase.removeChannel(channel);
-      clearInterval(pollInterval);
     };
   }, [studentId]);
 
