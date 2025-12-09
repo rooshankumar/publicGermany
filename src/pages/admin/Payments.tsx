@@ -611,6 +611,23 @@ export default function Payments() {
                         <td className="p-3 space-x-2">
                           <Button
                             size="sm"
+                            onClick={() => {
+                              savePayment(
+                                row.id,
+                                row.user_id,
+                                payment?.id,
+                                row.service_price,
+                                row.service_currency,
+                                row.profiles?.full_name || null,
+                                row.service_type || null
+                              );
+                            }}
+                          >
+                            {payment ? 'Save' : 'Create'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             disabled={sendingBillId === row.id}
                             onClick={async () => {
                               // Save payment first, then send bill
@@ -627,7 +644,7 @@ export default function Payments() {
                               await sendPaymentBill(row, payment);
                             }}
                           >
-                            {sendingBillId === row.id ? 'Sending...' : (payment ? 'Save & Send Bill' : 'Create & Send Bill')}
+                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
                           </Button>
                         </td>
                       </tr>

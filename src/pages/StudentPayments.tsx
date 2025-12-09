@@ -1,9 +1,12 @@
 import Layout from '@/components/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { generatePaymentBillPDF } from '@/lib/paymentBillEmail';
+import { downloadContractPDF } from '@/lib/contractGenerator';
 
 interface ServicePaymentRow {
   id: string;
@@ -24,6 +27,7 @@ export default function StudentPayments() {
   const { user } = useAuth();
   const [rows, setRows] = useState<ServicePaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -98,6 +102,39 @@ export default function StudentPayments() {
                     .filter((p) => (p.status || '').toLowerCase() === 'received')
                     .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
+                  const canDownloadBill = totalReceived > 0;
+
+                  const handleDownloadBill = async () => {
+                    if (!user) return;
+                    try {
+                      setDownloadingId(row.id);
+
+                      const serviceAmount = row.service_price || 0;
+                      const totalAmount = row.service_price || 0;
+                      const amountReceived = totalReceived;
+                      const amountPending = Math.max(0, totalAmount - amountReceived);
+
+                      const html = await generatePaymentBillPDF(
+                        row.id,
+                        user.user_metadata?.full_name || user.email || 'Student',
+                        user.email || '',
+                        user.user_metadata?.phone || '',
+                        row.service_type || 'service',
+                        (row.service_type || 'Service').split('_').join(' '),
+                        'Study abroad service',
+                        serviceAmount,
+                        totalAmount,
+                        amountReceived,
+                        amountPending,
+                        row.service_currency || 'INR'
+                      );
+
+                      await downloadContractPDF(html, `Payment-Bill-${row.id}.pdf`);
+                    } finally {
+                      setDownloadingId(null);
+                    }
+                  };
+
                   return (
                     <div
                       key={row.id}
@@ -126,17 +163,30 @@ export default function StudentPayments() {
                         </p>
                       </div>
 
-                      {latest && (
-                        <div className="text-xs text-muted-foreground md:text-right">
-                          <p>
-                            Last update: {latest.currency}{' '}
-                            {Number(latest.amount).toLocaleString()} • {latest.status}
-                          </p>
-                          {latest.paid_at && (
-                            <p>Paid on: {new Date(latest.paid_at).toLocaleDateString()}</p>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex flex-col items-start md:items-end gap-2 text-xs text-muted-foreground md:text-right">
+                        {latest && (
+                          <div>
+                            <p>
+                              Last update: {latest.currency}{' '}
+                              {Number(latest.amount).toLocaleString()} • {latest.status}
+                            </p>
+                            {latest.paid_at && (
+                              <p>Paid on: {new Date(latest.paid_at).toLocaleDateString()}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {canDownloadBill && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={downloadingId === row.id}
+                            onClick={handleDownloadBill}
+                          >
+                            {downloadingId === row.id ? 'Preparing bill…' : 'Download bill'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
