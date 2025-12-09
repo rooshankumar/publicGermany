@@ -127,6 +127,10 @@ export default function StudentProfile() {
       if (error) throw error;
       console.log('Fetched contracts:', data);
       setContracts(data || []);
+      
+      // Log signed contracts for debugging
+      const signedContracts = (data || []).filter(c => c.signed_document_url || c.status === 'signed');
+      console.log('Signed contracts found:', signedContracts.length, signedContracts);
     } catch (error) {
       console.error('Error fetching contracts:', error);
     }
@@ -315,7 +319,17 @@ export default function StudentProfile() {
         fetchContracts();
       }, 400))
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    
+    // Fallback: Poll for contract updates every 5 seconds
+    const pollInterval = setInterval(() => {
+      console.log('Polling for contract updates...');
+      fetchContracts();
+    }, 5000);
+    
+    return () => { 
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
   }, [studentId]);
 
   const downloadDocument = async (doc: any) => {

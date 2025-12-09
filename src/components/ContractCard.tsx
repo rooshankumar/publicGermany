@@ -223,7 +223,7 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
 
       // Notify admin about signed contract upload
       try {
-        // Create notification for admin users
+        // Create notification for admin users (with fallback for missing columns)
         const { data: admins } = await supabase
           .from('profiles')
           .select('user_id')
@@ -233,14 +233,27 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
           const notifications = admins.map((admin) => ({
             user_id: admin.user_id,
             title: 'Student Uploaded Signed Contract',
-            type: 'contract_signed',
-            ref_id: contract.id,
-            meta: {
-              contract_reference: contract.contract_reference,
-              student_name: contract.service_package,
-            },
           }));
-          await supabase.from('notifications').insert(notifications);
+          const { error: notifErr } = await supabase.from('notifications').insert(notifications);
+          if (notifErr) {
+            console.warn('Basic notification insert failed, trying with extended fields:', notifErr);
+            // Try with extended fields if basic insert fails
+            try {
+              const extendedNotifications = admins.map((admin) => ({
+                user_id: admin.user_id,
+                title: 'Student Uploaded Signed Contract',
+                type: 'contract_signed',
+                ref_id: contract.id,
+                meta: {
+                  contract_reference: contract.contract_reference,
+                  student_name: contract.service_package,
+                },
+              }));
+              await supabase.from('notifications').insert(extendedNotifications);
+            } catch (extErr) {
+              console.warn('Extended notification insert also failed:', extErr);
+            }
+          }
         }
 
         // Send email to admin
