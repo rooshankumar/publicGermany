@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { generatePaymentBillPDF } from '@/lib/paymentBillEmail';
-import { downloadContractPDF } from '@/lib/contractGenerator';
+import { downloadContractPDF, generateContractHTML } from '@/lib/contractGenerator';
 
 interface ServicePaymentRow {
   id: string;
@@ -112,6 +112,35 @@ export default function StudentPayments() {
 
                   const canDownloadBill = totalReceived > 0;
 
+                  const handleDownloadContract = async () => {
+                    if (!user) return;
+                    try {
+                      setDownloadingId(row.id);
+
+                      const studentName = user.user_metadata?.full_name || user.email || 'Student';
+                      const studentEmail = user.email || '';
+                      const studentPhone = user.user_metadata?.phone || '';
+                      const servicePackage = (row.service_type || 'Service').split('_').join(' ');
+                      const feeString = targetTotal > 0
+                        ? `${displayCurrency} ${targetTotal.toLocaleString()}`
+                        : `${displayCurrency} 0`;
+
+                      const contractHtml = generateContractHTML({
+                        studentName,
+                        studentEmail,
+                        studentPhone,
+                        servicePackage,
+                        serviceDescription: 'As discussed for your study abroad services',
+                        serviceFee: feeString,
+                        paymentStructure: 'As agreed between you and publicgermany',
+                      });
+
+                      await downloadContractPDF(contractHtml, `Contract-${row.id}.pdf`);
+                    } finally {
+                      setDownloadingId(null);
+                    }
+                  };
+
                   const handleDownloadBill = async () => {
                     if (!user) return;
                     try {
@@ -192,16 +221,25 @@ export default function StudentPayments() {
                             )}
                           </div>
                         )}
-
-                        {canDownloadBill && (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {canDownloadBill && (
+                            <Button
+                              size="sm"
+                              disabled={downloadingId === row.id}
+                              onClick={handleDownloadBill}
+                            >
+                              {downloadingId === row.id ? 'Preparing bill…' : 'Download bill'}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
+                            variant="outline"
                             disabled={downloadingId === row.id}
-                            onClick={handleDownloadBill}
+                            onClick={handleDownloadContract}
                           >
-                            {downloadingId === row.id ? 'Preparing bill…' : 'Download bill'}
+                            {downloadingId === row.id ? 'Preparing contract…' : 'Download contract'}
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   );
