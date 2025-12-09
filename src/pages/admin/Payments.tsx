@@ -9,12 +9,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/sendEmail';
+import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 
 export default function Payments() {
   const [payments, setPayments] = useState<any[]>([]); // now holds service_requests with joined profiles and service_payments
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sendingBillId, setSendingBillId] = useState<string | null>(null);
   const { toast } = useToast();
   const [editState, setEditState] = useState<Record<string, {
     amount?: number | null;
@@ -294,6 +296,68 @@ export default function Payments() {
     return matchesSearch && matchesStatus;
   });
 
+  const sendPaymentBill = async (
+    row: any,
+    payment?: any
+  ) => {
+    if (!row.profiles?.email) {
+      toast({
+        title: "Email not found",
+        description: "Unable to resolve student email for payment bill",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingBillId(row.id);
+    try {
+      const receivedSum = (row.service_payments || [])
+        .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+        .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
+
+      const targetTotal = row.target_total_amount ?? row.service_price ?? 0;
+      const currency = row.target_currency ?? row.service_currency ?? 'INR';
+      const remaining = Math.max(0, targetTotal - receivedSum);
+
+      const paymentStatus = 
+        remaining <= 0 ? 'received' : 
+        receivedSum > 0 ? 'partial' : 
+        'pending';
+
+      await sendPaymentBillEmail({
+        serviceId: row.id,
+        userId: row.user_id,
+        studentName: row.profiles?.full_name || 'Student',
+        studentEmail: row.profiles?.email,
+        studentPhone: row.profiles?.phone || 'N/A',
+        serviceType: row.service_type,
+        serviceName: (row.service_type || '').split('_').join(' '),
+        serviceDescription: 'Study abroad service',
+        serviceAmount: row.service_price || 0,
+        totalAmount: targetTotal,
+        amountReceived: receivedSum,
+        amountPending: remaining,
+        paymentStatus: paymentStatus as any,
+        currency,
+        includeAdmin: true
+      });
+
+      toast({
+        title: "Payment bill sent",
+        description: `Bill sent successfully to ${row.profiles?.email}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending payment bill:', error);
+      toast({
+        title: "Error sending bill",
+        description: error?.message || 'Failed to send payment bill',
+        variant: "destructive",
+      });
+    } finally {
+      setSendingBillId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'received': return 'bg-success/10 text-success';
@@ -507,6 +571,15 @@ export default function Payments() {
                             )}
                           >
                             {payment ? 'Save' : 'Create'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sendingBillId === row.id}
+                            onClick={() => sendPaymentBill(row, payment)}
+                            title="Send payment bill via email"
+                          >
+                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
                           </Button>
                         </td>
                       </tr>
