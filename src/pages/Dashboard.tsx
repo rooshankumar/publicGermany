@@ -133,30 +133,64 @@ const Dashboard = () => {
       
       try {
         setLoading(true);
-        
-        // Fetch user profile data
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+
+        // Run all dashboard queries in parallel to reduce total load time
+        const [
+          { data: profileData, error: profileError },
+          { count: documentsCount, error: docsError },
+          { count: appsCount, error: appsError },
+          { data: srWithPayments, error: payErr },
+          { data: contractData, error: contractErr },
+          { data: contractNotifs, error: notifErr },
+        ] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
+            .from('documents')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          supabase
+            .from('applications') // Changed from 'university_applications' to 'applications'
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          supabase
+            .from('service_requests' as any)
+            .select(`
+              id,
+              service_type,
+              service_price,
+              service_currency,
+              created_at,
+              service_payments (
+                id,
+                amount,
+                currency,
+                status,
+                paid_at
+              )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('contracts')
+            .select('*')
+            .eq('student_id', user.id)
+            .order('sent_at', { ascending: false })
+            .neq('status', 'draft'),
+          supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('type', 'contract')
+            .order('created_at', { ascending: false }),
+        ]);
 
         if (profileError) throw profileError;
-
-        // Fetch user documents
-        const { count: documentsCount, error: docsError } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
         if (docsError) throw docsError;
-
-        // Fetch university applications - using the correct table name from schema
-        const { count: appsCount, error: appsError } = await supabase
-          .from('applications') // Changed from 'university_applications' to 'applications'
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
         if (appsError) {
           console.error('Error fetching applications:', appsError);
           throw appsError;
@@ -240,55 +274,18 @@ const Dashboard = () => {
 
         setTasks(userTasks);
 
-        // Fetch recent service requests with payment info (left join)
-        const { data: srWithPayments, error: payErr } = await supabase
-          .from('service_requests' as any)
-          .select(`
-            id,
-            service_type,
-            service_price,
-            service_currency,
-            created_at,
-            service_payments (
-              id,
-              amount,
-              currency,
-              status,
-              paid_at
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
         if (payErr) throw payErr;
         setRecentPayments(srWithPayments as any || []);
-
-        // Fetch actual contracts from contracts table
-        const { data: contractData, error: contractErr } = await supabase
-          .from('contracts')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('sent_at', { ascending: false })
-          .neq('status', 'draft');
 
         if (!contractErr && contractData) {
           setContracts(contractData || []);
         }
 
-        // Fetch contract notifications
-        const { data: contractNotifs, error: notifErr } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('type', 'contract')
-          .order('created_at', { ascending: false });
-
         if (!notifErr && contractNotifs) {
           setContractNotifications(contractNotifs as unknown as ContractNotification[]);
           
           // Show popup for unseen contract notifications
-          const unseenContract = contractNotifs.find((n: any) => !n.seen);
+          const unseenContract = (contractNotifs as any).find((n: any) => !n.seen);
           if (unseenContract) {
             setActiveContract(unseenContract as unknown as ContractNotification);
             setShowContractPopup(true);

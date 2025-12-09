@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail } from "./sendEmail";
-import { generatePaymentBillEmailHTML, PaymentBillData } from "./paymentBillTemplate";
+import { PaymentBillData } from "./paymentBillTemplate";
 
 export interface PaymentEmailData {
   serviceId: string;
@@ -121,16 +121,6 @@ export async function sendPaymentBillEmail(data: PaymentEmailData) {
       payments,
       currency
     };
-
-    // Generate email HTML
-    const emailHTML = generatePaymentBillEmailHTML(billData);
-
-    // Send email to student
-    await sendEmail(
-      studentEmail,
-      `Payment Bill - ${billNumber} (${paymentStatus.toUpperCase()})`,
-      emailHTML
-    );
 
     // Send admin notification
     if (includeAdmin) {
