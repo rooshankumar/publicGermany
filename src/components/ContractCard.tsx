@@ -54,9 +54,19 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
       if (contract.contract_pdf_url) {
         try {
           const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
-          const signedUrl = await getContractSignedUrl(contract.student_id || userId || '', fileName, 604800);
+          const studentId = contract.student_id || userId;
+          
+          console.log('Generating signed URL for download:', { fileName, studentId, url: contract.contract_pdf_url });
+          
+          if (!studentId) {
+            console.warn('Missing studentId, falling back to public URL');
+            throw new Error('No studentId available');
+          }
+          
+          const signedUrl = await getContractSignedUrl(studentId, fileName, 604800);
           
           if (signedUrl) {
+            console.log('Signed URL generated successfully, downloading...');
             const link = document.createElement('a');
             link.href = signedUrl;
             link.download = `Contract-${contract.contract_reference}.pdf`;
@@ -72,6 +82,7 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
         }
         
         // Fallback: download directly from public URL
+        console.log('Using public URL for download:', contract.contract_pdf_url);
         const link = document.createElement('a');
         link.href = contract.contract_pdf_url;
         link.download = `Contract-${contract.contract_reference}.pdf`;
@@ -166,12 +177,17 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
   };
 
   const handleUploadSigned = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!userId || !e.target.files?.[0]) return;
+    if (!userId || !e.target.files?.[0]) {
+      console.warn('Upload aborted: missing userId or file', { userId, hasFile: !!e.target.files?.[0] });
+      return;
+    }
 
     const file = e.target.files[0];
     setUploading(true);
 
     try {
+      console.log('Starting upload:', { fileName: file.name, userId, contractId: contract.id });
+      
       const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const path = `signed-contracts/${userId}/${fileName}`;
 
@@ -179,11 +195,18 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
         .from('documents')
         .upload(path, file, { upsert: false });
 
-      if (uploadErr) throw uploadErr;
+      if (uploadErr) {
+        console.error('Storage upload error:', uploadErr);
+        throw uploadErr;
+      }
+
+      console.log('File uploaded to storage, getting public URL...');
 
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(path);
+
+      console.log('Public URL:', publicUrl);
 
       // Update contract status to signed
       const { error: updateErr } = await supabase
@@ -195,23 +218,15 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
         })
         .eq('id', contract.id);
 
-      if (updateErr) throw updateErr;
-
-      // Also create a notification for admin
-      try {
-        const { error: noteErr } = await supabase.from('notifications').insert({
-          user_id: contract.student_id,
-          title: 'Contract Signed',
-          body: `Student has signed and uploaded contract ${contract.contract_reference}. Please review and approve.`,
-          type: 'contract',
-          ref_id: contract.id,
-          recipient_role: 'admin',
-        });
-
-        if (noteErr) console.warn('Notification insert error:', noteErr);
-      } catch (noteEx) {
-        console.warn('Notification insert failed', noteEx);
+      if (updateErr) {
+        console.error('Contract update error:', updateErr);
+        throw updateErr;
       }
+
+      console.log('Contract updated successfully');
+
+      // Note: Notifications for admin require service role. This is a silent operation.
+      // The admin will see the update when checking StudentProfile contracts list (realtime subscription).
 
       toast({ title: 'Uploaded', description: 'Signed contract uploaded successfully. Awaiting admin approval.' });
       onStatusChange?.();

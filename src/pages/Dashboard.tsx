@@ -361,38 +361,44 @@ const Dashboard = () => {
           }}></div>
           
           <div className="relative container mx-auto px-4 sm:px-6 py-8 md:py-16">
-            <div className="max-w-4xl mx-auto text-center text-foreground">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <Avatar className="h-14 w-14 ring-2 ring-foreground/30">
-                  <AvatarImage src={userData.avatar_url} />
-                  <AvatarFallback className="bg-foreground/10 text-foreground">
-                    {userData.full_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="w-16 h-16 bg-foreground/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <GraduationCap className="w-8 h-8 text-foreground" />
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-6 md:mb-8 flex-col sm:flex-row gap-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-14 w-14 ring-2 ring-foreground/30">
+                    <AvatarImage src={userData.avatar_url} />
+                    <AvatarFallback className="bg-foreground/10 text-foreground">
+                      {userData.full_name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-foreground">
+                    <div className="font-semibold text-lg">{userData.full_name}</div>
+                    <div className="text-sm text-foreground/70">{userData.email}</div>
+                  </div>
                 </div>
               </div>
-              <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4">
-                Welcome back, {userData.full_name.split(' ')[0]}!
-              </h1>
-              <p className="text-lg md:text-2xl text-foreground/90 mb-6 md:mb-8">
-                {userData.profile_completion < 50 
-                  ? `Let's get started on your journey to studying in Germany`
-                  : `You're ${userData.profile_completion}% of the way there! Keep up the great work!`}
-              </p>
-              <div className="flex items-center justify-center gap-4 text-foreground/80">
-                <div className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  <span>Goal-oriented</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  <span>Trusted guidance</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5" />
-                  <span>Proven success</span>
+              
+              <div className="text-center text-foreground mb-8">
+                <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4">
+                  Welcome back, {userData.full_name.split(' ')[0]}!
+                </h1>
+                <p className="text-lg md:text-2xl text-foreground/90 mb-6 md:mb-8">
+                  {userData.profile_completion < 50 
+                    ? `Let's get started on your journey to studying in Germany`
+                    : `You're ${userData.profile_completion}% of the way there! Keep up the great work!`}
+                </p>
+                <div className="flex items-center justify-center gap-4 text-foreground/80 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    <span>Goal-oriented</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    <span>Trusted guidance</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5" />
+                    <span>Proven success</span>
+                  </div>
                 </div>
               </div>
             </div>
