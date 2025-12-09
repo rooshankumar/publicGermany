@@ -127,7 +127,7 @@ export async function sendPaymentBillEmail(data: PaymentEmailData) {
       const adminNotificationHTML = `
         <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.6;">
           <h2 style="color: #1e3a8a; margin-bottom: 16px;">Payment Bill Email Sent</h2>
-          <p>A payment bill email was sent to the student with the following details:</p>
+          <p>A payment bill was generated with the following details:</p>
           
           <div style="background: #f5f5f5; padding: 16px; border-radius: 6px; margin: 16px 0;">
             <p style="margin: 0 0 8px 0;"><strong>Student:</strong> ${studentName}</p>
@@ -136,6 +136,7 @@ export async function sendPaymentBillEmail(data: PaymentEmailData) {
             <p style="margin: 0 0 8px 0;"><strong>Bill Number:</strong> ${billNumber}</p>
             <p style="margin: 0 0 8px 0;"><strong>Total Amount:</strong> ${currency} ${totalAmount.toLocaleString()}</p>
             <p style="margin: 0 0 8px 0;"><strong>Amount Received:</strong> ${currency} ${amountReceived.toLocaleString()}</p>
+            <p style="margin: 0 0 8px 0;"><strong>Amount Pending:</strong> ${currency} ${amountPending.toLocaleString()}</p>
             <p style="margin: 0;"><strong>Status:</strong> ${paymentStatus.toUpperCase()}</p>
           </div>
           

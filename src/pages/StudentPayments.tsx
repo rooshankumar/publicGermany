@@ -13,6 +13,8 @@ interface ServicePaymentRow {
   service_type: string | null;
   service_price: number | null;
   service_currency: string | null;
+  target_total_amount: number | null;
+  target_currency: string | null;
   created_at: string;
   service_payments: Array<{
     id: string;
@@ -40,6 +42,8 @@ export default function StudentPayments() {
           service_type,
           service_price,
           service_currency,
+          target_total_amount,
+          target_currency,
           created_at,
           service_payments (
             id,
@@ -102,6 +106,10 @@ export default function StudentPayments() {
                     .filter((p) => (p.status || '').toLowerCase() === 'received')
                     .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
+                  const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0) || 0;
+                  const displayCurrency = row.target_currency || row.service_currency || 'INR';
+                  const remainingTotal = Math.max(0, targetTotal - totalReceived);
+
                   const canDownloadBill = totalReceived > 0;
 
                   const handleDownloadBill = async () => {
@@ -109,8 +117,9 @@ export default function StudentPayments() {
                     try {
                       setDownloadingId(row.id);
 
-                      const serviceAmount = row.service_price || 0;
-                      const totalAmount = row.service_price || 0;
+                      const targetTotalForBill = Number(row.target_total_amount ?? row.service_price ?? 0) || 0;
+                      const serviceAmount = row.service_price ?? targetTotalForBill;
+                      const totalAmount = targetTotalForBill;
                       const amountReceived = totalReceived;
                       const amountPending = Math.max(0, totalAmount - amountReceived);
 
@@ -126,7 +135,7 @@ export default function StudentPayments() {
                         totalAmount,
                         amountReceived,
                         amountPending,
-                        row.service_currency || 'INR'
+                        row.target_currency || row.service_currency || 'INR'
                       );
 
                       await downloadContractPDF(html, `Payment-Bill-${row.id}.pdf`);
@@ -158,8 +167,16 @@ export default function StudentPayments() {
                           Created: {new Date(row.created_at).toLocaleDateString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Total received: {row.service_currency || 'INR'}{' '}
+                          Total: {displayCurrency}{' '}
+                          {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Received: {displayCurrency}{' '}
                           {totalReceived.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Pending: {displayCurrency}{' '}
+                          {remainingTotal.toLocaleString()}
                         </p>
                       </div>
 

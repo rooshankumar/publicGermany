@@ -290,14 +290,6 @@ export default function StudentPayments() {
           targetCurr = (parent as any)?.target_currency ?? (parent as any)?.service_currency ?? resolvedCurrency;
         } catch {}
         const remaining = targetTotal != null ? Math.max(0, Number(targetTotal) - Number(receivedSum)) : null;
-        const totalsHtml = `
-          <p style="margin-top:8px;color:#444">Totals</p>
-          <ul style="margin:4px 0 0 16px;padding:0;color:#444">
-            ${targetTotal != null ? `<li><strong>Total Amount:</strong> ${targetCurr} ${Number(targetTotal).toLocaleString()}</li>` : ''}
-            <li><strong>Amount Received:</strong> ${targetCurr} ${receivedSum.toLocaleString()}</li>
-            ${targetTotal != null ? `<li><strong>Amount Remaining:</strong> ${targetCurr} ${remaining!.toLocaleString()}</li>` : ''}
-          </ul>
-        `;
         const loginUrl = 'https://publicgermany.vercel.app/';
         const safeName = studentName || 'Student';
         const safeService = (serviceType || '').split('_').join(' ') || 'Service';
@@ -311,7 +303,13 @@ export default function StudentPayments() {
             `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;font-size:14px;">
                <p>Hi ${safeName},</p>
                <p>Your payment for <strong>${safeService}</strong> has been <strong>${statusText}</strong>.</p>
-               <p>Amount: <strong>${amountText}</strong>.</p>
+               <p>Amount this update: <strong>${amountText}</strong>.</p>
+               <p style="margin-top:8px;">Summary:</p>
+               <ul style="margin:4px 0 0 16px;padding:0;">
+                 ${targetTotal != null ? `<li>Total amount: <strong>${targetCurr} ${Number(targetTotal).toLocaleString()}</strong></li>` : ''}
+                 <li>Total received so far: <strong>${targetCurr} ${receivedSum.toLocaleString()}</strong></li>
+                 ${targetTotal != null ? `<li>Pending amount: <strong>${targetCurr} ${remaining!.toLocaleString()}</strong></li>` : ''}
+               </ul>
                <p style="margin-top:12px;">You can download your detailed bill anytime from your account:</p>
                <p><a href="${loginUrl}" style="color:#1D4ED8;text-decoration:underline;">Open Payments &amp; Download Bill</a></p>
              </div>`
