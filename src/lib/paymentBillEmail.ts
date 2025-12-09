@@ -49,28 +49,57 @@ export async function sendPaymentBillEmail(data: PaymentEmailData) {
   try {
     // Generate bill number based on serviceId and date
     const billNumber = `BILL-${new Date().getFullYear()}-${serviceId.slice(0, 8).toUpperCase()}`;
-    const billDate = new Date().toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const lastPaymentDate = amountReceived > 0 ? billDate : 'Not yet paid';
+
+    // Fetch service request to get created_at (for Bill Date)
+    const { data: serviceRows } = await supabase
+      .from('service_requests' as any)
+      .select('created_at')
+      .eq('id', serviceId)
+      .limit(1);
+
+    const serviceCreatedAt = (serviceRows as any)?.[0]?.created_at as string | undefined;
 
     // Fetch payment history
     const { data: paymentRows } = await supabase
       .from('service_payments')
-      .select('amount, status, created_at')
+      .select('amount, status, created_at, paid_at')
       .eq('service_id', serviceId)
       .order('created_at', { ascending: true });
 
-    const payments = (paymentRows || [])
-      .filter((p: any) => (p.status || '').toLowerCase() === 'received')
-      .map((p: any, idx: number) => ({
-        sequence: idx + 1,
-        date: new Date(p.created_at).toLocaleDateString('en-IN'),
-        amount: p.amount,
-        note: 'Received'
-      }));
+    const receivedPayments = (paymentRows || [])
+      .filter((p: any) => (p.status || '').toLowerCase() === 'received');
+
+    const payments = receivedPayments.map((p: any, idx: number) => ({
+      sequence: idx + 1,
+      date: new Date(p.paid_at || p.created_at).toLocaleDateString('en-IN'),
+      amount: p.amount,
+      note: 'Received'
+    }));
+
+    const billDateObj = serviceCreatedAt
+      ? new Date(serviceCreatedAt)
+      : (receivedPayments[0]?.paid_at
+        ? new Date(receivedPayments[0].paid_at)
+        : (receivedPayments[0]?.created_at
+          ? new Date(receivedPayments[0].created_at)
+          : new Date()));
+
+    const billDate = billDateObj.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const lastPaymentDate = receivedPayments.length > 0
+      ? new Date(
+          receivedPayments[receivedPayments.length - 1].paid_at ||
+          receivedPayments[receivedPayments.length - 1].created_at
+        ).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : 'Not yet paid';
 
     // Create bill data
     const billData: PaymentBillData = {
@@ -165,28 +194,57 @@ export async function generatePaymentBillPDF(
   const { generatePaymentBillHTML } = await import('./paymentBillTemplate');
 
   const billNumber = `BILL-${new Date().getFullYear()}-${serviceId.slice(0, 8).toUpperCase()}`;
-  const billDate = new Date().toLocaleDateString('en-IN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const lastPaymentDate = (amountReceived || 0) > 0 ? billDate : 'Not yet paid';
+
+  // Fetch service request to get created_at (for Bill Date)
+  const { data: serviceRows } = await supabase
+    .from('service_requests' as any)
+    .select('created_at')
+    .eq('id', serviceId)
+    .limit(1);
+
+  const serviceCreatedAt = (serviceRows as any)?.[0]?.created_at as string | undefined;
 
   // Fetch payment history
   const { data: paymentRows } = await supabase
     .from('service_payments')
-    .select('amount, status, created_at')
+    .select('amount, status, created_at, paid_at')
     .eq('service_id', serviceId)
     .order('created_at', { ascending: true });
 
-  const payments = (paymentRows || [])
-    .filter((p: any) => (p.status || '').toLowerCase() === 'received')
-    .map((p: any, idx: number) => ({
-      sequence: idx + 1,
-      date: new Date(p.created_at).toLocaleDateString('en-IN'),
-      amount: p.amount,
-      note: 'Payment Received'
-    }));
+  const receivedPayments = (paymentRows || [])
+    .filter((p: any) => (p.status || '').toLowerCase() === 'received');
+
+  const payments = receivedPayments.map((p: any, idx: number) => ({
+    sequence: idx + 1,
+    date: new Date(p.paid_at || p.created_at).toLocaleDateString('en-IN'),
+    amount: p.amount,
+    note: 'Payment Received'
+  }));
+
+  const billDateObj = serviceCreatedAt
+    ? new Date(serviceCreatedAt)
+    : (receivedPayments[0]?.paid_at
+      ? new Date(receivedPayments[0].paid_at)
+      : (receivedPayments[0]?.created_at
+        ? new Date(receivedPayments[0].created_at)
+        : new Date()));
+
+  const billDate = billDateObj.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const lastPaymentDate = receivedPayments.length > 0
+    ? new Date(
+        receivedPayments[receivedPayments.length - 1].paid_at ||
+        receivedPayments[receivedPayments.length - 1].created_at
+      ).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : 'Not yet paid';
 
   const billData: PaymentBillData = {
     studentName,
