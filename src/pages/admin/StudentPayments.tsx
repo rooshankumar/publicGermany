@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function StudentPayments() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -55,9 +55,7 @@ export default function StudentPayments() {
       return;
     }
 
-    setSendingBillId(row.id);
-    try {
-      const paymentsArr = (row.service_payments || []) as any[];
+    const paymentsArr = (row.service_payments || []) as any[];
       const receivedSum = paymentsArr
         .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
         .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
@@ -71,7 +69,7 @@ export default function StudentPayments() {
         receivedSum > 0 ? 'partial' :
         'pending';
 
-      await sendPaymentBillEmail({
+    await sendPaymentBillEmail({
         serviceId: row.id,
         userId: row.user_id,
         studentName: studentInfo?.name || 'Student',
@@ -89,40 +87,30 @@ export default function StudentPayments() {
         includeAdmin: true,
       });
 
-      try {
-        await supabase.from('notifications').insert({
-          user_id: row.user_id,
-          title: 'Payment Bill Received',
-          type: 'payment_bill',
-          ref_id: row.id,
-          body: `Your payment bill for ${(row.service_type || '').split('_').join(' ')} has been sent. Total: ${currency} ${targetTotal.toLocaleString()}, Paid: ${currency} ${receivedSum.toLocaleString()}, Remaining: ${currency} ${remaining.toLocaleString()}`,
-          meta: {
-            service_type: row.service_type,
-            total_amount: targetTotal,
-            amount_received: receivedSum,
-            amount_pending: remaining,
-            currency,
-            status: paymentStatus,
-          },
-        });
-      } catch (notifErr) {
-        console.warn('Bill notification failed:', notifErr);
-      }
-
-      toast({
-        title: "Payment bill sent",
-        description: `Bill sent successfully to ${email}`,
+    try {
+      await supabase.from('notifications').insert({
+        user_id: row.user_id,
+        title: 'Payment Bill Received',
+        type: 'payment_bill',
+        ref_id: row.id,
+        body: `Your payment bill for ${(row.service_type || '').split('_').join(' ')} has been sent. Total: ${currency} ${targetTotal.toLocaleString()}, Paid: ${currency} ${receivedSum.toLocaleString()}, Remaining: ${currency} ${remaining.toLocaleString()}`,
+        meta: {
+          service_type: row.service_type,
+          total_amount: targetTotal,
+          amount_received: receivedSum,
+          amount_pending: remaining,
+          currency,
+          status: paymentStatus,
+        },
       });
-    } catch (error: any) {
-      console.error('Error sending payment bill:', error);
-      toast({
-        title: "Error sending bill",
-        description: error?.message || 'Failed to send payment bill',
-        variant: "destructive",
-      });
-    } finally {
-      setSendingBillId(null);
+    } catch (notifErr) {
+      console.warn('Bill notification failed:', notifErr);
     }
+
+    toast({
+      title: "Payment bill sent",
+      description: `Bill sent successfully to ${email}`,
+    });
   };
 
   useEffect(() => {
@@ -319,15 +307,13 @@ export default function StudentPayments() {
         if (userEmail) {
           await sendEmail(
             userEmail,
-            `Payment ${existingPaymentId ? 'updated' : 'created'}: ${statusText}`,
-            `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
-               <p>Your payment status has been <strong>${statusText}</strong>.</p>
-               <p><strong>Name:</strong> ${safeName}</p>
-               <p><strong>Service:</strong> ${safeService}</p>
-               <p><strong>Amount Received (this update):</strong> ${amountText}</p>
-               ${totalsHtml}
-               ${adminNote ? `<p><strong>Admin Notes:</strong> ${adminNote}</p>` : ''}
-               <div style="margin-top:12px;">${buttonHtml}</div>
+            `Payment ${statusText} for ${safeService}`,
+            `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;font-size:14px;">
+               <p>Hi ${safeName},</p>
+               <p>Your payment for <strong>${safeService}</strong> has been <strong>${statusText}</strong>.</p>
+               <p>Amount: <strong>${amountText}</strong>.</p>
+               <p style="margin-top:12px;">You can download your detailed bill anytime from your account:</p>
+               <p><a href="${loginUrl}" style="color:#1D4ED8;text-decoration:underline;">Open Payments &amp; Download Bill</a></p>
              </div>`
           );
         }
@@ -592,19 +578,31 @@ export default function StudentPayments() {
                             variant="outline"
                             disabled={sendingBillId === row.id}
                             onClick={async () => {
-                              await savePayment(
-                                row.id,
-                                row.user_id,
-                                payment?.id,
-                                row.service_price,
-                                row.service_currency,
-                                studentInfo?.name || null,
-                                row.service_type || null
-                              );
-                              await sendPaymentBill(row, payment);
+                              setSendingBillId(row.id);
+                              try {
+                                await savePayment(
+                                  row.id,
+                                  row.user_id,
+                                  payment?.id,
+                                  row.service_price,
+                                  row.service_currency,
+                                  studentInfo?.name || null,
+                                  row.service_type || null
+                                );
+                                await sendPaymentBill(row, payment);
+                              } finally {
+                                setSendingBillId(null);
+                              }
                             }}
                           >
-                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
+                            {sendingBillId === row.id ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              'Send Bill'
+                            )}
                           </Button>
                         </td>
                       </tr>

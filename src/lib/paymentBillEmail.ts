@@ -40,7 +40,7 @@ export async function sendPaymentBillEmail(data: PaymentEmailData) {
     amountReceived,
     amountPending,
     paymentStatus,
-    paymentMethod = 'Bank Transfer',
+    paymentMethod = 'UPI',
     contractReference = `REF-${serviceId.slice(0, 8).toUpperCase()}`,
     currency = 'INR',
     includeAdmin = true
@@ -195,7 +195,7 @@ export async function generatePaymentBillPDF(
     billNumber,
     billDate,
     contractReference: `REF-${serviceId.slice(0, 8).toUpperCase()}`,
-    paymentMethod: 'Bank Transfer',
+    paymentMethod: 'UPI',
     lastPaymentDate,
     serviceName: serviceName || serviceType.split('_').join(' '),
     serviceDescription: serviceDescription || 'Study abroad service',

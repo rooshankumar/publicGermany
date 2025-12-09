@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
+import { Loader2 } from 'lucide-react';
 
 export default function Payments() {
   const [payments, setPayments] = useState<any[]>([]); // now holds service_requests with joined profiles and service_payments
@@ -266,15 +267,13 @@ export default function Payments() {
         if (userEmail) {
           await sendEmail(
             userEmail,
-            `Payment ${existingPaymentId ? 'updated' : 'created'}: ${statusText}`,
-            `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
-               <p>Your payment status has been <strong>${statusText}</strong>.</p>
-               <p><strong>Name:</strong> ${safeName}</p>
-               <p><strong>Service:</strong> ${safeService}</p>
-               <p><strong>Amount Received (this update):</strong> ${amountText}</p>
-               ${totalsHtml}
-               ${adminNote ? `<p><strong>Admin Notes:</strong> ${adminNote}</p>` : ''}
-               <div style="margin-top:12px;">${buttonHtml}</div>
+            `Payment ${statusText} for ${safeService}`,
+            `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;font-size:14px;">
+               <p>Hi ${safeName},</p>
+               <p>Your payment for <strong>${safeService}</strong> has been <strong>${statusText}</strong>.</p>
+               <p>Amount: <strong>${amountText}</strong>.</p>
+               <p style="margin-top:12px;">You can download your detailed bill anytime from your account:</p>
+               <p><a href="${loginUrl}" style="color:#1D4ED8;text-decoration:underline;">Open Payments &amp; Download Bill</a></p>
              </div>`
           );
         }
@@ -326,7 +325,6 @@ export default function Payments() {
       return;
     }
 
-    setSendingBillId(row.id);
     try {
       // Re-fetch to get latest data after save
       const { data: latestPayments } = await supabase
@@ -404,8 +402,6 @@ export default function Payments() {
         description: error?.message || 'Failed to send payment bill',
         variant: "destructive",
       });
-    } finally {
-      setSendingBillId(null);
     }
   };
 
@@ -630,21 +626,33 @@ export default function Payments() {
                             variant="outline"
                             disabled={sendingBillId === row.id}
                             onClick={async () => {
-                              // Save payment first, then send bill
-                              await savePayment(
-                                row.id,
-                                row.user_id,
-                                payment?.id,
-                                row.service_price,
-                                row.service_currency,
-                                row.profiles?.full_name || null,
-                                row.service_type || null
-                              );
-                              // Automatically send bill after saving
-                              await sendPaymentBill(row, payment);
+                              setSendingBillId(row.id);
+                              try {
+                                // Save payment first, then send bill
+                                await savePayment(
+                                  row.id,
+                                  row.user_id,
+                                  payment?.id,
+                                  row.service_price,
+                                  row.service_currency,
+                                  row.profiles?.full_name || null,
+                                  row.service_type || null
+                                );
+                                // Automatically send bill after saving
+                                await sendPaymentBill(row, payment);
+                              } finally {
+                                setSendingBillId(null);
+                              }
                             }}
                           >
-                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
+                            {sendingBillId === row.id ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              'Send Bill'
+                            )}
                           </Button>
                         </td>
                       </tr>
