@@ -411,36 +411,31 @@ export default function StudentPayments() {
         </div>
 
         {/* Student Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Amount</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">INR {studentTotals.total.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Amount Received</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                INR {studentTotals.received.toLocaleString()}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Payment Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-semibold">INR {studentTotals.total.toLocaleString()}</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Amount Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                INR {studentTotals.pending.toLocaleString()}
+              <div>
+                <p className="text-xs text-muted-foreground">Amount Received</p>
+                <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+                  INR {studentTotals.received.toLocaleString()}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Amount Pending</p>
+                <p className="text-xl font-semibold text-orange-600 dark:text-orange-400">
+                  INR {studentTotals.pending.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -473,13 +468,10 @@ export default function StudentPayments() {
                       return (
                       <tr key={row.id} className="border-b hover:bg-muted/30 transition-colors">
                         <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').split('_').join(' ')}</td>
-                        <td className="p-3 whitespace-nowrap align-top">
-                          <div className="rounded-md border p-2 bg-muted/40">
-                            <div className="flex items-center gap-2 mb-2">
-                              <label className="text-xs text-muted-foreground">Amount Received (this update)</label>
-                              <div className="ml-auto text-xs text-muted-foreground">{payment?.currency || row.target_currency || row.service_currency || ''}</div>
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
+                        <td className="p-3 align-top">
+                          <div className="space-y-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground whitespace-nowrap">Amount Received (this update)</span>
                               <Input
                                 type="number"
                                 defaultValue={payment?.amount ?? row.service_price}
@@ -487,11 +479,14 @@ export default function StudentPayments() {
                                   ...s,
                                   [row.id]: { ...s[row.id], amount: Number(e.target.value) }
                                 }))}
-                                className="w-32"
+                                className="h-8 w-24"
                               />
+                              <span className="ml-auto text-muted-foreground">
+                                {payment?.currency || row.target_currency || row.service_currency || ''}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <label className="text-xs text-muted-foreground">Total Amount</label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground whitespace-nowrap">Total Amount</span>
                               <Input
                                 type="number"
                                 defaultValue={row.target_total_amount ?? row.service_price ?? ''}
@@ -499,7 +494,7 @@ export default function StudentPayments() {
                                   ...s,
                                   [row.id]: { ...s[row.id], target_total_amount: e.target.value === '' ? null : Number(e.target.value) }
                                 }))}
-                                className="w-32"
+                                className="h-8 w-24"
                               />
                               <Select
                                 defaultValue={(row.target_currency || row.service_currency || 'INR')}
@@ -508,7 +503,7 @@ export default function StudentPayments() {
                                   [row.id]: { ...s[row.id], target_currency: val }
                                 }))}
                               >
-                                <SelectTrigger className="w-28 h-9">
+                                <SelectTrigger className="h-8 w-24">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -527,10 +522,10 @@ export default function StudentPayments() {
                               const curr = row.target_currency || row.service_currency || '';
                               const remaining = Math.max(0, targetTotal - receivedSum);
                               return (
-                                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                                  <span><strong>Total Amount:</strong> {curr} {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}</span>
-                                  <span><strong>Amount Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
-                                  <span><strong>Amount Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
+                                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-border/60 mt-1">
+                                  <span><strong>Total:</strong> {curr} {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}</span>
+                                  <span><strong>Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
+                                  <span><strong>Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
                                 </div>
                               );
                             })()}
