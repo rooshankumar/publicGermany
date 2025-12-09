@@ -82,8 +82,7 @@ const StudentMobileBottomNav = () => {
 
   const more = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
-    { href: '/resources', label: 'Resources', icon: BookOpen },
-    { href: '/converter', label: 'Grade Converter', icon: Calculator },
+    { href: '/payments', label: 'Payments', icon: FileText },
     { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/reviews', label: 'Reviews', icon: Star },
   ];
