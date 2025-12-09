@@ -33,10 +33,61 @@ export default function StudentPayments() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
 
-  const handleUploadSignedForContract = async (contract: any, file: File) => {
+  const handleUploadSignedForContract = async (
+    row: ServicePaymentRow,
+    existingContract: any | null,
+    file: File
+  ) => {
     if (!user?.id) return;
 
     const userId = user.id;
+    const studentName = user.user_metadata?.full_name || user.email || 'Student';
+    const studentEmail = user.email || '';
+    const studentPhone = user.user_metadata?.phone || '';
+    const servicePackage = (row.service_type || 'Service').split('_').join(' ');
+    const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0) || 0;
+    const displayCurrency = row.target_currency || row.service_currency || 'INR';
+    const feeString = targetTotal > 0
+      ? `${displayCurrency} ${targetTotal.toLocaleString()}`
+      : `${displayCurrency} 0`;
+
+    let contract = existingContract;
+
+    if (!contract) {
+      const contractRef = generateContractReference();
+      try {
+        const { data: created, error: insertErr } = await supabase
+          .from('contracts' as any)
+          .insert({
+            student_id: userId,
+            service_request_id: row.id,
+            contract_reference: contractRef,
+            student_name: studentName,
+            student_email: studentEmail,
+            student_phone: studentPhone || null,
+            service_package: servicePackage,
+            service_description: 'As discussed for your study abroad services',
+            service_fee: feeString,
+            payment_structure: 'As agreed between you and publicgermany',
+            start_date: null,
+            expected_end_date: null,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (insertErr || !created) {
+          console.error('Contract insert error before upload (contracts tab):', insertErr);
+          return;
+        }
+
+        contract = created;
+      } catch (insertCatchErr) {
+        console.error('Contract insert threw before upload (contracts tab):', insertCatchErr);
+        return;
+      }
+    }
 
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const path = `signed-contracts/${userId}/${fileName}`;
@@ -513,39 +564,30 @@ export default function StudentPayments() {
                                 {downloadingId === row.id ? 'Preparing contract…' : 'Download contract'}
                               </Button>
 
-                              {existingContract && (
-                                <>
-                                  <input
-                                    id={uploadInputId}
-                                    type="file"
-                                    accept=".pdf"
-                                    className="hidden"
-                                    onChange={async (e) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const file = target.files?.[0];
-                                      if (!file) return;
-                                      await handleUploadSignedForContract(existingContract, file);
-                                      target.value = '';
-                                    }}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      const input = document.getElementById(uploadInputId) as HTMLInputElement | null;
-                                      input?.click();
-                                    }}
-                                  >
-                                    Upload Signed
-                                  </Button>
-                                </>
-                              )}
+                              <input
+                                id={uploadInputId}
+                                type="file"
+                                accept=".pdf"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const target = e.target as HTMLInputElement;
+                                  const file = target.files?.[0];
+                                  if (!file) return;
+                                  await handleUploadSignedForContract(row, existingContract || null, file);
+                                  target.value = '';
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const input = document.getElementById(uploadInputId) as HTMLInputElement | null;
+                                  input?.click();
+                                }}
+                              >
+                                Upload Signed
+                              </Button>
                             </div>
-                            {!existingContract && (
-                              <p className="text-[11px] text-muted-foreground mt-1">
-                                First download the contract. After generating it, you can upload the signed PDF here.
-                              </p>
-                            )}
                           </div>
                         </div>
                       );
