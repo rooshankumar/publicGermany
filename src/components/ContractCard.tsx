@@ -50,48 +50,44 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
     try {
       setDownloading(true);
       
-      // If PDF URL is stored, try to use signed URL first for secure access
+      // If PDF URL is stored, open it directly (browser will handle download)
       if (contract.contract_pdf_url) {
         try {
-          const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
+          console.log('Downloading from public URL:', contract.contract_pdf_url);
+          
+          // Try signed URL first if we have studentId
           const studentId = contract.student_id || userId;
-          
-          console.log('Generating signed URL for download:', { fileName, studentId, url: contract.contract_pdf_url });
-          
-          if (!studentId) {
-            console.warn('Missing studentId, falling back to public URL');
-            throw new Error('No studentId available');
+          if (studentId && contract.contract_pdf_url) {
+            try {
+              // Extract just the filename from the URL
+              const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
+              console.log('Attempting signed URL with path:', { studentId, fileName });
+              
+              const signedUrl = await getContractSignedUrl(studentId, fileName, 604800);
+              
+              if (signedUrl) {
+                console.log('Signed URL generated, opening in new tab...');
+                // Open in new tab instead of programmatic download (more reliable)
+                window.open(signedUrl, '_blank');
+                toast({ title: 'Downloaded', description: 'Contract PDF opened in new tab' });
+                setDownloading(false);
+                return;
+              }
+            } catch (signedErr) {
+              console.warn('Signed URL failed:', signedErr);
+            }
           }
           
-          const signedUrl = await getContractSignedUrl(studentId, fileName, 604800);
-          
-          if (signedUrl) {
-            console.log('Signed URL generated successfully, downloading...');
-            const link = document.createElement('a');
-            link.href = signedUrl;
-            link.download = `Contract-${contract.contract_reference}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast({ title: 'Downloaded', description: 'Contract PDF downloaded successfully' });
-            setDownloading(false);
-            return;
-          }
-        } catch (signedErr) {
-          console.warn('Signed URL generation failed, falling back to public URL:', signedErr);
+          // Fallback: open public URL directly in new tab
+          console.log('Falling back to public URL, opening in new tab...');
+          window.open(contract.contract_pdf_url, '_blank');
+          toast({ title: 'Downloaded', description: 'Contract PDF opened in new tab' });
+          setDownloading(false);
+          return;
+        } catch (urlErr) {
+          console.error('URL open error:', urlErr);
+          throw urlErr;
         }
-        
-        // Fallback: download directly from public URL
-        console.log('Using public URL for download:', contract.contract_pdf_url);
-        const link = document.createElement('a');
-        link.href = contract.contract_pdf_url;
-        link.download = `Contract-${contract.contract_reference}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: 'Downloaded', description: 'Contract PDF downloaded successfully' });
-        setDownloading(false);
-        return;
       }
 
       // Fallback: Generate PDF from HTML if URL not available

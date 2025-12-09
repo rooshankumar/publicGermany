@@ -146,15 +146,21 @@ export default function StudentProfile() {
 
       if (error) throw error;
 
-      // Create notification for student
-      await supabase.from('notifications').insert({
-        user_id: studentId,
-        title: `Contract ${newStatus === 'completed' ? 'Approved' : 'Rejected'}`,
-        body: `Your contract has been ${newStatus === 'completed' ? 'approved' : 'rejected'} by the admin team.`,
-        type: 'contract',
-        ref_id: contractId,
-        recipient_role: 'student',
-      });
+      // Create notification for student (using only valid schema fields)
+      try {
+        await supabase.from('notifications').insert({
+          user_id: studentId,
+          title: `Contract ${newStatus === 'completed' ? 'Approved' : 'Rejected'}`,
+          type: 'contract',
+          ref_id: contractId,
+          meta: {
+            action: newStatus,
+            message: `Your contract has been ${newStatus === 'completed' ? 'approved' : 'rejected'} by the admin team.`
+          }
+        });
+      } catch (noteErr) {
+        console.warn('Notification insert error:', noteErr);
+      }
 
       // Send email notification
       const contract = contracts.find(c => c.id === contractId);

@@ -381,20 +381,23 @@ export default function Contracts() {
         contractId = data?.id;
       }
 
-      // Create notification for student dashboard
-      await supabase.from('notifications').insert({
-        user_id: selectedStudentId,
-        title: 'New Contract Received',
-        body: `You have received a new service contract for ${formData.servicePackage}. Download, review, and upload the signed copy.`,
-        type: 'contract',
-        ref_id: contractId,
-        recipient_role: 'student',
-        meta: {
-          contract_reference: contractRef,
-          service_package: formData.servicePackage,
-          service_fee: formData.serviceFee,
-        },
-      });
+      // Create notification for student dashboard (using only valid schema fields)
+      try {
+        await supabase.from('notifications').insert({
+          user_id: selectedStudentId,
+          title: 'New Contract Received',
+          type: 'contract',
+          ref_id: contractId,
+          meta: {
+            contract_reference: contractRef,
+            service_package: formData.servicePackage,
+            service_fee: formData.serviceFee,
+            message: `You have received a new service contract for ${formData.servicePackage}. Download, review, and upload the signed copy.`,
+          },
+        });
+      } catch (noteErr) {
+        console.warn('Notification insert failed:', noteErr);
+      }
 
       // Generate signed URL for secure, time-limited PDF access
       let signedPdfUrl = pdfStorageUrl;
