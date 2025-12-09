@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2, Clock } from 'lucide-react';
+import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2, Clock, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF, generateContractPDFBlob } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
@@ -48,6 +48,8 @@ interface DraftContract {
   created_at: string;
   updated_at: string;
   sent_at?: string | null;
+  signed_at?: string | null;
+  signed_document_url?: string | null;
 }
 
 export default function Contracts() {
@@ -528,14 +530,18 @@ export default function Contracts() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="create">
               <FileText className="h-4 w-4 mr-2" />
-              Create Contract
+              Create
             </TabsTrigger>
             <TabsTrigger value="drafts">
               <Clock className="h-4 w-4 mr-2" />
-              Contracts ({drafts.length + contractsHistory.length})
+              All Contracts
+            </TabsTrigger>
+            <TabsTrigger value="signed">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Signed ({contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).length})
             </TabsTrigger>
           </TabsList>
 
@@ -820,6 +826,72 @@ export default function Contracts() {
               </>
             )}
           </TabsContent>
+
+          {/* Signed Contracts Tab */}
+          <TabsContent value="signed" className="space-y-4">
+            {loadingHistory ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No signed contracts yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">Signed contracts will appear here after students upload them</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-orange-600" />
+                  Awaiting Approval ({contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).length})
+                </h2>
+                {contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).map((c) => (
+                  <Card key={c.id} className="border-l-4 border-l-orange-500 bg-orange-50/30">
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="space-y-1 flex-1 min-w-[200px]">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold">{c.student_name}</h3>
+                            <Badge className="bg-orange-100 text-orange-800 border-orange-300">Awaiting Approval</Badge>
+                            <Badge variant="outline">{c.contract_reference}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {c.service_package} • {c.service_fee}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Created: {format(new Date(c.created_at), 'MMM d, yyyy h:mm a')}
+                            {c.signed_at ? ` • Signed: ${format(new Date(c.signed_at), 'MMM d, yyyy')}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {c.signed_document_url && (
+                            <Button variant="outline" size="sm" onClick={() => window.open(c.signed_document_url!, '_blank')}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Signed PDF
+                            </Button>
+                          )}
+                          <Button size="sm" variant="default" onClick={async () => {
+                            try {
+                              await supabase.from('contracts').update({ status: 'completed' }).eq('id', c.id);
+                              toast({ title: 'Approved', description: 'Contract has been approved' });
+                              fetchContractsHistory();
+                            } catch (e) {
+                              toast({ title: 'Error', description: 'Failed to approve contract', variant: 'destructive' });
+                            }
+                          }}>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Contract Preview Dialog - Using new HTML template */}
@@ -904,6 +976,9 @@ export default function Contracts() {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Contract: {selectedHistoryContract?.contract_reference}</DialogTitle>
+              <DialogDescription>
+                {selectedHistoryContract?.student_name} - {selectedHistoryContract?.service_package}
+              </DialogDescription>
             </DialogHeader>
 
             {selectedHistoryContract && (

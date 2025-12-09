@@ -328,12 +328,25 @@ export default function Payments() {
 
     setSendingBillId(row.id);
     try {
-      const receivedSum = (row.service_payments || [])
+      // Re-fetch to get latest data after save
+      const { data: latestPayments } = await supabase
+        .from('service_payments' as any)
+        .select('amount, status')
+        .eq('service_id', row.id);
+      
+      const receivedSum = (latestPayments || [])
         .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
         .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
 
-      const targetTotal = row.target_total_amount ?? row.service_price ?? 0;
-      const currency = row.target_currency ?? row.service_currency ?? 'INR';
+      // Re-fetch service request for latest totals
+      const { data: latestRequest } = await supabase
+        .from('service_requests' as any)
+        .select('target_total_amount, target_currency, service_price, service_currency')
+        .eq('id', row.id)
+        .single();
+
+      const targetTotal = (latestRequest as any)?.target_total_amount ?? (latestRequest as any)?.service_price ?? row.target_total_amount ?? row.service_price ?? 0;
+      const currency = (latestRequest as any)?.target_currency ?? (latestRequest as any)?.service_currency ?? row.target_currency ?? row.service_currency ?? 'INR';
       const remaining = Math.max(0, targetTotal - receivedSum);
 
       const paymentStatus = 
@@ -358,6 +371,27 @@ export default function Payments() {
         currency,
         includeAdmin: true
       });
+
+      // Create notification for student about the bill
+      try {
+        await supabase.from('notifications').insert({
+          user_id: row.user_id,
+          title: 'Payment Bill Received',
+          type: 'payment_bill',
+          ref_id: row.id,
+          body: `Your payment bill for ${(row.service_type || '').split('_').join(' ')} has been sent. Total: ${currency} ${targetTotal.toLocaleString()}, Paid: ${currency} ${receivedSum.toLocaleString()}, Remaining: ${currency} ${remaining.toLocaleString()}`,
+          meta: {
+            service_type: row.service_type,
+            total_amount: targetTotal,
+            amount_received: receivedSum,
+            amount_pending: remaining,
+            currency,
+            status: paymentStatus,
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Bill notification failed:', notifErr);
+      }
 
       toast({
         title: "Payment bill sent",
@@ -577,26 +611,23 @@ export default function Payments() {
                         <td className="p-3 space-x-2">
                           <Button
                             size="sm"
-                            onClick={() => savePayment(
-                              row.id,
-                              row.user_id,
-                              payment?.id,
-                              row.service_price,
-                              row.service_currency,
-                              row.profiles?.full_name || null,
-                              row.service_type || null
-                            )}
-                          >
-                            {payment ? 'Save' : 'Create'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
                             disabled={sendingBillId === row.id}
-                            onClick={() => sendPaymentBill(row, payment)}
-                            title="Send payment bill via email"
+                            onClick={async () => {
+                              // Save payment first, then send bill
+                              await savePayment(
+                                row.id,
+                                row.user_id,
+                                payment?.id,
+                                row.service_price,
+                                row.service_currency,
+                                row.profiles?.full_name || null,
+                                row.service_type || null
+                              );
+                              // Automatically send bill after saving
+                              await sendPaymentBill(row, payment);
+                            }}
                           >
-                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
+                            {sendingBillId === row.id ? 'Sending...' : (payment ? 'Save & Send Bill' : 'Create & Send Bill')}
                           </Button>
                         </td>
                       </tr>
