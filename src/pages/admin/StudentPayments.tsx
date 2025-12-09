@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/sendEmail';
+import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
@@ -27,6 +28,7 @@ export default function StudentPayments() {
     target_total_amount?: number | null;
     target_currency?: string | null;
   }>>({});
+  const [sendingBillId, setSendingBillId] = useState<string | null>(null);
 
   const resolveEmail = async (userId: string): Promise<string | null> => {
     try {
@@ -35,6 +37,91 @@ export default function StudentPayments() {
       return null;
     } catch {
       return null;
+    }
+  };
+
+  const sendPaymentBill = async (row: any, payment?: any) => {
+    let email = studentInfo?.email || null;
+    if (!email) {
+      email = await resolveEmail(row.user_id);
+    }
+
+    if (!email) {
+      toast({
+        title: "Email not found",
+        description: "Unable to resolve student email for payment bill",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingBillId(row.id);
+    try {
+      const paymentsArr = (row.service_payments || []) as any[];
+      const receivedSum = paymentsArr
+        .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+        .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
+
+      const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
+      const currency = row.target_currency || row.service_currency || 'INR';
+      const remaining = Math.max(0, targetTotal - receivedSum);
+
+      const paymentStatus =
+        remaining <= 0 ? 'received' :
+        receivedSum > 0 ? 'partial' :
+        'pending';
+
+      await sendPaymentBillEmail({
+        serviceId: row.id,
+        userId: row.user_id,
+        studentName: studentInfo?.name || 'Student',
+        studentEmail: email,
+        studentPhone: 'N/A',
+        serviceType: row.service_type,
+        serviceName: (row.service_type || '').split('_').join(' '),
+        serviceDescription: 'Study abroad service',
+        serviceAmount: row.service_price || 0,
+        totalAmount: targetTotal,
+        amountReceived: receivedSum,
+        amountPending: remaining,
+        paymentStatus: paymentStatus as any,
+        currency,
+        includeAdmin: true,
+      });
+
+      try {
+        await supabase.from('notifications').insert({
+          user_id: row.user_id,
+          title: 'Payment Bill Received',
+          type: 'payment_bill',
+          ref_id: row.id,
+          body: `Your payment bill for ${(row.service_type || '').split('_').join(' ')} has been sent. Total: ${currency} ${targetTotal.toLocaleString()}, Paid: ${currency} ${receivedSum.toLocaleString()}, Remaining: ${currency} ${remaining.toLocaleString()}`,
+          meta: {
+            service_type: row.service_type,
+            total_amount: targetTotal,
+            amount_received: receivedSum,
+            amount_pending: remaining,
+            currency,
+            status: paymentStatus,
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Bill notification failed:', notifErr);
+      }
+
+      toast({
+        title: "Payment bill sent",
+        description: `Bill sent successfully to ${email}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending payment bill:', error);
+      toast({
+        title: "Error sending bill",
+        description: error?.message || 'Failed to send payment bill',
+        variant: "destructive",
+      });
+    } finally {
+      setSendingBillId(null);
     }
   };
 
@@ -504,6 +591,25 @@ export default function StudentPayments() {
                             )}
                           >
                             {payment ? 'Save' : 'Create'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sendingBillId === row.id}
+                            onClick={async () => {
+                              await savePayment(
+                                row.id,
+                                row.user_id,
+                                payment?.id,
+                                row.service_price,
+                                row.service_currency,
+                                studentInfo?.name || null,
+                                row.service_type || null
+                              );
+                              await sendPaymentBill(row, payment);
+                            }}
+                          >
+                            {sendingBillId === row.id ? 'Sending...' : 'Send Bill'}
                           </Button>
                         </td>
                       </tr>
