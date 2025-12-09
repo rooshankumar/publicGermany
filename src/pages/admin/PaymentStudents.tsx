@@ -104,23 +104,18 @@ export default function PaymentStudents() {
         const student = studentMap.get(userId)!;
         student.request_count++;
 
-        // Calculate amounts based on actual payment records
-        payments.forEach((p: any) => {
-          const amount = Number(p.amount) || 0;
-          
-          // Add to total (all payments regardless of status)
-          student.total_amount += amount;
-          
-          // Add to received if status is 'received'
-          if (p.status === 'received') {
-            student.received_amount += amount;
-          }
-          
-          // Add to pending if status is 'pending'
-          if (p.status === 'pending') {
-            student.pending_amount += amount;
-          }
-        });
+        // Calculate amounts using service-level target total and received sums
+        const paymentsArr = (payments || []) as any[];
+        const receivedSum = paymentsArr
+          .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+          .reduce((sum: number, p: any) => sum + (Number(p?.amount) || 0), 0);
+
+        const targetTotal = Number(request.target_total_amount ?? request.service_price ?? 0) || 0;
+        const remaining = Math.max(0, targetTotal - receivedSum);
+
+        student.total_amount += targetTotal;
+        student.received_amount += receivedSum;
+        student.pending_amount += remaining;
 
         // Update last_updated to most recent
         if (new Date(request.updated_at) > new Date(student.last_updated)) {

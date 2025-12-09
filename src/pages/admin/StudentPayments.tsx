@@ -347,28 +347,22 @@ export default function StudentPayments() {
     }
   };
 
-  // Calculate totals for this student based on actual payment records
+  // Calculate totals using service-level target total and received amounts
   const studentTotals = payments.reduce(
     (acc, row) => {
       const paymentsArr = (row.service_payments || []) as any[];
-      
-      paymentsArr.forEach((p: any) => {
-        const amount = Number(p.amount) || 0;
-        
-        // Add to total (all payments)
-        acc.total += amount;
-        
-        // Add to received if status is 'received'
-        if (p.status === 'received') {
-          acc.received += amount;
-        }
-        
-        // Add to pending if status is 'pending'
-        if (p.status === 'pending') {
-          acc.pending += amount;
-        }
-      });
-      
+
+      const receivedSum = paymentsArr
+        .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+        .reduce((total: number, p: any) => total + (Number(p?.amount) || 0), 0);
+
+      const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0) || 0;
+      const remaining = Math.max(0, targetTotal - receivedSum);
+
+      acc.total += targetTotal;
+      acc.received += receivedSum;
+      acc.pending += remaining;
+
       return acc;
     },
     { total: 0, received: 0, pending: 0 }
