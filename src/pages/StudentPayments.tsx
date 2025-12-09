@@ -179,7 +179,6 @@ export default function StudentPayments() {
                         {canDownloadBill && (
                           <Button
                             size="sm"
-                            variant="outline"
                             disabled={downloadingId === row.id}
                             onClick={handleDownloadBill}
                           >

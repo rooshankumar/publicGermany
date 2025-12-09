@@ -34,9 +34,10 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'sent':
-      case 'pending_approval':
         return <Badge className="bg-amber-100 text-amber-800 border-amber-300">Pending Approval</Badge>;
+      case 'pending_approval':
       case 'signed':
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-300">Waiting for admin approval</Badge>;
       case 'completed':
         return <Badge className="bg-green-100 text-green-800 border-green-300">Approved</Badge>;
       case 'rejected':

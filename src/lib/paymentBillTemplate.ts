@@ -111,8 +111,20 @@ export function generatePaymentBillHTML(data: PaymentBillData): string {
     pointer-events: none;
   }
 
-  .header { text-align: center; margin-bottom: 18px; }
-  .header img { width: 80px; opacity: 0.9; margin-bottom: 4px; }
+  .header {
+    text-align: center;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header img {
+    width: 80px;
+    opacity: 0.9;
+    margin-bottom: 4px;
+    display: block;
+  }
 
   .title {
     font-size: 24px;

@@ -54,6 +54,7 @@ const AdminMobileBottomNav = () => {
   ];
 
   const more = [
+    { href: '/admin/payments', label: 'Payments', icon: CreditCard },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
     { href: '/admin/resources', label: 'Resources', icon: BookOpen },
