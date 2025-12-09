@@ -23,9 +23,10 @@ interface ContractCardProps {
   };
   onStatusChange?: () => void;
   userId?: string;
+  hideMoneyDetails?: boolean;
 }
 
-export function ContractCard({ contract, onStatusChange, userId }: ContractCardProps) {
+export function ContractCard({ contract, onStatusChange, userId, hideMoneyDetails }: ContractCardProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -307,7 +308,7 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
             <FileText className="h-5 w-5 text-muted-foreground" />
             <div>
               <CardTitle className="text-lg">{contract.service_package}</CardTitle>
-              <CardDescription>{contract.service_fee}</CardDescription>
+              {!hideMoneyDetails && <CardDescription>{contract.service_fee}</CardDescription>}
             </div>
           </div>
           {getStatusBadge(contract.status)}
