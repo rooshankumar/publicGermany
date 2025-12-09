@@ -230,6 +230,7 @@ export type Database = {
           admin_signature_url: string | null
           admin_signed_at: string | null
           contract_html: string
+          contract_pdf_url: string | null
           contract_reference: string
           created_at: string
           expected_end_date: string | null
@@ -240,6 +241,9 @@ export type Database = {
           service_fee: string
           service_package: string
           service_request_id: string | null
+          signed_at: string | null
+          signed_contract_url: string | null
+          signed_document_url: string | null
           start_date: string | null
           status: string
           student_email: string
@@ -254,6 +258,7 @@ export type Database = {
           admin_signature_url?: string | null
           admin_signed_at?: string | null
           contract_html: string
+          contract_pdf_url?: string | null
           contract_reference: string
           created_at?: string
           expected_end_date?: string | null
@@ -264,6 +269,9 @@ export type Database = {
           service_fee: string
           service_package: string
           service_request_id?: string | null
+          signed_at?: string | null
+          signed_contract_url?: string | null
+          signed_document_url?: string | null
           start_date?: string | null
           status?: string
           student_email: string
@@ -278,6 +286,7 @@ export type Database = {
           admin_signature_url?: string | null
           admin_signed_at?: string | null
           contract_html?: string
+          contract_pdf_url?: string | null
           contract_reference?: string
           created_at?: string
           expected_end_date?: string | null
@@ -288,6 +297,9 @@ export type Database = {
           service_fee?: string
           service_package?: string
           service_request_id?: string | null
+          signed_at?: string | null
+          signed_contract_url?: string | null
+          signed_document_url?: string | null
           start_date?: string | null
           status?: string
           student_email?: string
@@ -591,9 +603,11 @@ export type Database = {
           bachelor_degree_name: string | null
           bachelor_duration_years: number | null
           bachelor_field: string | null
+          bachelor_university: string | null
           class_10_marks: string | null
           class_12_marks: string | null
           class_12_stream: string | null
+          contract_reference: string | null
           country_of_education: string | null
           created_at: string
           date_of_birth: string | null
@@ -602,6 +616,8 @@ export type Database = {
           has_aps_certificate: boolean | null
           id: string
           ielts_toefl_score: string | null
+          intake: string | null
+          intended_master_course: string | null
           master_cgpa_percentage: string | null
           master_degree_name: string | null
           master_field: string | null
@@ -620,9 +636,11 @@ export type Database = {
           bachelor_degree_name?: string | null
           bachelor_duration_years?: number | null
           bachelor_field?: string | null
+          bachelor_university?: string | null
           class_10_marks?: string | null
           class_12_marks?: string | null
           class_12_stream?: string | null
+          contract_reference?: string | null
           country_of_education?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -631,6 +649,8 @@ export type Database = {
           has_aps_certificate?: boolean | null
           id?: string
           ielts_toefl_score?: string | null
+          intake?: string | null
+          intended_master_course?: string | null
           master_cgpa_percentage?: string | null
           master_degree_name?: string | null
           master_field?: string | null
@@ -649,9 +669,11 @@ export type Database = {
           bachelor_degree_name?: string | null
           bachelor_duration_years?: number | null
           bachelor_field?: string | null
+          bachelor_university?: string | null
           class_10_marks?: string | null
           class_12_marks?: string | null
           class_12_stream?: string | null
+          contract_reference?: string | null
           country_of_education?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -660,6 +682,8 @@ export type Database = {
           has_aps_certificate?: boolean | null
           id?: string
           ielts_toefl_score?: string | null
+          intake?: string | null
+          intended_master_course?: string | null
           master_cgpa_percentage?: string | null
           master_degree_name?: string | null
           master_field?: string | null

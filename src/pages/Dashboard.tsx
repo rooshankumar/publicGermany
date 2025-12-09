@@ -77,15 +77,15 @@ interface Task {
 interface ContractNotification {
   id: string;
   title: string;
-  body: string;
+  body: string | null;
   type: string;
-  ref_id: string;
+  ref_id: string | null;
   meta: {
-    contract_reference: string;
-    service_package: string;
-    service_fee: string;
-    contract_html: string;
-  };
+    contract_reference?: string;
+    service_package?: string;
+    service_fee?: string;
+    message?: string;
+  } | null;
   created_at: string;
   seen: boolean;
 }
@@ -321,20 +321,29 @@ const Dashboard = () => {
     setShowContractPopup(false);
   };
 
-  // View full contract
-  const handleViewContract = (contract: ContractNotification) => {
-    setActiveContract(contract);
-    setShowContractPreview(true);
+  // View full contract - fetch from contracts table using ref_id
+  const handleViewContract = async (notification: ContractNotification) => {
+    setActiveContract(notification);
     // Mark as seen
-    supabase.from('notifications').update({ seen: true }).eq('id', contract.id);
+    supabase.from('notifications').update({ seen: true }).eq('id', notification.id);
+    
+    // Find the contract in already fetched contracts
+    const contract = contracts.find(c => c.id === notification.ref_id);
+    if (contract) {
+      setShowContractPreview(true);
+    }
   };
 
-  // Download contract PDF
-  const handleDownloadContract = async (contract: ContractNotification) => {
-    if (!contract.meta?.contract_html) return;
+  // Download contract PDF - fetch HTML from contracts table
+  const handleDownloadContract = async (notification: ContractNotification) => {
+    const contract = contracts.find(c => c.id === notification.ref_id);
+    if (!contract?.contract_html) {
+      toast({ title: 'Error', description: 'Contract not found', variant: 'destructive' });
+      return;
+    }
     setDownloadingPdf(true);
     try {
-      await downloadContractPDF(contract.meta.contract_html, `Contract-${contract.meta.contract_reference}.pdf`);
+      await downloadContractPDF(contract.contract_html, `Contract-${contract.contract_reference}.pdf`);
       toast({ title: 'Success', description: 'Contract PDF downloaded' });
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
@@ -978,10 +987,11 @@ const Dashboard = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {activeContract?.meta?.contract_html && (
+          {/* Render contract HTML from contracts table, not from notification meta */}
+          {activeContract?.ref_id && contracts.find(c => c.id === activeContract.ref_id)?.contract_html && (
             <div 
-              className="border rounded-lg overflow-hidden bg-white"
-              dangerouslySetInnerHTML={{ __html: activeContract.meta.contract_html }}
+              className="border rounded-lg overflow-hidden bg-white max-h-[70vh] overflow-y-auto"
+              dangerouslySetInnerHTML={{ __html: contracts.find(c => c.id === activeContract.ref_id)?.contract_html }}
             />
           )}
 

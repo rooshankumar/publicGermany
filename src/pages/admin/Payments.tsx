@@ -182,6 +182,23 @@ export default function Payments() {
       });
       fetchPayments();
 
+      // Create notification for student about payment update
+      try {
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          title: 'Payment Status Updated',
+          type: 'payment',
+          ref_id: requestId,
+          meta: {
+            service_type: serviceType,
+            status: payload.status || 'pending',
+            amount: payload.amount,
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Student notification failed:', notifErr);
+      }
+
       // Fire-and-forget email notifications (user + admin)
       try {
         const userEmail = await resolveEmail(userId);

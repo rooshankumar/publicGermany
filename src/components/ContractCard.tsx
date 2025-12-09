@@ -133,7 +133,7 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
       });
       document.body.removeChild(div);
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDFLib('p', 'mm', 'a4');
       const pageHeight = pdf.internal.pageSize.getHeight();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
@@ -221,8 +221,48 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
 
       console.log('Contract updated successfully');
 
-      // Note: Notifications for admin require service role. This is a silent operation.
-      // The admin will see the update when checking StudentProfile contracts list (realtime subscription).
+      // Notify admin about signed contract upload
+      try {
+        // Create notification for admin users
+        const { data: admins } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        if (admins && admins.length > 0) {
+          const notifications = admins.map((admin) => ({
+            user_id: admin.user_id,
+            title: 'Student Uploaded Signed Contract',
+            type: 'contract_signed',
+            ref_id: contract.id,
+            meta: {
+              contract_reference: contract.contract_reference,
+              student_name: contract.service_package,
+            },
+          }));
+          await supabase.from('notifications').insert(notifications);
+        }
+
+        // Send email to admin
+        const { sendEmail } = await import('@/lib/sendEmail');
+        await sendEmail(
+          'publicgermany@outlook.com',
+          `Signed Contract Uploaded: ${contract.contract_reference}`,
+          `<div style="font-family:system-ui,-apple-system,sans-serif;color:#1C1C1C;">
+            <h2>A student has uploaded a signed contract</h2>
+            <p><strong>Contract Reference:</strong> ${contract.contract_reference}</p>
+            <p><strong>Service:</strong> ${contract.service_package}</p>
+            <p><strong>Fee:</strong> ${contract.service_fee}</p>
+            <p>Please review the signed contract in the admin dashboard.</p>
+            <a href="https://publicgermany.vercel.app/admin/contracts" 
+               style="display:inline-block;padding:10px 20px;background:#1e3a8a;color:#fff;text-decoration:none;border-radius:6px;margin-top:12px;">
+              View in Dashboard
+            </a>
+          </div>`
+        );
+      } catch (notifyErr) {
+        console.warn('Admin notification failed:', notifyErr);
+      }
 
       toast({ title: 'Uploaded', description: 'Signed contract uploaded successfully. Awaiting admin approval.' });
       onStatusChange?.();
