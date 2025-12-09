@@ -49,43 +49,45 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
   const handleDownloadPDF = async () => {
     try {
       setDownloading(true);
-      
-      // If PDF URL is stored, open it directly (browser will handle download)
+
+      const triggerDownload = (url: string, filename: string) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      // If PDF URL is stored, download it directly
       if (contract.contract_pdf_url) {
         try {
           console.log('Downloading from public URL:', contract.contract_pdf_url);
-          
-          // Try signed URL first if we have studentId
+
           const studentId = contract.student_id || userId;
+          const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
+          let downloadUrl = contract.contract_pdf_url;
+
+          // Try signed URL first if we have studentId
           if (studentId && contract.contract_pdf_url) {
             try {
-              // Extract just the filename from the URL
-              const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
               console.log('Attempting signed URL with path:', { studentId, fileName });
-              
               const signedUrl = await getContractSignedUrl(studentId, fileName, 604800);
-              
               if (signedUrl) {
-                console.log('Signed URL generated, opening in new tab...');
-                // Open in new tab instead of programmatic download (more reliable)
-                window.open(signedUrl, '_blank');
-                toast({ title: 'Downloaded', description: 'Contract PDF opened in new tab' });
-                setDownloading(false);
-                return;
+                downloadUrl = signedUrl;
               }
             } catch (signedErr) {
-              console.warn('Signed URL failed:', signedErr);
+              console.warn('Signed URL failed, falling back to public URL:', signedErr);
             }
           }
-          
-          // Fallback: open public URL directly in new tab
-          console.log('Falling back to public URL, opening in new tab...');
-          window.open(contract.contract_pdf_url, '_blank');
-          toast({ title: 'Downloaded', description: 'Contract PDF opened in new tab' });
+
+          console.log('Triggering file download from:', downloadUrl);
+          triggerDownload(downloadUrl, fileName);
+          toast({ title: 'Downloaded', description: 'Contract PDF download started' });
           setDownloading(false);
           return;
         } catch (urlErr) {
-          console.error('URL open error:', urlErr);
+          console.error('URL download error:', urlErr);
           throw urlErr;
         }
       }
