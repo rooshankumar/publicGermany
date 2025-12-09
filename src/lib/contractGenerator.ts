@@ -594,3 +594,87 @@ export async function downloadContractPDF(html: string, filename: string): Promi
     throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+// Generate PDF blob (for upload to storage) - returns a Blob instead of saving locally
+export async function generateContractPDFBlob(html: string): Promise<Blob> {
+  try {
+    console.log('Generating PDF blob');
+
+    let html2canvas: any;
+    let jsPDF: any;
+    try {
+      html2canvas = (await import('html2canvas')).default;
+      jsPDF = (await import('jspdf')).jsPDF;
+    } catch (impErr) {
+      console.error('Dynamic import failed for html2canvas/jsPDF:', impErr);
+      throw new Error('PDF libraries failed to load. Module MIME error or network issue may be causing this.');
+    }
+
+    // Create container
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '-10000px';
+    container.style.width = '210mm';
+    container.style.margin = '0';
+    container.style.padding = '0';
+    container.style.backgroundColor = '#fff';
+
+    document.body.appendChild(container);
+
+    // Wait for DOM to settle and images to load
+    await new Promise(r => setTimeout(r, 1000));
+    const images = container.querySelectorAll('img');
+    const imagePromises = Array.from(images).map((img: any, idx: number) => {
+      return new Promise<void>(resolve => {
+        if (img.complete) return resolve();
+        const timeout = setTimeout(() => resolve(), 5000);
+        img.onload = () => { clearTimeout(timeout); resolve(); };
+        img.onerror = () => { clearTimeout(timeout); resolve(); };
+      });
+    });
+    await Promise.all(imagePromises);
+    await new Promise(r => setTimeout(r, 500));
+
+    const pages = container.querySelectorAll('.page');
+    if (pages.length === 0) throw new Error('No pages found in contract');
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+    let firstPage = true;
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i] as HTMLElement;
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        windowHeight: page.scrollHeight,
+        windowWidth: page.scrollWidth
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      if (!imgData || (!imgData.startsWith('data:image/jpeg') && !imgData.startsWith('data:image/png'))) {
+        throw new Error('Canvas image data is invalid or not an image.');
+      }
+
+      if (!firstPage) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      firstPage = false;
+    }
+
+    // Cleanup
+    if (document.body.contains(container)) document.body.removeChild(container);
+
+    const blob = pdf.output('blob');
+    return blob;
+  } catch (error) {
+    console.error('generateContractPDFBlob error:', error);
+    throw error;
+  }
+}

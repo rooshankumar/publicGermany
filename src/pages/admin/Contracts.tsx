@@ -13,8 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Download, Send, Eye, User, Mail, Phone, Package, Trash2, Edit, Loader2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF } from '@/lib/contractGenerator';
+import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF, generateContractPDFBlob } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
+import { getContractSignedUrl } from '@/lib/signedUrl';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -317,58 +318,8 @@ export default function Contracts() {
       let contractId = editingDraft?.id;
 
       try {
-        const div = document.createElement('div');
-        div.innerHTML = generatedHTML;
-        div.style.position = 'absolute';
-        div.style.left = '-9999px';
-        div.style.top = '-9999px';
-        div.style.width = '1000px';
-        div.style.backgroundColor = '#ffffff';
-        document.body.appendChild(div);
-
-        // Wait for images to load
-        const images = div.querySelectorAll('img');
-        const imagePromises = Array.from(images).map(img => {
-          return new Promise<void>((resolve) => {
-            if ((img as HTMLImageElement).complete) {
-              resolve();
-            } else {
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            }
-          });
-        });
-        await Promise.all(imagePromises);
-
-        const canvas = await html2canvas(div, { 
-          scale: 2, 
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          logging: false
-        });
-        document.body.removeChild(div);
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = (canvas.height * pageWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        // Save PDF to storage
-        const pdfBlob = pdf.output('blob');
+        // Use standardized PDF generation that returns a Blob (keeps admin/student PDFs identical)
+        const pdfBlob = await generateContractPDFBlob(generatedHTML);
         const fileName = `Contract-${contractRef}-${Date.now()}.pdf`;
         const filePath = `contracts/${selectedStudentId}/${fileName}`;
 
@@ -445,7 +396,19 @@ export default function Contracts() {
         },
       });
 
-      // Send email with download link instead of attachment
+      // Generate signed URL for secure, time-limited PDF access
+      let signedPdfUrl = pdfStorageUrl;
+      if (pdfStorageUrl) {
+        try {
+          const fileName = pdfStorageUrl.split('/').pop() || `Contract-${contractRef}.pdf`;
+          const signedUrl = await getContractSignedUrl(selectedStudentId, fileName, 604800); // 7 days
+          if (signedUrl) signedPdfUrl = signedUrl;
+        } catch (signedErr) {
+          console.warn('Signed URL generation failed, using public URL:', signedErr);
+        }
+      }
+
+      // Send email with download link
       const emailHtml = `
         <h2>Service Contract from publicgermany</h2>
         <p>Dear ${selectedStudent?.full_name || 'Student'},</p>
@@ -455,7 +418,7 @@ export default function Contracts() {
         <p>
           <strong>Next Steps:</strong>
           <ol>
-            <li><a href="${pdfStorageUrl || 'https://publicgermany.vercel.app/dashboard'}">Download and review the PDF contract</a></li>
+            <li><a href="${signedPdfUrl || 'https://publicgermany.vercel.app/dashboard'}">Download and review the PDF contract</a></li>
             <li>Sign the contract</li>
             <li>Upload the signed copy back through your dashboard</li>
           </ol>

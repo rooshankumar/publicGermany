@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getContractSignedUrl } from '@/lib/signedUrl';
 import { Download, Upload, Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { format } from 'date-fns';
@@ -49,8 +50,28 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
     try {
       setDownloading(true);
       
-      // If PDF URL is stored, download directly from storage
+      // If PDF URL is stored, try to use signed URL first for secure access
       if (contract.contract_pdf_url) {
+        try {
+          const fileName = contract.contract_pdf_url.split('/').pop() || `Contract-${contract.contract_reference}.pdf`;
+          const signedUrl = await getContractSignedUrl(contract.student_id || userId || '', fileName, 604800);
+          
+          if (signedUrl) {
+            const link = document.createElement('a');
+            link.href = signedUrl;
+            link.download = `Contract-${contract.contract_reference}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast({ title: 'Downloaded', description: 'Contract PDF downloaded successfully' });
+            setDownloading(false);
+            return;
+          }
+        } catch (signedErr) {
+          console.warn('Signed URL generation failed, falling back to public URL:', signedErr);
+        }
+        
+        // Fallback: download directly from public URL
         const link = document.createElement('a');
         link.href = contract.contract_pdf_url;
         link.download = `Contract-${contract.contract_reference}.pdf`;
@@ -58,6 +79,7 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
         link.click();
         document.body.removeChild(link);
         toast({ title: 'Downloaded', description: 'Contract PDF downloaded successfully' });
+        setDownloading(false);
         return;
       }
 
