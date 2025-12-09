@@ -447,9 +447,16 @@ export function validateContractData(data: Partial<ContractData>) {
 export async function downloadContractPDF(html: string, filename: string): Promise<void> {
   try {
     console.log('Starting PDF generation:', filename);
-    
-    const html2canvas = (await import('html2canvas')).default;
-    const { jsPDF } = await import('jspdf');
+
+    let html2canvas: any;
+    let jsPDF: any;
+    try {
+      html2canvas = (await import('html2canvas')).default;
+      jsPDF = (await import('jspdf')).jsPDF;
+    } catch (impErr) {
+      console.error('Dynamic import failed for html2canvas/jsPDF:', impErr);
+      throw new Error('PDF libraries failed to load. Module MIME error or network issue may be causing this.');
+    }
 
     // Create container
     const container = document.createElement('div');
@@ -552,7 +559,18 @@ export async function downloadContractPDF(html: string, filename: string): Promi
         }
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+        // Validate image data URL prefix before adding
+        if (!imgData || (!imgData.startsWith('data:image/jpeg') && !imgData.startsWith('data:image/png'))) {
+          throw new Error('Canvas image data is invalid or not an image. This can happen if an asset returned HTML instead of an image.');
+        }
+
+        try {
+          pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+        } catch (addImgErr) {
+          console.error('jsPDF addImage error:', addImgErr);
+          throw addImgErr;
+        }
 
         console.log(`Page ${i + 1} added to PDF`);
         firstPage = false;

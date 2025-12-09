@@ -62,8 +62,15 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
       }
 
       // Fallback: Generate PDF from HTML if URL not available
-      const { default: html2canvas } = await import('html2canvas');
-      const { default: jsPDF } = await import('jspdf');
+      let html2canvas: any;
+      let jsPDFLib: any;
+      try {
+        html2canvas = (await import('html2canvas')).default;
+        jsPDFLib = (await import('jspdf')).jsPDF || (await import('jspdf')).default;
+      } catch (impErr) {
+        console.error('Failed to load PDF libraries:', impErr);
+        throw new Error('Failed to load PDF libraries. This can happen if a module chunk returned HTML (MIME error) on the server.');
+      }
 
       const div = document.createElement('div');
       div.innerHTML = contract.contract_html;
@@ -106,7 +113,17 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
 
       // Convert canvas to JPEG instead of PNG to avoid signature issues
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+
+      if (!imgData || (!imgData.startsWith('data:image/jpeg') && !imgData.startsWith('data:image/png'))) {
+        throw new Error('Invalid canvas image data. Possibly an HTML error page was loaded instead of an image.');
+      }
+
+      try {
+        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight);
+      } catch (addErr) {
+        console.error('jsPDF addImage failed:', addErr, 'imgData startsWith:', imgData?.slice?.(0,50));
+        throw addErr;
+      }
       heightLeft -= pageHeight;
 
       while (heightLeft >= 0) {
@@ -159,14 +176,20 @@ export function ContractCard({ contract, onStatusChange, userId }: ContractCardP
       if (updateErr) throw updateErr;
 
       // Also create a notification for admin
-      await supabase.from('notifications').insert({
-        user_id: contract.student_id,
-        title: 'Contract Signed',
-        body: `Student has signed and uploaded contract ${contract.contract_reference}. Please review and approve.`,
-        type: 'contract',
-        ref_id: contract.id,
-        recipient_role: 'admin',
-      }).catch(() => null);
+      try {
+        const { error: noteErr } = await supabase.from('notifications').insert({
+          user_id: contract.student_id,
+          title: 'Contract Signed',
+          body: `Student has signed and uploaded contract ${contract.contract_reference}. Please review and approve.`,
+          type: 'contract',
+          ref_id: contract.id,
+          recipient_role: 'admin',
+        });
+
+        if (noteErr) console.warn('Notification insert error:', noteErr);
+      } catch (noteEx) {
+        console.warn('Notification insert failed', noteEx);
+      }
 
       toast({ title: 'Uploaded', description: 'Signed contract uploaded successfully. Awaiting admin approval.' });
       onStatusChange?.();
