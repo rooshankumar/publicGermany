@@ -47,6 +47,7 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [previewContract, setPreviewContract] = useState<any | null>(null);
   const [updatingContractId, setUpdatingContractId] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
   const { toast } = useToast();
@@ -897,7 +898,7 @@ export default function StudentProfile() {
           </CardContent>
         </Card>
 
-        {/* Contracts Management */}
+        {/* Contracts Management - Tabs: All Contracts / Signed Contracts */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -911,87 +912,158 @@ export default function StudentProfile() {
             </div>
           </CardHeader>
           <CardContent>
-            {contracts.length > 0 ? (
-              <div className="space-y-3">
-                {contracts.map((contract) => (
-                  <div 
-                    key={contract.id}
-                    className={`border-l-4 rounded-lg p-4 ${
-                      contract.status === 'draft' ? 'border-l-amber-500 bg-amber-50/30' :
-                      contract.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
-                      contract.status === 'signed' ? 'border-l-orange-500 bg-orange-50/30' :
-                      'border-l-green-500 bg-green-50/30'
-                    }`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold">{contract.contract_reference}</h4>
-                          <Badge variant={
-                            contract.status === 'draft' ? 'secondary' :
-                            contract.status === 'sent' ? 'outline' :
-                            contract.status === 'signed' ? 'default' : 'default'
-                          }>
-                            {contract.status === 'draft' ? 'Draft' :
-                             contract.status === 'sent' ? 'Sent to Student' :
-                             contract.status === 'signed' ? 'Awaiting Approval' :
-                             'Approved'}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
-                          <p>Sent: {contract.sent_at ? new Date(contract.sent_at).toLocaleDateString() : 'Not sent'}</p>
-                          {contract.signed_at && (
-                            <p>Signed: {new Date(contract.signed_at).toLocaleDateString()}</p>
-                          )}
-                          {contract.signed_document_url && (
-                            <p>
-                              <a 
-                                href={contract.signed_document_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-xs flex items-center gap-1"
+            <Tabs defaultValue="all">
+              <TabsList>
+                <TabsTrigger value="all">All Contracts</TabsTrigger>
+                <TabsTrigger value="signed">Signed Contracts</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="all">
+                {contracts.length > 0 ? (
+                  <div className="space-y-3">
+                    {contracts.map((contract) => (
+                      <div 
+                        key={contract.id}
+                        className={`border-l-4 rounded-lg p-4 ${
+                          contract.status === 'draft' ? 'border-l-amber-500 bg-amber-50/30' :
+                          contract.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
+                          contract.status === 'signed' ? 'border-l-orange-500 bg-orange-50/30' :
+                          'border-l-green-500 bg-green-50/30'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold">{contract.contract_reference}</h4>
+                              <Badge variant={
+                                contract.status === 'draft' ? 'secondary' :
+                                contract.status === 'sent' ? 'outline' :
+                                contract.status === 'signed' ? 'default' : 'default'
+                              }>
+                                {contract.status === 'draft' ? 'Draft' :
+                                contract.status === 'sent' ? 'Sent to Student' :
+                                contract.status === 'signed' ? 'Awaiting Approval' :
+                                'Approved'}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <p>Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
+                              <p>Sent: {contract.sent_at ? new Date(contract.sent_at).toLocaleDateString() : 'Not sent'}</p>
+                              {contract.signed_at && (
+                                <p>Signed: {new Date(contract.signed_at).toLocaleDateString()}</p>
+                              )}
+                              {contract.signed_document_url && (
+                                <p>
+                                  <a 
+                                    href={contract.signed_document_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline text-xs flex items-center gap-1"
+                                  >
+                                    View Signed Contract
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons (same as before) */}
+                          {contract.status === 'signed' && (
+                            <div className="flex gap-2 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={updatingContractId === contract.id}
+                                onClick={() => updateContractStatus(contract.id, 'completed')}
+                                className="gap-2"
                               >
-                                View Signed Contract
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </p>
+                                <CheckCircle className="h-4 w-4" />
+                                {updatingContractId === contract.id ? 'Approving...' : 'Approve'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={updatingContractId === contract.id}
+                                onClick={() => updateContractStatus(contract.id, 'rejected')}
+                                className="gap-2"
+                              >
+                                <X className="h-4 w-4" />
+                                {updatingContractId === contract.id ? 'Rejecting...' : 'Reject'}
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">No contracts found</p>
+                )}
+              </TabsContent>
 
-                      {/* Action Buttons */}
-                      {contract.status === 'signed' && (
-                        <div className="flex gap-2 flex-shrink-0">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={updatingContractId === contract.id}
-                            onClick={() => updateContractStatus(contract.id, 'completed')}
-                            className="gap-2"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            {updatingContractId === contract.id ? 'Approving...' : 'Approve'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            disabled={updatingContractId === contract.id}
-                            onClick={() => updateContractStatus(contract.id, 'rejected')}
-                            className="gap-2"
-                          >
-                            <X className="h-4 w-4" />
-                            {updatingContractId === contract.id ? 'Rejecting...' : 'Reject'}
-                          </Button>
+              <TabsContent value="signed">
+                {/* List only contracts with signed document URL or signed status */}
+                {contracts.filter(c => c.signed_document_url || c.status === 'signed').length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      {contracts.filter(c => c.signed_document_url || c.status === 'signed').map((contract) => (
+                        <div key={contract.id} className="border rounded-lg p-3 flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-semibold text-sm">{contract.contract_reference}</h4>
+                                <p className="text-xs text-muted-foreground">Signed: {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString() : '—'}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {contract.signed_document_url && (
+                                  <Button size="sm" variant="ghost" onClick={() => setPreviewContract(contract)} className="px-2">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline" onClick={() => updateContractStatus(contract.id, 'completed')} className="px-2">
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => updateContractStatus(contract.id, 'rejected')} className="px-2">
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}
+                            </div>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Preview pane */}
+                    <div>
+                      {previewContract ? (
+                        <div className="border rounded-lg overflow-hidden">
+                          <div className="p-3 border-b bg-surface/50 flex items-center justify-between">
+                            <div className="font-medium">Preview: {previewContract.contract_reference}</div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => window.open(previewContract.signed_document_url, '_blank')}>Open</Button>
+                              <Button size="sm" variant="outline" onClick={() => setPreviewContract(null)}>Close</Button>
+                            </div>
+                          </div>
+                          {previewContract.signed_document_url ? (
+                            <iframe src={previewContract.signed_document_url} title="Signed Contract Preview" className="w-full h-[600px]" />
+                          ) : (
+                            <div className="p-6 text-sm text-muted-foreground">No signed document URL available for preview.</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="border rounded-lg p-6 text-sm text-muted-foreground">Select a signed contract to preview it here.</div>
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No contracts found</p>
-            )}
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">No signed contracts uploaded yet</p>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
