@@ -122,9 +122,10 @@ export default function StudentProfile() {
         .from('contracts')
         .select('*')
         .eq('student_id', studentId)
-        .order('sent_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched contracts:', data);
       setContracts(data || []);
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -297,7 +298,7 @@ export default function StudentProfile() {
     if (studentQuery.isError) {
       setLoading(false);
     }
-  }, [studentQuery.data, studentQuery.isError]);
+  }, [studentQuery.data, studentQuery.isError, studentId]);
 
   // Realtime updates for student's documents and files
   // Debounced realtime updates for documents and files under this student
@@ -307,9 +308,12 @@ export default function StudentProfile() {
       let t: any; return (...args: Parameters<F>) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
     };
     const channel = supabase
-      .channel(`student-docs-${studentId}`)
+      .channel(`student-profile-${studentId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `student_id=eq.${studentId}` }, debounce(() => fetchContracts(), 400))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `student_id=eq.${studentId}` }, debounce(() => {
+        console.log('Contract change detected, refreshing contracts...');
+        fetchContracts();
+      }, 400))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [studentId]);
@@ -947,7 +951,7 @@ export default function StudentProfile() {
                               </Badge>
                             </div>
                             <div className="text-sm text-muted-foreground space-y-1">
-                              <p>Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
+                              <p>Package: {contract.service_package || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
                               <p>Sent: {contract.sent_at ? new Date(contract.sent_at).toLocaleDateString() : 'Not sent'}</p>
                               {contract.signed_at && (
                                 <p>Signed: {new Date(contract.signed_at).toLocaleDateString()}</p>
@@ -1004,7 +1008,11 @@ export default function StudentProfile() {
 
               <TabsContent value="signed">
                 {/* List only contracts with signed document URL or signed status */}
-                {contracts.filter(c => c.signed_document_url || c.status === 'signed').length > 0 ? (
+                {(() => {
+                  const signedContracts = contracts.filter(c => c.signed_document_url || c.status === 'signed');
+                  console.log('Signed contracts filter result:', { total: contracts.length, signed: signedContracts.length, contracts });
+                  return signedContracts.length > 0;
+                })() ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       {contracts.filter(c => c.signed_document_url || c.status === 'signed').map((contract) => (
@@ -1030,7 +1038,7 @@ export default function StudentProfile() {
                               </div>
                             </div>
                             <div className="mt-2 text-xs text-muted-foreground">
-                              Package: {contract.package_name || 'N/A'} | Fee: ₹{contract.service_fee || 0}
+                              Package: {contract.service_package || 'N/A'} | Fee: ₹{contract.service_fee || 0}
                             </div>
                           </div>
                         </div>
