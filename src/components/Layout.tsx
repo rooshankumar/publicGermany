@@ -71,7 +71,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'Applications', icon: GraduationCap },
     { href: '/documents', label: 'Documents', icon: FileText },
-    { href: '/payments', label: 'Contract Only', icon: FileText },
+    { href: '/payments', label: 'Contract', icon: FileText },
     { href: '/reviews', label: 'Write a Review', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ];
