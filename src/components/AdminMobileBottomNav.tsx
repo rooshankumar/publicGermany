@@ -65,7 +65,7 @@ const AdminMobileBottomNav = () => {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-        <ul className="grid grid-cols-5 items-stretch h-14">
+        <ul className="grid grid-cols-5 items-stretch h-12 sm:h-14">
           {primary.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -74,14 +74,14 @@ const AdminMobileBottomNav = () => {
                 <Link
                   to={item.href}
                   className={cn(
-                    'flex-1 relative flex flex-col items-center justify-center text-xs gap-1 rounded-md',
+                    'flex-1 relative flex flex-col items-center justify-center text-[10px] sm:text-xs gap-0.5 rounded-md',
                     active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => {
                     if (item.href === '/admin/requests') { setOpenRequests(0); setSuppressRequests(true); }
                   }}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="leading-none">{item.label}</span>
                   {item.href === '/admin/requests' && openRequests > 0 && !isActive(item.href) && !suppressRequests && (
                     <span className="absolute top-1.5 right-3 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
@@ -97,8 +97,8 @@ const AdminMobileBottomNav = () => {
           <li className="flex">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <button className="flex-1 flex flex-col items-center justify-center text-xs gap-1 rounded-md text-muted-foreground hover:text-foreground" aria-label="More">
-                  <MoreHorizontal className="h-5 w-5" />
+                <button className="flex-1 flex flex-col items-center justify-center text-[10px] sm:text-xs gap-0.5 rounded-md text-muted-foreground hover:text-foreground" aria-label="More">
+                  <MoreHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="leading-none">More</span>
                 </button>
               </SheetTrigger>
