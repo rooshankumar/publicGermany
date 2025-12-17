@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminMobileBottomNav from '@/components/AdminMobileBottomNav';
 import StudentMobileBottomNav from '@/components/StudentMobileBottomNav';
 
@@ -385,21 +386,29 @@ const Layout = ({ children }: LayoutProps) => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={(profile as any)?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {profile?.full_name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    onClick={async () => { await signOut(); navigate('/'); }}
-                    variant="outline"
-                    size="sm"
-                    className="hidden md:inline-flex"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/60">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={(profile as any)?.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            {profile?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          await signOut();
+                          navigate('/');
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
@@ -524,21 +533,29 @@ const Layout = ({ children }: LayoutProps) => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={(profile as any)?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {profile?.full_name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    onClick={async () => { await signOut(); navigate('/'); }}
-                    variant="outline"
-                    size="sm"
-                    className="hidden xl:inline-flex"
-                  >
-                    <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                    <span className="text-xs">Sign Out</span>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/60">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={(profile as any)?.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            {profile?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          await signOut();
+                          navigate('/');
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
