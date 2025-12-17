@@ -11,30 +11,17 @@ export function ExcelTemplate({ onDownload }: ExcelTemplateProps) {
     // Template data structure with example rows
     const templateData = [
       {
-        university_name: 'TU Dortmund University',
-        program_name: 'M.Sc. Data Science',
+        university_name: 'Bingen University of AS',
+        program_name: 'M.Sc. Computer Science',
         ielts_requirement: 'B2',
         german_requirement: 'NA',
-        fees_eur: 300,
-        application_end_date: '2025-01-15',
-        application_method: 'Uni-assist',
-        required_tests: 'Yes',
-        portal_link: 'https://my.uni-assist.de',
-        notes: 'Online self-assessment test required',
-        status: 'draft'
-      },
-      {
-        university_name: 'Trier University',
-        program_name: 'M.Sc. Data Science',
-        ielts_requirement: '6.0',
-        german_requirement: 'NA',
-        fees_eur: 380,
-        application_end_date: '2025-01-15',
-        application_method: 'Direct',
-        required_tests: 'NA',
-        portal_link: 'https://www.uni-trier.de',
-        notes: '',
-        status: 'draft'
+        fees_eur: 0,
+        application_method: 'VPD + University',
+        portal_link: 'https://www2.daad.de/detail/8324/',
+        status: 'draft',
+        notes: 'VPD required',
+        application_start_date: '2026-05-02',
+        application_end_date: '2026-06-15'
       },
       // Add empty rows for users to fill
       ...Array(10).fill(null).map(() => ({
@@ -43,12 +30,12 @@ export function ExcelTemplate({ onDownload }: ExcelTemplateProps) {
         ielts_requirement: '',
         german_requirement: '',
         fees_eur: '',
-        application_end_date: '',
         application_method: '',
-        required_tests: '',
         portal_link: '',
+        status: 'draft',
         notes: '',
-        status: 'draft'
+        application_start_date: '',
+        application_end_date: ''
       }))
     ];
 

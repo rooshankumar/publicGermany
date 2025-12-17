@@ -124,72 +124,109 @@ export function ExcelUpload({ onUpload }: ExcelUploadProps) {
             // Smart date parsing - handle multiple formats and extract BOTH start and end dates
             let startDate = null;
             let endDate = null;
-            let appDate = row.application_end_date || row.Deadline || row.end_date || row.deadline || row.DATE || null;
-            
-            if (appDate !== null && appDate !== undefined && appDate !== '') {
-              // Check if it's an Excel serial number (number type or numeric string)
-              if (typeof appDate === 'number' || (typeof appDate === 'string' && /^\d+$/.test(appDate))) {
-                // Convert Excel serial date to JavaScript Date
+
+            const parseDate = (value: any): string | null => {
+              if (value === null || value === undefined || value === '') return null;
+
+              // Excel serial number (number type or numeric string)
+              if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value))) {
                 const excelEpoch = new Date(1899, 11, 30);
-                const serialNumber = typeof appDate === 'number' ? appDate : parseInt(appDate);
+                const serialNumber = typeof value === 'number' ? value : parseInt(value);
                 const jsDate = new Date(excelEpoch.getTime() + serialNumber * 86400000);
-                
-                // Format as YYYY-MM-DD
+
                 const year = jsDate.getFullYear();
                 const month = String(jsDate.getMonth() + 1).padStart(2, '0');
                 const day = String(jsDate.getDate()).padStart(2, '0');
-                endDate = `${year}-${month}-${day}`;
+                return `${year}-${month}-${day}`;
               }
-              // Handle string dates
-              else if (typeof appDate === 'string') {
-                // Normalize different dash characters (-, –, —) to standard dash
-                appDate = appDate.replace(/[–—]/g, '-');
-                
-                const monthMap: any = {
-                  'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-                  'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                };
-                
-                // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15", "Aug 1 - Nov 15"
-                const dateRangeMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
-                if (dateRangeMatch) {
-                  const [, startMonth, startDay, endMonth, endDay] = dateRangeMatch;
-                  
-                  const startMonthNum = parseInt(monthMap[startMonth] || '01');
-                  const endMonthNum = parseInt(monthMap[endMonth] || '01');
-                  
-                  // Smart year detection based on current date
-                  const now = new Date();
-                  const currentYear = now.getFullYear();
-                  const currentMonth = now.getMonth() + 1; // 0-indexed, so add 1
-                  
-                  // Start date: if month is before current month, assume next year
-                  // Otherwise, use current year
-                  let startYear = startMonthNum < currentMonth ? currentYear + 1 : currentYear;
-                  
-                  // End date: if end month is before start month, it's next year after start
-                  // Otherwise, same year as start
-                  let endYear = endMonthNum < startMonthNum ? startYear + 1 : startYear;
-                  
-                  // Parse start date
-                  startDate = `${startYear}-${startMonthNum.toString().padStart(2, '0')}-${startDay.padStart(2, '0')}`;
-                  
-                  // Parse end date
-                  endDate = `${endYear}-${endMonthNum.toString().padStart(2, '0')}-${endDay.padStart(2, '0')}`;
+
+              if (typeof value === 'string') {
+                const str = value.trim();
+                // Already in YYYY-MM-DD
+                if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                  return str;
                 }
-                // Handle single date like "Nov 15", "Oct 31"
-                else {
-                  const singleDateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)/);
-                  if (singleDateMatch) {
-                    const [, month, day] = singleDateMatch;
-                    const monthNum = monthMap[month] || '01';
-                    endDate = `2025-${monthNum}-${day.padStart(2, '0')}`;
-                    // If only one date, assume it's the deadline (end date)
-                    startDate = null;
+              }
+
+              return null;
+            };
+
+            // Prefer explicit start/end columns from the sheet when present
+            const rawStart = row.application_start_date || row.start_date || row['Application Start Date'] || null;
+            const rawEnd = row.application_end_date || row.end_date || row['Application End Date'] || row.Deadline || row.deadline || row.DATE || null;
+
+            if (rawStart || rawEnd) {
+              startDate = parseDate(rawStart);
+              endDate = parseDate(rawEnd);
+            } else {
+              // Backwards compatibility: support legacy single deadline / date-range formats
+              let appDate = row.application_end_date || row.Deadline || row.end_date || row.deadline || row.DATE || null;
+              
+              if (appDate !== null && appDate !== undefined && appDate !== '') {
+                // Check if it's an Excel serial number (number type or numeric string)
+                if (typeof appDate === 'number' || (typeof appDate === 'string' && /^\d+$/.test(appDate))) {
+                  // Convert Excel serial date to JavaScript Date
+                  const excelEpoch = new Date(1899, 11, 30);
+                  const serialNumber = typeof appDate === 'number' ? appDate : parseInt(appDate);
+                  const jsDate = new Date(excelEpoch.getTime() + serialNumber * 86400000);
+                  
+                  // Format as YYYY-MM-DD
+                  const year = jsDate.getFullYear();
+                  const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(jsDate.getDate()).padStart(2, '0');
+                  endDate = `${year}-${month}-${day}`;
+                }
+                // Handle string dates
+                else if (typeof appDate === 'string') {
+                  // Normalize different dash characters (-, –, —) to standard dash
+                  appDate = appDate.replace(/[–—]/g, '-');
+                  
+                  const monthMap: any = {
+                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+                    'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                  };
+                  
+                  // Handle formats like "Nov 15 - Jan 15", "Dec 15 - Jan 15", "Aug 1 - Nov 15"
+                  const dateRangeMatch = appDate.match(/([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s+(\d+)/);
+                  if (dateRangeMatch) {
+                    const [, startMonth, startDay, endMonth, endDay] = dateRangeMatch;
+                    
+                    const startMonthNum = parseInt(monthMap[startMonth] || '01');
+                    const endMonthNum = parseInt(monthMap[endMonth] || '01');
+                    
+                    // Smart year detection based on current date
+                    const now = new Date();
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth() + 1; // 0-indexed, so add 1
+                    
+                    // Start date: if month is before current month, assume next year
+                    // Otherwise, use current year
+                    let startYear = startMonthNum < currentMonth ? currentYear + 1 : currentYear;
+                    
+                    // End date: if end month is before start month, it's next year after start
+                    // Otherwise, same year as start
+                    let endYear = endMonthNum < startMonthNum ? startYear + 1 : startYear;
+                    
+                    // Parse start date
+                    startDate = `${startYear}-${startMonthNum.toString().padStart(2, '0')}-${startDay.padStart(2, '0')}`;
+                    
+                    // Parse end date
+                    endDate = `${endYear}-${endMonthNum.toString().padStart(2, '0')}-${endDay.padStart(2, '0')}`;
                   }
-                  // If already in YYYY-MM-DD format, use as end date
-                  else if (/^\d{4}-\d{2}-\d{2}$/.test(appDate)) {
-                    endDate = appDate;
+                  // Handle single date like "Nov 15", "Oct 31"
+                  else {
+                    const singleDateMatch = appDate.match(/([A-Za-z]+)\s+(\d+)/);
+                    if (singleDateMatch) {
+                      const [, month, day] = singleDateMatch;
+                      const monthNum = monthMap[month] || '01';
+                      endDate = `2025-${monthNum}-${day.padStart(2, '0')}`;
+                      // If only one date, assume it's the deadline (end date)
+                      startDate = null;
+                    }
+                    // If already in YYYY-MM-DD format, use as end date
+                    else if (/^\d{4}-\d{2}-\d{2}$/.test(appDate)) {
+                      endDate = appDate;
+                    }
                   }
                 }
               }
