@@ -152,6 +152,7 @@ function Navbar() {
           <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
           <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
           <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
+          <Link to="/blog" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Blog</Link>
           <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
@@ -186,6 +187,7 @@ function Navbar() {
               <a href="#testimonials" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
               <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
               <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
+              <Link to="/blog" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Blog</Link>
               <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
               <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
               <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>

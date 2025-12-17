@@ -83,6 +83,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
     { href: '/admin/contracts', label: 'Contracts', icon: FileText },
+    { href: '/admin/blog', label: 'Blog Management', icon: FileText },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
   ];

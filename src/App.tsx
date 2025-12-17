@@ -18,6 +18,8 @@ const Services = lazy(() => import("./pages/ServicesNew"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Requests = lazy(() => import("./pages/admin/Requests"));
@@ -34,6 +36,7 @@ const Universities = lazy(() => import("./pages/admin/Universities"));
 const AdminReviews = lazy(() => import("./pages/admin/Reviews"));
 const AdminResources = lazy(() => import("./pages/admin/Resources"));
 const AdminContracts = lazy(() => import("./pages/admin/Contracts"));
+const AdminBlog = lazy(() => import("./pages/admin/Blog"));
 const AdminContractHistory = lazy(() => import("./pages/admin/ContractHistory"));
 const StudentPaymentsPage = lazy(() => import("./pages/StudentPayments"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
@@ -92,6 +95,7 @@ const AppRoutes = () => {
         import('./pages/admin/Universities');
         import('./pages/admin/Reviews');
         import('./pages/admin/Resources');
+        import('./pages/admin/Blog');
       }
     }
   }, [loading, user, profile?.role]);
@@ -152,7 +156,9 @@ const AppRoutes = () => {
         } />
         {/* Make Contact public so it's accessible from the home page */}
         <Route path="/contact" element={<Contact />} />
-        {/* Public Help Center */}
+        {/* Public Blog and Help Center */}
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/help" element={<Help />} />
         <Route path="/admin" element={
           <ProtectedRoute requiredRole="admin">
@@ -215,6 +221,11 @@ const AppRoutes = () => {
         <Route path="/admin/resources" element={
           <ProtectedRoute requiredRole="admin">
             <AdminResources />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/blog" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminBlog />
           </ProtectedRoute>
         } />
         <Route path="/admin/contracts" element={
