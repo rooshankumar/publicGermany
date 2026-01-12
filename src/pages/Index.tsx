@@ -206,7 +206,7 @@ function Navbar() {
   );
 }
 
-function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
+function HeroSection({ onGetStarted, studentCount }: { onGetStarted: () => void; studentCount: number | null }) {
   return (
     <section className="relative py-16 md:py-24 lg:py-28 overflow-hidden">
       {/* Background gradient */}
@@ -223,7 +223,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 md:mb-8">
             <Badge className="trust-badge animate-fade-in">
               <Award className="w-3 h-3" />
-              50+ Students Guided
+              {studentCount ? `${studentCount}+` : '50+'} Students Guided
             </Badge>
             <Badge className="trust-badge animate-fade-in">
               <Star className="w-3 h-3" />
@@ -278,7 +278,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
           {/* Social proof */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto place-items-center text-center animate-fade-in">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2">50+</div>
+              <div className="text-3xl font-bold text-primary mb-2">{studentCount ? `${studentCount}+` : '50+'}</div>
               <div className="text-sm text-muted-foreground">Students Guided Successfully</div>
             </div>
             <div className="text-center">
@@ -717,6 +717,19 @@ function GermanyFlagBar() {
 const Index = () => {
   const navigate = useNavigate();
   
+  // Live student count query
+  const { data: studentCount } = useQuery({
+    queryKey: ['student-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'student');
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+  
   const handleGetStarted = () => {
     navigate('/auth');
   };
@@ -730,7 +743,7 @@ const Index = () => {
       </ErrorBoundary>
       <GermanyFlagBar />
       <main className="flex-1">
-        <HeroSection onGetStarted={handleGetStarted} />
+        <HeroSection onGetStarted={handleGetStarted} studentCount={studentCount ?? null} />
         {/* Testimonials highlighted section */}
         <TestimonialsSection />
         <div className="border-t border-border" />
