@@ -970,15 +970,22 @@ export default function StudentProfile() {
                               )}
                               {contract.signed_document_url && (
                                 <p>
-                                  <a 
-                                    href={contract.signed_document_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                  <button 
+                                    onClick={() => {
+                                      const firstName = student?.full_name?.split(' ')[0] || 'Student';
+                                      const link = document.createElement('a');
+                                      link.href = contract.signed_document_url!;
+                                      link.download = `${firstName}_SignedContract.pdf`;
+                                      link.target = '_blank';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }}
                                     className="text-primary hover:underline text-xs flex items-center gap-1"
                                   >
-                                    View Signed Contract
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
+                                    Download Signed Contract
+                                    <Download className="h-3 w-3" />
+                                  </button>
                                 </p>
                               )}
                             </div>
@@ -1064,7 +1071,16 @@ export default function StudentProfile() {
                           <div className="p-3 border-b bg-surface/50 flex items-center justify-between">
                             <div className="font-medium">Preview: {previewContract.contract_reference}</div>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => window.open(previewContract.signed_document_url, '_blank')}>Open</Button>
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                const firstName = student?.full_name?.split(' ')[0] || 'Student';
+                                const link = document.createElement('a');
+                                link.href = previewContract.signed_document_url!;
+                                link.download = `${firstName}_SignedContract.pdf`;
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}>Download</Button>
                               <Button size="sm" variant="outline" onClick={() => setPreviewContract(null)}>Close</Button>
                             </div>
                           </div>

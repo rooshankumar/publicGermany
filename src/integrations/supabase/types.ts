@@ -145,6 +145,74 @@ export type Database = {
           },
         ]
       }
+      blogs: {
+        Row: {
+          author_id: string | null
+          category: string
+          content_markdown: string
+          created_at: string
+          excerpt: string | null
+          featured_image_url: string | null
+          id: string
+          published_at: string | null
+          read_time_minutes: number | null
+          scheduled_for: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          category: string
+          content_markdown: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          read_time_minutes?: number | null
+          scheduled_for?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string
+          content_markdown?: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          read_time_minutes?: number | null
+          scheduled_for?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blogs_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           created_at: string
@@ -236,6 +304,8 @@ export type Database = {
           expected_end_date: string | null
           id: string
           payment_structure: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           sent_at: string | null
           service_description: string | null
           service_fee: string
@@ -264,6 +334,8 @@ export type Database = {
           expected_end_date?: string | null
           id?: string
           payment_structure?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sent_at?: string | null
           service_description?: string | null
           service_fee: string
@@ -292,6 +364,8 @@ export type Database = {
           expected_end_date?: string | null
           id?: string
           payment_structure?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sent_at?: string | null
           service_description?: string | null
           service_fee?: string
