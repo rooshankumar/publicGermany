@@ -867,9 +867,18 @@ export default function Contracts() {
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {c.signed_document_url && (
-                            <Button variant="outline" size="sm" onClick={() => window.open(c.signed_document_url!, '_blank')}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Signed PDF
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const firstName = c.student_name?.split(' ')[0] || 'Student';
+                              const link = document.createElement('a');
+                              link.href = c.signed_document_url!;
+                              link.download = `${firstName}_SignedContract.pdf`;
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}>
+                              <Download className="h-4 w-4 mr-1" />
+                              Download Signed PDF
                             </Button>
                           )}
                           <Button size="sm" variant="default" onClick={async () => {
