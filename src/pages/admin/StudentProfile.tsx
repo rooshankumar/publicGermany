@@ -332,11 +332,19 @@ export default function StudentProfile() {
 
   const downloadDocument = async (doc: any) => {
     try {
+      // Get student first name for proper filename
+      const firstName = student?.full_name?.split(' ')[0] || 'Student';
+      
+      // Extract document category/name for filename
+      const docCategory = doc.category || 'Document';
+      const fileExt = doc.file_name?.split('.').pop() || 'pdf';
+      const downloadName = `${firstName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`;
+      
       // If we have a public URL, use it directly
       if (doc.file_url && typeof doc.file_url === 'string') {
         const link = document.createElement('a');
         link.href = doc.file_url;
-        link.download = doc.file_name || 'document';
+        link.download = downloadName;
         link.click();
         return;
       }
@@ -349,7 +357,7 @@ export default function StudentProfile() {
         if (data?.signedUrl) {
           const link = document.createElement('a');
           link.href = data.signedUrl;
-          link.download = doc.file_name || 'document';
+          link.download = downloadName;
           link.click();
           return;
         }
