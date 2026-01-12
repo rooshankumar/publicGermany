@@ -221,8 +221,11 @@ function HeroSection({ onGetStarted, studentCount }: { onGetStarted: () => void;
         <div className="text-center">
           {/* Trust indicators */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 md:mb-8">
-            <Badge className="trust-badge animate-fade-in">
-              <Award className="w-3 h-3" />
+            <Badge className="trust-badge animate-fade-in flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+              </span>
               {studentCount ? `${studentCount}+` : '50+'} Students Guided
             </Badge>
             <Badge className="trust-badge animate-fade-in">
@@ -278,8 +281,17 @@ function HeroSection({ onGetStarted, studentCount }: { onGetStarted: () => void;
           {/* Social proof */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto place-items-center text-center animate-fade-in">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2">{studentCount ? `${studentCount}+` : '50+'}</div>
-              <div className="text-sm text-muted-foreground">Students Guided Successfully</div>
+              <div className="text-3xl font-bold text-primary mb-2 flex items-center justify-center gap-2">
+                <span className="relative">
+                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-success rounded-full animate-ping"></span>
+                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-success rounded-full"></span>
+                </span>
+                {studentCount ? `${studentCount}+` : '50+'}
+              </div>
+              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>
+                Live Students Guided
+              </div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-success mb-2">1.5+</div>
