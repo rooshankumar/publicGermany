@@ -59,6 +59,12 @@ export const DOCUMENTS = [
   { key: 'health_insurance', label: '📄 Proof of Health Insurance', maxFiles: 2 },
 ];
 
+export type RequiredDocumentDef = {
+  key: string;
+  label: string;
+  maxFiles: number;
+};
+
 // Map document keys to standardized base filenames used when storing files.
 const CATEGORY_BASE_FILENAME: Record<string, string> = {
   passport_copy: 'Passport',
@@ -107,17 +113,19 @@ interface DocumentMeta {
 
 interface APSProps {
   displayName?: string;
+  requiredDocuments?: RequiredDocumentDef[];
   additionalDocs?: any[];
   onUploadAdditional?: () => void;
   onDeleteAdditional?: (doc: any) => void;
 }
 
-function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditional, onDeleteAdditional }: APSProps) {
+function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs = [], onUploadAdditional, onDeleteAdditional }: APSProps) {
   const { profile } = useAuth();
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+  const requiredList = requiredDocuments && requiredDocuments.length > 0 ? requiredDocuments : (DOCUMENTS as RequiredDocumentDef[]);
   
   // Helper to render a consistent, brand-styled status pill
   const renderStatusPill = (status?: string) => {
@@ -146,7 +154,7 @@ function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditi
       
       // Initialize docMap with all document keys set to null first
       const docMap: Record<string, DocumentMeta | null> = {};
-      DOCUMENTS.forEach(doc => {
+      requiredList.forEach(doc => {
         docMap[doc.key] = null; // Initialize all to null first
       });
       
@@ -164,7 +172,7 @@ function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditi
       console.error('Error fetching documents:', error);
       // Initialize with null values if there's an error
       const docMap: Record<string, null> = {};
-      DOCUMENTS.forEach(doc => {
+      requiredList.forEach(doc => {
         docMap[doc.key] = null;
       });
       setDocs(docMap);
@@ -268,7 +276,7 @@ function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditi
         const { data: { user } } = await supabase.auth.getUser();
         const to = user?.email;
         if (to) {
-          const label = (DOCUMENTS.find(d => d.key === key)?.label || key).replace('📄 ', '');
+          const label = (requiredList.find(d => d.key === key)?.label || key).replace('📄 ', '');
           await sendEmail(
             to,
             'We received your document',
@@ -351,7 +359,7 @@ function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditi
 
         {/* Desktop/Tablet: existing list */}
         <div className="hidden md:flex flex-col gap-3">
-          {DOCUMENTS.map(doc => (
+          {requiredList.map(doc => (
             <div key={doc.key} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border bg-background">
               <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium text-foreground">
                 <span>{doc.label}</span>
@@ -420,11 +428,11 @@ function APSRequiredDocuments({ displayName, additionalDocs = [], onUploadAdditi
         {/* Mobile: Accordion */}
         <div className="md:hidden pb-24">
           <Accordion type="single" collapsible className="w-full">
-            {DOCUMENTS.map(doc => (
+            {requiredList.map(doc => (
               <AccordionItem key={doc.key} value={doc.key}>
                 <AccordionTrigger className="text-left px-3">
                   <div className="flex items-center justify-between w-full gap-2">
-                    <span className="font-medium text-sm text-foreground leading-tight break-words" style={{maxWidth:'75%'}}>{doc.label}</span>
+                    <span className="font-medium break-words whitespace-normal">{doc.label}</span>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
