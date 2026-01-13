@@ -832,17 +832,7 @@ export default function StudentProfile() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={async () => {
-                          const { data } = await supabase.storage
-                            .from('documents')
-                            .createSignedUrl(doc.upload_path, 300, { download: doc.file_name });
-                          if (data?.signedUrl) {
-                            const a = document.createElement('a');
-                            a.href = data.signedUrl;
-                            a.download = doc.file_name;
-                            a.click();
-                          }
-                        }}
+                        onClick={() => downloadDocument(doc)}
                         title="Download"
                         className="px-2"
                       >

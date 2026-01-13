@@ -43,7 +43,7 @@ const Auth = () => {
         .eq('status', 'completed');
       return count || 0;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // Cache for 30 seconds
   });
 
   const handleSignIn = async (e: React.FormEvent) => {
