@@ -764,7 +764,7 @@ const Index = () => {
         .eq('status', 'completed');
       return count || 0;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 30 * 1000, // Cache for 30 seconds only
   });
   
   const handleGetStarted = () => {
