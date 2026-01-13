@@ -13,38 +13,38 @@ import { Badge } from '@/components/ui/badge';
 export const DOCUMENTS = [
   // Personal Documents
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
-  { key: 'passport_photo', label: '📷 Passport Size Photograph (White Background)', maxFiles: 1 },
-  { key: 'signature', label: '✍️ Signature', maxFiles: 1 },
+  { key: 'passport_photo', label: '📄 Passport Size Photograph (White Background)', maxFiles: 1 },
+  { key: 'signature', label: '📄 Signature', maxFiles: 1 },
   
   // School Documents
   { key: 'class_x', label: '📄 Class X Marksheet and Certificate', maxFiles: 2 },
   { key: 'class_xii', label: '📄 Class XII Marksheet and Certificate', maxFiles: 2 },
   
   // Bachelor's Degree Documents
-  { key: 'bachelor_degree_certificate', label: '🎓 Bachelor Degree Certificate', maxFiles: 1 },
+  { key: 'bachelor_degree_certificate', label: '📄 Bachelor Degree Certificate', maxFiles: 1 },
   { key: 'bachelor_degree_transcript', label: '📄 Bachelor Degree Transcript', maxFiles: 1 },
   { key: 'bachelor_all_sem_marksheets', label: '📄 Bachelor Degree All Semesters Marksheets', maxFiles: 10 },
   
   // Master's Degree Documents (if applicable)
-  { key: 'master_degree_certificate', label: '🎓 Master Degree Certificate (if applicable)', maxFiles: 1 },
+  { key: 'master_degree_certificate', label: '📄 Master Degree Certificate (if applicable)', maxFiles: 1 },
   { key: 'master_degree_transcript', label: '📄 Master Degree Transcript (if applicable)', maxFiles: 1 },
   { key: 'master_all_sem_marksheets', label: '📄 Master Degree All Semesters Marksheets (if applicable)', maxFiles: 10 },
   
   // Language Certificates
-  { key: 'english_language_certificate', label: '🌐 English Language Certificate (IELTS/TOEFL)', maxFiles: 2 },
-  { key: 'german_language_certificate', label: '🇩🇪 German Language Certificate (Goethe/TestDaF)', maxFiles: 2 },
+  { key: 'english_language_certificate', label: '📄 English Language Certificate (IELTS/TOEFL)', maxFiles: 2 },
+  { key: 'german_language_certificate', label: '📄 German Language Certificate (Goethe/TestDaF)', maxFiles: 2 },
   
   // Recommendation Letters
-  { key: 'recommendation_letter_1', label: '📝 Recommendation Letter 1', maxFiles: 1 },
-  { key: 'recommendation_letter_2', label: '📝 Recommendation Letter 2', maxFiles: 1 },
+  { key: 'recommendation_letter_1', label: '📄 Recommendation Letter 1', maxFiles: 1 },
+  { key: 'recommendation_letter_2', label: '📄 Recommendation Letter 2', maxFiles: 1 },
   
   // Work Experience Documents
-  { key: 'work_experience_1', label: '💼 Work Experience - Offer & Experience Certificate 1', maxFiles: 2 },
-  { key: 'work_experience_2', label: '💼 Work Experience - Offer & Experience Certificate 2', maxFiles: 2 },
+  { key: 'work_experience_1', label: '📄 Work Experience - Offer & Experience Certificate 1', maxFiles: 2 },
+  { key: 'work_experience_2', label: '📄 Work Experience - Offer & Experience Certificate 2', maxFiles: 2 },
   
   // Official Academic Documents
-  { key: 'official_grading_certificate', label: '📊 Official Grading Certificate', maxFiles: 1 },
-  { key: 'ects_conversion_certificate', label: '📊 Official Credit Points to ECTS Conversion Certificate', maxFiles: 1 },
+  { key: 'official_grading_certificate', label: '📄 Official Grading Certificate', maxFiles: 1 },
+  { key: 'ects_conversion_certificate', label: '📄 Official Credit Points to ECTS Conversion Certificate', maxFiles: 1 },
   
   // Application Documents
   { key: 'motivation_letter', label: '📄 Motivation Letter / SOP (LOM)', maxFiles: 2 },
@@ -55,8 +55,8 @@ export const DOCUMENTS = [
   { key: 'admission_letter', label: '📄 Admission Letter', maxFiles: 1 },
   
   // Financial & Insurance
-  { key: 'financial_proof', label: '💰 Financial Proof / Blocked Account', maxFiles: 3 },
-  { key: 'health_insurance', label: '🏥 Proof of Health Insurance', maxFiles: 2 },
+  { key: 'financial_proof', label: '📄 Financial Proof / Blocked Account', maxFiles: 3 },
+  { key: 'health_insurance', label: '📄 Proof of Health Insurance', maxFiles: 2 },
 ];
 
 // Map document keys to standardized base filenames used when storing files.
