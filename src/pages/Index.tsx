@@ -206,7 +206,7 @@ function Navbar() {
   );
 }
 
-function HeroSection({ onGetStarted, studentCount }: { onGetStarted: () => void; studentCount: number | null }) {
+function HeroSection({ onGetStarted, studentCount, servicesCount }: { onGetStarted: () => void; studentCount: number | null; servicesCount: number | null }) {
   return (
     <section className="relative py-16 md:py-24 lg:py-28 overflow-hidden">
       {/* Background gradient */}
@@ -297,7 +297,19 @@ function HeroSection({ onGetStarted, studentCount }: { onGetStarted: () => void;
               <div className="text-3xl font-bold text-success mb-2">1.5+</div>
               <div className="text-sm text-muted-foreground">Years of Experience</div>
             </div>
-            {/* Removed Partner Universities until verified */}
+            <div className="text-center">
+              <div className="text-3xl font-bold text-warning mb-2 flex items-center justify-center gap-2">
+                <span className="relative">
+                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-warning rounded-full animate-ping"></span>
+                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-warning rounded-full"></span>
+                </span>
+                {servicesCount ? `${servicesCount}+` : '10+'}
+              </div>
+              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 bg-warning rounded-full animate-pulse"></span>
+                Happy Services
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -742,6 +754,19 @@ const Index = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
   
+  // Live services count query (completed service requests)
+  const { data: servicesCount } = useQuery({
+    queryKey: ['services-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('service_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed');
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+  
   const handleGetStarted = () => {
     navigate('/auth');
   };
@@ -755,7 +780,7 @@ const Index = () => {
       </ErrorBoundary>
       <GermanyFlagBar />
       <main className="flex-1">
-        <HeroSection onGetStarted={handleGetStarted} studentCount={studentCount ?? null} />
+        <HeroSection onGetStarted={handleGetStarted} studentCount={studentCount ?? null} servicesCount={servicesCount ?? null} />
         {/* Testimonials highlighted section */}
         <TestimonialsSection />
         <div className="border-t border-border" />

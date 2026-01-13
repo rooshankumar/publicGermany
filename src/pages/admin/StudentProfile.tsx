@@ -332,38 +332,49 @@ export default function StudentProfile() {
 
   const downloadDocument = async (doc: any) => {
     try {
-      // Get student first name for proper filename
-      const firstName = student?.full_name?.split(' ')[0] || 'Student';
+      // Get student first and last name for proper filename
+      const nameParts = student?.full_name?.split(' ') || ['Student'];
+      const firstName = nameParts[0] || 'Student';
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       
       // Extract document category/name for filename
       const docCategory = doc.category || 'Document';
       const fileExt = doc.file_name?.split('.').pop() || 'pdf';
-      const downloadName = `${firstName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`;
+      const downloadName = lastName 
+        ? `${firstName}_${lastName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`
+        : `${firstName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`;
       
-      // If we have a public URL, use it directly
-      if (doc.file_url && typeof doc.file_url === 'string') {
-        const link = document.createElement('a');
-        link.href = doc.file_url;
-        link.download = downloadName;
-        link.click();
-        return;
-      }
-
-      // Fallback: try to create a signed URL if upload_path exists
-      if (doc.upload_path) {
+      // Get the URL to fetch
+      let fileUrl = doc.file_url;
+      
+      // If no public URL, try to create a signed URL
+      if (!fileUrl && doc.upload_path) {
         const { data } = await supabase.storage
           .from('documents')
           .createSignedUrl(doc.upload_path, 300);
         if (data?.signedUrl) {
-          const link = document.createElement('a');
-          link.href = data.signedUrl;
-          link.download = downloadName;
-          link.click();
-          return;
+          fileUrl = data.signedUrl;
         }
       }
-
-      toast({ title: 'Unavailable', description: 'No downloadable link for this file', variant: 'destructive' });
+      
+      if (!fileUrl) {
+        toast({ title: 'Unavailable', description: 'No downloadable link for this file', variant: 'destructive' });
+        return;
+      }
+      
+      // Fetch the file as blob and download with proper filename
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: 'Error', description: 'Failed to download document', variant: 'destructive' });
