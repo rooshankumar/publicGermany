@@ -11,42 +11,89 @@ import { sendEmail } from '@/lib/sendEmail';
 import { Badge } from '@/components/ui/badge';
 
 export const DOCUMENTS = [
+  // Personal Documents
   { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
-  { key: 'admission_letter', label: '📄 Admission Letter', maxFiles: 1 },
-  { key: 'aps_certificate', label: '📄 APS Certificate', maxFiles: 2 },
-  { key: 'health_insurance', label: '📄 Proof of Health Insurance', maxFiles: 2 },
-  { key: 'academic_transcripts', label: '📄 Academic Transcripts / Marksheets', maxFiles: 10 },
-  { key: 'degree_certificate', label: '📄 Degree Certificate', maxFiles: 2 },
-  { key: 'language_certificates', label: '📄 Language Certificates (IELTS/Goethe, etc.)', maxFiles: 2 },
+  { key: 'passport_photo', label: '📷 Passport Size Photograph (White Background)', maxFiles: 1 },
+  { key: 'signature', label: '✍️ Signature', maxFiles: 1 },
+  
+  // School Documents
+  { key: 'class_x', label: '📄 Class X Marksheet and Certificate', maxFiles: 2 },
+  { key: 'class_xii', label: '📄 Class XII Marksheet and Certificate', maxFiles: 2 },
+  
+  // Bachelor's Degree Documents
+  { key: 'bachelor_degree_certificate', label: '🎓 Bachelor Degree Certificate', maxFiles: 1 },
+  { key: 'bachelor_degree_transcript', label: '📄 Bachelor Degree Transcript', maxFiles: 1 },
+  { key: 'bachelor_all_sem_marksheets', label: '📄 Bachelor Degree All Semesters Marksheets', maxFiles: 10 },
+  
+  // Master's Degree Documents (if applicable)
+  { key: 'master_degree_certificate', label: '🎓 Master Degree Certificate (if applicable)', maxFiles: 1 },
+  { key: 'master_degree_transcript', label: '📄 Master Degree Transcript (if applicable)', maxFiles: 1 },
+  { key: 'master_all_sem_marksheets', label: '📄 Master Degree All Semesters Marksheets (if applicable)', maxFiles: 10 },
+  
+  // Language Certificates
+  { key: 'english_language_certificate', label: '🌐 English Language Certificate (IELTS/TOEFL)', maxFiles: 2 },
+  { key: 'german_language_certificate', label: '🇩🇪 German Language Certificate (Goethe/TestDaF)', maxFiles: 2 },
+  
+  // Recommendation Letters
+  { key: 'recommendation_letter_1', label: '📝 Recommendation Letter 1', maxFiles: 1 },
+  { key: 'recommendation_letter_2', label: '📝 Recommendation Letter 2', maxFiles: 1 },
+  
+  // Work Experience Documents
+  { key: 'work_experience_1', label: '💼 Work Experience - Offer & Experience Certificate 1', maxFiles: 2 },
+  { key: 'work_experience_2', label: '💼 Work Experience - Offer & Experience Certificate 2', maxFiles: 2 },
+  
+  // Official Academic Documents
+  { key: 'official_grading_certificate', label: '📊 Official Grading Certificate', maxFiles: 1 },
+  { key: 'ects_conversion_certificate', label: '📊 Official Credit Points to ECTS Conversion Certificate', maxFiles: 1 },
+  
+  // Application Documents
   { key: 'motivation_letter', label: '📄 Motivation Letter / SOP (LOM)', maxFiles: 2 },
   { key: 'cv', label: '📄 CV / Resume', maxFiles: 1 },
-  { key: 'recommendation_letter', label: '📄 Recommendation Letter(s) (LOR)', maxFiles: 1 },
-  { key: 'financial_proof', label: '📄 Financial Proof / Blocked Account', maxFiles: 3 },
-  { key: 'class_x', label: '📄 Copy of Class X Marksheet and Certificate', maxFiles: 2 },
-  { key: 'class_xii', label: '📄 Copy of Class XII Marksheet and Certificate', maxFiles: 2 },
-  { key: 'all_sem_marksheets', label: '📄 Copy of Marksheets of all semesters (Bachelor/Master, if applicable)', maxFiles: 10 },
-  { key: 'bachelor_degree', label: '📄 Copy of Bachelor’s Degree and Transcript', maxFiles: 2 },
-  { key: 'master_degree', label: '📄 Copy of Master’s Degree and Transcripts (if applicable)', maxFiles: 2 },
+  
+  // APS & Admission
+  { key: 'aps_certificate', label: '📄 APS Certificate', maxFiles: 2 },
+  { key: 'admission_letter', label: '📄 Admission Letter', maxFiles: 1 },
+  
+  // Financial & Insurance
+  { key: 'financial_proof', label: '💰 Financial Proof / Blocked Account', maxFiles: 3 },
+  { key: 'health_insurance', label: '🏥 Proof of Health Insurance', maxFiles: 2 },
 ];
 
 // Map document keys to standardized base filenames used when storing files.
 const CATEGORY_BASE_FILENAME: Record<string, string> = {
   passport_copy: 'Passport',
-  admission_letter: 'Admission Letter',
-  aps_certificate: 'APS Certificate',
-  health_insurance: 'Proof of Health Insurance',
-  academic_transcripts: 'Academic Transcripts',
-  degree_certificate: 'Degree Certificate',
-  language_certificates: 'Language Certificates',
-  motivation_letter: 'Motivation Letter',
-  cv: 'CV',
-  recommendation_letter: 'Recommendation Letter',
-  financial_proof: 'Financial Proof',
-  class_x: 'Class X marksheets and certificate',
-  class_xii: 'Class XII marksheets and certificate',
-  all_sem_marksheets: 'All Semester Marksheets',
-  bachelor_degree: 'Bachelor Degree and Transcript',
-  master_degree: "Master's Degree and Transcripts",
+  passport_photo: 'Passport_Photo',
+  signature: 'Signature',
+  class_x: 'Class_X_Marksheet_Certificate',
+  class_xii: 'Class_XII_Marksheet_Certificate',
+  bachelor_degree_certificate: 'Bachelor_Degree_Certificate',
+  bachelor_degree_transcript: 'Bachelor_Degree_Transcript',
+  bachelor_all_sem_marksheets: 'Bachelor_All_Semester_Marksheets',
+  master_degree_certificate: 'Master_Degree_Certificate',
+  master_degree_transcript: 'Master_Degree_Transcript',
+  master_all_sem_marksheets: 'Master_All_Semester_Marksheets',
+  english_language_certificate: 'English_Language_Certificate',
+  german_language_certificate: 'German_Language_Certificate',
+  recommendation_letter_1: 'Recommendation_Letter_1',
+  recommendation_letter_2: 'Recommendation_Letter_2',
+  work_experience_1: 'Work_Experience_Certificate_1',
+  work_experience_2: 'Work_Experience_Certificate_2',
+  official_grading_certificate: 'Official_Grading_Certificate',
+  ects_conversion_certificate: 'ECTS_Conversion_Certificate',
+  motivation_letter: 'Motivation_Letter',
+  cv: 'CV_Resume',
+  aps_certificate: 'APS_Certificate',
+  admission_letter: 'Admission_Letter',
+  financial_proof: 'Financial_Proof',
+  health_insurance: 'Health_Insurance',
+  // Legacy mappings for backward compatibility with existing uploads
+  academic_transcripts: 'Academic_Transcripts',
+  degree_certificate: 'Degree_Certificate',
+  language_certificates: 'Language_Certificates',
+  recommendation_letter: 'Recommendation_Letter',
+  all_sem_marksheets: 'All_Semester_Marksheets',
+  bachelor_degree: 'Bachelor_Degree_Transcript',
+  master_degree: 'Master_Degree_Transcripts',
 };
 
 interface DocumentMeta {
