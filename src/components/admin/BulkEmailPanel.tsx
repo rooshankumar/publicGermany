@@ -66,7 +66,7 @@ const BulkEmailPanel = () => {
       for (const userId of userIds) {
         try {
           const { data, error } = await supabase.functions.invoke('get-user-email', {
-            body: { userId }
+            body: { user_id: userId }
           });
           
           if (!error && data?.email) {
