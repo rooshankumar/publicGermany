@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import StudentNotes from '@/components/StudentNotes';
 
 const Documents = () => {
   const { profile } = useAuth();
@@ -388,6 +389,9 @@ const Documents = () => {
             </Button>
           </CardFooter>
         </Card>
+
+        {/* Student Notes Section */}
+        <StudentNotes />
 
         {/* General Document Upload */}
         <Card>

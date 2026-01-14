@@ -15,9 +15,11 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Mail
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 
 interface DashboardStats {
   totalStudents: number;
@@ -340,6 +342,9 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Bulk Email Panel */}
+        <BulkEmailPanel />
       </div>
     </Layout>
   );

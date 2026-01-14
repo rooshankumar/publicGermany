@@ -34,6 +34,7 @@ import {
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
 import { sendEmail } from '@/lib/sendEmail';
+import StudentNotes from '@/components/StudentNotes';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
@@ -330,6 +331,58 @@ export default function StudentProfile() {
     };
   }, [studentId]);
 
+  // Helper to format document name with proper spacing
+  const formatDocumentName = (category: string): string => {
+    // Check if we have a predefined nice name
+    const categoryBaseNames: Record<string, string> = {
+      passport_copy: 'Passport',
+      passport_photo: 'Passport_Photo',
+      signature: 'Signature',
+      class_x: 'Class_X_Marksheet_Certificate',
+      class_xii: 'Class_XII_Marksheet_Certificate',
+      bachelor_degree_certificate: 'Bachelor_Degree_Certificate',
+      bachelor_degree_transcript: 'Bachelor_Degree_Transcript',
+      bachelor_all_sem_marksheets: 'Bachelor_All_Semester_Marksheets',
+      master_degree_certificate: 'Master_Degree_Certificate',
+      master_degree_transcript: 'Master_Degree_Transcript',
+      master_all_sem_marksheets: 'Master_All_Semester_Marksheets',
+      english_language_certificate: 'English_Language_Certificate',
+      german_language_certificate: 'German_Language_Certificate',
+      recommendation_letter_1: 'Recommendation_Letter_1',
+      recommendation_letter_2: 'Recommendation_Letter_2',
+      work_experience_1: 'Work_Experience_Certificate_1',
+      work_experience_2: 'Work_Experience_Certificate_2',
+      official_grading_certificate: 'Official_Grading_Certificate',
+      ects_conversion_certificate: 'ECTS_Conversion_Certificate',
+      motivation_letter: 'Motivation_Letter',
+      cv: 'CV_Resume',
+      aps_certificate: 'APS_Certificate',
+      admission_letter: 'Admission_Letter',
+      financial_proof: 'Financial_Proof',
+      health_insurance: 'Health_Insurance',
+      academic_transcripts: 'Academic_Transcripts',
+      degree_certificate: 'Degree_Certificate',
+      language_certificates: 'Language_Certificates',
+      recommendation_letter: 'Recommendation_Letter',
+      all_sem_marksheets: 'All_Semester_Marksheets',
+      bachelor_degree: 'Bachelor_Degree_Transcript',
+      master_degree: 'Master_Degree_Transcripts',
+      additional: 'Additional_Document',
+    };
+    
+    if (categoryBaseNames[category]) {
+      return categoryBaseNames[category];
+    }
+    
+    // Convert camelCase or snake_case to Title_Case
+    return category
+      .replace(/([a-z])([A-Z])/g, '$1_$2') // camelCase to snake_case
+      .replace(/[_-]+/g, '_') // normalize separators
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('_');
+  };
+
   const downloadDocument = async (doc: any) => {
     try {
       // Get student first and last name for proper filename
@@ -337,12 +390,32 @@ export default function StudentProfile() {
       const firstName = nameParts[0] || 'Student';
       const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       
-      // Extract document category/name for filename
-      const docCategory = doc.category || 'Document';
+      // Extract document category/name for filename with proper formatting
+      let docName: string;
+      
+      // For additional documents, use the original file_name (cleaned up)
+      if (doc.module === 'additional_documents' && doc.file_name) {
+        // Extract just the document name part (after the first underscore prefix like "FirstName_")
+        const parts = doc.file_name.split('_');
+        if (parts.length > 1) {
+          // Skip the first name part and rejoin, then format properly
+          const docPart = parts.slice(1).join('_').replace(/\.[^/.]+$/, ''); // Remove extension
+          docName = docPart
+            .replace(/[_-]+/g, '_')
+            .split('_')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join('_');
+        } else {
+          docName = formatDocumentName(doc.file_name.replace(/\.[^/.]+$/, ''));
+        }
+      } else {
+        docName = formatDocumentName(doc.category || 'Document');
+      }
+      
       const fileExt = doc.file_name?.split('.').pop() || 'pdf';
       const downloadName = lastName 
-        ? `${firstName}_${lastName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`
-        : `${firstName}_${docCategory.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`;
+        ? `${firstName}_${lastName}_${docName}.${fileExt}`
+        : `${firstName}_${docName}.${fileExt}`;
       
       // Get the URL to fetch
       let fileUrl = doc.file_url;
@@ -882,6 +955,11 @@ export default function StudentProfile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Student Notes (read-only for admin) */}
+        {studentId && (
+          <StudentNotes studentId={studentId} readOnly />
+        )}
 
         {/* Service Requests */}
         <Card>
