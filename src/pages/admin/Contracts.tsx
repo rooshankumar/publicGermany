@@ -415,24 +415,22 @@ export default function Contracts() {
       }
 
       // Send email with download link
-      const emailHtml = `
-        <h2>Service Contract from publicgermany</h2>
-        <p>Dear ${selectedStudent?.full_name || 'Student'},</p>
-        ${sendMessage ? `<p>${sendMessage}</p>` : ''}
-        <p>You have received a new service contract. Please review it carefully.</p>
-        <p><strong>Contract Reference:</strong> ${contractRef}</p>
-        <p>
-          <strong>Next Steps:</strong>
-          <ol>
-            <li><a href="${signedPdfUrl || 'https://publicgermany.vercel.app/dashboard'}">Download and review the PDF contract</a></li>
-            <li>Sign the contract</li>
-            <li>Upload the signed copy back through your dashboard</li>
-          </ol>
-        </p>
-        <p><a href="https://publicgermany.vercel.app/dashboard" style="background-color: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">View on Dashboard</a></p>
-        <p>If you have any questions, please reply to this email.</p>
-        <p>Best regards,<br/>publicgermany Team</p>
-      `;
+      const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
+      const contentParts = [
+        sendMessage ? `${sendMessage}<br/><br/>` : '',
+        `You have received a new service contract. Please review it carefully.<br/><br/>`,
+        `<strong>Contract Reference:</strong> ${contractRef}<br/><br/>`,
+        `<strong>Next Steps:</strong><br/>`,
+        `1. <a href="${signedPdfUrl || 'https://publicgermany.vercel.app/dashboard'}">Download and review the PDF contract</a><br/>`,
+        `2. Sign the contract<br/>`,
+        `3. Upload the signed copy back through your dashboard<br/><br/>`,
+        `If you have any questions, please reply to this email.`
+      ];
+      
+      const emailHtml = wrapInEmailTemplate(contentParts.join(''), {
+        customGreeting: getPersonalizedGreeting(selectedStudent?.full_name || 'Student'),
+        signOff: signOffs.team
+      });
 
       await sendEmail(
         studentEmail,

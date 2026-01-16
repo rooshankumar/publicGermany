@@ -277,14 +277,13 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
         const to = user?.email;
         if (to) {
           const label = (requiredList.find(d => d.key === key)?.label || key).replace('📄 ', '');
-          await sendEmail(
-            to,
-            'We received your document',
-            `<p>Hi ${profile?.full_name || ''},</p>
-             <p>Your document <strong>${label}</strong> was uploaded successfully and is now <strong>pending</strong> review.</p>
-             <p>We will notify you once it is approved or if any changes are required.</p>
-             <p>— publicGermany Team</p>`
-          );
+          const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
+          const emailContent = `Your document <strong>${label}</strong> was uploaded successfully and is now <strong>pending</strong> review.<br/><br/>We will notify you once it is approved or if any changes are required.`;
+          const emailHtml = wrapInEmailTemplate(emailContent, {
+            customGreeting: getPersonalizedGreeting(profile?.full_name || ''),
+            signOff: signOffs.team
+          });
+          await sendEmail(to, 'We received your document', emailHtml);
         }
       } catch (_) {/* ignore email errors */}
       

@@ -216,25 +216,28 @@ export default function StudentRequests() {
           const studentName = (req as any)?.profiles?.full_name || '';
           const serviceType = (req?.service_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           
-          lines.push(`<p>Hi ${studentName},</p>`);
-          lines.push(`<p>Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
+          const contentParts: string[] = [];
+          contentParts.push(`Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.`);
           
           if (response) {
             const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').replace(/\n\s*\n/g, '\n').trim();
             if (cleanResponse) {
-              lines.push(`<p><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}</p>`);
+              contentParts.push(`<br/><br/><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}`);
             }
           }
 
           if (status === 'completed' && allDeliverableUrls.length > 0) {
             const baseUrl = 'https://publicgermany.vercel.app';
-            lines.push(`<p><strong>Your documents are ready!</strong><br/>`);
-            lines.push(`Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.</p>`);
+            contentParts.push(`<br/><br/><strong>Your documents are ready!</strong><br/>Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.`);
           }
           
-          lines.push(`<p>— publicGermany Team</p>`);
+          const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
+          const emailHtml = wrapInEmailTemplate(contentParts.join(''), {
+            customGreeting: getPersonalizedGreeting(studentName),
+            signOff: signOffs.team
+          });
           
-          await sendEmail(to, 'Service request update', lines.join('\n'));
+          await sendEmail(to, 'Service request update', emailHtml);
         }
       } catch (emailError: any) {
         toast({

@@ -12,14 +12,13 @@ import { sendEmail } from '@/lib/sendEmail';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
+import { wrapInEmailTemplate } from '@/lib/emailTemplate';
 
 interface UserProfile {
   user_id: string;
   full_name: string | null;
   email?: string;
 }
-
-const APP_URL = 'https://publicgermany.vercel.app';
 
 const BulkEmailPanel = () => {
   const { toast } = useToast();
@@ -95,52 +94,7 @@ const BulkEmailPanel = () => {
   };
 
   const generateEmailHTML = (emailContent: string) => {
-    // Convert line breaks to <br> tags
-    const formattedContent = emailContent.replace(/\n/g, '<br>');
-    
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>publicGermany</title>
-</head>
-<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <!-- Minimal Header with Germany Accent -->
-  <tr>
-    <td style="padding:0;">
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="background:#000000; height:3px;"></td>
-          <td style="background:#DD0000; height:3px;"></td>
-          <td style="background:#FFCE00; height:3px;"></td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <!-- Brand -->
-  <tr>
-    <td style="padding:12px 16px 8px;">
-      <a href="${APP_URL}"
-         style="font-size:14px; font-weight:bold; color:#111827; text-decoration:none;">
-        publicGermany
-      </a>
-    </td>
-  </tr>
-  <!-- Plain Content -->
-  <tr>
-    <td style="padding:12px 16px; font-size:14px; line-height:1.6; color:#000000;">
-      Hello,<br><br>
-      ${formattedContent}
-      <br><br>
-      Best regards,<br>
-      Admin
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
+    return wrapInEmailTemplate(emailContent);
   };
 
   const handleSend = async () => {
