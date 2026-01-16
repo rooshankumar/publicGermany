@@ -95,6 +95,9 @@ const BulkEmailPanel = () => {
   };
 
   const generateEmailHTML = (emailContent: string) => {
+    // Convert line breaks to <br> tags
+    const formattedContent = emailContent.replace(/\n/g, '<br>');
+    
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,67 +105,40 @@ const BulkEmailPanel = () => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>publicGermany</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 20px 10px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 520px; margin: 0 auto;">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); padding: 24px 20px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="margin: 0; color: #fbbf24; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">publicGermany</h1>
-              <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.7); font-size: 12px;">Your Gateway to German Universities</p>
-            </td>
-          </tr>
-          
-          <!-- Body -->
-          <tr>
-            <td style="background-color: #ffffff; padding: 28px 24px;">
-              <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">Hello,</p>
-              ${emailContent.split('\n').filter(line => line.trim()).map(line => 
-                `<p style="margin: 0 0 14px 0; color: #374151; font-size: 15px; line-height: 1.7;">${line}</p>`
-              ).join('')}
-              
-              <!-- CTA Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 28px 0;">
-                <tr>
-                  <td align="center">
-                    <a href="${APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); color: #fbbf24; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 600;">Visit Dashboard</a>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Sign off -->
-              <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                Best regards,<br>
-                <strong style="color: #374151;">Team publicGermany</strong>
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f9fafb; padding: 20px 24px; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td align="center">
-                    <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 12px;">
-                      <a href="${APP_URL}" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">publicgermany.vercel.app</a>
-                    </p>
-                    <p style="margin: 0; color: #9ca3af; font-size: 11px;">
-                      © ${new Date().getFullYear()} publicGermany. All rights reserved.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
+<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <!-- Minimal Header with Germany Accent -->
+  <tr>
+    <td style="padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:#000000; height:3px;"></td>
+          <td style="background:#DD0000; height:3px;"></td>
+          <td style="background:#FFCE00; height:3px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <!-- Brand -->
+  <tr>
+    <td style="padding:12px 16px 8px;">
+      <a href="${APP_URL}"
+         style="font-size:14px; font-weight:bold; color:#111827; text-decoration:none;">
+        publicGermany
+      </a>
+    </td>
+  </tr>
+  <!-- Plain Content -->
+  <tr>
+    <td style="padding:12px 16px; font-size:14px; line-height:1.6; color:#000000;">
+      Hello,<br><br>
+      ${formattedContent}
+      <br><br>
+      Best regards,<br>
+      Admin
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
   };
