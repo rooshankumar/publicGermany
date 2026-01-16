@@ -252,20 +252,19 @@ export default function Requests() {
             }
           }
 
-          const lines: string[] = [];
           const prettyStatus = (status || '').replace(/_/g, ' ');
           const studentName = (req as any)?.profiles?.full_name || '';
           const serviceType = (req?.service_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           
-          // Simple email template
-          lines.push(`<p>Hi ${studentName},</p>`);
-          lines.push(`<p>Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.</p>`);
+          // Build email content
+          const contentParts: string[] = [];
+          contentParts.push(`Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.`);
           
           if (response) {
             // Remove any Supabase storage URLs from the admin response
             const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').replace(/\n\s*\n/g, '\n').trim();
             if (cleanResponse) {
-              lines.push(`<p><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}</p>`);
+              contentParts.push(`<br/><br/><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}`);
             }
           }
 
@@ -274,14 +273,17 @@ export default function Requests() {
           // Send document links if status is completed AND there are any deliverable files (new or existing)
           if (status === 'completed' && allDeliverableUrls.length > 0) {
             const baseUrl = 'https://publicgermany.vercel.app';
-            lines.push(`<p><strong>Your documents are ready!</strong><br/>`);
-            lines.push(`Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.</p>`);
+            contentParts.push(`<br/><br/><strong>Your documents are ready!</strong><br/>Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.`);
           }
           
-          lines.push(`<p>— publicGermany Team</p>`);
+          const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
+          const emailHtml = wrapInEmailTemplate(contentParts.join(''), {
+            customGreeting: getPersonalizedGreeting(studentName),
+            signOff: signOffs.team
+          });
           
-          console.log('📧 Sending email to:', to, 'with', lines.length, 'lines');
-          await sendEmail(to, 'Service request update', lines.join('\n'));
+          console.log('📧 Sending email to:', to);
+          await sendEmail(to, 'Service request update', emailHtml);
           console.log('✅ Email sent successfully');
         } else {
           console.log('⚠️ Email not sent - no recipient email found');

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sendEmail } from './sendEmail';
+import { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } from './emailTemplate';
 
 interface Application {
   id: string;
@@ -149,51 +150,49 @@ async function sendDeadlineReminderEmail(
     );
 
     // Build email content
-    const lines: string[] = [];
+    const contentParts: string[] = [];
     
-    lines.push(`<p>Hi ${profile.full_name || 'there'},</p>`);
-    lines.push(`<p>This is a friendly reminder about your upcoming application deadlines:</p>`);
+    contentParts.push(`This is a friendly reminder about your upcoming application deadlines:<br/><br/>`);
     
-    lines.push(`<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">`);
-    lines.push(`<thead>`);
-    lines.push(`<tr style="background: #f3f4f6;">`);
-    lines.push(`<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;">University</th>`);
-    lines.push(`<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;">Program</th>`);
-    lines.push(`<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;">Deadline</th>`);
-    lines.push(`<th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb;">Days Left</th>`);
-    lines.push(`</tr>`);
-    lines.push(`</thead>`);
-    lines.push(`<tbody>`);
+    contentParts.push(`<table style="width: 100%; border-collapse: collapse; margin: 10px 0;">`);
+    contentParts.push(`<thead>`);
+    contentParts.push(`<tr style="background: #f3f4f6;">`);
+    contentParts.push(`<th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">University</th>`);
+    contentParts.push(`<th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Program</th>`);
+    contentParts.push(`<th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Deadline</th>`);
+    contentParts.push(`<th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Days Left</th>`);
+    contentParts.push(`</tr>`);
+    contentParts.push(`</thead>`);
+    contentParts.push(`<tbody>`);
 
     for (const app of applications) {
       const deadline = new Date(app.end_date);
       const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const urgency = daysLeft <= 3 ? 'background: #fef2f2;' : '';
       
-      lines.push(`<tr style="${urgency}">`);
-      lines.push(`<td style="padding: 12px; border: 1px solid #e5e7eb;">${app.university_name}</td>`);
-      lines.push(`<td style="padding: 12px; border: 1px solid #e5e7eb;">${app.program_name}</td>`);
-      lines.push(`<td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(app.end_date)}</td>`);
-      lines.push(`<td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold; color: ${daysLeft <= 3 ? '#dc2626' : '#059669'};">${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}</td>`);
-      lines.push(`</tr>`);
+      contentParts.push(`<tr style="${urgency}">`);
+      contentParts.push(`<td style="padding: 10px; border: 1px solid #e5e7eb;">${app.university_name}</td>`);
+      contentParts.push(`<td style="padding: 10px; border: 1px solid #e5e7eb;">${app.program_name}</td>`);
+      contentParts.push(`<td style="padding: 10px; border: 1px solid #e5e7eb;">${formatDate(app.end_date)}</td>`);
+      contentParts.push(`<td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold; color: ${daysLeft <= 3 ? '#dc2626' : '#059669'};">${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}</td>`);
+      contentParts.push(`</tr>`);
     }
 
-    lines.push(`</tbody>`);
-    lines.push(`</table>`);
+    contentParts.push(`</tbody>`);
+    contentParts.push(`</table><br/>`);
 
-    lines.push(`<p style="margin-top: 20px;">📌 <strong>Quick Actions:</strong></p>`);
-    lines.push(`<ul style="margin: 10px 0;">`);
-    lines.push(`<li>View all your applications: <a href="https://publicgermany.vercel.app/applications" style="color: #0066cc;">Applications Dashboard</a></li>`);
-    lines.push(`<li>Check application portals and submit your documents</li>`);
-    lines.push(`<li>Ensure all required tests are completed</li>`);
-    lines.push(`</ul>`);
+    contentParts.push(`📌 <strong>Quick Actions:</strong><br/>`);
+    contentParts.push(`• View all your applications: <a href="https://publicgermany.vercel.app/applications" style="color: #0066cc;">Applications Dashboard</a><br/>`);
+    contentParts.push(`• Check application portals and submit your documents<br/>`);
+    contentParts.push(`• Ensure all required tests are completed<br/><br/>`);
 
-    lines.push(`<p style="margin-top: 20px; color: #6b7280; font-size: 14px;">💡 <em>Tip: Apply early to avoid last-minute technical issues!</em></p>`);
-    
-    lines.push(`<p style="margin-top: 30px;">Good luck with your applications! 🎓</p>`);
-    lines.push(`<p>— publicGermany Team</p>`);
+    contentParts.push(`💡 <em>Tip: Apply early to avoid last-minute technical issues!</em><br/><br/>`);
+    contentParts.push(`Good luck with your applications! 🎓`);
 
-    const html = lines.join('\n');
+    const html = wrapInEmailTemplate(contentParts.join(''), {
+      customGreeting: getPersonalizedGreeting(profile.full_name || 'there'),
+      signOff: signOffs.team
+    });
 
     // Determine subject based on urgency
     const mostUrgent = applications[0];

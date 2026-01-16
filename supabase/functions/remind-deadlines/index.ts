@@ -7,12 +7,74 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const APP_URL = "https://publicgermany.vercel.app";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
+}
+
+// Unified email template function
+function wrapInEmailTemplate(content: string, greeting = "Hello,", signOff = "Best regards,<br>Admin"): string {
+  const formattedContent = content.replace(/\n/g, '<br>');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>publicGermany</title>
+</head>
+<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:#000000; height:3px;"></td>
+          <td style="background:#DD0000; height:3px;"></td>
+          <td style="background:#FFCE00; height:3px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:12px 16px; font-size:14px; line-height:1.6; color:#000000;">
+      ${greeting}<br><br>
+      ${formattedContent}
+      <br><br>
+      ${signOff}
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 16px; text-align:center; font-size:12px; color:#374151;">
+      <em>
+        Refer your friends and get <strong>₹1,000 instant cashback</strong> once they enroll.
+      </em>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px 16px; text-align:center; font-size:12px; color:#111827;">
+      <a href="${APP_URL}" style="font-weight:bold; color:#111827; text-decoration:none;">
+        publicGermany
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:#000000; height:3px;"></td>
+          <td style="background:#DD0000; height:3px;"></td>
+          <td style="background:#FFCE00; height:3px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
 }
 
 const dayOffsets = [7, 3, 1];
@@ -49,7 +111,6 @@ serve(async (req: Request) => {
     const targets = dayOffsets.map((d) => {
       const t = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
       t.setUTCDate(t.getUTCDate() + d);
-      // Compare by date only (YYYY-MM-DD)
       const yyyy = t.getUTCFullYear();
       const mm = String(t.getUTCMonth() + 1).padStart(2, '0');
       const dd = String(t.getUTCDate()).padStart(2, '0');
@@ -135,17 +196,19 @@ serve(async (req: Request) => {
       }
       console.log(`   ✅ Email resolved: ${to}`);
 
-      // Compose email
+      // Compose email content
       const subject = `Reminder: ${app.university_name} deadline in ${target.days} day${target.days === 1 ? '' : 's'}`;
-      const body = [
-        `<p>Hi ${app.profiles?.full_name || ''},</p>`,
-        `<p>This is a friendly reminder that the deadline for <strong>${app.university_name}</strong>` +
-          (app.program_name ? ` — <em>${app.program_name}</em>` : '') + ` is in <strong>${target.days} day${target.days === 1 ? '' : 's'}</strong>.</p>`,
-        `<p>Deadline: ${new Date(app.end_date).toLocaleDateString()}</p>`,
-        `<p>Current status: <strong>${String(app.status || 'draft').replace('_',' ')}</strong></p>`,
-        `<p>Please make sure your documents and application are complete on time.</p>`,
-        `<p>— publicGermany Team</p>`
-      ].join('\n');
+      const studentName = app.profiles?.full_name || '';
+      const content = [
+        `This is a friendly reminder that the deadline for <strong>${app.university_name}</strong>` +
+          (app.program_name ? ` — <em>${app.program_name}</em>` : '') + ` is in <strong>${target.days} day${target.days === 1 ? '' : 's'}</strong>.<br/><br/>`,
+        `Deadline: ${new Date(app.end_date).toLocaleDateString()}<br/>`,
+        `Current status: <strong>${String(app.status || 'draft').replace('_',' ')}</strong><br/><br/>`,
+        `Please make sure your documents and application are complete on time.`
+      ].join('');
+      
+      const greeting = studentName ? `Hi ${studentName},` : 'Hello,';
+      const body = wrapInEmailTemplate(content, greeting, 'Best regards,<br>publicGermany Team');
 
       // Send via Brevo HTTP API
       attempted++;

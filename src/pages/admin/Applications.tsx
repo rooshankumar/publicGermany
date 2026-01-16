@@ -158,16 +158,19 @@ export default function Applications() {
         const userId = app?.profiles?.user_id;
         const to = userId ? await resolveEmail(userId) : null;
         if (to) {
-          const parts: string[] = [];
-          parts.push(`<p>Hi ${app?.profiles?.full_name || ''},</p>`);
-          parts.push(`<p>Your application for <strong>${app?.university_name || ''}</strong> — <em>${app?.program_name || ''}</em> is now <strong>${status.replace('_',' ')}</strong>.</p>`);
-          if (updatedNotes) parts.push(`<p><strong>Admin notes:</strong><br/>${(updatedNotes || '').replace(/\n/g, '<br/>')}</p>`);
+          const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
+          const contentParts: string[] = [];
+          contentParts.push(`Your application for <strong>${app?.university_name || ''}</strong> — <em>${app?.program_name || ''}</em> is now <strong>${status.replace('_',' ')}</strong>.`);
+          if (updatedNotes) contentParts.push(`<br/><br/><strong>Admin notes:</strong><br/>${(updatedNotes || '').replace(/\n/g, '<br/>')}`);
           const deadline = (app as any)?.application_end_date ? new Date((app as any).application_end_date) : null;
           if (deadline) {
-            parts.push(`<p>Deadline: ${deadline.toLocaleDateString()}</p>`);
+            contentParts.push(`<br/><br/>Deadline: ${deadline.toLocaleDateString()}`);
           }
-          parts.push('<p>— publicGermany Team</p>');
-          await sendEmail(to, 'Application update', parts.join('\n'));
+          const emailHtml = wrapInEmailTemplate(contentParts.join(''), {
+            customGreeting: getPersonalizedGreeting(app?.profiles?.full_name || ''),
+            signOff: signOffs.team
+          });
+          await sendEmail(to, 'Application update', emailHtml);
         }
       } catch {}
     } catch (error: any) {

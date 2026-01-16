@@ -454,16 +454,11 @@ export function generatePaymentBillHTML(data: PaymentBillData): string {
 export function generatePaymentBillEmailHTML(data: PaymentBillData): string {
   const {
     studentName,
-    studentEmail,
-    studentPhone,
     billNumber,
     billDate,
     contractReference,
-    paymentMethod,
-    lastPaymentDate,
     serviceName,
     serviceDescription,
-    serviceAmount,
     totalAmount,
     amountReceived,
     amountPending,
@@ -482,109 +477,81 @@ export function generatePaymentBillEmailHTML(data: PaymentBillData): string {
   const statusEmoji = statusEmojis[paymentStatus] || '📋';
 
   const paymentHistoryHTML = payments.length > 0
-    ? `<div style="margin-top:16px;border:1px solid #e5e7eb;border-radius:6px;padding:12px;">
-         <p style="margin:0 0 8px 0;font-weight:600;color:#1e3a8a;">Payment History</p>
-         <ul style="margin:0;padding-left:20px;color:#444;">
-           ${payments.map((p) => `<li style="margin:4px 0;">Payment ${p.sequence}: ${currency} ${p.amount.toLocaleString()} on ${p.date} (${p.note})</li>`).join('')}
-         </ul>
-       </div>`
+    ? `<br/><strong>Payment History:</strong><br/>` +
+      payments.map((p) => `• Payment ${p.sequence}: ${currency} ${p.amount.toLocaleString()} on ${p.date} (${p.note})`).join('<br/>')
     : '';
+
+  const content = [
+    `<strong>${statusEmoji} ${paymentStatus.toUpperCase()} - Bill #${billNumber}</strong><br/><br/>`,
+    `<strong>Bill Date:</strong> ${billDate}<br/>`,
+    `<strong>Reference:</strong> ${contractReference}<br/><br/>`,
+    `<strong>Service:</strong> ${serviceName}<br/>`,
+    serviceDescription ? `${serviceDescription}<br/><br/>` : '<br/>',
+    `<strong>Total Amount:</strong> ${currency} ${totalAmount.toLocaleString()}<br/>`,
+    `<strong>Amount Received:</strong> ${currency} ${amountReceived.toLocaleString()}<br/>`,
+    `<strong>Amount Pending:</strong> ${currency} ${amountPending.toLocaleString()}`,
+    paymentHistoryHTML
+  ].join('');
+
+  // Import and use the unified template
+  const APP_URL = 'https://publicgermany.vercel.app';
+  const greeting = `Hi ${studentName},`;
+  const signOff = 'Best regards,<br>publicGermany Team';
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Bill - ${billNumber}</title>
+  <title>publicGermany</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0;">
-
-<div style="max-width: 600px; margin: 0 auto; padding: 20px; background: #fafafa;">
-  
-  <!-- Header -->
-  <div style="text-align: center; margin-bottom: 24px; background: white; padding: 20px; border-radius: 8px; border-bottom: 4px solid #1e3a8a;">
-    <img src="https://rzbnrlfujjxyrypbafdp.supabase.co/storage/v1/object/public/avatars/logo.png" alt="publicgermany" style="width: 60px; margin-bottom: 12px;">
-    <h1 style="margin: 0 0 8px 0; color: #1e3a8a; font-size: 28px;">publicgermany</h1>
-    <p style="margin: 0; color: #666; font-size: 14px;">Payment Bill / Receipt</p>
-  </div>
-
-  <!-- Main Content -->
-  <div style="background: white; padding: 24px; border-radius: 8px; margin-bottom: 16px;">
-    
-    <!-- Status -->
-    <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
-      <p style="margin: 0; font-weight: 600; color: #2e7d32;">
-        ${statusEmoji} ${paymentStatus.toUpperCase()} - Bill #${billNumber}
-      </p>
-    </div>
-
-    <!-- Student & Bill Info -->
-    <div style="background: #f5f5f5; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div>
-          <p style="margin: 0 0 4px 0; font-size: 12px; color: #666; text-transform: uppercase;">Billed To</p>
-          <p style="margin: 0 0 4px 0; font-weight: 600; font-size: 14px;">${studentName}</p>
-          <p style="margin: 0; font-size: 12px; color: #666;">${studentEmail}<br>${studentPhone}</p>
-        </div>
-        <div style="text-align: right;">
-          <p style="margin: 0 0 4px 0; font-size: 12px; color: #666; text-transform: uppercase;">Bill Information</p>
-          <p style="margin: 0; font-size: 12px;"><strong>Bill Date:</strong> ${billDate}</p>
-          <p style="margin: 0; font-size: 12px;"><strong>Reference:</strong> ${contractReference}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Service Details -->
-    <div style="margin-bottom: 20px;">
-      <p style="margin: 0 0 8px 0; font-weight: 600; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px;">Service & Payment Details</p>
-      <div style="background: #fafafa; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0;">
-        <p style="margin: 0 0 4px 0; font-weight: 600;">${serviceName}</p>
-        <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">${serviceDescription}</p>
-        <p style="margin: 0; font-size: 13px;"><strong>${currency} ${serviceAmount.toLocaleString()}</strong></p>
-      </div>
-    </div>
-
-    <!-- Payment History (if any) -->
-    ${paymentHistoryHTML}
-
-    <!-- Totals -->
-    <div style="margin-top: 20px; border-top: 2px solid #1e3a8a; padding-top: 16px;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0;">
-        <span style="color: #666;">Total Amount</span>
-        <span style="font-weight: 600; font-size: 14px;">${currency} ${totalAmount.toLocaleString()}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0;">
-        <span style="color: #666;">Amount Received</span>
-        <span style="font-weight: 600; font-size: 14px;">${currency} ${amountReceived.toLocaleString()}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; background: #1e3a8a; color: white; padding: 12px; border-radius: 4px; margin-top: 12px; font-weight: 600;">
-        <span>Amount Pending</span>
-        <span>${currency} ${amountPending.toLocaleString()}</span>
-      </div>
-    </div>
-
-    <!-- Additional Info -->
-    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
-      <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;"><strong>Payment Method:</strong> ${paymentMethod}</p>
-      <p style="margin: 0; font-size: 12px; color: #666;"><strong>Last Payment Date:</strong> ${lastPaymentDate}</p>
-    </div>
-
-  </div>
-
-  <!-- Action Button -->
-  <div style="text-align: center; margin-bottom: 16px;">
-    <a href="https://publicgermany.vercel.app/" style="display: inline-block; padding: 12px 24px; background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">View Your Account</a>
-  </div>
-
-  <!-- Footer -->
-  <div style="text-align: center; padding: 16px; color: #999; font-size: 11px; background: white; border-radius: 6px;">
-    <p style="margin: 0 0 4px 0;">This is a computer-generated bill for services rendered by an independent freelancer.</p>
-    <p style="margin: 0;">No tax invoice is issued unless specifically mentioned.</p>
-    <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid #eee;">publicgermany | <a href="https://publicgermany.vercel.app" style="color: #1d4ed8; text-decoration: none;">publicgermany.vercel.app</a></p>
-  </div>
-
-</div>
-
+<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:#000000; height:3px;"></td>
+          <td style="background:#DD0000; height:3px;"></td>
+          <td style="background:#FFCE00; height:3px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:12px 16px; font-size:14px; line-height:1.6; color:#000000;">
+      ${greeting}<br><br>
+      ${content}
+      <br><br>
+      ${signOff}
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:10px 16px; text-align:center; font-size:12px; color:#374151;">
+      <em>
+        Refer your friends and get <strong>₹1,000 instant cashback</strong> once they enroll.
+      </em>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px 16px; text-align:center; font-size:12px; color:#111827;">
+      <a href="${APP_URL}" style="font-weight:bold; color:#111827; text-decoration:none;">
+        publicGermany
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:#000000; height:3px;"></td>
+          <td style="background:#DD0000; height:3px;"></td>
+          <td style="background:#FFCE00; height:3px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
 }
