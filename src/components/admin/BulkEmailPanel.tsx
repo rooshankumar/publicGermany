@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,31 +6,166 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, Loader2, Users, AlertCircle } from 'lucide-react';
+import { Mail, Send, Loader2, Users, AlertCircle, User, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { sendEmail } from '@/lib/sendEmail';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+
+interface UserProfile {
+  user_id: string;
+  full_name: string | null;
+  email?: string;
+}
+
+const APP_URL = 'https://publicgermany.vercel.app';
 
 const BulkEmailPanel = () => {
   const { toast } = useToast();
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
-  const [userCount, setUserCount] = useState<number | null>(null);
   const [sentCount, setSentCount] = useState(0);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [sendToAll, setSendToAll] = useState(true);
 
-  // Fetch user count on mount
-  useState(() => {
-    const fetchCount = async () => {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      
-      if (!error && count !== null) {
-        setUserCount(count);
+  // Fetch all users with their emails on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .order('full_name');
+
+        if (error) throw error;
+
+        // Fetch emails for all users
+        const usersWithEmails: UserProfile[] = [];
+        for (const profile of profiles || []) {
+          try {
+            const { data, error: emailError } = await supabase.functions.invoke('get-user-email', {
+              body: { user_id: profile.user_id }
+            });
+            if (!emailError && data?.email) {
+              usersWithEmails.push({
+                ...profile,
+                email: data.email
+              });
+            }
+          } catch (e) {
+            console.error('Error fetching email:', e);
+          }
+        }
+        setUsers(usersWithEmails);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
       }
     };
-    fetchCount();
-  });
+    fetchUsers();
+  }, []);
+
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUserIds);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUserIds(newSelection);
+    if (newSelection.size > 0) {
+      setSendToAll(false);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedUserIds(new Set());
+    setSendToAll(true);
+  };
+
+  const selectAllUsers = () => {
+    setSelectedUserIds(new Set(users.map(u => u.user_id)));
+    setSendToAll(false);
+  };
+
+  const generateEmailHTML = (emailContent: string) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>publicGermany</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 20px 10px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 520px; margin: 0 auto;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); padding: 24px 20px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="margin: 0; color: #fbbf24; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">publicGermany</h1>
+              <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.7); font-size: 12px;">Your Gateway to German Universities</p>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="background-color: #ffffff; padding: 28px 24px;">
+              <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">Hello,</p>
+              ${emailContent.split('\n').filter(line => line.trim()).map(line => 
+                `<p style="margin: 0 0 14px 0; color: #374151; font-size: 15px; line-height: 1.7;">${line}</p>`
+              ).join('')}
+              
+              <!-- CTA Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 28px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); color: #fbbf24; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 600;">Visit Dashboard</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Sign off -->
+              <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                Best regards,<br>
+                <strong style="color: #374151;">Team publicGermany</strong>
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 24px; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 12px;">
+                      <a href="${APP_URL}" style="color: #1e3a5f; text-decoration: none; font-weight: 500;">publicgermany.vercel.app</a>
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                      © ${new Date().getFullYear()} publicGermany. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  };
 
   const handleSend = async () => {
     if (!subject.trim()) {
@@ -42,86 +177,31 @@ const BulkEmailPanel = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to send this email to ALL ${userCount || 'registered'} users? This action cannot be undone.`
-    );
-    if (!confirmed) return;
+    const targetEmails = sendToAll 
+      ? users.map(u => u.email).filter(Boolean) as string[]
+      : users.filter(u => selectedUserIds.has(u.user_id)).map(u => u.email).filter(Boolean) as string[];
+
+    if (targetEmails.length === 0) {
+      toast({ title: 'Error', description: 'No recipients selected', variant: 'destructive' });
+      return;
+    }
+
+    const confirmMessage = sendToAll 
+      ? `Send this email to ALL ${targetEmails.length} users?`
+      : `Send this email to ${targetEmails.length} selected user(s)?`;
+
+    if (!window.confirm(confirmMessage)) return;
 
     setSending(true);
     setSentCount(0);
 
     try {
-      // Fetch all user emails
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id');
-
-      if (profilesError) throw profilesError;
-
-      const userIds = profiles?.map(p => p.user_id) || [];
-      
-      // Fetch emails for all users using edge function
-      const emails: string[] = [];
-      
-      for (const userId of userIds) {
-        try {
-          const { data, error } = await supabase.functions.invoke('get-user-email', {
-            body: { user_id: userId }
-          });
-          
-          if (!error && data?.email) {
-            emails.push(data.email);
-          }
-        } catch (e) {
-          console.error('Error fetching email for user:', userId, e);
-        }
-      }
-
-      if (emails.length === 0) {
-        toast({ title: 'Error', description: 'No valid email addresses found', variant: 'destructive' });
-        setSending(false);
-        return;
-      }
-
-      // Generate HTML email content
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="color: #ffd700; margin: 0; font-size: 24px;">publicGermany</h1>
-          </div>
-          <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #1a1a2e; margin-top: 0;">${subject}</h2>
-            <div style="color: #555;">
-              ${content.split('\n').map(line => `<p style="margin: 10px 0;">${line}</p>`).join('')}
-            </div>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="color: #888; font-size: 12px; margin: 0;">
-              Best regards,<br>
-              <strong>Team publicGermany</strong>
-            </p>
-          </div>
-          <div style="text-align: center; padding: 20px; color: #888; font-size: 11px;">
-            <p>© ${new Date().getFullYear()} publicGermany. All rights reserved.</p>
-            <p>
-              <a href="https://public-germany.lovable.app" style="color: #ffd700;">Visit our website</a>
-            </p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      // Send emails in batches
+      const htmlContent = generateEmailHTML(content);
       const batchSize = 10;
       let successCount = 0;
 
-      for (let i = 0; i < emails.length; i += batchSize) {
-        const batch = emails.slice(i, i + batchSize);
+      for (let i = 0; i < targetEmails.length; i += batchSize) {
+        const batch = targetEmails.slice(i, i + batchSize);
         
         await Promise.all(
           batch.map(async (email) => {
@@ -138,12 +218,13 @@ const BulkEmailPanel = () => {
 
       toast({
         title: 'Emails Sent!',
-        description: `Successfully sent ${successCount} of ${emails.length} emails.`,
+        description: `Successfully sent ${successCount} of ${targetEmails.length} emails.`,
       });
 
-      // Reset form
       setSubject('');
       setContent('');
+      setSelectedUserIds(new Set());
+      setSendToAll(true);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -156,75 +237,154 @@ const BulkEmailPanel = () => {
     }
   };
 
+  const selectedUsers = users.filter(u => selectedUserIds.has(u.user_id));
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex items-center gap-2">
           <Mail className="h-5 w-5 text-primary" />
-          <CardTitle>Send Email to All Users</CardTitle>
+          <CardTitle className="text-lg">Email Panel</CardTitle>
         </div>
-        <CardDescription>
-          Send a bulk email to all registered users ({userCount ?? '...'} users)
+        <CardDescription className="text-xs">
+          Send to all or select specific users ({users.length} total)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
-          <AlertCircle className="h-4 w-4 text-amber-500" />
-          <AlertTitle className="text-amber-500">Important</AlertTitle>
-          <AlertDescription className="text-amber-500/80">
-            This will send an email to ALL registered users. Use this feature responsibly.
-          </AlertDescription>
-        </Alert>
-
-        <div className="space-y-2">
-          <Label htmlFor="subject">Subject</Label>
-          <Input
-            id="subject"
-            placeholder="Enter email subject..."
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            disabled={sending}
-          />
+        {/* Send Mode Toggle */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="sendToAll" 
+              checked={sendToAll}
+              onCheckedChange={(checked) => {
+                setSendToAll(!!checked);
+                if (checked) setSelectedUserIds(new Set());
+              }}
+            />
+            <Label htmlFor="sendToAll" className="text-sm font-medium cursor-pointer">
+              Send to all users
+            </Label>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="content">Email Content</Label>
-          <Textarea
-            id="content"
-            placeholder="Write your email message here..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            disabled={sending}
-            className="min-h-[200px] resize-y"
-          />
-          <p className="text-xs text-muted-foreground">
-            Use plain text. Each new line will become a paragraph.
-          </p>
-        </div>
+        {/* User Selection - Only show when not sending to all */}
+        {!sendToAll && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Select Recipients</Label>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={selectAllUsers} className="h-7 text-xs">
+                  Select All
+                </Button>
+                <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7 text-xs">
+                  Clear
+                </Button>
+              </div>
+            </div>
+            
+            {/* Selected Users Badges */}
+            {selectedUsers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 p-2 bg-muted/50 rounded-md">
+                {selectedUsers.map(user => (
+                  <Badge 
+                    key={user.user_id} 
+                    variant="secondary" 
+                    className="text-xs pr-1 flex items-center gap-1"
+                  >
+                    {user.full_name || user.email}
+                    <X 
+                      className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => toggleUserSelection(user.user_id)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
 
-        {sending && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Sending emails... {sentCount} sent
+            {/* User List */}
+            <ScrollArea className="h-40 border rounded-md">
+              {loadingUsers ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {users.map(user => (
+                    <div
+                      key={user.user_id}
+                      onClick={() => toggleUserSelection(user.user_id)}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm transition-colors ${
+                        selectedUserIds.has(user.user_id) 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'hover:bg-muted'
+                      }`}
+                    >
+                      <Checkbox checked={selectedUserIds.has(user.user_id)} />
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="truncate flex-1">{user.full_name || 'No name'}</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                        {user.email}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
         )}
 
-        <div className="flex justify-end">
-          <Button onClick={handleSend} disabled={sending}>
-            {sending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                Send to All Users
-                <Users className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
+        {/* Subject */}
+        <div className="space-y-1.5">
+          <Label htmlFor="subject" className="text-sm">Subject</Label>
+          <Input
+            id="subject"
+            placeholder="Email subject..."
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            disabled={sending}
+            className="h-9"
+          />
         </div>
+
+        {/* Content */}
+        <div className="space-y-1.5">
+          <Label htmlFor="content" className="text-sm">Message</Label>
+          <Textarea
+            id="content"
+            placeholder="Write your message here..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            disabled={sending}
+            className="min-h-[120px] resize-y text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Each new line becomes a paragraph. Subject is only shown in email header.
+          </p>
+        </div>
+
+        {/* Sending Progress */}
+        {sending && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Sending... {sentCount} sent
+          </div>
+        )}
+
+        {/* Send Button */}
+        <Button onClick={handleSend} disabled={sending} className="w-full">
+          {sending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              {sendToAll ? `Send to All (${users.length})` : `Send to Selected (${selectedUserIds.size})`}
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
