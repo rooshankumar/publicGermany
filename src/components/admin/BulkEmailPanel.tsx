@@ -6,13 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Send, Loader2, Users, AlertCircle, User, X } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Mail, Send, Loader2, User, X } from 'lucide-react';
 import { sendEmail } from '@/lib/sendEmail';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { wrapInEmailTemplate } from '@/lib/emailTemplate';
+import { wrapInEmailTemplate, EmailTemplateOptions } from '@/lib/emailTemplate';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserProfile {
   user_id: string;
@@ -30,6 +30,10 @@ const BulkEmailPanel = () => {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [sendToAll, setSendToAll] = useState(true);
+  
+  // Email template options
+  const [skipGreeting, setSkipGreeting] = useState(false);
+  const [signOffOption, setSignOffOption] = useState<'admin' | 'team' | 'none'>('admin');
 
   // Fetch all users with their emails on mount
   useEffect(() => {
@@ -94,7 +98,10 @@ const BulkEmailPanel = () => {
   };
 
   const generateEmailHTML = (emailContent: string) => {
-    return wrapInEmailTemplate(emailContent);
+    return wrapInEmailTemplate(emailContent, {
+      skipGreeting,
+      signOff: signOffOption
+    });
   };
 
   const handleSend = async () => {
@@ -289,8 +296,35 @@ const BulkEmailPanel = () => {
             className="min-h-[120px] resize-y text-sm"
           />
           <p className="text-xs text-muted-foreground">
-            Each new line becomes a paragraph. Subject is only shown in email header.
+            Each new line becomes a paragraph.
           </p>
+        </div>
+
+        {/* Email Options */}
+        <div className="grid grid-cols-2 gap-4 p-3 bg-muted/30 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="skipGreeting" 
+              checked={skipGreeting}
+              onCheckedChange={(checked) => setSkipGreeting(!!checked)}
+            />
+            <Label htmlFor="skipGreeting" className="text-xs cursor-pointer">
+              Skip "Hello," (content has greeting)
+            </Label>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Sign-off</Label>
+            <Select value={signOffOption} onValueChange={(v: 'admin' | 'team' | 'none') => setSignOffOption(v)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="team">Team publicGermany</SelectItem>
+                <SelectItem value="none">None (in content)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Sending Progress */}
