@@ -3,7 +3,6 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -21,20 +20,22 @@ import {
   FileText,
   Download,
   Eye,
-  Award,
   BookOpen,
   Briefcase,
   RefreshCw,
   DollarSign,
   FileCheck,
-  ExternalLink,
   CheckCircle,
-  X
+  X,
+  ClipboardList,
+  ScrollText,
+  StickyNote
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
 import { sendEmail } from '@/lib/sendEmail';
 import StudentNotes from '@/components/StudentNotes';
+import ApplicationCredentialsCard from '@/components/admin/ApplicationCredentialsCard';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
@@ -628,125 +629,158 @@ export default function StudentProfile() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Personal Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                  <p className="text-sm mt-1">{student.date_of_birth || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
-                  <p className="text-sm mt-1">{student.country_of_education || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                  <p className="text-sm mt-1">
-                    {student.work_experience_years ? `${student.work_experience_years} years` : 'Not provided'}
-                    {student.work_experience_field && ` in ${student.work_experience_field}`}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Contract Reference</label>
-                  <p className="text-sm mt-1">{(student as any).contract_reference || 'Not provided'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto gap-1">
+            <TabsTrigger value="overview" className="text-xs px-2 py-1.5">
+              <User className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="applications" className="text-xs px-2 py-1.5">
+              <BookOpen className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Applications
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="text-xs px-2 py-1.5">
+              <FileText className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Documents
+            </TabsTrigger>
+            <TabsTrigger value="services" className="text-xs px-2 py-1.5">
+              <Briefcase className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Services
+            </TabsTrigger>
+            <TabsTrigger value="contracts" className="text-xs px-2 py-1.5">
+              <ScrollText className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Contracts
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="text-xs px-2 py-1.5">
+              <StickyNote className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Notes
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs px-2 py-1.5">
+              <ClipboardList className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Profile
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Academic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Academic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
-                  <p className="text-sm mt-1">
-                    10th: {student.class_10_marks || 'N/A'} | 12th: {student.class_12_marks || 'N/A'} ({student.class_12_stream || 'N/A'})
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
-                  <p className="text-sm mt-1">
-                    {student.bachelor_degree_name || 'N/A'} in {student.bachelor_field || 'N/A'}<br/>
-                    University: {(student as any).bachelor_university || 'N/A'}<br/>
-                    CGPA: {student.bachelor_cgpa_percentage || 'N/A'} | Credits: {student.bachelor_credits_ects || 'N/A'} | Duration: {student.bachelor_duration_years || 'N/A'} years
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
-                  <p className="text-sm mt-1">
-                    {student.master_degree_name || 'N/A'} in {student.master_field || 'N/A'}<br/>
-                    CGPA: {student.master_cgpa_percentage || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Intended Master Course</label>
-                  <p className="text-sm mt-1">{(student as any).intended_master_course || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Intake</label>
-                  <p className="text-sm mt-1">{(student as any).intake || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Language Score</label>
-                  <p className="text-sm mt-1">{student.ielts_toefl_score || 'Not provided'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Applications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              University Applications ({student.applications?.length || 0})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {student.applications && student.applications.length > 0 ? (
-              <div className="space-y-3">
-                {student.applications.map((app) => (
-                  <div key={app.id} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{app.university_name}</h4>
-                        <p className="text-sm text-muted-foreground">{app.program_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Applied: {new Date(app.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge variant={
-                        app.status === 'offer' ? 'default' :
-                        app.status === 'interview' ? 'secondary' :
-                        app.status === 'rejected' ? 'destructive' : 'outline'
-                      }>
-                        {app.status}
-                      </Badge>
+          {/* Overview Tab - Personal & Academic Info */}
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Personal Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                      <p className="text-sm mt-1">{student.date_of_birth || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
+                      <p className="text-sm mt-1">{student.country_of_education || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
+                      <p className="text-sm mt-1">
+                        {student.work_experience_years ? `${student.work_experience_years} years` : 'Not provided'}
+                        {student.work_experience_field && ` in ${student.work_experience_field}`}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Contract Reference</label>
+                      <p className="text-sm mt-1">{(student as any).contract_reference || 'Not provided'}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No applications found</p>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+
+              {/* Academic Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Academic Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
+                      <p className="text-sm mt-1">
+                        10th: {student.class_10_marks || 'N/A'} | 12th: {student.class_12_marks || 'N/A'} ({student.class_12_stream || 'N/A'})
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
+                      <p className="text-sm mt-1">
+                        {student.bachelor_degree_name || 'N/A'} in {student.bachelor_field || 'N/A'}<br/>
+                        University: {(student as any).bachelor_university || 'N/A'}<br/>
+                        CGPA: {student.bachelor_cgpa_percentage || 'N/A'} | Credits: {student.bachelor_credits_ects || 'N/A'} | Duration: {student.bachelor_duration_years || 'N/A'} years
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
+                      <p className="text-sm mt-1">
+                        {student.master_degree_name || 'N/A'} in {student.master_field || 'N/A'}<br/>
+                        CGPA: {student.master_cgpa_percentage || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Intended Master Course</label>
+                      <p className="text-sm mt-1">{(student as any).intended_master_course || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Language Score</label>
+                      <p className="text-sm mt-1">{student.ielts_toefl_score || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications" className="mt-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    University Applications ({student.applications?.length || 0})
+                  </CardTitle>
+                  <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click on an application to expand and add portal credentials (link, login ID, password).
+                </p>
+              </CardHeader>
+              <CardContent>
+                {student.applications && student.applications.length > 0 ? (
+                  <div className="space-y-3">
+                    {student.applications.map((app: any) => (
+                      <ApplicationCredentialsCard 
+                        key={app.id} 
+                        application={app}
+                        onUpdate={() => studentQuery.refetch()}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">No applications found</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="space-y-6 mt-6">
 
         {/* Required Documents (mirrors student view categories) */}
         <Card>
@@ -955,12 +989,31 @@ export default function StudentProfile() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
 
-        {/* Student Notes (read-only for admin) */}
-        {studentId && (
-          <StudentNotes studentId={studentId} readOnly />
-        )}
+          {/* Notes Tab */}
+          <TabsContent value="notes" className="mt-6">
+            {studentId && (
+              <StudentNotes studentId={studentId} readOnly />
+            )}
+          </TabsContent>
 
+          {/* Profile Tab - Full Details */}
+          <TabsContent value="profile" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Full Profile Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Intake: {(student as any).intake || 'Not provided'}
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Services Tab */}
+          <TabsContent value="services" className="mt-6">
         {/* Service Requests */}
         <Card>
           <CardHeader>
@@ -1000,8 +1053,10 @@ export default function StudentProfile() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
 
-        {/* Contracts Management - Tabs: All Contracts / Signed Contracts */}
+          {/* Contracts Tab */}
+          <TabsContent value="contracts" className="mt-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1189,6 +1244,9 @@ export default function StudentProfile() {
             </Tabs>
           </CardContent>
         </Card>
+          </TabsContent>
+
+        </Tabs>
       </div>
     </Layout>
   );

@@ -5,6 +5,12 @@
 
 const APP_URL = 'https://publicgermany.vercel.app';
 
+export interface EmailTemplateOptions {
+  skipGreeting?: boolean;
+  customGreeting?: string;
+  signOff?: 'admin' | 'team' | 'none' | string;
+}
+
 /**
  * Wraps email content in the standard publicGermany email template
  * @param content - The main email content (HTML allowed, line breaks will be converted to <br>)
@@ -12,22 +18,36 @@ const APP_URL = 'https://publicgermany.vercel.app';
  */
 export function wrapInEmailTemplate(
   content: string,
-  options: {
-    skipGreeting?: boolean;
-    customGreeting?: string;
-    signOff?: string;
-  } = {}
+  options: EmailTemplateOptions = {}
 ): string {
   const { 
     skipGreeting = false, 
-    customGreeting = 'Hello,',
-    signOff = 'Best regards,<br>Admin'
+    customGreeting,
+    signOff = 'admin'
   } = options;
 
   // Convert line breaks to <br> tags if not already HTML
-  const formattedContent = content.replace(/\n/g, '<br>');
+  const formattedContent = content.includes('<') ? content : content.replace(/\n/g, '<br>');
 
-  const greetingHTML = skipGreeting ? '' : `${customGreeting}<br><br>`;
+  // Build greeting
+  let greetingHTML = '';
+  if (!skipGreeting) {
+    greetingHTML = customGreeting 
+      ? `${customGreeting}<br><br>`
+      : 'Hello,<br><br>';
+  }
+
+  // Build sign-off
+  let signOffHTML = '';
+  if (signOff === 'admin') {
+    signOffHTML = '<br><br>Best regards,<br>Admin';
+  } else if (signOff === 'team') {
+    signOffHTML = '<br><br>Warm regards,<br>Team publicGermany';
+  } else if (signOff && signOff !== 'none') {
+    // Custom sign-off string
+    signOffHTML = `<br><br>${signOff.replace(/\n/g, '<br>')}`;
+  }
+  // 'none' = no sign-off
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -53,25 +73,23 @@ export function wrapInEmailTemplate(
   <!-- Plain Content -->
   <tr>
     <td style="padding:12px 16px; font-size:14px; line-height:1.6; color:#000000;">
-      ${greetingHTML}${formattedContent}
-      <br><br>
-      ${signOff}
+      ${greetingHTML}${formattedContent}${signOffHTML}
     </td>
   </tr>
-  <!-- Referral Line -->
+  <!-- Referral Line with Stars -->
   <tr>
     <td style="padding:10px 16px; text-align:center; font-size:12px; color:#374151;">
       <em>
-        Refer your friends and get <strong>₹1,000 instant cashback</strong> once they enroll.
+        ⭐ Refer your friends and get <strong>₹1,000 instant cashback</strong> once they enroll. ⭐
       </em>
     </td>
   </tr>
-  <!-- Footer Brand -->
+  <!-- Footer Brand with Flag -->
   <tr>
     <td style="padding:8px 16px; text-align:center; font-size:12px; color:#111827;">
       <a href="${APP_URL}"
          style="font-weight:bold; color:#111827; text-decoration:none;">
-        publicGermany
+        🇩🇪 publicGermany
       </a>
     </td>
   </tr>
@@ -100,10 +118,10 @@ export function getPersonalizedGreeting(name?: string): string {
 }
 
 /**
- * Standard sign-off options
+ * Standard sign-off options for display
  */
 export const signOffs = {
-  admin: 'Best regards,<br>Admin',
-  team: 'Best regards,<br>publicGermany Team',
-  default: 'Best regards,<br>Admin'
+  admin: 'Best regards, Admin',
+  team: 'Warm regards, Team publicGermany',
+  none: '(No sign-off - include in content)'
 };

@@ -85,8 +85,11 @@ export type Database = {
           ielts_requirement: string | null
           notes: string | null
           portal_link: string | null
+          portal_login_id: string | null
+          portal_password: string | null
           program_name: string
           required_tests: string | null
+          show_credentials_to_student: boolean
           start_date: string | null
           status: string
           university_name: string
@@ -106,8 +109,11 @@ export type Database = {
           ielts_requirement?: string | null
           notes?: string | null
           portal_link?: string | null
+          portal_login_id?: string | null
+          portal_password?: string | null
           program_name: string
           required_tests?: string | null
+          show_credentials_to_student?: boolean
           start_date?: string | null
           status?: string
           university_name: string
@@ -127,8 +133,11 @@ export type Database = {
           ielts_requirement?: string | null
           notes?: string | null
           portal_link?: string | null
+          portal_login_id?: string | null
+          portal_password?: string | null
           program_name?: string
           required_tests?: string | null
+          show_credentials_to_student?: boolean
           start_date?: string | null
           status?: string
           university_name?: string
