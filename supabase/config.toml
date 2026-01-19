@@ -1,1 +1,25 @@
 project_id = "rzbnrlfujjxyrypbafdp"
+
+[functions.remind-deadlines]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-weekly-promo]
+verify_jwt = false
+
+[functions.fetch-resource]
+verify_jwt = false
+
+[functions.get-user-documents]
+verify_jwt = false
+
+[functions.get-user-email]
+verify_jwt = false
+
+[functions.import-universities]
+verify_jwt = false
+
+[functions.download-proxy]
+verify_jwt = false
