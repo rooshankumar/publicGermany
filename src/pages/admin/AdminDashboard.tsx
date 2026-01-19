@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
+import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
 
 interface DashboardStats {
   totalStudents: number;
@@ -231,6 +232,9 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Deadline Reminders Control Panel */}
+        <UpcomingDeadlineReminders />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Recent Payments */}

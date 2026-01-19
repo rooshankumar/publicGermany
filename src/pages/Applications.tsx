@@ -9,13 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { ExcelTemplate } from '@/components/ExcelTemplate';
 import { sendEmail } from '@/lib/sendEmail';
+import StudentPortalCredentials from '@/components/StudentPortalCredentials';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Application {
   id: string;
@@ -29,6 +31,9 @@ interface Application {
   application_method: string | null;
   required_tests: string | null;
   portal_link: string | null;
+  portal_login_id: string | null;
+  portal_password: string | null;
+  show_credentials_to_student: boolean;
   status: 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected';
   notes: string | null;
   created_at: string;
@@ -44,8 +49,21 @@ const Applications = () => {
   const [editApp, setEditApp] = useState<Application | null>(null);
   const [editValues, setEditValues] = useState<Record<string, any>>({});
   const [importing, setImporting] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { profile } = useAuth();
+
+  const toggleRowExpand = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const handleExcelUpload = async (data: any[]) => {
     if (!profile?.user_id) {
@@ -339,47 +357,80 @@ const Applications = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {applications.map((app) => (
-                      <TableRow key={app.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => openEditDialog(app)}><Edit className="h-4 w-4" /></Button>
-                            <Button size="sm" variant="ghost" asChild>
-                              <a href={app.portal_link || '#'} target="_blank" rel="noopener noreferrer" className={!app.portal_link ? 'opacity-20 pointer-events-none' : ''}>
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteApplication(app.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{app.university_name}</TableCell>
-                        <TableCell>{app.program_name}</TableCell>
-                        <TableCell>{app.ielts_requirement || '-'}</TableCell>
-                        <TableCell>{app.german_requirement || '-'}</TableCell>
-                        <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
-                        <TableCell>
-                          {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
-                        </TableCell>
-                        <TableCell>{app.application_method || '-'}</TableCell>
-                        <TableCell>
-                          <Select value={app.status} onValueChange={(val) => updateApplicationStatus(app.id, val as Application['status'])}>
-                            <SelectTrigger className="w-32">
-                              <Badge variant={getStatusBadgeVariant(app.status)}>{app.status}</Badge>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="submitted">Submitted</SelectItem>
-                              <SelectItem value="interview">Interview</SelectItem>
-                              <SelectItem value="offer">Offer</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {applications.map((app) => {
+                      const hasCredentials = app.show_credentials_to_student && 
+                        (app.portal_link || app.portal_login_id || app.portal_password);
+                      
+                      return (
+                        <>
+                          <TableRow key={app.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {hasCredentials && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => toggleRowExpand(app.id)}
+                                    className="p-1"
+                                  >
+                                    {expandedRows.has(app.id) ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="ghost" onClick={() => openEditDialog(app)}><Edit className="h-4 w-4" /></Button>
+                                <Button size="sm" variant="ghost" asChild>
+                                  <a href={app.portal_link || '#'} target="_blank" rel="noopener noreferrer" className={!app.portal_link ? 'opacity-20 pointer-events-none' : ''}>
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => deleteApplication(app.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{app.university_name}</TableCell>
+                            <TableCell>{app.program_name}</TableCell>
+                            <TableCell>{app.ielts_requirement || '-'}</TableCell>
+                            <TableCell>{app.german_requirement || '-'}</TableCell>
+                            <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
+                            <TableCell>
+                              {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+                            </TableCell>
+                            <TableCell>{app.application_method || '-'}</TableCell>
+                            <TableCell>
+                              <Select value={app.status} onValueChange={(val) => updateApplicationStatus(app.id, val as Application['status'])}>
+                                <SelectTrigger className="w-32">
+                                  <Badge variant={getStatusBadgeVariant(app.status)}>{app.status}</Badge>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="draft">Draft</SelectItem>
+                                  <SelectItem value="submitted">Submitted</SelectItem>
+                                  <SelectItem value="interview">Interview</SelectItem>
+                                  <SelectItem value="offer">Offer</SelectItem>
+                                  <SelectItem value="rejected">Rejected</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                          {hasCredentials && expandedRows.has(app.id) && (
+                            <TableRow key={`${app.id}-creds`} className="bg-muted/30">
+                              <TableCell colSpan={10} className="py-0">
+                                <StudentPortalCredentials
+                                  portalLink={app.portal_link}
+                                  loginId={app.portal_login_id}
+                                  password={app.portal_password}
+                                  showCredentials={app.show_credentials_to_student}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

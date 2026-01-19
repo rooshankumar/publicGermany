@@ -9,10 +9,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 const APP_URL = "https://publicgermany.vercel.app";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json; charset=utf-8',
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: corsHeaders,
   });
 }
 
@@ -80,17 +86,17 @@ function wrapInEmailTemplate(content: string, greeting = "Hello,", signOff = "Be
 const dayOffsets = [7, 3, 1];
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+  
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
-    // Check API key from query parameter or header
-    const url = new URL(req.url);
-    const apiKey = url.searchParams.get('key') || req.headers.get('x-api-key');
-    const expectedKey = Deno.env.get('CRON_API_KEY');
-    
-    if (apiKey !== expectedKey) {
-      console.error('❌ Invalid or missing API key');
-      return json({ error: 'Unauthorized - Invalid API key' }, 401);
-    }
-    
     console.log('🔔 [remind-deadlines] Starting deadline reminder check at:', new Date().toISOString());
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -255,7 +261,7 @@ serve(async (req: Request) => {
     }
 
     console.log(`✅ [remind-deadlines] Completed: ${attempted} attempted, ${sent} sent`);
-    return json({ ok: true, processed: attempted, sent });
+    return json({ ok: true, processed: attempted, sent }, 200);
   } catch (e) {
     console.error('❌ [remind-deadlines] Error:', String(e));
     return json({ error: String(e) }, 500);
