@@ -83,7 +83,7 @@ function wrapInEmailTemplate(content: string, greeting = "Hello,", signOff = "Be
 </html>`;
 }
 
-const dayOffsets = [7, 3, 1];
+const dayOffsets = [14, 10, 7, 5, 2, 1];
 
 serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -202,19 +202,42 @@ serve(async (req: Request) => {
       }
       console.log(`   ✅ Email resolved: ${to}`);
 
-      // Compose email content
-      const subject = `Reminder: ${app.university_name} deadline in ${target.days} day${target.days === 1 ? '' : 's'}`;
-      const studentName = app.profiles?.full_name || '';
+      // Compose email content using the user's template
+      const studentName = app.profiles?.full_name || 'Student';
+      const deadlineFormatted = new Date(app.end_date).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+      
+      // Determine subject based on urgency
+      let subject = '';
+      if (target.days === 1) {
+        subject = '🚨 URGENT: Application Deadline Tomorrow!';
+      } else if (target.days === 2) {
+        subject = '⚠️ Application Deadline in 2 Days!';
+      } else if (target.days <= 5) {
+        subject = `⏰ Application Deadline in ${target.days} Days`;
+      } else if (target.days <= 7) {
+        subject = `📅 Application Deadline in ${target.days} Days`;
+      } else {
+        subject = `📋 Application Deadline in ${target.days} Days`;
+      }
+      
       const content = [
-        `This is a friendly reminder that the deadline for <strong>${app.university_name}</strong>` +
-          (app.program_name ? ` — <em>${app.program_name}</em>` : '') + ` is in <strong>${target.days} day${target.days === 1 ? '' : 's'}</strong>.<br/><br/>`,
-        `Deadline: ${new Date(app.end_date).toLocaleDateString()}<br/>`,
-        `Current status: <strong>${String(app.status || 'draft').replace('_',' ')}</strong><br/><br/>`,
-        `Please make sure your documents and application are complete on time.`
+        `The following university application deadlines are approaching.<br/>`,
+        `Please make sure you are actively following and completing them.<br/><br/>`,
+        `<strong>Universities & Programs</strong><br/>`,
+        `${app.university_name} — ${app.program_name}<br/>`,
+        `📅 Deadline: ${deadlineFormatted}<br/><br/>`,
+        app.notes ? `<em>${app.notes}</em><br/><br/>` : '',
+        `We strongly recommend starting early to avoid document issues or portal delays.<br/><br/>`,
+        `If you're unsure about eligibility, documents, or the application process, just reply to this email — we'll guide you step by step.<br/><br/>`,
+        `You've got this 💪`
       ].join('');
       
-      const greeting = studentName ? `Hi ${studentName},` : 'Hello,';
-      const body = wrapInEmailTemplate(content, greeting, 'Best regards,<br>publicGermany Team');
+      const greeting = `Hello ${studentName},`;
+      const body = wrapInEmailTemplate(content, greeting, 'Best regards,<br>Roshan');
 
       // Send via Brevo HTTP API
       attempted++;

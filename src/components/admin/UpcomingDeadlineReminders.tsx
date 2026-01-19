@@ -68,8 +68,8 @@ const UpcomingDeadlineReminders = () => {
         const deadline = new Date(app.end_date);
         const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Determine which reminders are still pending
-        const allReminderDays = [14, 7, 3, 2, 1];
+        // Determine which reminders are still pending (D-14, D-10, D-7, D-5, D-2, D-1)
+        const allReminderDays = [14, 10, 7, 5, 2, 1];
         const pendingReminderDays = allReminderDays.filter(d => {
           return d >= daysLeft && !sentSet.has(`${app.id}:${d}`);
         });
@@ -151,7 +151,7 @@ const UpcomingDeadlineReminders = () => {
               Deadline Reminders
             </CardTitle>
             <CardDescription className="text-xs">
-              Upcoming alerts (14d) • Auto: 7/3/1 days
+              Upcoming alerts (14d) • Auto: D-14/10/7/5/2/1
             </CardDescription>
           </div>
           <div className="flex gap-2">

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, ExternalLink, Edit, Trash2, Download, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, BadgeCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import useRealTimeSync from '@/hooks/useRealTimeSync';
@@ -361,12 +361,37 @@ const Applications = () => {
                       const hasCredentials = app.show_credentials_to_student && 
                         (app.portal_link || app.portal_login_id || app.portal_password);
                       
+                      // Green checkmark: credentials set AND application submitted
+                      const isComplete = hasCredentials && app.status === 'submitted';
+                      
                       return (
                         <>
                           <TableRow key={app.id}>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {hasCredentials && (
+                                {isComplete && (
+                                  <img 
+                                    src="/images/green-checkmark.png" 
+                                    alt="Complete" 
+                                    className="h-5 w-5 flex-shrink-0"
+                                    title="Credentials set & Application submitted"
+                                  />
+                                )}
+                                {hasCredentials && !isComplete && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => toggleRowExpand(app.id)}
+                                    className="p-1"
+                                  >
+                                    {expandedRows.has(app.id) ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                )}
+                                {isComplete && (
                                   <Button 
                                     size="sm" 
                                     variant="ghost" 
