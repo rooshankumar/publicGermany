@@ -32,7 +32,7 @@ export async function sendDeadlineReminders() {
     console.log('📅 Today (local):', today.toISOString().split('T')[0]);
 
     // Calculate reminder dates
-    const reminderDays = [14, 7, 3, 2, 1]; // 2 weeks, 1 week, 3 days, 2 days, 1 day
+    const reminderDays = [14, 10, 7, 5, 2, 1]; // D-14, D-10, D-7, D-5, D-2, D-1
     const reminderDates = reminderDays.map(days => {
       const date = new Date(today);
       date.setDate(date.getDate() + days);
