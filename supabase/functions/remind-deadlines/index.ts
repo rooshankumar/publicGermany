@@ -125,20 +125,23 @@ serve(async (req: Request) => {
     
     console.log(`🎯 Target dates for reminders:`, targets.map(t => `${t.days} days: ${t.isoDate}`).join(' | '));
 
-    // Fetch applications with deadlines on target dates
-    const deadlines = targets.map(t => t.isoDate);
+    // Fetch applications with START dates on target dates (before application opens)
+    // Exclude submitted applications - they don't need reminders
+    const targetDates = targets.map(t => t.isoDate);
     const { data: apps, error: appsErr } = await supabase
       .from('applications')
-      .select(`id, user_id, university_name, program_name, end_date, status, profiles!applications_user_id_fkey(full_name)`)
-      .in('end_date', deadlines);
+      .select(`id, user_id, university_name, program_name, start_date, end_date, status, notes, profiles!applications_user_id_fkey(full_name)`)
+      .in('start_date', targetDates)
+      .neq('status', 'submitted'); // Don't remind for submitted applications
     if (appsErr) throw appsErr;
 
-    console.log(`📊 Query results: Found ${apps?.length || 0} applications with matching deadlines`);
+    console.log(`📊 Query results: Found ${apps?.length || 0} applications with matching start dates`);
     if (apps && apps.length > 0) {
       console.log(`📋 Applications found:`, apps.map((a: any) => ({
         id: a.id,
         university: a.university_name,
         program: a.program_name,
+        startDate: a.start_date,
         deadline: a.end_date,
         status: a.status,
         studentName: a.profiles?.full_name
@@ -146,7 +149,7 @@ serve(async (req: Request) => {
     }
 
     if (!apps || apps.length === 0) {
-      console.log(`✅ No applications found for target dates. Exiting.`);
+      console.log(`✅ No applications found for target start dates (excluding submitted). Exiting.`);
       return json({ ok: true, processed: 0, sent: 0 });
     }
 
@@ -181,14 +184,21 @@ serve(async (req: Request) => {
 
     for (const app of apps as any[]) {
       console.log(`\n📌 Processing application: ${app.university_name}`);
-      const deadlineISO = new Date(app.end_date).toISOString().slice(0, 10);
-      const target = targets.find(t => t.isoDate === deadlineISO);
+      
+      // Use start_date for matching (when applications open)
+      const startDateISO = app.start_date ? new Date(app.start_date).toISOString().slice(0, 10) : null;
+      if (!startDateISO) {
+        console.log(`   ⏭️ Skipped: No start date set`);
+        continue;
+      }
+      
+      const target = targets.find(t => t.isoDate === startDateISO);
       if (!target) {
         console.log(`   ⏭️ Skipped: No matching target date`);
         continue;
       }
 
-      const key = `${app.id}:${target.days}`;
+      const key = `${app.id}:start:${target.days}`;
       if (sentSet.has(key)) {
         console.log(`   ⏭️ Skipped: Reminder already sent for ${target.days}-day offset`);
         continue;
@@ -204,34 +214,40 @@ serve(async (req: Request) => {
 
       // Compose email content using the user's template
       const studentName = app.profiles?.full_name || 'Student';
-      const deadlineFormatted = new Date(app.end_date).toLocaleDateString('en-US', { 
+      const startDateFormatted = new Date(app.start_date).toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
         year: 'numeric' 
       });
+      const deadlineFormatted = app.end_date ? new Date(app.end_date).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }) : 'Not set';
       
-      // Determine subject based on urgency
+      // Determine subject based on urgency - now for application OPENING
       let subject = '';
       if (target.days === 1) {
-        subject = '🚨 URGENT: Application Deadline Tomorrow!';
+        subject = '🚨 Application Opens Tomorrow!';
       } else if (target.days === 2) {
-        subject = '⚠️ Application Deadline in 2 Days!';
+        subject = '⚠️ Application Opens in 2 Days!';
       } else if (target.days <= 5) {
-        subject = `⏰ Application Deadline in ${target.days} Days`;
+        subject = `⏰ Application Opens in ${target.days} Days`;
       } else if (target.days <= 7) {
-        subject = `📅 Application Deadline in ${target.days} Days`;
+        subject = `📅 Application Opens in ${target.days} Days`;
       } else {
-        subject = `📋 Application Deadline in ${target.days} Days`;
+        subject = `📋 Application Opens in ${target.days} Days`;
       }
       
       const content = [
-        `The following university application deadlines are approaching.<br/>`,
-        `Please make sure you are actively following and completing them.<br/><br/>`,
+        `The following university application is opening soon.<br/>`,
+        `Please make sure you are actively preparing and ready to apply.<br/><br/>`,
         `<strong>Universities & Programs</strong><br/>`,
         `${app.university_name} — ${app.program_name}<br/>`,
-        `📅 Deadline: ${deadlineFormatted}<br/><br/>`,
+        `📅 Opens: ${startDateFormatted}<br/>`,
+        app.end_date ? `📅 Deadline: ${deadlineFormatted}<br/><br/>` : '<br/>',
         app.notes ? `<em>${app.notes}</em><br/><br/>` : '',
-        `We strongly recommend starting early to avoid document issues or portal delays.<br/><br/>`,
+        `We strongly recommend preparing early to avoid document issues or portal delays.<br/><br/>`,
         `If you're unsure about eligibility, documents, or the application process, just reply to this email — we'll guide you step by step.<br/><br/>`,
         `You've got this 💪`
       ].join('');
@@ -264,8 +280,8 @@ serve(async (req: Request) => {
         await supabase.from('emails_log').insert({
           to_email: to,
           subject,
-          template: 'deadline_reminder',
-          payload: { application_id: app.id, day_offset: target.days },
+          template: 'application_opening_reminder',
+          payload: { application_id: app.id, day_offset: target.days, type: 'start_date' },
           status: brevoRes.ok ? 'success' : 'error',
           error: brevoRes.ok ? null : JSON.stringify(brevoJson),
         });
@@ -274,6 +290,7 @@ serve(async (req: Request) => {
       if (brevoRes.ok) {
         sent++;
         try {
+          // Store with 'start:' prefix to differentiate from deadline reminders
           await supabase.from('deadline_reminders').insert({
             application_id: app.id,
             day_offset: target.days,

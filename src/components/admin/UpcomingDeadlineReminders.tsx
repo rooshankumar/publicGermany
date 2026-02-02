@@ -10,11 +10,12 @@ interface UpcomingReminder {
   id: string;
   university_name: string;
   program_name: string;
-  end_date: string;
+  start_date: string;
+  end_date: string | null;
   status: string;
   full_name: string;
   user_id: string;
-  days_left: number;
+  days_until_open: number;
   reminder_days: number[];
 }
 
@@ -35,22 +36,24 @@ const UpcomingDeadlineReminders = () => {
       const twoWeeksFromNow = new Date();
       twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
 
-      // Get applications with deadlines in the next 14 days
+      // Get applications with START dates in the next 14 days
+      // Exclude submitted applications - they don't need reminders
       const { data: applications, error } = await supabase
         .from('applications')
         .select(`
           id, 
           university_name, 
           program_name, 
+          start_date,
           end_date, 
           status,
           user_id,
           profiles!applications_user_id_fkey(full_name)
         `)
-        .gte('end_date', today.toISOString().split('T')[0])
-        .lte('end_date', twoWeeksFromNow.toISOString().split('T')[0])
-        .in('status', ['draft', 'submitted'])
-        .order('end_date', { ascending: true });
+        .gte('start_date', today.toISOString().split('T')[0])
+        .lte('start_date', twoWeeksFromNow.toISOString().split('T')[0])
+        .neq('status', 'submitted')
+        .order('start_date', { ascending: true });
 
       if (error) throw error;
 
@@ -64,28 +67,30 @@ const UpcomingDeadlineReminders = () => {
       );
 
       // Process applications to show upcoming reminders
-      const processedReminders: UpcomingReminder[] = (applications || []).map((app: any) => {
-        const deadline = new Date(app.end_date);
-        const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const processedReminders: UpcomingReminder[] = (applications || [])
+        .filter((app: any) => app.start_date)
+        .map((app: any) => {
+          const startDate = new Date(app.start_date);
+          const daysUntilOpen = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Determine which reminders are still pending (D-14, D-10, D-7, D-5, D-2, D-1)
-        const allReminderDays = [14, 10, 7, 5, 2, 1];
-        const pendingReminderDays = allReminderDays.filter(d => {
-          return d >= daysLeft && !sentSet.has(`${app.id}:${d}`);
-        });
+          const allReminderDays = [14, 10, 7, 5, 2, 1];
+          const pendingReminderDays = allReminderDays.filter(d => {
+            return d >= daysUntilOpen && !sentSet.has(`${app.id}:${d}`);
+          });
 
-        return {
-          id: app.id,
-          university_name: app.university_name,
-          program_name: app.program_name,
-          end_date: app.end_date,
-          status: app.status,
-          full_name: app.profiles?.full_name || 'Unknown',
-          user_id: app.user_id,
-          days_left: daysLeft,
-          reminder_days: pendingReminderDays
-        };
-      });
+          return {
+            id: app.id,
+            university_name: app.university_name,
+            program_name: app.program_name,
+            start_date: app.start_date,
+            end_date: app.end_date,
+            status: app.status,
+            full_name: app.profiles?.full_name || 'Unknown',
+            user_id: app.user_id,
+            days_until_open: daysUntilOpen,
+            reminder_days: pendingReminderDays
+          };
+        });
 
       setReminders(processedReminders);
     } catch (error) {
@@ -114,7 +119,6 @@ const UpcomingDeadlineReminders = () => {
         description: `Processed: ${data?.processed || 0}, Sent: ${data?.sent || 0}`,
       });
       
-      // Refresh the list
       fetchUpcomingReminders();
     } catch (error: any) {
       console.error('Error triggering reminders:', error);
@@ -131,7 +135,7 @@ const UpcomingDeadlineReminders = () => {
   const getDaysLabel = (days: number) => {
     if (days === 0) return 'Today';
     if (days === 1) return 'Tomorrow';
-    return `${days} days`;
+    return `in ${days}d`;
   };
 
   const getUrgencyVariant = (days: number): "default" | "secondary" | "destructive" | "outline" => {
@@ -148,10 +152,10 @@ const UpcomingDeadlineReminders = () => {
           <div>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Bell className="h-5 w-5 text-primary" />
-              Deadline Reminders
+              Application Opening Reminders
             </CardTitle>
             <CardDescription className="text-xs">
-              Upcoming alerts (14d) • Auto: D-14/10/7/5/2/1
+              Opens in 14d • Auto: D-14/10/7/5/2/1 • Excludes submitted
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -179,7 +183,7 @@ const UpcomingDeadlineReminders = () => {
           <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
         ) : reminders.length === 0 ? (
           <div className="text-center py-4 text-muted-foreground text-sm">
-            No deadlines in next 14 days
+            No application openings in next 14 days (or all submitted)
           </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -198,12 +202,12 @@ const UpcomingDeadlineReminders = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <Badge variant={getUrgencyVariant(reminder.days_left)} className="text-xs">
-                    {getDaysLabel(reminder.days_left)}
+                  <Badge variant={getUrgencyVariant(reminder.days_until_open)} className="text-xs">
+                    Opens {getDaysLabel(reminder.days_until_open)}
                   </Badge>
                   {reminder.reminder_days.length > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      📧 {reminder.reminder_days.join('/')}d
+                      📧 D-{reminder.reminder_days.join('/')}
                     </span>
                   )}
                 </div>
