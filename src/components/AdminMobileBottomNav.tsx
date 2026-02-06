@@ -58,6 +58,7 @@ const AdminMobileBottomNav = () => {
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
     { href: '/admin/resources', label: 'Resources', icon: BookOpen },
+    { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');

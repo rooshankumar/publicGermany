@@ -36,6 +36,10 @@ import { DOCUMENTS } from '@/components/APSRequiredDocuments';
 import { sendEmail } from '@/lib/sendEmail';
 import StudentNotes from '@/components/StudentNotes';
 import ApplicationCredentialsCard from '@/components/admin/ApplicationCredentialsCard';
+import { ExcelUpload } from '@/components/ExcelUpload';
+import { Upload, Plus, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   applications?: Database['public']['Tables']['applications']['Row'][];
@@ -747,29 +751,75 @@ export default function StudentProfile() {
           <TabsContent value="applications" className="mt-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="flex items-center gap-2">
                     <BookOpen className="h-5 w-5" />
                     University Applications ({student.applications?.length || 0})
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <ExcelUpload onUpload={async (data) => {
+                      if (!studentId) return;
+                      try {
+                        const rows = data.map((row: any) => ({
+                          user_id: studentId,
+                          university_name: row.university_name,
+                          program_name: row.program_name,
+                          ielts_requirement: row.ielts_requirement,
+                          german_requirement: row.german_requirement,
+                          fees_eur: row.fees_eur ? String(row.fees_eur) : null,
+                          application_start_date: row.application_start_date || row.start_date || null,
+                          application_end_date: row.application_end_date || row.end_date || null,
+                          application_method: row.application_method,
+                          required_tests: row.required_tests,
+                          portal_link: row.portal_link,
+                          notes: row.notes,
+                          status: row.status || 'draft',
+                        }));
+                        const { error } = await supabase.from('applications').insert(rows);
+                        if (error) throw error;
+                        toast({ title: 'Success', description: `${rows.length} applications imported` });
+                        studentQuery.refetch();
+                      } catch (err: any) {
+                        toast({ title: 'Error', description: err.message || 'Failed to import', variant: 'destructive' });
+                      }
+                    }} />
+                    <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Click on an application to expand and add portal credentials (link, login ID, password).
+                  Click on an application to expand and edit. Use Excel upload to bulk-add applications.
                 </p>
               </CardHeader>
               <CardContent>
                 {student.applications && student.applications.length > 0 ? (
                   <div className="space-y-3">
                     {student.applications.map((app: any) => (
-                      <ApplicationCredentialsCard 
-                        key={app.id} 
-                        application={app}
-                        onUpdate={() => studentQuery.refetch()}
-                      />
+                      <div key={app.id} className="relative group">
+                        <ApplicationCredentialsCard 
+                          application={app}
+                          onUpdate={() => studentQuery.refetch()}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                          onClick={async () => {
+                            if (!confirm(`Delete application for ${app.university_name}?`)) return;
+                            const { error } = await supabase.from('applications').delete().eq('id', app.id);
+                            if (error) {
+                              toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                            } else {
+                              toast({ title: 'Deleted', description: 'Application removed' });
+                              studentQuery.refetch();
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 ) : (
