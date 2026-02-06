@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import InlineLoader from '@/components/InlineLoader';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Edit, Trash2, ExternalLink, GraduationCap } from 'lucide-react';
+import { Plus, Edit, Trash2, ExternalLink, GraduationCap, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 interface University {
   id: string;
@@ -192,6 +193,58 @@ export default function Universities() {
     }
   };
 
+  // --- CSV/Excel import ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws) as any[];
+        const mapped = rows
+          .map((r: any) => ({
+            name: (r.name || r.Name || r.University || r.university_name || '').toString().trim(),
+            city: (r.city || r.City || '').toString().trim() || null,
+            country: (r.country || r.Country || 'Germany').toString().trim(),
+            website_url: (r.website_url || r.Website || r.website || '').toString().trim() || null,
+            is_public: r.is_public === false ? false : true,
+            has_tuition_fees: r.has_tuition_fees === true || r.has_tuition_fees === 'true',
+            fields: r.fields ? (typeof r.fields === 'string' ? r.fields.split(',').map((f: string) => f.trim()) : r.fields) : null,
+            languages: r.languages ? (typeof r.languages === 'string' ? r.languages.split(',').map((l: string) => l.trim()) : r.languages) : null,
+          }))
+          .filter(r => r.name.length > 0);
+        if (mapped.length === 0) {
+          toast({ title: 'No data', description: 'No valid rows found in the file', variant: 'destructive' });
+          return;
+        }
+        setImportPreview(mapped);
+        setShowImportDialog(true);
+      } catch (err) {
+        toast({ title: 'Error', description: 'Failed to parse file', variant: 'destructive' });
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
+  const confirmImport = async () => {
+    try {
+      const { error } = await supabase.from('universities').insert(importPreview);
+      if (error) throw error;
+      toast({ title: 'Imported', description: `${importPreview.length} universities added` });
+      setShowImportDialog(false);
+      setImportPreview([]);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const filteredUniversities = universities.filter(uni => {
     const q = (debouncedSearch || '').toLowerCase().trim();
     const matchesSearch = !q || uni.name.toLowerCase().includes(q) ||
@@ -329,6 +382,12 @@ export default function Universities() {
               <UniversityForm onSubmit={handleAddUniversity} />
             </DialogContent>
           </Dialog>
+
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import CSV/Excel
+          </Button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="hidden" />
         </div>
 
         {/* Search and Filter */}
@@ -459,6 +518,42 @@ export default function Universities() {
             )}
           </CardContent>
         </Card>
+
+        {/* Import Preview Dialog */}
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Import Preview ({importPreview.length} universities)</DialogTitle>
+              <DialogDescription>Review before importing</DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[50vh] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>City</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Type</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importPreview.map((u, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell>{u.city || '-'}</TableCell>
+                      <TableCell>{u.country}</TableCell>
+                      <TableCell>{u.is_public ? 'Public' : 'Private'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowImportDialog(false)}>Cancel</Button>
+              <Button onClick={confirmImport}>Import {importPreview.length} Universities</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Dialog */}
         <Dialog open={!!editingUniversity} onOpenChange={(open) => !open && setEditingUniversity(null)}>
