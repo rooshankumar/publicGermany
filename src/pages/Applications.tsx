@@ -236,6 +236,16 @@ const Applications = () => {
 
   if (loading) return <Layout><div className="animate-pulse p-8">Loading...</div></Layout>;
 
+  // Sort: submitted/Applied at top, then by nearest start date
+  const sortedApplications = [...applications].sort((a, b) => {
+    const aSubmitted = ['submitted', 'Applied'].includes(a.status) ? 0 : 1;
+    const bSubmitted = ['submitted', 'Applied'].includes(b.status) ? 0 : 1;
+    if (aSubmitted !== bSubmitted) return aSubmitted - bSubmitted;
+    const aDate = a.application_start_date ? new Date(a.application_start_date).getTime() : Infinity;
+    const bDate = b.application_start_date ? new Date(b.application_start_date).getTime() : Infinity;
+    return aDate - bDate;
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -357,41 +367,22 @@ const Applications = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {applications.map((app) => {
+                    {sortedApplications.map((app) => {
                       const hasCredentials = app.show_credentials_to_student && 
                         (app.portal_link || app.portal_login_id || app.portal_password);
                       
-                      // Green checkmark: credentials set AND application submitted
-                      const isComplete = hasCredentials && app.status === 'submitted';
+                      // Green checkmark: application is submitted or Applied
+                      const isSubmitted = ['submitted', 'Applied'].includes(app.status);
                       
                       return (
                         <>
                           <TableRow key={app.id}>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {isComplete && (
-                                  <img 
-                                    src="/images/green-checkmark.png" 
-                                    alt="Complete" 
-                                    className="h-5 w-5 flex-shrink-0"
-                                    title="Credentials set & Application submitted"
-                                  />
+                                {isSubmitted && (
+                                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
                                 )}
-                                {hasCredentials && !isComplete && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    onClick={() => toggleRowExpand(app.id)}
-                                    className="p-1"
-                                  >
-                                    {expandedRows.has(app.id) ? (
-                                      <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                )}
-                                {isComplete && (
+                                {hasCredentials && (
                                   <Button 
                                     size="sm" 
                                     variant="ghost" 

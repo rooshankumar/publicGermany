@@ -39,6 +39,7 @@ import ApplicationCredentialsCard from '@/components/admin/ApplicationCredential
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { Upload, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
@@ -56,8 +57,21 @@ export default function StudentProfile() {
   const [previewContract, setPreviewContract] = useState<any | null>(null);
   const [updatingContractId, setUpdatingContractId] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
+  const [showAddAppDialog, setShowAddAppDialog] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Sort applications: submitted/Applied at top, then by nearest application_start_date
+  const sortApplications = (apps: any[]) => {
+    return [...apps].sort((a, b) => {
+      const aSubmitted = ['submitted', 'Applied'].includes(a.status) ? 0 : 1;
+      const bSubmitted = ['submitted', 'Applied'].includes(b.status) ? 0 : 1;
+      if (aSubmitted !== bSubmitted) return aSubmitted - bSubmitted;
+      const aDate = a.application_start_date ? new Date(a.application_start_date).getTime() : Infinity;
+      const bDate = b.application_start_date ? new Date(b.application_start_date).getTime() : Infinity;
+      return aDate - bDate;
+    });
+  };
 
   const fetchStudentProfile = async () => {
     if (!studentId) return null;
@@ -324,6 +338,7 @@ export default function StudentProfile() {
     };
     const channel = supabase
       .channel(`student-profile-${studentId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${studentId}` }, debounce(() => studentQuery.refetch(), 400))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts', filter: `student_id=eq.${studentId}` }, debounce(() => {
         console.log('Contract change detected, refreshing contracts...');
@@ -783,6 +798,91 @@ export default function StudentProfile() {
                         toast({ title: 'Error', description: err.message || 'Failed to import', variant: 'destructive' });
                       }
                     }} />
+                    <Dialog open={showAddAppDialog} onOpenChange={setShowAddAppDialog}>
+                      <DialogTrigger asChild>
+                        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add</Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Add Application for {student?.full_name}</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!studentId) return;
+                          const fd = new FormData(e.target as HTMLFormElement);
+                          const payload = {
+                            user_id: studentId,
+                            university_name: fd.get('university_name') as string,
+                            program_name: fd.get('program_name') as string,
+                            ielts_requirement: (fd.get('ielts_requirement') as string) || null,
+                            german_requirement: (fd.get('german_requirement') as string) || null,
+                            fees_eur: fd.get('fees_eur') ? String(fd.get('fees_eur')) : null,
+                            application_start_date: (fd.get('application_start_date') as string) || null,
+                            application_end_date: (fd.get('application_end_date') as string) || null,
+                            application_method: (fd.get('application_method') as string) || null,
+                            required_tests: (fd.get('required_tests') as string) || null,
+                            portal_link: (fd.get('portal_link') as string) || null,
+                            notes: (fd.get('notes') as string) || null,
+                            status: 'draft' as const,
+                          };
+                          const { error } = await supabase.from('applications').insert([payload]);
+                          if (error) {
+                            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                          } else {
+                            toast({ title: 'Success', description: 'Application added' });
+                            setShowAddAppDialog(false);
+                            studentQuery.refetch();
+                          }
+                        }} className="space-y-4 pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>University Name *</Label>
+                              <Input name="university_name" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Program Name *</Label>
+                              <Input name="program_name" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>IELTS</Label>
+                              <Input name="ielts_requirement" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>German</Label>
+                              <Input name="german_requirement" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Fees (EUR)</Label>
+                              <Input name="fees_eur" type="number" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Application Method</Label>
+                              <Input name="application_method" placeholder="Uni-assist, Direct, etc." />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Start Date</Label>
+                              <Input name="application_start_date" type="date" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>End Date</Label>
+                              <Input name="application_end_date" type="date" />
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                              <Label>Portal Link</Label>
+                              <Input name="portal_link" type="url" />
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                              <Label>Notes</Label>
+                              <Input name="notes" />
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setShowAddAppDialog(false)}>Cancel</Button>
+                            <Button type="submit">Add Application</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                     <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Refresh
@@ -790,37 +890,47 @@ export default function StudentProfile() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Click on an application to expand and edit. Use Excel upload to bulk-add applications.
+                  Click on an application to expand and edit. Use Excel upload or Add button to add applications.
                 </p>
               </CardHeader>
               <CardContent>
-                {student.applications && student.applications.length > 0 ? (
+              {student.applications && student.applications.length > 0 ? (
                   <div className="space-y-3">
-                    {student.applications.map((app: any) => (
-                      <div key={app.id} className="relative group">
-                        <ApplicationCredentialsCard 
-                          application={app}
-                          onUpdate={() => studentQuery.refetch()}
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="absolute top-2 right-12 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                          onClick={async () => {
-                            if (!confirm(`Delete application for ${app.university_name}?`)) return;
-                            const { error } = await supabase.from('applications').delete().eq('id', app.id);
-                            if (error) {
-                              toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                            } else {
-                              toast({ title: 'Deleted', description: 'Application removed' });
-                              studentQuery.refetch();
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                    {sortApplications(student.applications).map((app: any) => {
+                      const isSubmitted = ['submitted', 'Applied'].includes(app.status);
+                      return (
+                        <div key={app.id} className="relative">
+                          <div className="flex items-start gap-2">
+                            {isSubmitted && (
+                              <CheckCircle className="h-5 w-5 text-green-500 mt-3 flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <ApplicationCredentialsCard 
+                                application={app}
+                                onUpdate={() => studentQuery.refetch()}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="mt-2 flex-shrink-0 text-destructive hover:text-destructive"
+                              onClick={async () => {
+                                if (!confirm(`Delete application for ${app.university_name}?`)) return;
+                                const { error } = await supabase.from('applications').delete().eq('id', app.id);
+                                if (error) {
+                                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                                } else {
+                                  toast({ title: 'Deleted', description: 'Application removed' });
+                                  studentQuery.refetch();
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-4">No applications found</p>
