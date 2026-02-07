@@ -29,7 +29,8 @@ import {
   Calendar,
   FileText,
   GraduationCap,
-  Building
+  Building,
+  CheckCircle
 } from 'lucide-react';
 
 interface Application {
@@ -149,6 +150,8 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
     }
   };
 
+  const isSubmitted = ['submitted', 'Applied'].includes(status);
+
   return (
     <div className="border rounded-lg overflow-hidden">
       {/* Header - Always visible */}
@@ -158,7 +161,12 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
       >
         <div className="flex justify-between items-start gap-2">
           <div className="min-w-0 flex-1">
-            <h4 className="font-medium truncate">{application.university_name}</h4>
+            <div className="flex items-center gap-2">
+              {isSubmitted && (
+                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+              )}
+              <h4 className="font-medium truncate">{application.university_name}</h4>
+            </div>
             <p className="text-sm text-muted-foreground truncate">{application.program_name}</p>
             <p className="text-xs text-muted-foreground mt-1">
               Applied: {new Date(application.created_at).toLocaleDateString()}
