@@ -1,1005 +1,227 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth, type Profile } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ContractCard } from '@/components/ContractCard';
-// Custom Progress component to replace the shadcn/ui one
-const Progress = ({ value, className = '', indicatorClassName = '' }: { 
-  value: number; 
-  className?: string;
-  indicatorClassName?: string;
-}) => {
-  return (
-    <div className={`relative h-2 w-full overflow-hidden rounded-full bg-secondary ${className}`}>
-      <div 
-        className={`h-full rounded-full transition-all duration-500 ${indicatorClassName}`}
-        style={{
-          width: `${Math.max(0, Math.min(100, value))}%`
-        }}
-      />
-    </div>
-  );
-};
 import { Link } from 'react-router-dom';
 import { 
   GraduationCap, 
   FileText, 
   CheckCircle, 
-  Clock, 
   ArrowRight,
-  Users,
   BookOpen,
-  MapPin,
-  Shield,
-  Globe,
-  Calendar,
-  Target,
-  Star,
   Loader2,
   Download,
-  X
+  User,
+  Briefcase
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { downloadContractPDF } from '@/lib/contractGenerator';
 
-// Interface for user data
-interface UserData {
-  id: string;
-  email: string;
-  full_name: string;
-  avatar_url?: string;
-  profile_completion: number;
-  documents_count: number;
-  applications_count: number;
-  upcoming_deadline?: string;
-  days_until_deadline?: number;
-  ielts_toefl_score?: string;
-  german_level?: string;
-}
-
-// Interface for task data
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'completed' | 'in_progress' | 'pending';
-  priority: 'high' | 'medium' | 'low';
-  due_date?: string;
-  url: string;
-}
-
-// Interface for contract notification
-interface ContractNotification {
-  id: string;
-  title: string;
-  body: string | null;
-  type: string;
-  ref_id: string | null;
-  meta: {
-    contract_reference?: string;
-    service_package?: string;
-    service_fee?: string;
-    message?: string;
-  } | null;
-  created_at: string;
-  seen: boolean;
-}
+// Minimal progress bar
+const ProgressBar = ({ value, className = '' }: { value: number; className?: string }) => (
+  <div className={`relative h-2 w-full overflow-hidden rounded-full bg-secondary ${className}`}>
+    <div 
+      className="h-full rounded-full bg-primary transition-all duration-500"
+      style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+    />
+  </div>
+);
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    completedSteps: 0,
-    inProgress: 0,
-    overallProgress: 0,
-    universitiesSelected: 0,
-    documentsReady: 0,
-    daysToDeadline: 45
-  });
-  const [recentPayments, setRecentPayments] = useState<Array<{
-    id: string;
-    service_type: string;
-    service_price: number | null;
-    service_currency: string | null;
-    created_at: string;
-    service_payments: Array<{
-      id: string;
-      amount: number;
-      currency: string;
-      status: 'pending' | 'received' | 'cancelled';
-      paid_at: string | null;
-    }>
-  }>>([]);
-
-  // Contract notification states
-  const [contractNotifications, setContractNotifications] = useState<ContractNotification[]>([]);
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [docsCount, setDocsCount] = useState(0);
+  const [appsCount, setAppsCount] = useState(0);
+  const [submittedApps, setSubmittedApps] = useState(0);
+  const [nearestDeadline, setNearestDeadline] = useState<{ name: string; date: string; days: number } | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
-  const [showContractPopup, setShowContractPopup] = useState(false);
-  const [activeContract, setActiveContract] = useState<ContractNotification | null>(null);
   const [showContractPreview, setShowContractPreview] = useState(false);
+  const [activeContractId, setActiveContractId] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  // Fetch dashboard data
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) return;
-      
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-
-        // Run all dashboard queries in parallel to reduce total load time
         const [
-          { data: profileData, error: profileError },
-          { count: documentsCount, error: docsError },
-          { count: appsCount, error: appsError },
-          { data: srWithPayments, error: payErr },
-          { data: contractData, error: contractErr },
-          { data: contractNotifs, error: notifErr },
+          profResult,
+          { count: dCount },
+          { data: apps },
+          { data: ctrData },
         ] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', user.id)
-            .single(),
-          supabase
-            .from('documents')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          supabase
-            .from('applications') // Changed from 'university_applications' to 'applications'
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          supabase
-            .from('service_requests' as any)
-            .select(`
-              id,
-              service_type,
-              service_price,
-              service_currency,
-              created_at,
-              service_payments (
-                id,
-                amount,
-                currency,
-                status,
-                paid_at
-              )
-            `)
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(5),
-          supabase
-            .from('contracts')
-            .select('*')
-            .eq('student_id', user.id)
-            .order('sent_at', { ascending: false })
-            .neq('status', 'draft'),
-          supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('type', 'contract')
-            .order('created_at', { ascending: false }),
+          supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+          supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('applications').select('id, status, university_name, application_end_date').eq('user_id', user.id),
+          supabase.from('contracts').select('*').eq('student_id', user.id).neq('status', 'draft').order('sent_at', { ascending: false }),
         ]);
 
-        if (profileError) throw profileError;
-        if (docsError) throw docsError;
-        if (appsError) {
-          console.error('Error fetching applications:', appsError);
-          throw appsError;
-        }
-
-        // Calculate profile completion from a dynamic set of required fields
-        const requiredFields = [
-          !!profileData?.full_name,
-          !!profileData?.date_of_birth,
-          !!profileData?.country_of_education,
-          !!profileData?.class_12_marks,
-          !!profileData?.bachelor_degree_name,
-          !!(profileData?.ielts_toefl_score || profileData?.german_level)
+        const prof = profResult.data;
+        // Profile completion
+        const fields = [
+          !!prof?.full_name, !!prof?.date_of_birth, !!prof?.country_of_education,
+          !!prof?.class_12_marks, !!prof?.bachelor_degree_name,
+          !!(prof?.ielts_toefl_score || prof?.german_level)
         ];
-        const totalFields = requiredFields.length;
-        const completedFields = requiredFields.filter(Boolean).length;
-        const profileCompletion = Math.round((completedFields / totalFields) * 100);
+        setProfileCompletion(Math.round((fields.filter(Boolean).length / fields.length) * 100));
 
-        // Update stats
-        setStats({
-          completedSteps: completedFields, // Real number of completed required fields
-          inProgress: totalFields - completedFields, // Fields remaining
-          overallProgress: profileCompletion,
-          universitiesSelected: appsCount || 0,
-          documentsReady: documentsCount || 0,
-          daysToDeadline: 45 // This would be calculated based on application deadlines
-        });
+        setDocsCount(dCount || 0);
+        const appsList = apps || [];
+        setAppsCount(appsList.length);
+        setSubmittedApps(appsList.filter(a => ['submitted', 'Applied'].includes(a.status)).length);
 
-        // Set user data with language test information
-        setUserData({
-          id: user.id,
-          email: user.email || '',
-          full_name: profileData?.full_name || 'Student',
-          profile_completion: profileCompletion,
-          documents_count: documentsCount || 0,
-          applications_count: appsCount || 0,
-          avatar_url: (profileData as any)?.profile_image_url || undefined,
-          ielts_toefl_score: profileData?.ielts_toefl_score,
-          german_level: profileData?.german_level
-        });
-
-        // Set tasks (dynamically based on user data)
-        const userTasks: Task[] = [
-          {
-            id: '1',
-            title: 'Complete Profile',
-            description: 'Fill in missing profile information',
-            status: profileCompletion < 100 ? 'in_progress' : 'completed',
-            priority: 'high',
-            url: '/profile'
-          },
-          {
-            id: '2',
-            title: 'Upload Documents',
-            description: documentsCount ? `You've uploaded ${documentsCount} documents` : 'No documents uploaded yet',
-            status: documentsCount ? 'in_progress' : 'pending',
-            priority: 'high',
-            url: '/documents'
-          },
-          {
-            id: '3',
-            title: 'University Applications',
-            description: appsCount ? `You've started ${appsCount} applications` : 'No applications started yet',
-            status: appsCount ? 'in_progress' : 'pending',
-            priority: 'high',
-            url: '/applications'
-          }
-        ];
-
-        // Add language test task if not completed
-        if (!profileData?.ielts_toefl_score && !profileData?.german_level) {
-          userTasks.push({
-            id: '4',
-            title: 'Language Test',
-            description: 'Prepare for language proficiency tests',
-            status: 'pending',
-            priority: 'medium',
-            url: '/resources/language-tests'
+        // Nearest deadline
+        const now = new Date();
+        const upcoming = appsList
+          .filter(a => a.application_end_date && new Date(a.application_end_date) > now)
+          .sort((a, b) => new Date(a.application_end_date!).getTime() - new Date(b.application_end_date!).getTime());
+        if (upcoming.length > 0) {
+          const d = new Date(upcoming[0].application_end_date!);
+          setNearestDeadline({
+            name: upcoming[0].university_name,
+            date: d.toLocaleDateString(),
+            days: Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
           });
         }
 
-        setTasks(userTasks);
-
-        if (payErr) throw payErr;
-        setRecentPayments(srWithPayments as any || []);
-
-        if (!contractErr && contractData) {
-          setContracts(contractData || []);
-        }
-
-        if (!notifErr && contractNotifs) {
-          setContractNotifications(contractNotifs as unknown as ContractNotification[]);
-          
-          // Show popup for unseen contract notifications
-          const unseenContract = (contractNotifs as any).find((n: any) => !n.seen);
-          if (unseenContract) {
-            setActiveContract(unseenContract as unknown as ContractNotification);
-            setShowContractPopup(true);
-          }
-        }
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load dashboard data',
-          variant: 'destructive'
-        });
+        setContracts(ctrData || []);
+      } catch (e) {
+        console.error('Dashboard load error:', e);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDashboardData();
+    load();
   }, [user]);
 
-  // Mark contract notification as seen
-  const handleDismissContractPopup = async () => {
-    if (activeContract) {
-      await supabase
-        .from('notifications')
-        .update({ seen: true })
-        .eq('id', activeContract.id);
-    }
-    setShowContractPopup(false);
-  };
-
-  // View full contract - fetch from contracts table using ref_id
-  const handleViewContract = async (notification: ContractNotification) => {
-    setActiveContract(notification);
-    // Mark as seen
-    supabase.from('notifications').update({ seen: true }).eq('id', notification.id);
-    
-    // Find the contract in already fetched contracts
-    const contract = contracts.find(c => c.id === notification.ref_id);
-    if (contract) {
-      setShowContractPreview(true);
-    }
-  };
-
-  // Download contract PDF - fetch HTML from contracts table
-  const handleDownloadContract = async (notification: ContractNotification) => {
-    const contract = contracts.find(c => c.id === notification.ref_id);
-    if (!contract?.contract_html) {
-      toast({ title: 'Error', description: 'Contract not found', variant: 'destructive' });
-      return;
-    }
+  const handleDownloadContract = async (contract: any) => {
+    if (!contract?.contract_html) return;
     setDownloadingPdf(true);
     try {
       await downloadContractPDF(contract.contract_html, `Contract-${contract.contract_reference}.pdf`);
-      toast({ title: 'Success', description: 'Contract PDF downloaded' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to download PDF', variant: 'destructive' });
-    } finally {
-      setDownloadingPdf(false);
-    }
+      toast({ title: 'Downloaded', description: 'Contract PDF saved' });
+    } catch { toast({ title: 'Error', description: 'Failed to download', variant: 'destructive' }); }
+    finally { setDownloadingPdf(false); }
   };
 
-  if (loading || !userData) {
-    return (
-      <Layout>
-        <div className="p-8 text-center text-muted-foreground">Loading…</div>
-      </Layout>
-    );
+  if (loading) {
+    return <Layout><div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Layout>;
   }
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const activeContract = contracts.find(c => c.id === activeContractId);
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 no-x-scroll">
-        {/* Welcome Header */}
-        <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-          }}></div>
-          
-          <div className="relative container mx-auto px-4 sm:px-6 py-8 md:py-16">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-6 md:mb-8 flex-col sm:flex-row gap-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-14 w-14 ring-2 ring-foreground/30">
-                    <AvatarImage src={userData.avatar_url} />
-                    <AvatarFallback className="bg-foreground/10 text-foreground">
-                      {userData.full_name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-foreground">
-                    <div className="font-semibold text-lg">{userData.full_name}</div>
-                    <div className="text-sm text-foreground/70">{userData.email}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-center text-foreground mb-8">
-                <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4">
-                  Welcome back, {userData.full_name.split(' ')[0]}!
-                </h1>
-                <p className="text-lg md:text-2xl text-foreground/90 mb-6 md:mb-8">
-                  {userData.profile_completion < 50 
-                    ? `Let's get started on your journey to studying in Germany`
-                    : `You're ${userData.profile_completion}% of the way there! Keep up the great work!`}
-                </p>
-                <div className="flex items-center justify-center gap-4 text-foreground/80 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5" />
-                    <span>Goal-oriented</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    <span>Trusted guidance</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5" />
-                    <span>Proven success</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {/* Greeting */}
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            Welcome back, {firstName} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {profileCompletion < 100
+              ? `Your profile is ${profileCompletion}% complete — finish it to unlock all features.`
+              : 'Your profile is complete. Keep your applications on track!'}
+          </p>
         </div>
 
-        {/* Main Dashboard Content */}
-        <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 -mt-8 relative z-10">
-          
-          {/* Contract Notifications Section */}
-          {contracts.length > 0 && (
-            <Card className="mb-6 md:mb-8 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <FileText className="w-5 h-5 text-primary" />
-                  Your Contracts
-                </CardTitle>
-                <CardDescription>
-                  Service contracts sent by publicgermany
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {contracts.map((contract) => (
-                  <ContractCard 
-                    key={contract.id}
-                    contract={contract}
-                    userId={user?.id}
-                    onStatusChange={() => {
-                      // Refetch contracts after status update
-                      const refetch = async () => {
-                        const { data } = await supabase
-                          .from('contracts')
-                          .select('*')
-                          .eq('student_id', user?.id)
-                          .order('sent_at', { ascending: false })
-                          .neq('status', 'draft');
-                        if (data) setContracts(data);
-                      };
-                      refetch();
-                    }}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          )}
-          {/* Progress Overview */}
-          <Card className="mb-6 md:mb-8 bg-gradient-to-r from-card to-accent/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl">
-                <CheckCircle className="w-6 h-6 text-success" />
-                Your Progress
-              </CardTitle>
-              <CardDescription>
-                Track your journey to studying in Germany
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">{stats.completedSteps}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {stats.completedSteps === 1 ? 'Step' : 'Steps'} Completed
-                  </div>
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard icon={<User className="h-5 w-5" />} label="Profile" value={`${profileCompletion}%`} sub={profileCompletion < 100 ? 'Incomplete' : 'Complete'} href="/profile" />
+          <StatCard icon={<FileText className="h-5 w-5" />} label="Documents" value={String(docsCount)} sub="Uploaded" href="/documents" />
+          <StatCard icon={<GraduationCap className="h-5 w-5" />} label="Applications" value={String(appsCount)} sub={`${submittedApps} submitted`} href="/applications" />
+          <StatCard icon={<Briefcase className="h-5 w-5" />} label="Services" value="" sub="Browse services" href="/services" />
+        </div>
+
+        {/* Nearest Deadline */}
+        {nearestDeadline && (
+          <Card className="border-warning/30">
+            <CardContent className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
+                  <BookOpen className="h-5 w-5 text-warning" />
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-warning mb-2">{stats.inProgress}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {stats.inProgress === 1 ? 'Task' : 'Tasks'} In Progress
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-success mb-2">{stats.overallProgress}%</div>
-                  <div className="text-sm text-muted-foreground">Overall Progress</div>
+                <div>
+                  <p className="text-sm font-medium">Next deadline: {nearestDeadline.name}</p>
+                  <p className="text-xs text-muted-foreground">{nearestDeadline.date} — {nearestDeadline.days} days left</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Progress value={stats.overallProgress} className="h-3" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Started</span>
-                  <span>{stats.overallProgress}% Complete</span>
-                  <span>Goal: 100%</span>
-                </div>
-              </div>
+              <Link to="/applications">
+                <Button size="sm" variant="outline">View <ArrowRight className="ml-1 h-4 w-4" /></Button>
+              </Link>
             </CardContent>
           </Card>
+        )}
 
-          {/* Action Items */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-8 mb-6 md:mb-8">
-            {/* Priority Actions */}
-            <Card className="border-warning/30 bg-gradient-to-r from-warning/5 to-warning/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-warning">
-                  <Clock className="w-5 h-5" />
-                  Priority Actions
-                </CardTitle>
-                <CardDescription>
-                  Complete these tasks to stay on track
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tasks.length > 0 ? (
-                  tasks.map((task) => (
-                    <div 
-                      key={task.id} 
-                      className="flex items-center justify-between p-4 bg-background rounded-lg border hover:shadow-sm transition-shadow"
-                    >
-                      <div className="flex items-start gap-3">
-                        {task.title.includes('Profile') ? (
-                          <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        ) : task.title.includes('Document') ? (
-                          <FileText className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        ) : task.title.includes('University') ? (
-                          <GraduationCap className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        ) : (
-                          <BookOpen className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        )}
-                        <div>
-                          <div className="font-medium">{task.title}</div>
-                          <div className="text-sm text-muted-foreground">{task.description}</div>
-                        </div>
-                      </div>
-                      <Link to={task.url}>
-                        <Button 
-                          size="sm" 
-                          variant={task.status === 'completed' ? 'outline' : 'default'}
-                          className="whitespace-nowrap"
-                        >
-                          {task.status === 'completed' ? 'View' : task.status === 'in_progress' ? 'Continue' : 'Start'}
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">No priority tasks at the moment</p>
-                    <Link to="/profile">
-                      <Button variant="link" className="mt-2">
-                        Complete your profile to see tasks
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-success" />
-                  Your Journey Stats
-                </CardTitle>
-                <CardDescription>
-                  Key metrics and milestones
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-success/10 rounded-lg">
-                    <div className="text-2xl font-bold text-success mb-1">{stats.universitiesSelected}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.universitiesSelected === 1 ? 'University' : 'Universities'} Selected
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-primary/10 rounded-lg">
-                    <div className="text-2xl font-bold text-primary mb-1">{stats.overallProgress}%</div>
-                    <div className="text-xs text-muted-foreground">Profile Complete</div>
-                  </div>
-                  <div className="text-center p-4 bg-warning/10 rounded-lg">
-                    <div className="text-2xl font-bold text-warning mb-1">{stats.documentsReady}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.documentsReady === 1 ? 'Document' : 'Documents'} Ready
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-accent rounded-lg">
-                    <div className="text-2xl font-bold text-foreground mb-1">{stats.daysToDeadline}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.daysToDeadline === 1 ? 'Day' : 'Days'} to Deadline
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Modules Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 auto-grid-sm">
-            {/* APS Module */}
-            <Card className="card-hover border-primary/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Documents</CardTitle>
-                      <CardDescription>Manage your documents</CardDescription>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      `${
-                        stats.documentsReady === 0 
-                          ? 'bg-destructive/10 text-destructive border-destructive/30' 
-                          : stats.documentsReady < 5 
-                            ? 'bg-warning/10 text-warning border-warning/30' 
-                            : 'bg-success/10 text-success border-success/30'
-                      }`
-                    }
-                  >
-                    {stats.documentsReady === 0 ? 'Not Started' : stats.documentsReady < 5 ? 'In Progress' : 'Complete'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Progress 
-                    value={Math.min(100, (stats.documentsReady / 10) * 100)} 
-                    className="h-2" 
-                    indicatorClassName={
-                      stats.documentsReady === 0 
-                        ? 'bg-destructive' 
-                        : stats.documentsReady < 5 
-                          ? 'bg-warning' 
-                          : 'bg-success'
-                    }
-                  />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {stats.documentsReady} of 10 documents
-                    </span>
-                    <span className="font-medium">
-                      {Math.min(100, (stats.documentsReady / 10) * 100)}%
-                    </span>
-                  </div>
-                  <Link to="/documents" className="block">
-                    <Button className="w-full">
-                      {stats.documentsReady === 0 ? 'Start Uploading' : 'Manage Documents'}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* University Applications */}
-            <Card className="card-hover border-primary/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                      <GraduationCap className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">University Applications</CardTitle>
-                      <CardDescription>Track your applications</CardDescription>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      `${
-                        stats.universitiesSelected === 0 
-                          ? 'bg-destructive/10 text-destructive border-destructive/30' 
-                          : 'bg-success/10 text-success border-success/30'
-                      }`
-                    }
-                  >
-                    {stats.universitiesSelected === 0 ? 'Not Started' : 'Active'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Status</span>
-                    <span className="text-sm font-medium">
-                      {stats.universitiesSelected === 0 
-                        ? 'No applications yet' 
-                        : `${stats.universitiesSelected} ${stats.universitiesSelected === 1 ? 'application' : 'applications'} in progress`}
-                    </span>
-                  </div>
-                  <Link to="/applications" className="block">
-                    <Button className="w-full" variant="outline">
-                      {stats.universitiesSelected === 0 ? 'Start Application' : 'View Applications'}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Profile Setup */}
-            <Card className="card-hover border-success/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Profile</CardTitle>
-                      <CardDescription>Personal information</CardDescription>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      `${
-                        stats.overallProgress < 50 
-                          ? 'bg-destructive/10 text-destructive border-destructive/30' 
-                          : stats.overallProgress < 100 
-                            ? 'bg-warning/10 text-warning border-warning/30' 
-                            : 'bg-success/10 text-success border-success/30'
-                      }`
-                    }
-                  >
-                    {stats.overallProgress < 50 ? 'Incomplete' : stats.overallProgress < 100 ? 'In Progress' : 'Complete'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Progress 
-                    value={stats.overallProgress} 
-                    className="h-2"
-                    indicatorClassName={
-                      stats.overallProgress < 50 
-                        ? 'bg-destructive' 
-                        : stats.overallProgress < 100 
-                          ? 'bg-warning' 
-                          : 'bg-success'
-                    }
-                  />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {stats.overallProgress === 100 ? 'All sections done' : 'Profile completion'}
-                    </span>
-                    <span className="font-medium">
-                      {stats.overallProgress}%
-                    </span>
-                  </div>
-                  <Link to="/profile" className="block">
-                    <Button 
-                      className="w-full" 
-                      variant={stats.overallProgress === 100 ? 'outline' : 'default'}
-                    >
-                      {stats.overallProgress === 100 ? 'View Profile' : 'Complete Profile'}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Language Tests */}
-            <Card className="card-hover border-warning/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Language Tests</CardTitle>
-                      <CardDescription>IELTS/TOEFL/German</CardDescription>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      `${
-                        !userData?.ielts_toefl_score && !userData?.german_level
-                          ? 'bg-destructive/10 text-destructive border-destructive/30'
-                          : (userData?.ielts_toefl_score || userData?.german_level) && 
-                            (!userData?.ielts_toefl_score || !userData?.german_level)
-                            ? 'bg-warning/10 text-warning border-warning/30'
-                            : 'bg-success/10 text-success border-success/30'
-                      }`
-                    }
-                  >
-                    {!userData?.ielts_toefl_score && !userData?.german_level
-                      ? 'Not Started'
-                      : (userData?.ielts_toefl_score || userData?.german_level) && 
-                        (!userData?.ielts_toefl_score || !userData?.german_level)
-                        ? 'In Progress'
-                        : 'Complete'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">English (IELTS/TOEFL)</span>
-                      <span className="text-sm font-medium">
-                        {userData?.ielts_toefl_score || 'Not added'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">German Level</span>
-                      <span className="text-sm font-medium">
-                        {userData?.german_level ? 
-                          userData.german_level.toUpperCase() : 'Not added'}
-                      </span>
-                    </div>
-                  </div>
-                  <Link to="/profile#language" className="block">
-                    <Button className="w-full" variant="outline">
-                      {!userData?.ielts_toefl_score && !userData?.german_level
-                        ? 'Add Language Scores'
-                        : 'Update Language Info'}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Services */}
-            <Card className="card-hover border-primary/20">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Expert Services</CardTitle>
-                      <CardDescription>Professional guidance</CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-accent text-foreground border-border">
-                    Available
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    Get personalized help from our experts
-                  </div>
-                  <Link to="/services" className="block">
-                    <Button className="w-full">
-                      Browse Services
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Resources */}
-            <Card className="card-hover border-accent/50">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-accent/50 rounded-lg flex items-center justify-center">
-                      <MapPin className="w-5 h-5 text-foreground" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Resources</CardTitle>
-                      <CardDescription>Guides and materials</CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-accent text-foreground border-border">
-                    Updated
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    Latest guides, forms, and helpful materials
-                  </div>
-                  <Link to="/resources" className="block">
-                    <Button className="w-full" variant="outline">
-                      View Resources
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions Footer */}
-          <div className="mt-10 md:mt-12 bg-gradient-to-r from-primary/5 to-success/5 rounded-2xl p-4 sm:p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Ready to Take the Next Step?</h2>
-              <p className="text-muted-foreground">Get personalized guidance from our Germany education experts</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/contact">
-                <Button size="lg" className="w-full sm:w-auto">
-                  <Calendar className="mr-2 w-5 h-5" />
-                  Book Consultation
-                </Button>
+        {/* Profile Completion Bar (only if incomplete) */}
+        {profileCompletion < 100 && (
+          <Card>
+            <CardContent className="py-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Profile completion</span>
+                <span className="text-sm text-muted-foreground">{profileCompletion}%</span>
+              </div>
+              <ProgressBar value={profileCompletion} />
+              <Link to="/profile">
+                <Button size="sm" className="w-full">Complete Profile <ArrowRight className="ml-2 h-4 w-4" /></Button>
               </Link>
-              <Link to="/services">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  <Star className="mr-2 w-5 h-5" />
-                  View All Services
-                </Button>
-              </Link>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Active Contracts */}
+        {contracts.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Your Contracts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {contracts.map((contract) => (
+                <ContractCard
+                  key={contract.id}
+                  contract={contract}
+                  userId={user?.id}
+                  onStatusChange={async () => {
+                    const { data } = await supabase.from('contracts').select('*').eq('student_id', user?.id).neq('status', 'draft').order('sent_at', { ascending: false });
+                    if (data) setContracts(data);
+                  }}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <QuickLink href="/documents" icon={<FileText className="h-5 w-5" />} label="Upload Documents" />
+          <QuickLink href="/applications" icon={<GraduationCap className="h-5 w-5" />} label="View Applications" />
+          <QuickLink href="/resources" icon={<BookOpen className="h-5 w-5" />} label="Resources & Guides" />
         </div>
       </div>
 
-      {/* Contract Popup Notification */}
-      <Dialog open={showContractPopup} onOpenChange={setShowContractPopup}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              New Contract Received
-            </DialogTitle>
-            <DialogDescription>
-              You have received a new service contract from publicgermany
-            </DialogDescription>
-          </DialogHeader>
-          
-          {activeContract && (
-            <div className="space-y-4">
-              <div className="bg-primary/5 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Package:</span>
-                  <span className="font-medium">{activeContract.meta?.service_package}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Reference:</span>
-                  <span className="font-medium">{activeContract.meta?.contract_reference}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Fee:</span>
-                  <span className="font-semibold text-primary">{activeContract.meta?.service_fee}</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={handleDismissContractPopup}
-                >
-                  View Later
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={() => {
-                    handleDismissContractPopup();
-                    handleViewContract(activeContract);
-                  }}
-                >
-                  View Contract
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Full Contract Preview Dialog */}
+      {/* Contract Preview Dialog */}
       <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Service Contract
-            </DialogTitle>
-            <DialogDescription>
-              {activeContract?.meta?.contract_reference} • {activeContract?.meta?.service_package}
-            </DialogDescription>
+            <DialogTitle>Service Contract</DialogTitle>
+            <DialogDescription>{activeContract?.contract_reference}</DialogDescription>
           </DialogHeader>
-          
-          {/* Render contract HTML from contracts table, not from notification meta */}
-          {activeContract?.ref_id && contracts.find(c => c.id === activeContract.ref_id)?.contract_html && (
-            <div 
-              className="border rounded-lg overflow-hidden bg-white max-h-[70vh] overflow-y-auto"
-              dangerouslySetInnerHTML={{ __html: contracts.find(c => c.id === activeContract.ref_id)?.contract_html }}
-            />
+          {activeContract?.contract_html && (
+            <div className="border rounded-lg overflow-hidden bg-white max-h-[70vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: activeContract.contract_html }} />
           )}
-
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowContractPreview(false)}>
-              Close
-            </Button>
-            <Button 
-              onClick={() => activeContract && handleDownloadContract(activeContract)}
-              disabled={downloadingPdf}
-            >
+            <Button variant="outline" onClick={() => setShowContractPreview(false)}>Close</Button>
+            <Button onClick={() => activeContract && handleDownloadContract(activeContract)} disabled={downloadingPdf}>
               {downloadingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
               Download PDF
             </Button>
@@ -1009,5 +231,40 @@ const Dashboard = () => {
     </Layout>
   );
 };
+
+// --- Sub-components ---
+
+function StatCard({ icon, label, value, sub, href }: { icon: React.ReactNode; label: string; value: string; sub: string; href: string }) {
+  return (
+    <Link to={href}>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+        <CardContent className="py-4 flex flex-col items-center text-center gap-1">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1">
+            {icon}
+          </div>
+          {value && <p className="text-2xl font-bold">{value}</p>}
+          <p className="text-xs text-muted-foreground font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{sub}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function QuickLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link to={href}>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <CardContent className="py-4 flex items-center gap-3">
+          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+            {icon}
+          </div>
+          <span className="text-sm font-medium">{label}</span>
+          <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto" />
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
 
 export default Dashboard;
