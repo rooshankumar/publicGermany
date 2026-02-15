@@ -12,6 +12,7 @@ import Layout from '@/components/Layout';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
+import EligibilityEvaluation from '@/components/EligibilityEvaluation';
 
 // Small helper to handle avatar click-to-upload
 function AvatarUpload({ avatarUrl, fullName, onUpload }: { avatarUrl?: string; fullName?: string; onUpload: (file: File) => void }) {
@@ -245,6 +246,8 @@ const Profile = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {/* Eligibility Evaluation */}
+          <EligibilityEvaluation profile={formData as any} />
           {/* Personal Information */}
           <Card>
             <CardHeader>
