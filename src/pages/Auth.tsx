@@ -20,31 +20,6 @@ const Auth = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   
-  // Live student count query
-  const { data: studentCount } = useQuery({
-    queryKey: ['student-count'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'student');
-      return count || 0;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  // Live services count query
-  const { data: servicesCount } = useQuery({
-    queryKey: ['services-count'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('service_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed');
-      return count || 0;
-    },
-    staleTime: 30 * 1000, // Cache for 30 seconds
-  });
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,36 +144,7 @@ const Auth = () => {
               ))}
             </div>
 
-            <div className="flex items-center justify-center lg:justify-start gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                  </span>
-                  {studentCount ? `${studentCount}+` : '50+'}
-                </div>
-                <div className="text-xs text-muted-foreground">Students Guided</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-success">99%</div>
-                <div className="text-xs text-muted-foreground">Success Rate</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-warning">1.5+</div>
-                <div className="text-xs text-muted-foreground">Years Experience</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-warning"></span>
-                  </span>
-                  {servicesCount ? `${servicesCount}+` : '10+'}
-                </div>
-                <div className="text-xs text-muted-foreground">Happy Services</div>
-              </div>
-            </div>
+            {/* Stats removed for cleaner auth page */}
           </div>
 
           {/* Right Side - Auth Forms */}
