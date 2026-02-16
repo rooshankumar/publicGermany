@@ -1246,6 +1246,13 @@ export type Database = {
       aps_pathway: "stk" | "bachelor_2_semesters" | "master_applicants"
       checklist_status: "not_started" | "in_progress" | "completed"
       german_level: "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2"
+      notification_type:
+        | "application"
+        | "document"
+        | "service_request"
+        | "student"
+        | "catalog_update"
+        | "signup"
       payment_status: "pending" | "received" | "cancelled"
       service_kind: "package" | "individual"
       service_request_status:
@@ -1394,6 +1401,14 @@ export const Constants = {
       aps_pathway: ["stk", "bachelor_2_semesters", "master_applicants"],
       checklist_status: ["not_started", "in_progress", "completed"],
       german_level: ["none", "a1", "a2", "b1", "b2", "c1", "c2"],
+      notification_type: [
+        "application",
+        "document",
+        "service_request",
+        "student",
+        "catalog_update",
+        "signup",
+      ],
       payment_status: ["pending", "received", "cancelled"],
       service_kind: ["package", "individual"],
       service_request_status: [
