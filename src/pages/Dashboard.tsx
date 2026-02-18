@@ -119,13 +119,16 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-4 max-w-4xl mx-auto">
+        {/* German flag stripe */}
+        <div className="german-stripe w-full" />
+
         {/* Greeting */}
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">
             Welcome back, {firstName} 👋
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {profileCompletion < 100
               ? `Your profile is ${profileCompletion}% complete — finish it to unlock all features.`
               : 'Your profile is complete. Keep your applications on track!'}
@@ -238,13 +241,13 @@ function StatCard({ icon, label, value, sub, href }: { icon: React.ReactNode; la
   return (
     <Link to={href}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-        <CardContent className="py-4 flex flex-col items-center text-center gap-1">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1">
+        <CardContent className="py-3 flex flex-col items-center text-center gap-0.5">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-0.5">
             {icon}
           </div>
-          {value && <p className="text-2xl font-bold">{value}</p>}
-          <p className="text-xs text-muted-foreground font-medium">{label}</p>
-          <p className="text-xs text-muted-foreground">{sub}</p>
+          {value && <p className="text-xl font-bold">{value}</p>}
+          <p className="text-[10px] text-muted-foreground font-medium">{label}</p>
+          <p className="text-[10px] text-muted-foreground">{sub}</p>
         </CardContent>
       </Card>
     </Link>
@@ -255,12 +258,12 @@ function QuickLink({ href, icon, label }: { href: string; icon: React.ReactNode;
   return (
     <Link to={href}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer">
-        <CardContent className="py-4 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+        <CardContent className="py-3 flex items-center gap-2">
+          <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
             {icon}
           </div>
-          <span className="text-sm font-medium">{label}</span>
-          <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto" />
+          <span className="text-xs font-medium">{label}</span>
+          <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto" />
         </CardContent>
       </Card>
     </Link>

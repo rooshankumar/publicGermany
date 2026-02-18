@@ -248,189 +248,168 @@ const Applications = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* HEADER SECTION */}
-        <div className="flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Applications</h1>
-            <p className="text-muted-foreground">Track your university applications</p>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-xs">
-                <span className="font-medium text-blue-900 dark:text-blue-100">📋 Quick Import:</span>
-                <span className="text-blue-800 dark:text-blue-200 ml-1">Download → Fill → Upload</span>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-2 text-xs">
-                <span className="font-medium text-green-900 dark:text-green-100">📧 Auto Reminders:</span>
-                <span className="text-green-800 dark:text-green-200 ml-1">Get email alerts before deadlines</span>
-              </div>
-            </div>
+       <div className="space-y-3">
+         {/* German stripe */}
+         <div className="german-stripe w-full" />
 
-            <div className="flex gap-2 flex-wrap justify-end">
-              <ExcelTemplate />
-              <ExcelUpload onUpload={handleExcelUpload} />
-              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" /> Add Application</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add New Application</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleAddApplication} className="space-y-4 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>University Name *</Label>
-                        <Input name="university_name" required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Program Name *</Label>
-                        <Input name="program_name" required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>IELTS</Label>
-                        <Input name="ielts_requirement" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>German</Label>
-                        <Input name="german_requirement" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Fees (EUR)</Label>
-                        <Input name="fees_eur" type="number" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Application Method</Label>
-                        <Select name="application_method">
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Uni-assist">Uni-assist</SelectItem>
-                            <SelectItem value="Direct">Direct</SelectItem>
-                            <SelectItem value="VPD + University">VPD + University</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Start Date</Label>
-                        <Input name="application_start_date" type="date" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>End Date</Label>
-                        <Input name="application_end_date" type="date" />
-                      </div>
-                      <div className="col-span-2 space-y-2">
-                        <Label>Portal Link</Label>
-                        <Input name="portal_link" type="url" />
-                      </div>
-                      <div className="col-span-2 space-y-2">
-                        <Label>Notes</Label>
-                        <Input name="notes" />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                      <Button type="submit">Add Application</Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
+         {/* COMPACT HEADER */}
+         <div className="flex items-center justify-between flex-wrap gap-2">
+           <div className="flex items-center gap-2">
+             <h1 className="text-lg font-bold text-foreground">Applications</h1>
+             <span className="text-xs text-muted-foreground">({applications.length})</span>
+           </div>
+           <div className="flex gap-1.5 flex-wrap">
+             <ExcelTemplate />
+             <ExcelUpload onUpload={handleExcelUpload} />
+             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+               <DialogTrigger asChild>
+                 <Button size="sm" className="h-7 text-xs"><Plus className="mr-1 h-3 w-3" /> Add</Button>
+               </DialogTrigger>
+               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                 <DialogHeader>
+                   <DialogTitle>Add New Application</DialogTitle>
+                 </DialogHeader>
+                 <form onSubmit={handleAddApplication} className="space-y-4 pt-4">
+                   <div className="grid grid-cols-2 gap-3">
+                     <div className="space-y-1">
+                       <Label className="text-xs">University Name *</Label>
+                       <Input name="university_name" required className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Program Name *</Label>
+                       <Input name="program_name" required className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">IELTS</Label>
+                       <Input name="ielts_requirement" className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">German</Label>
+                       <Input name="german_requirement" className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Fees (EUR)</Label>
+                       <Input name="fees_eur" type="number" className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Application Method</Label>
+                       <Select name="application_method">
+                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="Uni-assist">Uni-assist</SelectItem>
+                           <SelectItem value="Direct">Direct</SelectItem>
+                           <SelectItem value="VPD + University">VPD + University</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Start Date</Label>
+                       <Input name="application_start_date" type="date" className="h-8 text-xs" />
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">End Date</Label>
+                       <Input name="application_end_date" type="date" className="h-8 text-xs" />
+                     </div>
+                     <div className="col-span-2 space-y-1">
+                       <Label className="text-xs">Portal Link</Label>
+                       <Input name="portal_link" type="url" className="h-8 text-xs" />
+                     </div>
+                     <div className="col-span-2 space-y-1">
+                       <Label className="text-xs">Notes</Label>
+                       <Input name="notes" className="h-8 text-xs" />
+                     </div>
+                   </div>
+                   <div className="flex justify-end gap-2">
+                     <Button type="button" variant="outline" size="sm" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+                     <Button type="submit" size="sm">Add Application</Button>
+                   </div>
+                 </form>
+               </DialogContent>
+             </Dialog>
+           </div>
+         </div>
 
-        {/* TABLE SECTION */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Applications</CardTitle>
-            <CardDescription>{applications.length} applications tracked</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {applications.length === 0 ? (
-              <div className="text-center py-10">No applications found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Actions</TableHead>
-                      <TableHead>University</TableHead>
-                      <TableHead>Program</TableHead>
-                      <TableHead>IELTS</TableHead>
-                      <TableHead>German</TableHead>
-                      <TableHead>Fees (EUR)</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedApplications.map((app) => {
-                      const hasCredentials = app.show_credentials_to_student && 
-                        (app.portal_link || app.portal_login_id || app.portal_password);
-                      
-                      // Green checkmark: application is submitted or Applied
-                      const isSubmitted = ['submitted', 'Applied'].includes(app.status);
-                      
-                      return (
-                        <>
-                          <TableRow key={app.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                {isSubmitted && (
-                                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                )}
-                                {hasCredentials && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    onClick={() => toggleRowExpand(app.id)}
-                                    className="p-1"
-                                  >
-                                    {expandedRows.has(app.id) ? (
-                                      <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="ghost" onClick={() => openEditDialog(app)}><Edit className="h-4 w-4" /></Button>
-                                <Button size="sm" variant="ghost" asChild>
-                                  <a href={app.portal_link || '#'} target="_blank" rel="noopener noreferrer" className={!app.portal_link ? 'opacity-20 pointer-events-none' : ''}>
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => deleteApplication(app.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">{app.university_name}</TableCell>
-                            <TableCell>{app.program_name}</TableCell>
-                            <TableCell>{app.ielts_requirement || '-'}</TableCell>
-                            <TableCell>{app.german_requirement || '-'}</TableCell>
-                            <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
-                            <TableCell>
-                              {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
-                            </TableCell>
-                            <TableCell>{app.application_method || '-'}</TableCell>
-                            <TableCell>
-                              <Select value={app.status} onValueChange={(val) => updateApplicationStatus(app.id, val as Application['status'])}>
-                                <SelectTrigger className="w-32">
-                                  <Badge variant={getStatusBadgeVariant(app.status)}>{app.status}</Badge>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="draft">Draft</SelectItem>
-                                  <SelectItem value="submitted">Submitted</SelectItem>
-                                  <SelectItem value="interview">Interview</SelectItem>
-                                  <SelectItem value="offer">Offer</SelectItem>
-                                  <SelectItem value="rejected">Rejected</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
+         {/* TABLE SECTION */}
+         <Card>
+           <CardContent className="p-0">
+             {applications.length === 0 ? (
+               <div className="text-center py-8 text-sm text-muted-foreground">No applications found.</div>
+             ) : (
+               <div className="overflow-x-auto">
+                 <Table className="compact-table">
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead className="w-8"></TableHead>
+                       <TableHead>University</TableHead>
+                       <TableHead>Program</TableHead>
+                       <TableHead>IELTS</TableHead>
+                       <TableHead>German</TableHead>
+                       <TableHead>Fees</TableHead>
+                       <TableHead>Start</TableHead>
+                       <TableHead>Deadline</TableHead>
+                       <TableHead>Method</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead className="w-16"></TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {sortedApplications.map((app) => {
+                       const hasCredentials = app.show_credentials_to_student && 
+                         (app.portal_link || app.portal_login_id || app.portal_password);
+                       const isSubmitted = ['submitted', 'Applied'].includes(app.status);
+                       
+                       return (
+                         <>
+                           <TableRow key={app.id}>
+                             <TableCell>
+                               <div className="flex items-center gap-0.5">
+                                 {isSubmitted && (
+                                   <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                                 )}
+                                 {hasCredentials && (
+                                   <Button size="icon" variant="ghost" onClick={() => toggleRowExpand(app.id)} className="h-5 w-5 p-0">
+                                     {expandedRows.has(app.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                   </Button>
+                                 )}
+                               </div>
+                             </TableCell>
+                             <TableCell className="font-medium whitespace-nowrap">{app.university_name}</TableCell>
+                             <TableCell className="whitespace-nowrap">{app.program_name}</TableCell>
+                             <TableCell>{app.ielts_requirement || '-'}</TableCell>
+                             <TableCell>{app.german_requirement || '-'}</TableCell>
+                             <TableCell>{app.fees_eur ? `€${app.fees_eur}` : '-'}</TableCell>
+                             <TableCell className="whitespace-nowrap">
+                               {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
+                             </TableCell>
+                             <TableCell className="whitespace-nowrap">
+                               {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
+                             </TableCell>
+                             <TableCell>{app.application_method || '-'}</TableCell>
+                             <TableCell>
+                               <Select value={app.status} onValueChange={(val) => updateApplicationStatus(app.id, val as Application['status'])}>
+                                 <SelectTrigger className="h-6 w-24 text-[10px] border-0 p-0">
+                                   <Badge variant={getStatusBadgeVariant(app.status)} className="text-[10px] px-1.5 py-0">{app.status}</Badge>
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="draft">Draft</SelectItem>
+                                   <SelectItem value="submitted">Submitted</SelectItem>
+                                   <SelectItem value="interview">Interview</SelectItem>
+                                   <SelectItem value="offer">Offer</SelectItem>
+                                   <SelectItem value="rejected">Rejected</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                             </TableCell>
+                             <TableCell>
+                               <div className="flex items-center gap-0.5">
+                                 <Button size="icon" variant="ghost" className="h-5 w-5 p-0" onClick={() => openEditDialog(app)}><Edit className="h-3 w-3" /></Button>
+                                 <Button size="icon" variant="ghost" className="h-5 w-5 p-0" asChild>
+                                   <a href={app.portal_link || '#'} target="_blank" rel="noopener noreferrer" className={!app.portal_link ? 'opacity-20 pointer-events-none' : ''}>
+                                     <ExternalLink className="h-3 w-3" />
+                                   </a>
+                                 </Button>
+                                 <Button size="icon" variant="ghost" className="h-5 w-5 p-0" onClick={() => deleteApplication(app.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                               </div>
+                             </TableCell>
                           </TableRow>
                           {hasCredentials && expandedRows.has(app.id) && (
                             <TableRow key={`${app.id}-creds`} className="bg-muted/30">

@@ -323,63 +323,29 @@ const ServicesNew = () => {
   };
 
   return (
-    <Layout>
-      <div className="space-y-4 md:space-y-6 pb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Services</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Explore our services and track your requests</p>
-        </div>
+     <Layout>
+       <div className="space-y-3 pb-6">
+         {/* German stripe */}
+         <div className="german-stripe w-full" />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-2 md:gap-4">
-          <Card>
-            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
-                <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Total</p>
-                  <p className="text-xl md:text-2xl font-bold">{requests.length}</p>
-                </div>
-                <Clock className="hidden md:block h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
-                <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Done</p>
-                  <p className="text-xl md:text-2xl font-bold">{completedRequests.length}</p>
-                </div>
-                <CheckCircle className="hidden md:block h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-3 pb-3 md:pt-6 md:pb-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0">
-                <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Files</p>
-                  <p className="text-xl md:text-2xl font-bold">
-                    {completedRequests.reduce((sum, r) => sum + getAllDeliverableUrls(r).length, 0)}
-                  </p>
-                </div>
-                <FileText className="hidden md:block h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+         <div className="flex items-center justify-between">
+           <h1 className="text-lg font-bold text-foreground">Services</h1>
+           <p className="text-xs text-muted-foreground">
+             {requests.length} requests · {completedRequests.length} completed · {completedRequests.reduce((sum, r) => sum + getAllDeliverableUrls(r).length, 0)} files
+           </p>
+         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="browse" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="browse">Browse Services</TabsTrigger>
-            <TabsTrigger value="requests">
-              My Requests {requests.length > 0 && `(${requests.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="delivered">
-              Delivered {completedRequests.length > 0 && `(${completedRequests.length})`}
-            </TabsTrigger>
-          </TabsList>
+         {/* Tabs */}
+         <Tabs defaultValue="browse" className="w-full">
+           <TabsList className="grid w-full grid-cols-3 h-8">
+             <TabsTrigger value="browse" className="text-xs">Browse</TabsTrigger>
+             <TabsTrigger value="requests" className="text-xs">
+               Requests {requests.length > 0 && `(${requests.length})`}
+             </TabsTrigger>
+             <TabsTrigger value="delivered" className="text-xs">
+               Delivered {completedRequests.length > 0 && `(${completedRequests.length})`}
+             </TabsTrigger>
+           </TabsList>
 
           {/* TAB 1: Browse Services */}
           <TabsContent value="browse" className="space-y-6">

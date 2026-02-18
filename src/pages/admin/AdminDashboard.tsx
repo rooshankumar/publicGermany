@@ -171,72 +171,76 @@ const AdminDashboard = () => {
   // Note: We intentionally avoid blocking UI with a full-screen loader to keep the page feeling responsive.
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Live overview of all platform activities</p>
-          </div>
-        </div>
-        
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/admin/students">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                <Users className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalStudents}</div>
-                <p className="text-xs text-muted-foreground mt-1">Click to manage</p>
-              </CardContent>
-            </Card>
-          </Link>
+     <Layout>
+       <div className="space-y-4">
+         <div className="german-stripe w-full" />
+         <div>
+           <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
+           <p className="text-xs text-muted-foreground">Live overview of all platform activities</p>
+         </div>
+         
+         {/* Key Metrics */}
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+           <Link to="/admin/students">
+             <Card className="hover:shadow-md transition-shadow cursor-pointer">
+               <CardContent className="py-3 px-3">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-[10px] text-muted-foreground font-medium">Students</p>
+                     <p className="text-xl font-bold">{stats.totalStudents}</p>
+                   </div>
+                   <Users className="h-4 w-4 text-primary" />
+                 </div>
+               </CardContent>
+             </Card>
+           </Link>
 
-          <Link to="/admin/requests">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                <GraduationCap className="h-5 w-5 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingRequests}</div>
-                <p className="text-xs text-muted-foreground mt-1">Needs attention</p>
-              </CardContent>
-            </Card>
-          </Link>
+           <Link to="/admin/requests">
+             <Card className="hover:shadow-md transition-shadow cursor-pointer">
+               <CardContent className="py-3 px-3">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-[10px] text-muted-foreground font-medium">Pending</p>
+                     <p className="text-xl font-bold">{stats.pendingRequests}</p>
+                   </div>
+                   <GraduationCap className="h-4 w-4 text-warning" />
+                 </div>
+               </CardContent>
+             </Card>
+           </Link>
 
-          <Link to="/admin/payments">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenue Received</CardTitle>
-                <CreditCard className="h-5 w-5 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">₹{stats.totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">{stats.pendingPayments} pending</p>
-              </CardContent>
-            </Card>
-          </Link>
+           <Link to="/admin/payments">
+             <Card className="hover:shadow-md transition-shadow cursor-pointer">
+               <CardContent className="py-3 px-3">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <p className="text-[10px] text-muted-foreground font-medium">Revenue</p>
+                     <p className="text-xl font-bold text-success">₹{stats.totalRevenue.toLocaleString()}</p>
+                   </div>
+                   <CreditCard className="h-4 w-4 text-success" />
+                 </div>
+                 <p className="text-[10px] text-muted-foreground mt-0.5">{stats.pendingPayments} pending</p>
+               </CardContent>
+             </Card>
+           </Link>
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Documents</CardTitle>
-              <FileText className="h-5 w-5 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingDocuments}</div>
-              <p className="text-xs text-muted-foreground mt-1">Awaiting review</p>
-            </CardContent>
-          </Card>
-        </div>
+           <Card>
+             <CardContent className="py-3 px-3">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-[10px] text-muted-foreground font-medium">Docs Pending</p>
+                   <p className="text-xl font-bold">{stats.pendingDocuments}</p>
+                 </div>
+                 <FileText className="h-4 w-4 text-primary" />
+               </div>
+             </CardContent>
+           </Card>
+         </div>
 
         {/* Deadline Reminders Control Panel */}
         <UpcomingDeadlineReminders />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Recent Payments */}
           <Card>
             <CardHeader>
@@ -252,7 +256,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {stats.recentPayments.map((payment: any) => (
-                    <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={payment.id} className="flex items-center justify-between p-2 border rounded-md">
                       <div className="flex items-center gap-3">
                         {getStatusIcon(payment.status)}
                         <div>
@@ -289,7 +293,7 @@ const AdminDashboard = () => {
                   {stats.urgentTasks.slice(0, 5).map((app: any) => {
                     const daysLeft = getDaysUntilDeadline(app.application_end_date);
                     return (
-                      <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={app.id} className="flex items-center justify-between p-2 border rounded-md">
                         <div>
                           <p className="font-medium">{app.university_name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -326,7 +330,7 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 {stats.recentStudents.map((student: any) => (
                   <Link key={student.id} to={`/admin/students/${student.id}`}>
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between p-2 border rounded-md hover:bg-muted/30 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                           <Users className="h-4 w-4 text-primary" />

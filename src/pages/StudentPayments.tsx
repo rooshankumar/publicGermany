@@ -253,13 +253,14 @@ export default function StudentPayments() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Payments &amp; Contracts</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage your payments and service contracts.
-          </p>
-        </div>
+       <div className="space-y-3">
+         <div className="german-stripe w-full" />
+         <div>
+           <h1 className="text-lg font-bold tracking-tight">Payments &amp; Contracts</h1>
+           <p className="text-muted-foreground text-xs">
+             Manage your payments and service contracts.
+           </p>
+         </div>
 
         <Tabs defaultValue="payments">
           <TabsList className="mb-4">
