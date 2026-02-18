@@ -136,6 +136,24 @@
       gap: 1rem;
     }
   }
+
+  /* German flag accent stripe (3px tri-color bar) */
+  .german-stripe {
+    height: 3px;
+    background: linear-gradient(to right, #1C1C1C 33.33%, #D00000 33.33%, #D00000 66.66%, #FFCC00 66.66%);
+    border-radius: 2px;
+  }
+
+  /* Compact table utility for Excel-style dense rows */
+  .compact-table th {
+    @apply text-xs font-semibold py-2 px-2 text-muted-foreground;
+  }
+  .compact-table td {
+    @apply text-xs py-2 px-2;
+  }
+  .compact-table tr {
+    @apply border-b;
+  }
 }
 
   .dark {

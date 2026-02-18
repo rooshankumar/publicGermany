@@ -219,9 +219,10 @@ export default function Students() {
   return (
     <Layout>
       <div className="space-y-5 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
-          <p className="text-muted-foreground">Manage and track all student profiles with live updates</p>
+         <div className="german-stripe w-full" />
+         <div>
+           <h1 className="text-xl font-bold text-foreground">Student Management</h1>
+           <p className="text-xs text-muted-foreground">Manage and track all student profiles</p>
         </div>
 
         {/* Search and Filters */}

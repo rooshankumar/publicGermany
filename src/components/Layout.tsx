@@ -279,21 +279,21 @@ const Layout = ({ children }: LayoutProps) => {
       {isAdmin ? (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Admin Top Navbar (Desktop) */}
-          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-3 px-4 md:px-6">
+          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-1.5 px-3 md:px-5">
             <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
               {/* Left: Brand */}
               <Link to="/admin" className="flex items-center gap-3" aria-label="Admin home">
-                <div className="h-10 w-10 rounded-md overflow-hidden shrink-0">
-                  <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-lg text-foreground tracking-tight">publicgermany</span>
-                  <span className="text-xs text-muted-foreground">Admin</span>
-                </div>
+                 <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
+                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+                 </div>
+                 <div className="flex flex-col leading-tight">
+                   <span className="font-bold text-sm text-foreground tracking-tight">publicgermany</span>
+                   <span className="text-[10px] text-muted-foreground">Admin</span>
+                 </div>
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-3 xl:gap-5">
+              <nav className="hidden lg:flex items-center gap-2 xl:gap-3">
                 {adminNavItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
@@ -301,8 +301,8 @@ const Layout = ({ children }: LayoutProps) => {
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "relative pb-1 text-base font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
-                        active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
+                       "relative pb-0.5 text-xs font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
+                         active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
                       )}
                       aria-current={active ? 'page' : undefined}
                       onClick={() => {
@@ -417,7 +417,7 @@ const Layout = ({ children }: LayoutProps) => {
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
-            <main className="flex-1 p-6">
+             <main className="flex-1 p-4">
               {children}
             </main>
           </div>
@@ -425,7 +425,7 @@ const Layout = ({ children }: LayoutProps) => {
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Student Top Navbar (Desktop) */}
-          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-3 md:px-4">
+          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-1 px-2 md:px-3">
             <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-3">
               {/* Left: Brand */}
               <Link to="/dashboard" className="flex items-center gap-2 shrink-0" aria-label="Student home">
@@ -564,7 +564,7 @@ const Layout = ({ children }: LayoutProps) => {
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
-            <main className="flex-1 p-6">
+            <main className="flex-1 p-4">
               {children}
             </main>
           </div>

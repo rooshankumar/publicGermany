@@ -234,18 +234,18 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="container-mobile space-y-4 sm:space-y-6">
-        
-        <div className="bg-gradient-to-r from-primary/10 to-accent/5 p-4 md:p-6 rounded-lg border">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">Profile Settings</h1>
-              <p className="text-sm md:text-base text-foreground">Manage your personal information and academic details</p>
-            </div>
-          </div>
-        </div>
+       <div className="container-mobile space-y-3">
+         {/* German stripe */}
+         <div className="german-stripe w-full" />
+         
+         <div className="flex items-center justify-between">
+           <div>
+             <h1 className="text-lg font-bold text-foreground">Profile Settings</h1>
+             <p className="text-xs text-muted-foreground">Manage your personal information and academic details</p>
+           </div>
+         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Eligibility Evaluation */}
           <EligibilityEvaluation profile={formData as any} />
           {/* Personal Information */}
