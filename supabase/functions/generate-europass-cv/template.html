@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Europass CV</title>
+
+<style>
+@page {
+    size: A4;
+    margin: 16mm 14mm 16mm 14mm;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5px;
+    line-height: 1.35;
+    margin: 0;
+    color: #000;
+}
+
+.container {
+    width: 100%;
+}
+
+.header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+}
+
+.name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.meta {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.section-title {
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 3px;
+}
+
+.entry {
+    margin-bottom: 8px;
+}
+
+.highlight {
+    font-weight: bold;
+}
+
+a {
+    color: #1565c0;
+    text-decoration: none;
+}
+
+ul {
+    margin: 4px 0 4px 16px;
+    padding: 0;
+}
+
+.language-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+.language-table th,
+.language-table td {
+    border: 1px solid #000;
+    padding: 4px;
+    font-size: 12px;
+}
+
+.footer {
+    margin-top: 15px;
+    font-size: 11px;
+}
+
+.signature {
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+    <div class="name">{{FULL_NAME}}</div>
+    <div class="meta">
+        {{#PASSPORT_NUMBER}}Passport: {{PASSPORT_NUMBER}} | {{/PASSPORT_NUMBER}}
+        {{#DATE_OF_BIRTH}}Date of birth: {{DATE_OF_BIRTH}} | {{/DATE_OF_BIRTH}}
+        {{#PLACE_OF_BIRTH}}Place of birth: {{PLACE_OF_BIRTH}} | {{/PLACE_OF_BIRTH}}
+        {{#NATIONALITY}}Nationality: {{NATIONALITY}} | {{/NATIONALITY}}
+        {{#GENDER}}Gender: {{GENDER}} | {{/GENDER}}
+        {{#PHONE}}Phone: {{PHONE}} | {{/PHONE}}
+        {{#EMAIL}}Email: <a href="mailto:{{EMAIL}}">{{EMAIL}}</a> | {{/EMAIL}}
+        {{#LINKEDIN_URL}}LinkedIn: <a href="{{LINKEDIN_URL}}" target="_blank">{{LINKEDIN_URL}}</a>{{/LINKEDIN_URL}}<br>
+        {{#ADDRESS}}Address: {{ADDRESS}}{{/ADDRESS}}
+    </div>
+</div>
+
+<!-- EDUCATION -->
+<div class="section-title">Education & Training</div>
+{{EDUCATIONS}}
+
+<!-- WORK EXPERIENCE -->
+{{#WORK_EXPERIENCES_SECTION}}
+<div class="section-title">Work Experience</div>
+{{WORK_EXPERIENCES}}
+{{/WORK_EXPERIENCES_SECTION}}
+
+<!-- LANGUAGE SKILLS -->
+<div class="section-title">Language Skills</div>
+{{MOTHER_TONGUES}}
+{{LANGUAGES_TABLE}}
+
+<!-- DIGITAL & RESEARCH SKILLS -->
+{{#DIGITAL_RESEARCH_SKILLS}}
+<div class="section-title">Digital & Research Skills</div>
+{{DIGITAL_RESEARCH_SKILLS}}
+{{/DIGITAL_RESEARCH_SKILLS}}
+
+<!-- CERTIFICATIONS -->
+{{#CERTIFICATIONS_SECTION}}
+<div class="section-title">Certifications & Academic Training</div>
+{{CERTIFICATIONS}}
+{{/CERTIFICATIONS_SECTION}}
+
+<!-- PUBLICATIONS -->
+{{#PUBLICATIONS_SECTION}}
+<div class="section-title">Research Publications & Academic Work</div>
+{{PUBLICATIONS}}
+{{/PUBLICATIONS_SECTION}}
+
+<!-- RECOMMENDATIONS -->
+{{#RECOMMENDATIONS_SECTION}}
+<div class="section-title">Recommendations</div>
+{{RECOMMENDATIONS}}
+{{/RECOMMENDATIONS_SECTION}}
+
+<!-- ADDITIONAL SECTIONS -->
+{{ADDITIONAL_SECTIONS}}
+
+<!-- DECLARATION -->
+<div class="section-title">Declaration</div>
+I hereby declare that the information provided above is true and correct to the best of my knowledge.
+
+<div class="signature">
+{{#SIGNATURE_DATE}}Date: {{SIGNATURE_DATE}}<br><br>{{/SIGNATURE_DATE}}
+{{#SIGNATURE_URL}}<img src="{{SIGNATURE_URL}}" height="60">{{/SIGNATURE_URL}}
+</div>
+
+</div>
+</body>
+</html>

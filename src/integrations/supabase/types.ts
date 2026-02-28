@@ -710,6 +710,20 @@ export type Database = {
           user_id: string
           work_experience_field: string | null
           work_experience_years: number | null
+          -- added for Europass CV
+          passport_number: string | null
+          place_of_birth: string | null
+          gender: string | null
+          nationality: string | null
+          phone: string | null
+          linkedin_url: string | null
+          address_street: string | null
+          address_city: string | null
+          address_postal_code: string | null
+          address_country: string | null
+          signature_url: string | null
+          signature_date: string | null
+          digital_research_skills: Json | null
         }
         Insert: {
           aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
@@ -743,6 +757,19 @@ export type Database = {
           user_id: string
           work_experience_field?: string | null
           work_experience_years?: number | null
+          passport_number?: string | null
+          place_of_birth?: string | null
+          gender?: string | null
+          nationality?: string | null
+          phone?: string | null
+          linkedin_url?: string | null
+          address_street?: string | null
+          address_city?: string | null
+          address_postal_code?: string | null
+          address_country?: string | null
+          signature_url?: string | null
+          signature_date?: string | null
+          digital_research_skills?: Json | null
         }
         Update: {
           aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
@@ -776,6 +803,295 @@ export type Database = {
           user_id?: string
           work_experience_field?: string | null
           work_experience_years?: number | null
+          passport_number?: string | null
+          place_of_birth?: string | null
+          gender?: string | null
+          nationality?: string | null
+          phone?: string | null
+          linkedin_url?: string | null
+          address_street?: string | null
+          address_city?: string | null
+          address_postal_code?: string | null
+          address_country?: string | null
+          signature_url?: string | null
+          signature_date?: string | null
+          digital_research_skills?: Json | null
+        }
+        Relationships: []
+      }
+      profile_educations: {
+        Row: {
+          id: string
+          profile_id: string
+          degree_title: string
+          field_of_study: string
+          institution: string
+          country: string
+          start_year: number
+          end_year: number
+          final_grade: string | null
+          max_scale: number | null
+          total_credits: number | null
+          credit_system: string | null
+          thesis_title: string | null
+          key_subjects: string | null
+          academic_highlights: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          degree_title: string
+          field_of_study: string
+          institution: string
+          country: string
+          start_year: number
+          end_year: number
+          final_grade?: string | null
+          max_scale?: number | null
+          total_credits?: number | null
+          credit_system?: string | null
+          thesis_title?: string | null
+          key_subjects?: string | null
+          academic_highlights?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          degree_title?: string
+          field_of_study?: string
+          institution?: string
+          country?: string
+          start_year?: number
+          end_year?: number
+          final_grade?: string | null
+          max_scale?: number | null
+          total_credits?: number | null
+          credit_system?: string | null
+          thesis_title?: string | null
+          key_subjects?: string | null
+          academic_highlights?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_work_experiences: {
+        Row: {
+          id: string
+          profile_id: string
+          job_title: string | null
+          organisation: string | null
+          city_country: string | null
+          start_date: string | null
+          end_date: string | null
+          is_current: boolean | null
+          description: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          job_title?: string | null
+          organisation?: string | null
+          city_country?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_current?: boolean | null
+          description?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          job_title?: string | null
+          organisation?: string | null
+          city_country?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_current?: boolean | null
+          description?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_language_skills: {
+        Row: {
+          id: string
+          profile_id: string
+          language_name: string
+          mother_tongue: boolean
+          listening: Database["public"]["Enums"]["cefr_level"] | null
+          reading: Database["public"]["Enums"]["cefr_level"] | null
+          writing: Database["public"]["Enums"]["cefr_level"] | null
+          speaking: Database["public"]["Enums"]["cefr_level"] | null
+          ielts_score: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          language_name: string
+          mother_tongue?: boolean
+          listening?: Database["public"]["Enums"]["cefr_level"] | null
+          reading?: Database["public"]["Enums"]["cefr_level"] | null
+          writing?: Database["public"]["Enums"]["cefr_level"] | null
+          speaking?: Database["public"]["Enums"]["cefr_level"] | null
+          ielts_score?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          language_name?: string
+          mother_tongue?: boolean
+          listening?: Database["public"]["Enums"]["cefr_level"] | null
+          reading?: Database["public"]["Enums"]["cefr_level"] | null
+          writing?: Database["public"]["Enums"]["cefr_level"] | null
+          speaking?: Database["public"]["Enums"]["cefr_level"] | null
+          ielts_score?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_certifications: {
+        Row: {
+          id: string
+          profile_id: string
+          title: string
+          institution: string | null
+          date: string | null
+          certificate_url: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          title: string
+          institution?: string | null
+          date?: string | null
+          certificate_url?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          title?: string
+          institution?: string | null
+          date?: string | null
+          certificate_url?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_publications: {
+        Row: {
+          id: string
+          profile_id: string
+          title: string
+          journal: string | null
+          year: number | null
+          doi_url: string | null
+          description: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          title: string
+          journal?: string | null
+          year?: number | null
+          doi_url?: string | null
+          description?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          title?: string
+          journal?: string | null
+          year?: number | null
+          doi_url?: string | null
+          description?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_recommendations: {
+        Row: {
+          id: string
+          profile_id: string
+          name: string
+          designation: string | null
+          institution: string | null
+          email: string | null
+          contact: string | null
+          lor_link: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          name: string
+          designation?: string | null
+          institution?: string | null
+          email?: string | null
+          contact?: string | null
+          lor_link?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          name?: string
+          designation?: string | null
+          institution?: string | null
+          email?: string | null
+          contact?: string | null
+          lor_link?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profile_additional_sections: {
+        Row: {
+          id: string
+          profile_id: string
+          section_title: string
+          section_content: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          section_title: string
+          section_content?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          section_title?: string
+          section_content?: string | null
+          order_index?: number
+          created_at?: string
         }
         Relationships: []
       }
@@ -1261,6 +1577,7 @@ export type Database = {
         | "payment_pending"
         | "in_progress"
         | "completed"
+      cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
     }
     CompositeTypes: {
       [_ in never]: never

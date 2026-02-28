@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Europass CV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 0;
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm 10mm 12mm 10mm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 12mm 10mm;
+                width: 210mm;
+                height: 297mm;
+            }
+            .container {
+                width: 100%;
+                page-break-after: avoid;
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10.5px;
+            line-height: 1.4;
+            color: #1a1a1a;
+            background: #ffffff;
+            padding: 12mm 10mm;
+            width: 210mm;
+            height: 297mm;
+        }
+
+        .container {
+            max-width: 190mm;
+            margin: 0 auto;
+        }
+
+        /* HEADER SECTION */
+        .header {
+            border-bottom: 2px solid #1565c0;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            page-break-after: avoid;
+        }
+
+        .header .name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1565c0;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .header .meta-line {
+            font-size: 9px;
+            color: #555;
+            margin-bottom: 1px;
+            line-height: 1.3;
+        }
+
+        .header .address-line {
+            font-size: 9px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* SECTION STYLING */
+        .section {
+            margin-bottom: 10px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1565c0;
+            text-transform: uppercase;
+            border-bottom: 1px solid #dddddd;
+            padding-bottom: 3px;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+            page-break-after: avoid;
+        }
+
+        /* ENTRIES */
+        .entry {
+            margin-bottom: 6px;
+            page-break-inside: avoid;
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        .entry strong {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .entry .highlight {
+            font-weight: 700;
+            color: #1565c0;
+            background-color: #f0f7ff;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .entry a {
+            color: #1565c0;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .entry a:hover {
+            text-decoration: underline;
+        }
+
+        /* TABLES */
+        .language-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin: 4px 0;
+            page-break-inside: avoid;
+        }
+
+        .language-table th {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 3px 4px;
+            text-align: left;
+            font-weight: 600;
+            color: #1565c0;
+        }
+
+        .language-table td {
+            border: 1px solid #eee;
+            padding: 3px 4px;
+            text-align: left;
+        }
+
+        .language-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        /* EMPTY SECTIONS */
+        .section.empty {
+            display: none;
+        }
+
+        /* MOTHER TONGUES */
+        .mother-tongues {
+            font-size: 10.5px;
+            margin-bottom: 4px;
+            padding: 3px 0;
+            font-style: italic;
+            color: #555;
+        }
+
+        /* SIGNATURE & DATE */
+        .signature-section {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #ddd;
+            font-size: 9px;
+            color: #777;
+            page-break-inside: avoid;
+            page-break-before: avoid;
+        }
+
+        .signature-section img {
+            max-height: 25px;
+            margin-right: 8px;
+        }
+
+        /* PAGE BREAK RULES */
+        .entry,
+        .section-title,
+        .language-table {
+            page-break-inside: avoid;
+        }
+
+        /* COMPACT MODE (for >2 pages) */
+        body.compact {
+            font-size: 10px;
+            line-height: 1.35;
+        }
+
+        body.compact .entry {
+            margin-bottom: 4px;
+        }
+
+        body.compact .section {
+            margin-bottom: 8px;
+        }
+
+        body.compact .header .name {
+            font-size: 16px;
+        }
+
+        /* PRINT-FRIENDLY */
+        @media print {
+            * {
+                box-shadow: none !important;
+            }
+            body {
+                background: white;
+                color: black;
+            }
+            a {
+                text-decoration: none;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="name">{{FULL_NAME}}</div>
+            <div class="meta-line">
+                {{PASSPORT_NUMBER}} | {{DATE_OF_BIRTH}} | {{PLACE_OF_BIRTH}} | {{NATIONALITY}} | {{GENDER}}
+            </div>
+            <div class="meta-line">
+                {{PHONE}} | <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>{{#LINKEDIN}}{{LINKEDIN_URL}}{{/LINKEDIN}}
+            </div>
+            <div class="address-line">
+                {{ADDRESS}}
+            </div>
+        </div>
+
+        <!-- EDUCATION & TRAINING -->
+        <div class="section">
+            <div class="section-title">Education & Training</div>
+            {{EDUCATIONS}}
+        </div>
+
+        <!-- WORK EXPERIENCE -->
+        {{#WORK_EXPERIENCES_SECTION}}
+        <div class="section">
+            <div class="section-title">Work Experience</div>
+            {{WORK_EXPERIENCES}}
+        </div>
+        {{/WORK_EXPERIENCES_SECTION}}
+
+        <!-- LANGUAGE SKILLS -->
+        <div class="section">
+            <div class="section-title">Language Skills</div>
+            <div class="mother-tongues">{{MOTHER_TONGUES}}</div>
+            {{LANGUAGES_TABLE}}
+        </div>
+
+        <!-- DIGITAL & RESEARCH SKILLS -->
+        {{#DIGITAL_RESEARCH_SKILLS}}
+        <div class="section">
+            <div class="section-title">Digital & Research Skills</div>
+            <div class="entry">
+                {{DIGITAL_RESEARCH_SKILLS}}
+            </div>
+        </div>
+        {{/DIGITAL_RESEARCH_SKILLS}}
+
+        <!-- CERTIFICATIONS -->
+        {{#CERTIFICATIONS_SECTION}}
+        <div class="section">
+            <div class="section-title">Certifications</div>
+            {{CERTIFICATIONS}}
+        </div>
+        {{/CERTIFICATIONS_SECTION}}
+
+        <!-- PUBLICATIONS -->
+        {{#PUBLICATIONS_SECTION}}
+        <div class="section">
+            <div class="section-title">Publications</div>
+            {{PUBLICATIONS}}
+        </div>
+        {{/PUBLICATIONS_SECTION}}
+
+        <!-- RECOMMENDATIONS -->
+        {{#RECOMMENDATIONS_SECTION}}
+        <div class="section">
+            <div class="section-title">Recommendations / Referees</div>
+            {{RECOMMENDATIONS}}
+        </div>
+        {{/RECOMMENDATIONS_SECTION}}
+
+        <!-- ADDITIONAL SECTIONS -->
+        {{ADDITIONAL_SECTIONS}}
+
+        <!-- SIGNATURE & DATE -->
+        <div class="signature-section">
+            {{#SIGNATURE_URL}}<img src="{{SIGNATURE_URL}}" alt="Signature">{{/SIGNATURE_URL}}
+            Signature Date: {{SIGNATURE_DATE}}
+        </div>
+    </div>
+</body>
+</html>
