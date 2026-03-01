@@ -44,7 +44,21 @@ export type Database = {
             foreignKeyName: "admin_notes_admin_id_fkey"
             columns: ["admin_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "admin_notes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "admin_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
             referencedColumns: ["user_id"]
           },
           {
@@ -149,6 +163,13 @@ export type Database = {
             foreignKeyName: "applications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -217,6 +238,13 @@ export type Database = {
             foreignKeyName: "blogs_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "blogs_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -257,6 +285,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checklist_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "checklist_items_user_id_fkey"
             columns: ["user_id"]
@@ -496,6 +531,13 @@ export type Database = {
             foreignKeyName: "documents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -672,6 +714,394 @@ export type Database = {
             foreignKeyName: "payments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_additional_sections: {
+        Row: {
+          created_at: string
+          id: string
+          order_index: number | null
+          profile_id: string
+          section_content: string | null
+          section_title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          profile_id: string
+          section_content?: string | null
+          section_title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          profile_id?: string
+          section_content?: string | null
+          section_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_additional_sections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_additional_sections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_certifications: {
+        Row: {
+          certificate_url: string | null
+          created_at: string
+          date: string | null
+          id: string
+          institution: string | null
+          order_index: number | null
+          profile_id: string
+          title: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          institution?: string | null
+          order_index?: number | null
+          profile_id: string
+          title: string
+        }
+        Update: {
+          certificate_url?: string | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          institution?: string | null
+          order_index?: number | null
+          profile_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_certifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_certifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_educations: {
+        Row: {
+          academic_highlights: string | null
+          country: string
+          created_at: string
+          credit_system: string | null
+          degree_title: string
+          end_year: number
+          field_of_study: string
+          final_grade: string | null
+          id: string
+          institution: string
+          key_subjects: string | null
+          max_scale: number | null
+          order_index: number | null
+          profile_id: string
+          start_year: number
+          thesis_title: string | null
+          total_credits: number | null
+        }
+        Insert: {
+          academic_highlights?: string | null
+          country: string
+          created_at?: string
+          credit_system?: string | null
+          degree_title: string
+          end_year: number
+          field_of_study: string
+          final_grade?: string | null
+          id?: string
+          institution: string
+          key_subjects?: string | null
+          max_scale?: number | null
+          order_index?: number | null
+          profile_id: string
+          start_year: number
+          thesis_title?: string | null
+          total_credits?: number | null
+        }
+        Update: {
+          academic_highlights?: string | null
+          country?: string
+          created_at?: string
+          credit_system?: string | null
+          degree_title?: string
+          end_year?: number
+          field_of_study?: string
+          final_grade?: string | null
+          id?: string
+          institution?: string
+          key_subjects?: string | null
+          max_scale?: number | null
+          order_index?: number | null
+          profile_id?: string
+          start_year?: number
+          thesis_title?: string | null
+          total_credits?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_educations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_educations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_language_skills: {
+        Row: {
+          created_at: string
+          id: string
+          ielts_score: number | null
+          language_name: string
+          listening: Database["public"]["Enums"]["cefr_level"] | null
+          mother_tongue: boolean | null
+          profile_id: string
+          reading: Database["public"]["Enums"]["cefr_level"] | null
+          speaking: Database["public"]["Enums"]["cefr_level"] | null
+          writing: Database["public"]["Enums"]["cefr_level"] | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ielts_score?: number | null
+          language_name: string
+          listening?: Database["public"]["Enums"]["cefr_level"] | null
+          mother_tongue?: boolean | null
+          profile_id: string
+          reading?: Database["public"]["Enums"]["cefr_level"] | null
+          speaking?: Database["public"]["Enums"]["cefr_level"] | null
+          writing?: Database["public"]["Enums"]["cefr_level"] | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ielts_score?: number | null
+          language_name?: string
+          listening?: Database["public"]["Enums"]["cefr_level"] | null
+          mother_tongue?: boolean | null
+          profile_id?: string
+          reading?: Database["public"]["Enums"]["cefr_level"] | null
+          speaking?: Database["public"]["Enums"]["cefr_level"] | null
+          writing?: Database["public"]["Enums"]["cefr_level"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_language_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_language_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_publications: {
+        Row: {
+          created_at: string
+          description: string | null
+          doi_url: string | null
+          id: string
+          journal: string | null
+          order_index: number | null
+          profile_id: string
+          title: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          doi_url?: string | null
+          id?: string
+          journal?: string | null
+          order_index?: number | null
+          profile_id: string
+          title: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          doi_url?: string | null
+          id?: string
+          journal?: string | null
+          order_index?: number | null
+          profile_id?: string
+          title?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_publications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_publications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_recommendations: {
+        Row: {
+          contact: string | null
+          created_at: string
+          designation: string | null
+          email: string | null
+          id: string
+          institution: string | null
+          lor_link: string | null
+          name: string
+          order_index: number | null
+          profile_id: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          designation?: string | null
+          email?: string | null
+          id?: string
+          institution?: string | null
+          lor_link?: string | null
+          name: string
+          order_index?: number | null
+          profile_id: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          designation?: string | null
+          email?: string | null
+          id?: string
+          institution?: string | null
+          lor_link?: string | null
+          name?: string
+          order_index?: number | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_recommendations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_recommendations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profile_work_experiences: {
+        Row: {
+          city_country: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          job_title: string | null
+          order_index: number | null
+          organisation: string | null
+          profile_id: string
+          start_date: string | null
+        }
+        Insert: {
+          city_country?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          job_title?: string | null
+          order_index?: number | null
+          organisation?: string | null
+          profile_id: string
+          start_date?: string | null
+        }
+        Update: {
+          city_country?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          job_title?: string | null
+          order_index?: number | null
+          organisation?: string | null
+          profile_id?: string
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_work_experiences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_work_experiences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -679,6 +1109,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_city: string | null
+          address_country: string | null
+          address_postal_code: string | null
+          address_street: string | null
           aps_pathway: Database["public"]["Enums"]["aps_pathway"] | null
           avatar_url: string | null
           bachelor_cgpa_percentage: string | null
@@ -694,38 +1128,37 @@ export type Database = {
           country_of_education: string | null
           created_at: string
           date_of_birth: string | null
+          digital_research_skills: Json | null
           full_name: string | null
+          gender: string | null
           german_level: Database["public"]["Enums"]["german_level"] | null
           has_aps_certificate: boolean | null
           id: string
           ielts_toefl_score: string | null
           intake: string | null
           intended_master_course: string | null
+          linkedin_url: string | null
           master_cgpa_percentage: string | null
           master_degree_name: string | null
           master_field: string | null
+          nationality: string | null
+          passport_number: string | null
+          phone: string | null
+          place_of_birth: string | null
           role: Database["public"]["Enums"]["app_role"]
+          signature_date: string | null
+          signature_url: string | null
           state_of_education: string | null
           updated_at: string
           user_id: string
           work_experience_field: string | null
           work_experience_years: number | null
-          -- added for Europass CV
-          passport_number: string | null
-          place_of_birth: string | null
-          gender: string | null
-          nationality: string | null
-          phone: string | null
-          linkedin_url: string | null
-          address_street: string | null
-          address_city: string | null
-          address_postal_code: string | null
-          address_country: string | null
-          signature_url: string | null
-          signature_date: string | null
-          digital_research_skills: Json | null
         }
         Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
           aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
           avatar_url?: string | null
           bachelor_cgpa_percentage?: string | null
@@ -741,37 +1174,37 @@ export type Database = {
           country_of_education?: string | null
           created_at?: string
           date_of_birth?: string | null
+          digital_research_skills?: Json | null
           full_name?: string | null
+          gender?: string | null
           german_level?: Database["public"]["Enums"]["german_level"] | null
           has_aps_certificate?: boolean | null
           id?: string
           ielts_toefl_score?: string | null
           intake?: string | null
           intended_master_course?: string | null
+          linkedin_url?: string | null
           master_cgpa_percentage?: string | null
           master_degree_name?: string | null
           master_field?: string | null
+          nationality?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          signature_date?: string | null
+          signature_url?: string | null
           state_of_education?: string | null
           updated_at?: string
           user_id: string
           work_experience_field?: string | null
           work_experience_years?: number | null
-          passport_number?: string | null
-          place_of_birth?: string | null
-          gender?: string | null
-          nationality?: string | null
-          phone?: string | null
-          linkedin_url?: string | null
-          address_street?: string | null
-          address_city?: string | null
-          address_postal_code?: string | null
-          address_country?: string | null
-          signature_url?: string | null
-          signature_date?: string | null
-          digital_research_skills?: Json | null
         }
         Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
           aps_pathway?: Database["public"]["Enums"]["aps_pathway"] | null
           avatar_url?: string | null
           bachelor_cgpa_percentage?: string | null
@@ -787,311 +1220,31 @@ export type Database = {
           country_of_education?: string | null
           created_at?: string
           date_of_birth?: string | null
+          digital_research_skills?: Json | null
           full_name?: string | null
+          gender?: string | null
           german_level?: Database["public"]["Enums"]["german_level"] | null
           has_aps_certificate?: boolean | null
           id?: string
           ielts_toefl_score?: string | null
           intake?: string | null
           intended_master_course?: string | null
+          linkedin_url?: string | null
           master_cgpa_percentage?: string | null
           master_degree_name?: string | null
           master_field?: string | null
+          nationality?: string | null
+          passport_number?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          signature_date?: string | null
+          signature_url?: string | null
           state_of_education?: string | null
           updated_at?: string
           user_id?: string
           work_experience_field?: string | null
           work_experience_years?: number | null
-          passport_number?: string | null
-          place_of_birth?: string | null
-          gender?: string | null
-          nationality?: string | null
-          phone?: string | null
-          linkedin_url?: string | null
-          address_street?: string | null
-          address_city?: string | null
-          address_postal_code?: string | null
-          address_country?: string | null
-          signature_url?: string | null
-          signature_date?: string | null
-          digital_research_skills?: Json | null
-        }
-        Relationships: []
-      }
-      profile_educations: {
-        Row: {
-          id: string
-          profile_id: string
-          degree_title: string
-          field_of_study: string
-          institution: string
-          country: string
-          start_year: number
-          end_year: number
-          final_grade: string | null
-          max_scale: number | null
-          total_credits: number | null
-          credit_system: string | null
-          thesis_title: string | null
-          key_subjects: string | null
-          academic_highlights: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          degree_title: string
-          field_of_study: string
-          institution: string
-          country: string
-          start_year: number
-          end_year: number
-          final_grade?: string | null
-          max_scale?: number | null
-          total_credits?: number | null
-          credit_system?: string | null
-          thesis_title?: string | null
-          key_subjects?: string | null
-          academic_highlights?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          degree_title?: string
-          field_of_study?: string
-          institution?: string
-          country?: string
-          start_year?: number
-          end_year?: number
-          final_grade?: string | null
-          max_scale?: number | null
-          total_credits?: number | null
-          credit_system?: string | null
-          thesis_title?: string | null
-          key_subjects?: string | null
-          academic_highlights?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_work_experiences: {
-        Row: {
-          id: string
-          profile_id: string
-          job_title: string | null
-          organisation: string | null
-          city_country: string | null
-          start_date: string | null
-          end_date: string | null
-          is_current: boolean | null
-          description: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          job_title?: string | null
-          organisation?: string | null
-          city_country?: string | null
-          start_date?: string | null
-          end_date?: string | null
-          is_current?: boolean | null
-          description?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          job_title?: string | null
-          organisation?: string | null
-          city_country?: string | null
-          start_date?: string | null
-          end_date?: string | null
-          is_current?: boolean | null
-          description?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_language_skills: {
-        Row: {
-          id: string
-          profile_id: string
-          language_name: string
-          mother_tongue: boolean
-          listening: Database["public"]["Enums"]["cefr_level"] | null
-          reading: Database["public"]["Enums"]["cefr_level"] | null
-          writing: Database["public"]["Enums"]["cefr_level"] | null
-          speaking: Database["public"]["Enums"]["cefr_level"] | null
-          ielts_score: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          language_name: string
-          mother_tongue?: boolean
-          listening?: Database["public"]["Enums"]["cefr_level"] | null
-          reading?: Database["public"]["Enums"]["cefr_level"] | null
-          writing?: Database["public"]["Enums"]["cefr_level"] | null
-          speaking?: Database["public"]["Enums"]["cefr_level"] | null
-          ielts_score?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          language_name?: string
-          mother_tongue?: boolean
-          listening?: Database["public"]["Enums"]["cefr_level"] | null
-          reading?: Database["public"]["Enums"]["cefr_level"] | null
-          writing?: Database["public"]["Enums"]["cefr_level"] | null
-          speaking?: Database["public"]["Enums"]["cefr_level"] | null
-          ielts_score?: number | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_certifications: {
-        Row: {
-          id: string
-          profile_id: string
-          title: string
-          institution: string | null
-          date: string | null
-          certificate_url: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          title: string
-          institution?: string | null
-          date?: string | null
-          certificate_url?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          title?: string
-          institution?: string | null
-          date?: string | null
-          certificate_url?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_publications: {
-        Row: {
-          id: string
-          profile_id: string
-          title: string
-          journal: string | null
-          year: number | null
-          doi_url: string | null
-          description: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          title: string
-          journal?: string | null
-          year?: number | null
-          doi_url?: string | null
-          description?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          title?: string
-          journal?: string | null
-          year?: number | null
-          doi_url?: string | null
-          description?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_recommendations: {
-        Row: {
-          id: string
-          profile_id: string
-          name: string
-          designation: string | null
-          institution: string | null
-          email: string | null
-          contact: string | null
-          lor_link: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          name: string
-          designation?: string | null
-          institution?: string | null
-          email?: string | null
-          contact?: string | null
-          lor_link?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          name?: string
-          designation?: string | null
-          institution?: string | null
-          email?: string | null
-          contact?: string | null
-          lor_link?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      profile_additional_sections: {
-        Row: {
-          id: string
-          profile_id: string
-          section_title: string
-          section_content: string | null
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          profile_id: string
-          section_title: string
-          section_content?: string | null
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          profile_id?: string
-          section_title?: string
-          section_content?: string | null
-          order_index?: number
-          created_at?: string
         }
         Relationships: []
       }
@@ -1137,6 +1290,13 @@ export type Database = {
             foreignKeyName: "reminders_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -1177,6 +1337,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "reviews_user_id_fkey"
             columns: ["user_id"]
@@ -1309,6 +1476,13 @@ export type Database = {
             foreignKeyName: "service_requests_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "service_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -1407,7 +1581,21 @@ export type Database = {
             foreignKeyName: "student_favorites_admin_id_fkey"
             columns: ["admin_id"]
             isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_favorites_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_favorites_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
             referencedColumns: ["user_id"]
           },
           {
@@ -1484,6 +1672,20 @@ export type Database = {
       }
     }
     Views: {
+      profile_cv_view: {
+        Row: {
+          additional_sections: Json | null
+          certifications: Json | null
+          educations: Json | null
+          languages: Json | null
+          personal_info: Json | null
+          publications: Json | null
+          recommendations: Json | null
+          user_id: string | null
+          work_experiences: Json | null
+        }
+        Relationships: []
+      }
       v_service_requests_with_payments: {
         Row: {
           admin_response: string | null
@@ -1508,6 +1710,13 @@ export type Database = {
           user_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "service_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_cv_view"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "service_requests_user_id_fkey"
             columns: ["user_id"]
@@ -1560,6 +1769,7 @@ export type Database = {
         | "rejected"
         | "Applied"
       aps_pathway: "stk" | "bachelor_2_semesters" | "master_applicants"
+      cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
       checklist_status: "not_started" | "in_progress" | "completed"
       german_level: "none" | "a1" | "a2" | "b1" | "b2" | "c1" | "c2"
       notification_type:
@@ -1577,7 +1787,6 @@ export type Database = {
         | "payment_pending"
         | "in_progress"
         | "completed"
-      cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1716,6 +1925,7 @@ export const Constants = {
         "Applied",
       ],
       aps_pathway: ["stk", "bachelor_2_semesters", "master_applicants"],
+      cefr_level: ["A1", "A2", "B1", "B2", "C1", "C2"],
       checklist_status: ["not_started", "in_progress", "completed"],
       german_level: ["none", "a1", "a2", "b1", "b2", "c1", "c2"],
       notification_type: [

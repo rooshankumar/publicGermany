@@ -9,22 +9,13 @@ declare global {
   }
 }
 
-export interface CVGenerationConfig {
-  useCompactMode?: boolean;
-  forceHtml2pdf?: boolean; // Force client-side fallback
-}
-
 export function useGenerateEuropassCV() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationStatus, setValidationStatus] = useState<CVCompletionStatus | null>(null);
   const { toast } = useToast();
 
-  /**
-   * Validate CV before generation
-   */
   const validateCV = async (userId: string) => {
     try {
-      // Fetch all CV data for validation
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -45,236 +36,102 @@ export function useGenerateEuropassCV() {
 
       const status = validateCVCompletion(profile, educations || [], workExperiences || [], languages || [], publications || []);
       setValidationStatus(status);
-
       return status;
     } catch (err) {
       console.error("Validation error:", err);
-      toast({
-        title: "Validation Error",
-        description: "Could not validate CV. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Validation Error", description: "Could not validate CV. Please try again.", variant: "destructive" });
       return null;
     }
   };
 
-  /**
-   * Download PDF blob to user's device
-   */
-  const downloadPDF = (pdfBlob: Blob, filename: string) => {
-    const url = URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    console.log('✅ PDF downloaded:', filename);
-  };
+  const generateCVWithHtml2pdf = async (html: string, studentName: string) => {
+    // Load html2pdf from CDN if not loaded
+    if (!window.html2pdf) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
 
-  /**
-   * Fallback: Generate PDF using client-side html2pdf
-   */
-  const generateCVWithHtml2pdf = async (
-    html: string,
-    studentName: string
-  ) => {
+    // Use a hidden iframe for proper style isolation and rendering
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;height:1200px;border:none;';
+    document.body.appendChild(iframe);
+
     try {
-      console.log('📦 Using client-side html2pdf fallback');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Could not access iframe document');
 
-      // Split HTML to extract content only (remove html/head/body tags)
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-      let contentHtml = bodyMatch ? bodyMatch[1] : html;
-      
-      // Make sure we have the full HTML with styles
-      const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-      const styleContent = styleMatch ? `<style>${styleMatch[1]}</style>` : '';
-      
-      // Reconstruct as complete HTML document
-      contentHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            ${styleContent}
-        </head>
-        <body>
-            ${contentHtml}
-        </body>
-        </html>
-      `;
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
 
-      // Load html2pdf library from CDN if not already loaded
-      if (!window.html2pdf) {
-        const script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Create temporary element for rendering
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = contentHtml;
-      
-      // Make sure styles are loaded before capturing
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const element = iframeDoc.querySelector('.container') || iframeDoc.body;
 
       const options = {
-        margin: [10, 10, 10, 10],
-        filename: `Europass_CV_${studentName.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
+        margin: [12, 15, 12, 15],
+        filename: `Academic_CV_${studentName.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: true,
         },
-        jsPDF: { 
-          unit: "mm", 
-          format: "a4", 
-          orientation: "portrait",
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait" as const,
           compress: true,
         },
-        pagebreak: { 
-          mode: "avoid-all",
-        },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
 
-      // Get the container element
-      const element = tempDiv.querySelector('.container') || tempDiv;
-      console.log('📄 Element HTML length:', element.innerHTML.length);
-      
-      // Generate PDF
       await window.html2pdf().set(options).from(element).save();
-
-      console.log('✅ Fallback PDF generated with html2pdf');
-    } catch (err) {
-      console.error('❌ Fallback html2pdf error:', err);
-      throw new Error('PDF generation failed with both methods');
+      console.log('✅ PDF generated successfully');
+    } finally {
+      document.body.removeChild(iframe);
     }
   };
 
-  /**
-   * Generate PDF with Puppeteer (server-side) or fallback to html2pdf
-   */
-  const generateCV = async (
-    userId: string, 
-    studentName: string,
-    config: CVGenerationConfig = {}
-  ) => {
+  const generateCV = async (userId: string, studentName: string) => {
     setIsGenerating(true);
     try {
-      // Validate CV first
       const status = await validateCV(userId);
       if (!status) throw new Error("Validation failed");
 
       if (!status.isComplete) {
         const errors = formatValidationErrors(status);
-        toast({
-          title: errors.title,
-          description: errors.description,
-          variant: "destructive",
-        });
+        toast({ title: errors.title, description: errors.description, variant: "destructive" });
         setIsGenerating(false);
         return;
       }
 
-      // Show content advisory if CV may exceed 2 pages
       if (status.contentMetrics.mayExceedTwoPages) {
         const warnings = formatValidationWarnings(status);
         if (warnings.length > 0) {
-          toast({
-            title: "Content Advisory",
-            description: warnings[0],
-            variant: "default",
-          });
+          toast({ title: "Content Advisory", description: warnings[0] });
         }
       }
 
-      // Call the edge function to generate HTML
-      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke("generate-europass-cv", {
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke("generate-europass-cv", {
         body: { user_id: userId },
       });
 
-      if (edgeFunctionError) throw edgeFunctionError;
-      if (!edgeFunctionData?.html) throw new Error("No HTML returned from generation function");
+      if (error) throw error;
+      if (!data?.html) throw new Error("No HTML returned from generation function");
 
-      const html = edgeFunctionData.html;
+      await generateCVWithHtml2pdf(data.html, studentName);
 
-      // Debug: Check HTML content
-      console.log('📄 Generated HTML length:', html.length);
-      console.log('🔍 HTML preview (first 300 chars):', html.substring(0, 300));
-      console.log('🔍 HTML contains FULL_NAME?', html.includes('{{FULL_NAME}}'));
-      console.log('🔍 HTML contains container div?', html.includes('<div class="container">'));
-      
-      if (html.length < 500) {
-        console.error('⚠️ HTML seems too short, might be malformed:', html);
-      }
-
-      // Try server-side Puppeteer first (unless forced to html2pdf)
-      if (!config.forceHtml2pdf) {
-        try {
-          console.log('🚀 Attempting server-side PDF generation with Puppeteer');
-          
-          const response = await fetch('/api/generate-pdf', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              html,
-              studentName,
-              config,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.warn('⚠️ Puppeteer failed, will use fallback:', errorData);
-            
-            // If response indicates fallback is needed, use html2pdf
-            if (errorData.fallback) {
-              throw new Error('Puppeteer unavailable');
-            }
-            throw new Error(errorData.error || 'PDF generation failed');
-          }
-
-          // Get PDF as blob
-          const pdfBlob = await response.blob();
-          if (pdfBlob.size === 0) throw new Error('Empty PDF received');
-
-          // Download PDF
-          const filename = `Europass_CV_${studentName.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`;
-          downloadPDF(pdfBlob, filename);
-
-          toast({
-            title: "Success",
-            description: `Europass CV generated with Puppeteer (${status.contentMetrics.estimatedPages} pages) - Server-rendered for maximum quality`,
-          });
-
-          console.log('✅ Server-side PDF completed');
-          return;
-        } catch (puppeteerError) {
-          console.warn('⚠️ Puppeteer endpoint failed, falling back to html2pdf:', puppeteerError);
-          // Fall through to html2pdf
-        }
-      }
-
-      // Fallback to client-side html2pdf
-      console.log('🔄 Falling back to client-side html2pdf');
-      await generateCVWithHtml2pdf(html, studentName);
-
-      toast({
-        title: "Success",
-        description: `Europass CV generated with html2pdf (${status.contentMetrics.estimatedPages} pages)`,
-      });
-
+      toast({ title: "Success", description: "Your Academic CV has been generated and downloaded." });
     } catch (err) {
       console.error("CV generation error:", err);
       toast({
@@ -287,10 +144,5 @@ export function useGenerateEuropassCV() {
     }
   };
 
-  return { 
-    generateCV, 
-    isGenerating,
-    validationStatus,
-    validateCV,
-  };
+  return { generateCV, isGenerating, validationStatus, validateCV };
 }

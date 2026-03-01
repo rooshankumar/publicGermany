@@ -71,7 +71,6 @@ export const useLanguageSkills = (userId: string) => {
     try {
       const { error } = await supabase
         .from('profile_language_skills')
-        // @ts-expect-error - Supabase type resolver issue with new tables
         .update(entry as unknown as Record<string, any>)
         .eq('id', id);
       if (error) throw error;
