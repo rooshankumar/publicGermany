@@ -1,117 +1,106 @@
 
-# UI Redesign: Clean, Minimal, Excel-Inspired -- German Flag Theme
 
-## Design Philosophy
-Inspired by Excel's approach: **dense but readable, functional but not cluttered**. Every pixel serves a purpose. The German flag theme (Black/Red/Gold) stays. All existing functionality is preserved -- only the visual presentation changes.
+# Production-Ready Academic CV Generator
 
-## Key Design Principles
-- **Flat, grid-based layouts** -- data presented in clean rows/columns like a spreadsheet
-- **Tighter spacing** -- reduce excessive padding, card bloat, and whitespace
-- **German flag accent stripe** -- subtle 3px tri-color bar (Black/Red/Gold) on headers
-- **No decorative noise** -- remove gradient backgrounds, excessive icons, info boxes that repeat obvious information
-- **Scan-friendly typography** -- smaller, consistent font sizes; bold only for key data
+## Critical Build Fix
+The `src/integrations/supabase/types.ts` file has a SQL comment `-- added for Europass CV` on line 713, which is invalid TypeScript. This must be removed (changed to a TS comment or deleted). Since this file is auto-generated and cannot be manually edited per project rules, we need to regenerate it or work around it.
 
----
-
-## Student Side Changes
-
-### 1. Layout / Navigation (`Layout.tsx`)
-- **Desktop top nav**: Tighten padding, reduce logo area. Keep horizontal nav links but make them more compact with smaller text
-- **Mobile header**: Keep current structure (bell, logo center, theme/logout) but reduce height from current padding to a slim 44px bar
-- **Mobile bottom nav**: No changes needed -- already clean
-
-### 2. Dashboard (`Dashboard.tsx`)
-- Already minimal from recent cleanup -- minor tweaks only:
-  - Reduce stat card padding (py-4 to py-3)
-  - Make greeting text smaller (text-xl instead of text-2xl on mobile)
-  - Add thin German flag stripe (3px) at very top of page
-
-### 3. Applications (`Applications.tsx`) -- Major Cleanup
-**Current problem**: Has colored info boxes ("Quick Import", "Auto Reminders"), large header section, full table with many columns that overflow on mobile
-
-**Redesign**:
-- Remove the blue/green info tip boxes -- they add noise
-- Compact header: Title + count on left, action buttons (Template, Upload, Add) on right in a single row
-- **Excel-style table**: Keep all columns but use smaller text (text-xs), tighter cell padding (py-2 px-2), and horizontal scroll on mobile
-- Status badges: Smaller, flat colored dots instead of full badges
-- Submitted checkmark: Move inline with status column (no separate Actions column needed)
-- Expandable credential rows: Keep but make toggle more subtle
-
-### 4. Documents (`Documents.tsx`) -- Reduce Card Bloat
-**Current problem**: 4 stat cards + progress card + notes section + upload section = too many vertical sections
-
-**Redesign**:
-- Replace 4 separate stat cards with a **single compact stats bar**: `Total: 25 | Approved: 20 | Pending: 3 | Rejected: 2` with a thin progress bar below
-- Remove the separate Progress card entirely (merged into stats bar)
-- Keep StudentNotes but collapse by default
-- Document upload grid: Tighter spacing, smaller upload buttons
-
-### 5. Services (`ServicesNew.tsx`) -- Simplify Stats
-- Replace 3 stat cards with inline text: "3 requests | 2 completed | 1 file delivered"
-- Keep tabs (Browse, My Requests, Delivered) but make tab triggers smaller
-- Service cards: Reduce padding, tighter layout
-
-### 6. Profile (`Profile.tsx`)
-- Reduce section card padding
-- Tighter form grid spacing
-- Eligibility section: Keep as-is (recently redesigned)
-
-### 7. Student Payments (`StudentPayments.tsx`)
-- Minor padding reduction
-- Keep functionality as-is
+## Problem Summary
+1. **Build broken**: `types.ts` line 713 has `-- added for Europass CV` (SQL comment in TS file) causing ~100+ parse errors
+2. **CV template outdated**: Current template doesn't match the professional academic CV design provided
+3. **PDF generation unreliable**: Puppeteer endpoint fails, html2pdf fallback has rendering issues
+4. **No public CV generator page**: Only logged-in students can generate CVs
+5. **Profile page duplication**: Fields like bachelor degree/field exist both in profile form AND in education entries (profile_educations table)
+6. **LinkedIn placeholder handling broken**: Template uses `{{#LINKEDIN}}{{LINKEDIN_URL}}{{/LINKEDIN}}` but edge function replaces it differently
 
 ---
 
-## Admin Side Changes
+## Part 1: Fix Build Error (types.ts)
 
-### 8. Admin Dashboard (`AdminDashboard.tsx`)
-- **Metric cards**: Keep 4-column grid but reduce padding, use smaller numbers
-- **Urgent Applications + Recent Payments**: Keep side-by-side cards but use denser list items (reduce from p-3 to p-2 on list items)
-- **Recent Students**: Same density treatment
-- **Deadline Reminders**: Keep as-is
-- **Bulk Email**: Keep as-is but collapse by default
-
-### 9. Students List (`Students.tsx`)
-- Tighter student cards with less padding
-- Compact filter bar
-
-### 10. Student Profile (`admin/StudentProfile.tsx`)
-- Tab content: Reduce padding on all tab panels
-- Applications tab: Same Excel-style treatment as student Applications page
-- Overview cards: Tighter layout
+Remove the invalid SQL comment on line 713 of `src/integrations/supabase/types.ts`. Replace `-- added for Europass CV` with nothing (or a valid TS comment `// added for Europass CV`).
 
 ---
 
-## CSS / Theme Changes (`index.css`)
+## Part 2: New Academic CV Template
 
-- Add utility class `.german-stripe` -- a 3px gradient bar (black, red, gold) used as page accent
-- Reduce default Card padding for a denser feel
-- Add `.compact-table` utility for tighter table rows
-- Keep all existing color variables, dark mode, glassmorphism unchanged
+Replace `supabase/functions/generate-europass-cv/template_academic.html` with the user's provided HTML design:
+
+- Minimalist header with profile photo circle, uppercase name, blue accent divider
+- Personal details block: Passport, DOB, Nationality, Gender, Place of Birth, Phone, Email, LinkedIn, Address
+- Section order: Education and Training, Research Publications, Work Experience, Language Skills (with CEFR table), Certifications (bullet format), Signature area
+- Clean typography: 10px base, Helvetica/Arial, `#004a99` blue accent color
+- Print-stable layout using table-based entry headers for date alignment
+- All conditional sections preserved with `{{#SECTION}}...{{/SECTION}}` syntax
 
 ---
 
-## Files to Modify
+## Part 3: Update Edge Function
 
-| File | Scope |
+Update `supabase/functions/generate-europass-cv/index.ts`:
+
+- Fix LinkedIn conditional rendering to match new template syntax
+- Reorder sections to match new template: Education, Publications, Work, Languages, Certifications, Signature
+- Ensure all placeholders align with the new template
+- Fix education rendering: show "Focus:" line from `key_subjects`, then Grade/Credits/URL line
+- Fix certification rendering: bullet list format with `title | institution | year`
+- Fix publication rendering: bold title, then journal/ISSN on next line
+
+---
+
+## Part 4: Improve PDF Generation (Client-Side Only)
+
+Remove the Puppeteer server-side attempt (it always fails on Lovable). Simplify `useGenerateEuropassCV.ts` to only use `html2pdf.js` with optimized settings:
+
+- Remove Puppeteer fetch call
+- Better html2pdf options: scale 2, proper page break handling
+- Create a hidden iframe to render the full HTML document properly before capture
+- This ensures styles are applied correctly
+
+---
+
+## Part 5: Public CV Generator Page
+
+Create a new public page at `/academic-cv-generator` (SEO-friendly URL):
+
+- **Route**: `/academic-cv-generator` in App.tsx (public, no auth required)
+- **Page component**: `src/pages/AcademicCVGenerator.tsx`
+- **SEO title**: "Free Academic CV Generator for Germany | Europass Format"
+- **Functionality**:
+  - Form sections: Personal Info, Education (add multiple), Work Experience (add multiple), Languages (add multiple with CEFR levels), Publications, Certifications
+  - All data stays client-side (no Supabase, no login required)
+  - Generate button builds HTML from the same template and triggers html2pdf download
+  - CTA: "Sign up to save your CV and access more features"
+- **Link from homepage**: Add to navigation/landing page
+
+---
+
+## Part 6: Rename Overlapping Profile Fields
+
+The profile page has both:
+- Profile-level fields: `bachelor_degree_name`, `bachelor_field`, `bachelor_cgpa_percentage` (used for eligibility)
+- Education entries in `profile_educations` table (used for CV generation)
+
+These serve different purposes. Rename the profile-level section label from "Education" to "Academic Background (for Eligibility)" to clarify they are screening fields, not CV content. The CV uses `profile_educations` entries.
+
+---
+
+## Files to Create/Modify
+
+| File | Action |
 |---|---|
-| `src/index.css` | Add `.german-stripe`, `.compact-table` utilities |
-| `src/components/Layout.tsx` | Tighter desktop nav padding, slimmer mobile header |
-| `src/pages/Dashboard.tsx` | Minor spacing tweaks, add German stripe |
-| `src/pages/Applications.tsx` | Remove info boxes, compact table, inline status indicators |
-| `src/pages/Documents.tsx` | Merge 4 stat cards into 1 stats bar, remove separate progress card |
-| `src/pages/ServicesNew.tsx` | Replace stat cards with inline summary text |
-| `src/pages/Profile.tsx` | Minor padding reduction |
-| `src/pages/admin/AdminDashboard.tsx` | Denser metric cards and list items |
-| `src/pages/admin/Students.tsx` | Tighter student cards |
-| `src/pages/admin/StudentProfile.tsx` | Reduce tab content padding |
+| `src/integrations/supabase/types.ts` | Fix line 713: remove SQL comment |
+| `supabase/functions/generate-europass-cv/template_academic.html` | Replace with new professional template |
+| `supabase/functions/generate-europass-cv/index.ts` | Update placeholder handling to match new template |
+| `src/hooks/useGenerateEuropassCV.ts` | Remove Puppeteer, improve html2pdf rendering |
+| `src/pages/AcademicCVGenerator.tsx` | New public page with full CV form |
+| `src/App.tsx` | Add `/academic-cv-generator` route |
+| `src/pages/Profile.tsx` | Rename "Education" section to "Academic Background" |
+| `src/pages/Index.tsx` | Add link to public CV generator |
 
 ## What Does NOT Change
-- All Supabase queries, real-time subscriptions, and data logic
-- All edge functions and email systems
-- Dark mode and theme toggle
-- Mobile bottom navigation structure
-- Eligibility engine and PDF generation
-- Contract system
-- Notification system
-- All routing and auth
+- All Supabase tables, RLS policies, and database schema
+- Edge function data fetching logic (queries remain the same)
+- Profile page functionality (only label rename)
+- Admin side pages
+- All other student pages
+
