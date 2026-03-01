@@ -3,7 +3,7 @@
  * Vercel Serverless Function: PDF Generation with Puppeteer
  * 
  * Dependencies (will be available at Vercel deployment):
- * - @sparticuz/chromium: ^125.0.0
+ * - @sparticuz/chromium: latest
  * 
  * Generates pixel-perfect, deterministic PDFs using headless Chromium
  * Guarantees:
