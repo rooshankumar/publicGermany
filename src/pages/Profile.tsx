@@ -1120,21 +1120,6 @@ const Profile = () => {
 
           {/* EUROPASS CV SECTIONS */}
 
-          {/* CV Generation Card */}
-          <CVGenerationCard
-            profile={profile}
-            educations={educations.entries}
-            languages={languageSkills.entries}
-            userEmail={userEmail}
-            isGenerating={isGenerating}
-            onGenerate={() => {
-              if (profile?.full_name && profile?.user_id) {
-                generateCV(profile.user_id, profile.full_name);
-              }
-            }}
-            isLoading={educations.loading || languageSkills.loading}
-          />
-
           {/* Education & Training - with inline editing */}
           <Card>
             <CardHeader>
@@ -1694,6 +1679,21 @@ const Profile = () => {
           </Card>
 
           {/* APS Pathway section removed, now on APS page */}
+
+          {/* CV GENERATION CARD - At the end of profile page */}
+          <CVGenerationCard
+            profile={profile}
+            educations={educations.entries}
+            languages={languageSkills.entries}
+            userEmail={userEmail}
+            isGenerating={isGenerating}
+            onGenerate={() => {
+              if (profile?.full_name && profile?.user_id) {
+                generateCV(profile.user_id, profile.full_name);
+              }
+            }}
+            isLoading={educations.loading || languageSkills.loading}
+          />
 
           <div className="flex flex-col sm:flex-row justify-end items-center gap-3 sm:gap-4">
             <Button type="submit" disabled={loading} className="min-w-32 w-full sm:w-auto">

@@ -25,7 +25,7 @@ function escapeHtml(text: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
-// Render education entries
+// Render education entries for academic template
 function renderEducations(educations: any[]): string {
   if (!educations || educations.length === 0) return "";
   
@@ -33,20 +33,24 @@ function renderEducations(educations: any[]): string {
     .map(
       (edu) => `
 <div class="entry">
-    <strong>${escapeHtml(edu.degree_title)} – ${escapeHtml(edu.field_of_study)} (${edu.start_year} – ${edu.end_year})</strong><br>
-    ${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}<br>
-    Final Grade: <span class="highlight">${escapeHtml(edu.final_grade)} / ${edu.max_scale}</span> |
-    Credits: <span class="highlight">${edu.total_credits}</span><br>
-    ${edu.thesis_title ? `Thesis: ${escapeHtml(edu.thesis_title)}<br>` : ""}
-    ${edu.key_subjects ? `Key Subjects: ${escapeHtml(edu.key_subjects)}<br>` : ""}
-    ${edu.academic_highlights ? `Highlights: ${escapeHtml(edu.academic_highlights)}<br>` : ""}
+    <table class="entry-table">
+        <tr>
+            <td class="entry-title">${escapeHtml(edu.degree_title)} – ${escapeHtml(edu.field_of_study)}</td>
+            <td class="entry-date">${edu.start_year} – ${edu.end_year}</td>
+        </tr>
+    </table>
+    <div class="sub-info">${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}</div>
+    ${edu.key_subjects ? `<ul class="list-style"><li>${escapeHtml(edu.key_subjects)}</li></ul>` : ""}
+    <div class="academic-meta">
+        Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale} | Credits: ${edu.total_credits}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
+    </div>
 </div>
 `
     )
     .join("");
 }
 
-// Render work experience entries
+// Render work experience entries for academic template
 function renderWorkExperiences(workExps: any[]): string {
   if (!workExps || workExps.length === 0) return "";
   
@@ -54,11 +58,14 @@ function renderWorkExperiences(workExps: any[]): string {
     .map(
       (work) => `
 <div class="entry">
-    <strong>${escapeHtml(work.job_title)} (${formatDate(work.start_date)} – ${
-        work.is_current ? "Present" : formatDate(work.end_date)
-      })</strong><br>
-    ${escapeHtml(work.organisation)}, ${escapeHtml(work.city_country)}<br>
-    ${escapeHtml(work.description)}
+    <table class="entry-table">
+        <tr>
+            <td class="entry-title">${escapeHtml(work.job_title)}</td>
+            <td class="entry-date">${formatDate(work.start_date)} – ${work.is_current ? "Present" : formatDate(work.end_date)}</td>
+        </tr>
+    </table>
+    <div class="sub-info">${escapeHtml(work.organisation)}, ${escapeHtml(work.city_country)}</div>
+    ${work.description ? `<div class="academic-meta">${escapeHtml(work.description)}</div>` : ""}
 </div>
 `
     )
@@ -87,7 +94,7 @@ function renderLanguagesTable(languages: any[]): string {
     .join("");
   
   return `
-<table class="language-table">
+<table class="lang-table">
 <tr>
 <th>Language</th>
 <th>Listening</th>
@@ -113,23 +120,20 @@ function renderMotherTongues(languages: any[]): string {
   return `Mother tongue(s): ${motherTongues}<br><br>`;
 }
 
-// Render certifications
+// Render certifications as bullet list
 function renderCertifications(certs: any[]): string {
   if (!certs || certs.length === 0) return "";
   
-  return certs
-    .map(
-      (cert) => `
-<div class="entry">
-    <strong>${escapeHtml(cert.title)}</strong> – ${escapeHtml(cert.institution)} (${formatDate(cert.date)})<br>
-    ${cert.certificate_url ? `<a href="${escapeHtml(cert.certificate_url)}" target="_blank">${escapeHtml(cert.certificate_url)}</a>` : ""}
-</div>
-`
-    )
-    .join("");
+  return `<div class="bullet-list">
+${certs
+  .map(
+    (cert) => `• ${escapeHtml(cert.title)} | ${escapeHtml(cert.institution)} | ${formatDate(cert.date)}${cert.certificate_url ? ` <a href="${escapeHtml(cert.certificate_url)}" target="_blank">Link</a>` : ""}`
+  )
+  .join("<br>")}
+</div>`;
 }
 
-// Render publications
+// Render publications for academic template
 function renderPublications(pubs: any[]): string {
   if (!pubs || pubs.length === 0) return "";
   
@@ -137,17 +141,15 @@ function renderPublications(pubs: any[]): string {
     .map(
       (pub) => `
 <div class="entry">
-    <strong>${escapeHtml(pub.title)}</strong><br>
-    ${escapeHtml(pub.journal)} (${pub.year})<br>
-    ${escapeHtml(pub.description)}<br>
-    ${pub.doi_url ? `<a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}
+    <strong>${escapeHtml(pub.title)}</strong>
+    <div class="academic-meta">${escapeHtml(pub.journal)} (${pub.year})${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}</div>
 </div>
 `
     )
     .join("");
 }
 
-// Render recommendations
+// Render recommendations for academic template
 function renderRecommendations(recs: any[]): string {
   if (!recs || recs.length === 0) return "";
   
@@ -155,11 +157,13 @@ function renderRecommendations(recs: any[]): string {
     .map(
       (rec) => `
 <div class="entry">
-    <strong>${escapeHtml(rec.name)}</strong> – ${escapeHtml(rec.designation)}<br>
-    ${escapeHtml(rec.institution)}<br>
-    ${rec.email ? `Email: <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a><br>` : ""}
-    ${rec.contact ? `Contact: ${escapeHtml(rec.contact)}<br>` : ""}
-    ${rec.lor_link ? `LOR: <a href="${escapeHtml(rec.lor_link)}" target="_blank">${escapeHtml(rec.lor_link)}</a>` : ""}
+    <strong>${escapeHtml(rec.name)}</strong> – ${escapeHtml(rec.designation)}
+    <div class="sub-info">${escapeHtml(rec.institution)}</div>
+    <div class="academic-meta">
+        ${rec.email ? `Email: <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a> | ` : ""}
+        ${rec.contact ? `Contact: ${escapeHtml(rec.contact)}` : ""}
+        ${rec.lor_link ? ` | <a href="${escapeHtml(rec.lor_link)}" target="_blank">Letter of Recommendation</a>` : ""}
+    </div>
 </div>
 `
     )
@@ -269,15 +273,15 @@ serve(async (req) => {
       sections: sections.data?.length || 0,
     });
 
-    // Import professional template (with fallback to basic template)
+    // Import academic template (with fallback to professional template)
     let templateText: string;
     try {
-      // Try reading professional template first
-      templateText = await Deno.readTextFile("./template_professional.html");
+      // Try reading academic template first
+      templateText = await Deno.readTextFile("./template_academic.html");
     } catch {
-      // Fallback to basic template
+      // Fallback to professional template
       try {
-        templateText = await Deno.readTextFile("./template.html");
+        templateText = await Deno.readTextFile("./template_professional.html");
       } catch {
         // Ultimate fallback: fetch from GitHub
         templateText = await fetch(
@@ -298,6 +302,15 @@ serve(async (req) => {
     html = html.replace(/{{GENDER}}/g, escapeHtml(profile.gender));
     html = html.replace(/{{PHONE}}/g, escapeHtml(profile.phone));
     html = html.replace(/{{EMAIL}}/g, escapeHtml(userEmail));
+    
+    // Handle profile picture with conditional rendering
+    if (profile.avatar_url) {
+      html = html.replace(/{{#PROFILE_PIC}}/g, "");
+      html = html.replace(/{{\/PROFILE_PIC}}/g, "");
+      html = html.replace(/{{PROFILE_PIC}}/g, escapeHtml(profile.avatar_url));
+    } else {
+      html = html.replace(/{{#PROFILE_PIC}}[\s\S]*?{{\/PROFILE_PIC}}/g, "");
+    }
     
     // Handle LinkedIn URL with conditional rendering
     if (profile.linkedin_url) {

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Academic_CV_{{FULL_NAME}}</title>
+    <style>
+        @page { size: A4; margin: 12mm 15mm; }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            line-height: 1.3;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            font-size: 10px;
+            background: #fff;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 800px; 
+            margin: auto; 
+        }
+
+        /* MINIMALIST HEADER */
+        .header-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 2px; 
+        }
+        
+        .profile-col { 
+            width: 85px; 
+            vertical-align: top; 
+        }
+        
+        .name-col { 
+            vertical-align: top; 
+            padding-left: 15px; 
+        }
+        
+        .profile-pic-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 0.5pt solid #999;
+            object-fit: cover;
+        }
+
+        .name-text {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #000;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.1;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+        
+        .header-divider {
+            height: 0.5pt;
+            background-color: #004a99;
+            width: 100%;
+            margin: 4px 0 8px 0;
+        }
+
+        .personal-details-block { 
+            line-height: 1.4; 
+            font-size: 9.5px;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .label { 
+            font-weight: bold; 
+            color: #333; 
+            text-transform: uppercase; 
+            font-size: 8pt; 
+            margin-right: 3px; 
+        }
+
+        /* SECTION TITLES */
+        .section-title {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #004a99;
+            text-transform: uppercase;
+            border-bottom: 0.5pt solid #ccc;
+            margin: 10px 0 6px 0;
+            padding-bottom: 1px;
+            page-break-after: avoid;
+            break-after: avoid-page;
+        }
+
+        /* ENTRY TABLE LAYOUT */
+        .entry-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 2px; 
+        }
+
+        .entry-title { 
+            font-weight: bold; 
+            font-size: 10px; 
+            text-align: left; 
+        }
+
+        .entry-date { 
+            font-weight: bold; 
+            font-size: 10px; 
+            text-align: right; 
+            white-space: nowrap; 
+            width: 120px; 
+        }
+
+        .entry { 
+            margin-bottom: 6px;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .sub-info { 
+            font-style: italic; 
+            color: #444; 
+            margin: 1px 0;
+            font-size: 10px;
+        }
+
+        .academic-meta { 
+            font-size: 9px; 
+            color: #555;
+            margin: 2px 0;
+        }
+        
+        .list-style { 
+            margin: 2px 0 4px 14px; 
+            padding: 0; 
+            font-size: 10px;
+        }
+
+        .list-style li { 
+            margin-bottom: 1px; 
+        }
+
+        /* LANGUAGE TABLE */
+        .lang-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 4px; 
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .lang-table th, .lang-table td {
+            border: 0.5pt solid #666;
+            padding: 3px;
+            text-align: center;
+            font-size: 9px;
+        }
+
+        .lang-table th { 
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+        /* MOTHER TONGUES TEXT */
+        .mother-tongue-text {
+            margin: 2px 0;
+            font-size: 10px;
+        }
+
+        /* CERTIFICATIONS/BULLET LIST */
+        .bullet-list {
+            margin: 2px 0;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        /* SIGNATURE */
+        .sig-area { 
+            margin-top: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end;
+            font-size: 9px;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .sig-left {
+            line-height: 1.4;
+        }
+
+        .sig-right {
+            text-align: center;
+        }
+
+        .sig-img { 
+            max-width: 120px;
+            max-height: 50px;
+            border-bottom: 0.5pt solid #000; 
+            filter: grayscale(1);
+            display: block;
+            margin: 0 auto 2px;
+        }
+
+        a { 
+            color: #004a99; 
+            text-decoration: none; 
+        }
+
+        /* PRINT */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- HEADER WITH PROFILE PIC -->
+    <table class="header-table">
+        <tr>
+            <td class="profile-col">
+                {{#PROFILE_PIC}}<img src="{{PROFILE_PIC}}" alt="Profile" class="profile-pic-circle">{{/PROFILE_PIC}}
+            </td>
+            <td class="name-col">
+                <h1 class="name-text">{{FULL_NAME}}</h1>
+                <div class="header-divider"></div>
+                
+                <div class="personal-details-block">
+                    <div>
+                        <span class="label">Passport:</span>{{PASSPORT_NUMBER}} | 
+                        <span class="label">DOB:</span>{{DATE_OF_BIRTH}} | 
+                        <span class="label">Nationality:</span>{{NATIONALITY}} | 
+                        <span class="label">Gender:</span>{{GENDER}}
+                    </div>
+                    <div><span class="label">Place of Birth:</span>{{PLACE_OF_BIRTH}}</div>
+                    <div>
+                        <span class="label">Phone:</span>{{PHONE}} | 
+                        <span class="label">Email:</span><a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+                    </div>
+                    {{#LINKEDIN}}<div><span class="label">LinkedIn:</span><a href="{{LINKEDIN_URL}}">{{LINKEDIN_URL}}</a></div>{{/LINKEDIN}}
+                    <div><span class="label">Address:</span>{{ADDRESS}}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- EDUCATION AND TRAINING -->
+    <div class="section-title">Education and Training</div>
+    {{EDUCATIONS}}
+
+    <!-- WORK EXPERIENCE -->
+    {{#WORK_EXPERIENCES_SECTION}}
+    <div class="section-title">Work Experience</div>
+    {{WORK_EXPERIENCES}}
+    {{/WORK_EXPERIENCES_SECTION}}
+
+    <!-- RESEARCH PUBLICATIONS -->
+    {{#PUBLICATIONS_SECTION}}
+    <div class="section-title">Research Publications</div>
+    {{PUBLICATIONS}}
+    {{/PUBLICATIONS_SECTION}}
+
+    <!-- CERTIFICATIONS -->
+    {{#CERTIFICATIONS_SECTION}}
+    <div class="section-title">Certifications</div>
+    {{CERTIFICATIONS}}
+    {{/CERTIFICATIONS_SECTION}}
+
+    <!-- DIGITAL & RESEARCH SKILLS -->
+    {{#DIGITAL_RESEARCH_SKILLS}}
+    <div class="section-title">Digital & Research Skills</div>
+    <div class="entry">
+        {{DIGITAL_RESEARCH_SKILLS}}
+    </div>
+    {{/DIGITAL_RESEARCH_SKILLS}}
+
+    <!-- RECOMMENDATIONS -->
+    {{#RECOMMENDATIONS_SECTION}}
+    <div class="section-title">Recommendations / Referees</div>
+    {{RECOMMENDATIONS}}
+    {{/RECOMMENDATIONS_SECTION}}
+
+    <!-- ADDITIONAL SECTIONS -->
+    {{ADDITIONAL_SECTIONS}}
+
+    <!-- LANGUAGE SKILLS -->
+    <div class="section-title">Language Skills</div>
+    <div class="mother-tongue-text">{{MOTHER_TONGUES}}</div>
+    {{LANGUAGES_TABLE}}
+
+    <!-- SIGNATURE SECTION -->
+    <div class="sig-area">
+        <div class="sig-left">
+            <div>Date: {{SIGNATURE_DATE}}</div>
+            <div>Place: {{PLACE_OF_BIRTH}}</div>
+        </div>
+        <div class="sig-right">
+            {{#SIGNATURE_URL}}<img src="{{SIGNATURE_URL}}" alt="Signature" class="sig-img">{{/SIGNATURE_URL}}
+            <div style="font-weight: bold;">({{FULL_NAME}})</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -12,8 +12,7 @@
         }
 
         html, body {
-            width: 210mm;
-            height: 297mm;
+            width: 100%;
             margin: 0;
             padding: 0;
         }
@@ -21,11 +20,6 @@
         @page {
             size: A4;
             margin: 12mm 10mm 12mm 10mm;
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 10px;
-                color: #666;
-            }
         }
 
         @media print {
@@ -33,11 +27,11 @@
                 margin: 0;
                 padding: 12mm 10mm;
                 width: 210mm;
-                height: 297mm;
+                height: auto;
             }
             .container {
                 width: 100%;
-                page-break-after: avoid;
+                max-width: 190mm;
             }
         }
 
@@ -48,13 +42,13 @@
             color: #1a1a1a;
             background: #ffffff;
             padding: 12mm 10mm;
-            width: 210mm;
-            height: 297mm;
+            width: 100%;
+            max-width: 210mm;
         }
 
         .container {
-            max-width: 190mm;
-            margin: 0 auto;
+            max-width: 100%;
+            margin: 0;
         }
 
         /* HEADER SECTION */
@@ -62,7 +56,8 @@
             border-bottom: 2px solid #1565c0;
             padding-bottom: 8px;
             margin-bottom: 12px;
-            page-break-after: avoid;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
         }
 
         .header .name {
@@ -88,8 +83,9 @@
 
         /* SECTION STYLING */
         .section {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             page-break-inside: avoid;
+            break-inside: avoid-page;
         }
 
         .section-title {
@@ -102,6 +98,7 @@
             margin-bottom: 5px;
             letter-spacing: 0.5px;
             page-break-after: avoid;
+            break-after: avoid-page;
         }
 
         /* ENTRIES */
@@ -194,10 +191,24 @@
         }
 
         /* PAGE BREAK RULES */
-        .entry,
-        .section-title,
+        .section {
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .entry {
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .section-title {
+            page-break-after: avoid;
+            break-after: avoid-page;
+        }
+
         .language-table {
             page-break-inside: avoid;
+            break-inside: avoid-page;
         }
 
         /* COMPACT MODE (for >2 pages) */
@@ -222,10 +233,12 @@
         @media print {
             * {
                 box-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             body {
-                background: white;
-                color: black;
+                background: white !important;
+                color: #1a1a1a !important;
             }
             a {
                 text-decoration: none;
@@ -233,6 +246,12 @@
             .section {
                 page-break-inside: avoid;
             }
+        }
+
+        /* Force color preservation for HTML2PDF */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
     </style>
 </head>

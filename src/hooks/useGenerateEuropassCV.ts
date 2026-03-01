@@ -83,7 +83,30 @@ export function useGenerateEuropassCV() {
     try {
       console.log('📦 Using client-side html2pdf fallback');
 
-      // Load html2pdf library from CDN
+      // Split HTML to extract content only (remove html/head/body tags)
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      let contentHtml = bodyMatch ? bodyMatch[1] : html;
+      
+      // Make sure we have the full HTML with styles
+      const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      const styleContent = styleMatch ? `<style>${styleMatch[1]}</style>` : '';
+      
+      // Reconstruct as complete HTML document
+      contentHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            ${styleContent}
+        </head>
+        <body>
+            ${contentHtml}
+        </body>
+        </html>
+      `;
+
+      // Load html2pdf library from CDN if not already loaded
       if (!window.html2pdf) {
         const script = document.createElement("script");
         script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
@@ -94,18 +117,12 @@ export function useGenerateEuropassCV() {
         });
       }
 
-      // Create hidden container for rendering
-      const iframeContainer = document.createElement("div");
-      iframeContainer.style.position = "absolute";
-      iframeContainer.style.left = "-9999px";
-      iframeContainer.style.top = "-9999px";
-      iframeContainer.style.width = "210mm";
-      iframeContainer.style.height = "297mm";
-      iframeContainer.innerHTML = html;
-      document.body.appendChild(iframeContainer);
-
-      // Wait for DOM paint
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Create temporary element for rendering
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = contentHtml;
+      
+      // Make sure styles are loaded before capturing
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const options = {
         margin: [10, 10, 10, 10],
@@ -117,7 +134,6 @@ export function useGenerateEuropassCV() {
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: true,
-          windowHeight: 1200,
         },
         jsPDF: { 
           unit: "mm", 
@@ -126,18 +142,16 @@ export function useGenerateEuropassCV() {
           compress: true,
         },
         pagebreak: { 
-          mode: ["avoid-all", "css", "legacy"],
-          before: ".section-title",
-          avoid: [".entry", ".language-table"],
+          mode: "avoid-all",
         },
       };
 
+      // Get the container element
+      const element = tempDiv.querySelector('.container') || tempDiv;
+      console.log('📄 Element HTML length:', element.innerHTML.length);
+      
       // Generate PDF
-      const element = iframeContainer.querySelector(".container") || iframeContainer;
       await window.html2pdf().set(options).from(element).save();
-
-      // Cleanup
-      document.body.removeChild(iframeContainer);
 
       console.log('✅ Fallback PDF generated with html2pdf');
     } catch (err) {
@@ -192,6 +206,16 @@ export function useGenerateEuropassCV() {
       if (!edgeFunctionData?.html) throw new Error("No HTML returned from generation function");
 
       const html = edgeFunctionData.html;
+
+      // Debug: Check HTML content
+      console.log('📄 Generated HTML length:', html.length);
+      console.log('🔍 HTML preview (first 300 chars):', html.substring(0, 300));
+      console.log('🔍 HTML contains FULL_NAME?', html.includes('{{FULL_NAME}}'));
+      console.log('🔍 HTML contains container div?', html.includes('<div class="container">'));
+      
+      if (html.length < 500) {
+        console.error('⚠️ HTML seems too short, might be malformed:', html);
+      }
 
       // Try server-side Puppeteer first (unless forced to html2pdf)
       if (!config.forceHtml2pdf) {

@@ -37,7 +37,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const chromium = await getChromium();
 
       // Launch browser with Chromium
-      const browser = await chromium.puppeteer.launch({
+      browser = await chromium.puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
@@ -60,11 +60,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
       // Set content
       await page.setContent(html, {
-        waitUntil: 'networkidle0',
+        waitUntil: 'networkidle2',
         timeout: 30000,
       });
 
-      console.log('📝 Content loaded');
+      console.log('📝 Content loaded, page height:', await page.evaluate(() => document.body.scrollHeight));
+
+      // Make sure styles are applied
+      await page.waitForFunction(() => {
+        const container = document.querySelector('.container');
+        return container && document.body.offsetHeight > 0;
+      }, { timeout: 5000 }).catch(() => {
+        console.warn('⚠️ Timeout waiting for content to render, proceeding anyway');
+      });
 
       // Extract page count and content metrics
       const pageCount = await page.evaluate(() => {
@@ -83,16 +91,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         margin: {
-          top: '12mm',
+          top: '10mm',
           right: '10mm',
-          bottom: '12mm',
+          bottom: '10mm',
           left: '10mm',
         },
         printBackground: true,
         landscape: false,
-        displayHeaderFooter: false, // Could add page numbers here
+        displayHeaderFooter: false,
         scale: 1,
-        preferCSSPageSize: true,
+        preferCSSPageSize: false,
+        pageRanges: '',
       });
 
       console.log('✅ PDF generated:', pdfBuffer.length, 'bytes');
