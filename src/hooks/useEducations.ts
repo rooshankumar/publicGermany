@@ -77,7 +77,6 @@ export const useEducations = (userId: string) => {
     try {
       const { error } = await supabase
         .from('profile_educations')
-        // @ts-expect-error - Supabase type resolver issue with new tables
         .update(entry as unknown as Record<string, any>)
         .eq('id', id);
       if (error) throw error;
@@ -127,7 +126,6 @@ export const useEducations = (userId: string) => {
       for (const upd of updates) {
         const { error } = await supabase
           .from('profile_educations')
-          // @ts-expect-error - Supabase type resolver issue with new tables
           .update({ order_index: upd.order_index })
           .eq('id', upd.id);
         if (error) throw error;

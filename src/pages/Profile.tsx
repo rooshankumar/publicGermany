@@ -188,7 +188,6 @@ const Profile = () => {
     };
       const { error } = await supabase
         .from('profiles')
-        // @ts-expect-error - Supabase type resolver issue with profile fields
         .update(updateData)
         .eq('user_id', profile.user_id);
       if (error) throw error;
@@ -745,7 +744,6 @@ const Profile = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        // @ts-expect-error - Supabase type resolver issue with extended profile fields
         .update(updateData)
         .eq('user_id', profile.user_id)
         .select();
@@ -878,8 +876,8 @@ const Profile = () => {
           {/* Academic History */}
           <Card>
             <SectionHeader 
-              title="Academic History (Legacy)" 
-              description="Your educational background details - syncs with Education & Training section"
+              title="Academic Background (for Eligibility)" 
+              description="Used for eligibility screening only — your CV uses the Education & Training entries below"
               sectionName="academic"
             />
             <CardContent className="space-y-4">

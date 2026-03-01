@@ -66,7 +66,6 @@ export const useAdditionalSections = (userId: string) => {
     try {
       const { error } = await supabase
         .from('profile_additional_sections')
-        // @ts-expect-error - Supabase type resolver issue with new tables
         .update(entry as unknown as Record<string, any>)
         .eq('id', id);
       if (error) throw error;
@@ -112,7 +111,6 @@ export const useAdditionalSections = (userId: string) => {
       for (let idx = 0; idx < sortedIds.length; idx++) {
         const { error } = await supabase
           .from('profile_additional_sections')
-          // @ts-expect-error - Supabase type resolver issue with new tables
           .update({ order_index: idx })
           .eq('id', sortedIds[idx]);
         if (error) throw error;

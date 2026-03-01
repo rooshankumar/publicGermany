@@ -35,14 +35,14 @@ function renderEducations(educations: any[]): string {
 <div class="entry">
     <table class="entry-table">
         <tr>
-            <td class="entry-title">${escapeHtml(edu.degree_title)} – ${escapeHtml(edu.field_of_study)}</td>
+            <td class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()} – ${escapeHtml(edu.field_of_study).toUpperCase()}</td>
             <td class="entry-date">${edu.start_year} – ${edu.end_year}</td>
         </tr>
     </table>
     <div class="sub-info">${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}</div>
-    ${edu.key_subjects ? `<ul class="list-style"><li>${escapeHtml(edu.key_subjects)}</li></ul>` : ""}
+    ${edu.key_subjects ? `<div class="academic-meta"><strong>Focus:</strong> ${escapeHtml(edu.key_subjects)}</div>` : ""}
     <div class="academic-meta">
-        Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale} | Credits: ${edu.total_credits}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
+        Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""} | Credits: ${edu.total_credits}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
     </div>
 </div>
 `
@@ -127,7 +127,10 @@ function renderCertifications(certs: any[]): string {
   return `<div class="bullet-list">
 ${certs
   .map(
-    (cert) => `• ${escapeHtml(cert.title)} | ${escapeHtml(cert.institution)} | ${formatDate(cert.date)}${cert.certificate_url ? ` <a href="${escapeHtml(cert.certificate_url)}" target="_blank">Link</a>` : ""}`
+    (cert) => {
+      const year = cert.date ? new Date(cert.date).getFullYear() : "";
+      return `• ${escapeHtml(cert.title)}${cert.institution ? ` | ${escapeHtml(cert.institution)}` : ""}${year ? ` | ${year}` : ""}${cert.certificate_url ? ` <a href="${escapeHtml(cert.certificate_url)}" target="_blank">Link</a>` : ""}`;
+    }
   )
   .join("<br>")}
 </div>`;
@@ -314,10 +317,11 @@ serve(async (req) => {
     
     // Handle LinkedIn URL with conditional rendering
     if (profile.linkedin_url) {
-      html = html.replace(/{{#LINKEDIN}}{{LINKEDIN_URL}}{{\/LINKEDIN}}/g, 
-        ` | <a href="${escapeHtml(profile.linkedin_url)}" target="_blank">${escapeHtml(profile.linkedin_url)}</a>`);
+      html = html.replace(/{{#LINKEDIN}}/g, "");
+      html = html.replace(/{{\/LINKEDIN}}/g, "");
+      html = html.replace(/{{LINKEDIN_URL}}/g, escapeHtml(profile.linkedin_url));
     } else {
-      html = html.replace(/{{#LINKEDIN}}{{LINKEDIN_URL}}{{\/LINKEDIN}}/g, '');
+      html = html.replace(/{{#LINKEDIN}}[\s\S]*?{{\/LINKEDIN}}/g, '');
     }
     
     html = html.replace(/{{ADDRESS}}/g, escapeHtml(

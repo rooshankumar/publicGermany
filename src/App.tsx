@@ -45,6 +45,7 @@ const Documents = lazy(() => import("./pages/Documents"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const AcademicCVGenerator = lazy(() => import("./pages/AcademicCVGenerator"));
 import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient({
@@ -122,6 +123,7 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/converter" element={<Converter />} />
+        <Route path="/academic-cv-generator" element={<AcademicCVGenerator />} />
         {/* Redirect old /grade-converter to new /converter */}
         <Route path="/grade-converter" element={<Navigate to="/converter" replace />} />
         <Route path="/tools/grade-converter" element={
