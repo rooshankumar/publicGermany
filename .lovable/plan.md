@@ -1,106 +1,146 @@
 
 
-# Production-Ready Academic CV Generator
-
-## Critical Build Fix
-The `src/integrations/supabase/types.ts` file has a SQL comment `-- added for Europass CV` on line 713, which is invalid TypeScript. This must be removed (changed to a TS comment or deleted). Since this file is auto-generated and cannot be manually edited per project rules, we need to regenerate it or work around it.
+# CV Generator Production Fix + UI Improvements
 
 ## Problem Summary
-1. **Build broken**: `types.ts` line 713 has `-- added for Europass CV` (SQL comment in TS file) causing ~100+ parse errors
-2. **CV template outdated**: Current template doesn't match the professional academic CV design provided
-3. **PDF generation unreliable**: Puppeteer endpoint fails, html2pdf fallback has rendering issues
-4. **No public CV generator page**: Only logged-in students can generate CVs
-5. **Profile page duplication**: Fields like bachelor degree/field exist both in profile form AND in education entries (profile_educations table)
-6. **LinkedIn placeholder handling broken**: Template uses `{{#LINKEDIN}}{{LINKEDIN_URL}}{{/LINKEDIN}}` but edge function replaces it differently
+1. **PDF is blank** -- The `buildCVHtml()` function produces valid HTML but html2pdf renders a blank page because the iframe height is fixed at 1200px and the container element may not be found properly
+2. **Route rename** -- `/academic-cv-generator` needs to become `/europass-cv`
+3. **Missing sections** -- No custom/additional sections (Research Experience, Technical Skills, Academic Projects, LOR)
+4. **No profile pic / signature upload** on the public generator page
+5. **No live preview** while filling in details
+6. **No save/history** functionality
+7. **Services + Applications use popup dialogs** instead of inline forms
+8. **Student dashboard** needs to be more data-dense (Excel-inspired)
 
 ---
 
-## Part 1: Fix Build Error (types.ts)
+## Part 1: Fix Blank PDF
 
-Remove the invalid SQL comment on line 713 of `src/integrations/supabase/types.ts`. Replace `-- added for Europass CV` with nothing (or a valid TS comment `// added for Europass CV`).
+The blank PDF issue is caused by html2pdf targeting `.container` inside the iframe but the iframe dimensions and rendering timing are insufficient.
 
----
+**Fix in `src/lib/cvTemplateBuilder.ts`**:
+- Add explicit `padding: 20px` to the container div so content isn't clipped
+- Add `width: 210mm` (A4 width) to body for proper print layout
 
-## Part 2: New Academic CV Template
+**Fix in `src/pages/AcademicCVGenerator.tsx` (generatePDF function)**:
+- Increase iframe dimensions to `width:210mm; height:auto; min-height:297mm`
+- Target `iframeDoc.body` instead of `.container` for html2pdf capture
+- Increase render wait from 800ms to 1200ms for image loading
+- Set `html2canvas.windowWidth: 794` (A4 width in px at 96dpi)
 
-Replace `supabase/functions/generate-europass-cv/template_academic.html` with the user's provided HTML design:
-
-- Minimalist header with profile photo circle, uppercase name, blue accent divider
-- Personal details block: Passport, DOB, Nationality, Gender, Place of Birth, Phone, Email, LinkedIn, Address
-- Section order: Education and Training, Research Publications, Work Experience, Language Skills (with CEFR table), Certifications (bullet format), Signature area
-- Clean typography: 10px base, Helvetica/Arial, `#004a99` blue accent color
-- Print-stable layout using table-based entry headers for date alignment
-- All conditional sections preserved with `{{#SECTION}}...{{/SECTION}}` syntax
-
----
-
-## Part 3: Update Edge Function
-
-Update `supabase/functions/generate-europass-cv/index.ts`:
-
-- Fix LinkedIn conditional rendering to match new template syntax
-- Reorder sections to match new template: Education, Publications, Work, Languages, Certifications, Signature
-- Ensure all placeholders align with the new template
-- Fix education rendering: show "Focus:" line from `key_subjects`, then Grade/Credits/URL line
-- Fix certification rendering: bullet list format with `title | institution | year`
-- Fix publication rendering: bold title, then journal/ISSN on next line
+**Fix in `src/hooks/useGenerateEuropassCV.ts`** (authenticated version):
+- Same html2pdf option fixes as above
 
 ---
 
-## Part 4: Improve PDF Generation (Client-Side Only)
+## Part 2: Route Rename
 
-Remove the Puppeteer server-side attempt (it always fails on Lovable). Simplify `useGenerateEuropassCV.ts` to only use `html2pdf.js` with optimized settings:
-
-- Remove Puppeteer fetch call
-- Better html2pdf options: scale 2, proper page break handling
-- Create a hidden iframe to render the full HTML document properly before capture
-- This ensures styles are applied correctly
+- Change route from `/academic-cv-generator` to `/europass-cv` in `src/App.tsx`
+- Add redirect: `/academic-cv-generator` -> `/europass-cv` for SEO preservation
+- Update all links referencing the old route (in `src/pages/Index.tsx`)
+- Update page title/meta to "Free Europass CV Generator for Germany"
 
 ---
 
-## Part 5: Public CV Generator Page
+## Part 3: Custom Sections (Research Experience, Technical Skills, Academic Projects, LOR)
 
-Create a new public page at `/academic-cv-generator` (SEO-friendly URL):
+**Add to `src/lib/cvTemplateBuilder.ts`**:
+- New interface `CVCustomSection` with `title: string` and `items: { label: string; description?: string }[]`
+- New interface `CVRecommendation` with `name, designation, institution, email, contact`
+- Update `buildCVHtml()` signature to accept `customSections` and `recommendations` arrays
+- Render custom sections as bullet-list entries between Certifications and Signature
+- Render Recommendations/LOR section with name, designation, institution, contact info
 
-- **Route**: `/academic-cv-generator` in App.tsx (public, no auth required)
-- **Page component**: `src/pages/AcademicCVGenerator.tsx`
-- **SEO title**: "Free Academic CV Generator for Germany | Europass Format"
-- **Functionality**:
-  - Form sections: Personal Info, Education (add multiple), Work Experience (add multiple), Languages (add multiple with CEFR levels), Publications, Certifications
-  - All data stays client-side (no Supabase, no login required)
-  - Generate button builds HTML from the same template and triggers html2pdf download
-  - CTA: "Sign up to save your CV and access more features"
-- **Link from homepage**: Add to navigation/landing page
+**Add to `src/pages/AcademicCVGenerator.tsx` (public page)**:
+- "Custom Sections" card with ability to add sections (title + items with label/description)
+- Pre-suggested section titles: Research Experience, Technical Skills, Academic Projects
+- "Recommendations / Referees" card with fields: name, designation, institution, email, contact
+
+**Update edge function** (`supabase/functions/generate-europass-cv/index.ts`):
+- Already handles `profile_additional_sections` and `profile_recommendations` from DB
+- Ensure the template renders them correctly (already does -- just need template alignment)
 
 ---
 
-## Part 6: Rename Overlapping Profile Fields
+## Part 4: Profile Photo & Signature Upload (Public Page)
 
-The profile page has both:
-- Profile-level fields: `bachelor_degree_name`, `bachelor_field`, `bachelor_cgpa_percentage` (used for eligibility)
-- Education entries in `profile_educations` table (used for CV generation)
+Add to the Personal Information card in `AcademicCVGenerator.tsx`:
+- **Profile Photo**: File input that reads image as base64 data URL, stores in `personal.avatar_url`
+- **Signature**: File input that reads image as base64 data URL, stores in `personal.signature_url`
+- Small preview thumbnails next to each upload
+- No server upload needed -- stays client-side as data URLs embedded in the HTML
 
-These serve different purposes. Rename the profile-level section label from "Education" to "Academic Background (for Eligibility)" to clarify they are screening fields, not CV content. The CV uses `profile_educations` entries.
+---
+
+## Part 5: Live Preview
+
+Add a split-panel layout on desktop (form left, preview right):
+- Use an `<iframe srcDoc={html}>` that updates in real-time as the user types
+- Debounce the HTML regeneration (300ms) to avoid excessive re-renders
+- On mobile: show a "Preview" toggle button that opens a full-screen preview overlay
+- The preview uses the exact same `buildCVHtml()` function so what-you-see-is-what-you-download
+
+---
+
+## Part 6: Save & History
+
+After PDF generation, show an inline prompt:
+- If user is logged in: auto-save CV data to a new `cv_history` concept using `profile_additional_sections` (reuse existing tables)
+- If user is NOT logged in: show a CTA banner "Sign up to save your CV" linking to `/auth`
+- For registered users on the Profile page: the existing CV generation card already works with saved data
+
+**No new database tables needed** -- the public page is stateless (data in browser), and logged-in users already have their data in profile tables.
+
+---
+
+## Part 7: Inline Forms (Replace Popups)
+
+**`src/pages/Applications.tsx`**:
+- Replace the "Add Application" Dialog with a collapsible inline form at the top of the page
+- Use `Collapsible` component (already imported) with a card containing the form fields
+- Same form fields, just rendered inline instead of in a modal
+
+**`src/pages/ServicesNew.tsx`**:
+- Replace the service request Dialog with an inline expandable panel
+- When user clicks "Request Services", expand an inline card below the button with timeline, details fields, and submit button
+- Remove the `Dialog` import and `showRequestDialog` state, replace with `showInlineForm` boolean
+
+---
+
+## Part 8: Student Dashboard Cleanup
+
+Redesign `src/pages/Dashboard.tsx` for data density:
+
+- **Remove** the large circular icon stat cards -- replace with a single-row compact stats bar:
+  ```
+  Profile: 80% | Documents: 12 | Applications: 5 (3 submitted) | Services
+  ```
+- **Remove** the QuickLinks section (redundant with nav)
+- **Keep** nearest deadline card but make it more compact (single line)
+- **Keep** contracts section but make it denser
+- **Add** a compact "Recent Activity" list showing last 3-5 events (document uploads, application status changes)
+- Overall: reduce from ~5 visual sections to 3 (stats bar, deadline/alerts, contracts)
 
 ---
 
 ## Files to Create/Modify
 
-| File | Action |
+| File | Changes |
 |---|---|
-| `src/integrations/supabase/types.ts` | Fix line 713: remove SQL comment |
-| `supabase/functions/generate-europass-cv/template_academic.html` | Replace with new professional template |
-| `supabase/functions/generate-europass-cv/index.ts` | Update placeholder handling to match new template |
-| `src/hooks/useGenerateEuropassCV.ts` | Remove Puppeteer, improve html2pdf rendering |
-| `src/pages/AcademicCVGenerator.tsx` | New public page with full CV form |
-| `src/App.tsx` | Add `/academic-cv-generator` route |
-| `src/pages/Profile.tsx` | Rename "Education" section to "Academic Background" |
-| `src/pages/Index.tsx` | Add link to public CV generator |
+| `src/lib/cvTemplateBuilder.ts` | Add CVCustomSection, CVRecommendation interfaces; update buildCVHtml with custom sections, recommendations, fix container styling |
+| `src/pages/AcademicCVGenerator.tsx` | Full rewrite: live preview, photo/signature upload, custom sections, recommendations, inline form, fix PDF generation, save prompt |
+| `src/App.tsx` | Rename route to `/europass-cv`, add redirect from old path |
+| `src/pages/Index.tsx` | Update link to `/europass-cv` |
+| `src/hooks/useGenerateEuropassCV.ts` | Fix html2pdf options (windowWidth, body target) |
+| `src/pages/Dashboard.tsx` | Compact stats bar, remove QuickLinks, add activity list |
+| `src/pages/Applications.tsx` | Replace add Dialog with inline collapsible form |
+| `src/pages/ServicesNew.tsx` | Replace request Dialog with inline expandable panel |
 
 ## What Does NOT Change
-- All Supabase tables, RLS policies, and database schema
-- Edge function data fetching logic (queries remain the same)
-- Profile page functionality (only label rename)
-- Admin side pages
-- All other student pages
+- All Supabase tables, RLS, edge functions logic
+- Edge function `generate-europass-cv/index.ts` (already handles all sections)
+- Template HTML file (template_academic.html)
+- Admin pages
+- Authentication flow
+- All other student pages (Documents, Profile, Payments)
 
