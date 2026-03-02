@@ -122,6 +122,32 @@ const ServicesNew = () => {
     };
   }, [user?.id, requestsQuery]);
 
+  // Auto-scroll to services content on page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const servicesContent = document.getElementById('services-content');
+      if (servicesContent) {
+        servicesContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-scroll to request form when dialog opens
+  useEffect(() => {
+    if (showRequestDialog) {
+      const timer = setTimeout(() => {
+        const requestForm = document.getElementById('request-form-card');
+        if (requestForm) {
+          requestForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showRequestDialog]);
+
   const services = catalogQuery.data || [];
   const packages = services.filter(s => s.kind === 'package');
   const individualServices = services.filter(s => s.kind === 'individual');
@@ -203,7 +229,12 @@ const ServicesNew = () => {
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Service request submitted successfully" });
+      // Show success toast with nice styling
+      toast({ 
+        title: "✓ Service Request Submitted", 
+        description: "Your request has been received successfully. Our team will review it shortly and contact you with pricing details.",
+        className: "success-toast border-green-500 bg-green-50 dark:bg-green-950"
+      });
       
       // Send emails
       try {
@@ -324,7 +355,7 @@ const ServicesNew = () => {
 
   return (
      <Layout>
-       <div className="space-y-3 pb-6">
+       <div id="services-content" className="space-y-3 pb-6">
          {/* German stripe */}
          <div className="german-stripe w-full" />
 
@@ -773,39 +804,89 @@ const ServicesNew = () => {
 
         {/* Inline Request Form */}
         {showRequestDialog && (
-          <Card className="mt-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Request Service</CardTitle>
-              <p className="text-xs text-muted-foreground">{packageRequestName ? `Package: ${packageRequestName}` : 'Selected services'}</p>
+          <Card id="request-form-card" className="mt-4 border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="py-2 px-4 border-b">
+              <CardTitle className="text-sm font-semibold">Confirm Your Service Request</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {packageRequestName && (
-                <div className="bg-primary/5 p-3 rounded-lg">
-                  <Label>Package Selected:</Label>
-                  <p className="font-semibold mt-1">{packageRequestName}</p>
-                  {(() => {
-                    const pkg = packages.find(p => p.name === packageRequestName);
-                    return pkg?.price_range_inr ? <p className="text-sm text-muted-foreground">Price Range: ₹{pkg.price_range_inr}</p> : null;
-                  })()}
-                </div>
-              )}
-              {selectedServices.length > 0 && (
-                <div>
-                  <Label>{packageRequestName ? 'Additional Services:' : 'Selected Services:'}</Label>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground mt-1">
+            <CardContent className="space-y-3 pt-3 p-4">
+              
+              {/* Selected Services Summary */}
+              <div className="bg-white dark:bg-slate-950 border border-border/60 rounded p-2 space-y-1.5">
+                <h3 className="font-semibold text-xs text-foreground">Selected Services</h3>
+                
+                {packageRequestName && (
+                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded text-xs">
+                    <div className="flex-1">
+                      <p className="font-medium text-xs">{packageRequestName}</p>
+                      <p className="text-[10px] text-muted-foreground">Main Package</p>
+                    </div>
+                    <div className="text-right ml-2">
+                      {(() => {
+                        const pkg = packages.find(p => p.name === packageRequestName);
+                        return pkg?.price_range_inr ? (
+                          <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>
+                        ) : pkg?.price_inr ? (
+                          <p className="font-semibold text-xs">₹{pkg.price_inr.toLocaleString()}</p>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {selectedServices.length > 0 && (
+                  <div className="space-y-1">
                     {selectedServices.map(id => {
                       const service = services.find(s => s.id === id);
-                      return <li key={id}>{service?.name} - ₹{service?.price_inr?.toLocaleString()}</li>;
+                      return (
+                        <div key={id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded text-xs">
+                          <div className="flex-1">
+                            <p className="font-medium text-xs">{service?.name}</p>
+                            {packageRequestName && <p className="text-[10px] text-muted-foreground">Additional Service</p>}
+                          </div>
+                          <div className="text-right ml-2">
+                            <p className="font-semibold text-xs">₹{service?.price_inr?.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      );
                     })}
-                  </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Total Price - Bill Format */}
+              <div className="border-t border-b border-dashed border-muted py-2 px-0">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-medium">Total Amount:</span>
+                  <span className="font-semibold">₹{(() => {
+                    let total = 0;
+                    
+                    // Calculate package price
+                    if (packageRequestName) {
+                      const pkg = packages.find(p => p.name === packageRequestName);
+                      if (pkg?.price_range_inr) {
+                        // Extract first number from range string
+                        const firstNum = pkg.price_range_inr.split('-')[0].replace(/[^\d]/g, '');
+                        total += firstNum ? Number(firstNum) : 0;
+                      } else if (pkg?.price_inr) {
+                        total += pkg.price_inr;
+                      }
+                    }
+                    
+                    // Add additional services
+                    total += calculateTotalPrice();
+                    
+                    return total.toLocaleString();
+                  })()}/- Only</span>
                 </div>
-              )}
+              </div>
+
+              {/* Timeline Selection */}
               <div>
-                <Label htmlFor="timeline">Preferred Timeline *</Label>
+                <Label htmlFor="timeline" className="text-xs font-semibold mb-1 block">When do you need this? *</Label>
                 <Select value={timeline} onValueChange={setTimeline}>
-                  <SelectTrigger><SelectValue placeholder="Select timeline" /></SelectTrigger>
+                  <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select timeline" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1-3 days">1-3 days</SelectItem>
+                    <SelectItem value="1-3 days">1-3 days (Urgent)</SelectItem>
                     <SelectItem value="1 week">1 week</SelectItem>
                     <SelectItem value="2 weeks">2 weeks</SelectItem>
                     <SelectItem value="1 month">1 month</SelectItem>
@@ -813,39 +894,35 @@ const ServicesNew = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Additional Details */}
               <div>
-                <Label htmlFor="details">Additional Details</Label>
-                <Textarea id="details" placeholder="Any specific requirements or notes..." value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} rows={3} />
+                <Label htmlFor="details" className="text-xs font-semibold mb-1 block">Additional Requirements</Label>
+                <Textarea 
+                  id="details" 
+                  placeholder="Any specific needs or documents..." 
+                  value={requestDetails} 
+                  onChange={(e) => setRequestDetails(e.target.value)} 
+                  rows={2}
+                  className="resize-none text-xs"
+                />
               </div>
-              <div className="flex items-center justify-between pt-3 border-t">
-                <div>
-                  {packageRequestName ? (
-                    (() => {
-                      const pkg = packages.find(p => p.name === packageRequestName);
-                      return pkg?.price_range_inr ? (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Estimated Range</p>
-                          <p className="font-semibold">₹{pkg.price_range_inr}</p>
-                          {selectedServices.length > 0 && <p className="text-xs text-muted-foreground">+ ₹{calculateTotalPrice().toLocaleString()} extras</p>}
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total Amount</p>
-                          <p className="font-semibold">₹{getTotalAmount().toLocaleString()}</p>
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Amount</p>
-                      <p className="font-semibold">₹{calculateTotalPrice().toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowRequestDialog(false)}>Cancel</Button>
-                  <Button onClick={handleRequestSubmit}>Submit Request</Button>
-                </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowRequestDialog(false)}
+                  className="flex-1 h-7 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleRequestSubmit}
+                  className="flex-1 h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Submit Request
+                </Button>
               </div>
             </CardContent>
           </Card>

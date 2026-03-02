@@ -444,7 +444,6 @@ const Applications = () => {
             )}
           </DialogContent>
         </Dialog>
-      </div>
     </Layout>
   );
 };
