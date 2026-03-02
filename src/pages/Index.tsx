@@ -154,7 +154,7 @@ function Navbar() {
           <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
           <Link to="/blog" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Blog</Link>
           <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
-          <Link to="/academic-cv-generator" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">CV Generator</Link>
+          <Link to="/europass-cv" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">CV Generator</Link>
           <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
           <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
           <PWAInstallButton />
@@ -190,7 +190,7 @@ function Navbar() {
               <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
               <Link to="/blog" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Blog</Link>
               <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
-              <Link to="/academic-cv-generator" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">CV Generator</Link>
+              <Link to="/europass-cv" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">CV Generator</Link>
               <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
               <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
               <div className="flex flex-col gap-2 pt-4">

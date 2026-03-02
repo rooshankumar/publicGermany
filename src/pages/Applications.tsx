@@ -261,73 +261,48 @@ const Applications = () => {
            <div className="flex gap-1.5 flex-wrap">
              <ExcelTemplate />
              <ExcelUpload onUpload={handleExcelUpload} />
-             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-               <DialogTrigger asChild>
-                 <Button size="sm" className="h-7 text-xs"><Plus className="mr-1 h-3 w-3" /> Add</Button>
-               </DialogTrigger>
-               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                 <DialogHeader>
-                   <DialogTitle>Add New Application</DialogTitle>
-                 </DialogHeader>
-                 <form onSubmit={handleAddApplication} className="space-y-4 pt-4">
-                   <div className="grid grid-cols-2 gap-3">
-                     <div className="space-y-1">
-                       <Label className="text-xs">University Name *</Label>
-                       <Input name="university_name" required className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">Program Name *</Label>
-                       <Input name="program_name" required className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">IELTS</Label>
-                       <Input name="ielts_requirement" className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">German</Label>
-                       <Input name="german_requirement" className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">Fees (EUR)</Label>
-                       <Input name="fees_eur" type="number" className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">Application Method</Label>
-                       <Select name="application_method">
-                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="Uni-assist">Uni-assist</SelectItem>
-                           <SelectItem value="Direct">Direct</SelectItem>
-                           <SelectItem value="VPD + University">VPD + University</SelectItem>
-                         </SelectContent>
-                       </Select>
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">Start Date</Label>
-                       <Input name="application_start_date" type="date" className="h-8 text-xs" />
-                     </div>
-                     <div className="space-y-1">
-                       <Label className="text-xs">End Date</Label>
-                       <Input name="application_end_date" type="date" className="h-8 text-xs" />
-                     </div>
-                     <div className="col-span-2 space-y-1">
-                       <Label className="text-xs">Portal Link</Label>
-                       <Input name="portal_link" type="url" className="h-8 text-xs" />
-                     </div>
-                     <div className="col-span-2 space-y-1">
-                       <Label className="text-xs">Notes</Label>
-                       <Input name="notes" className="h-8 text-xs" />
-                     </div>
-                   </div>
-                   <div className="flex justify-end gap-2">
-                     <Button type="button" variant="outline" size="sm" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                     <Button type="submit" size="sm">Add Application</Button>
-                   </div>
-                 </form>
-               </DialogContent>
-             </Dialog>
-           </div>
-         </div>
+              <Button size="sm" className="h-7 text-xs" onClick={() => setShowAddDialog(!showAddDialog)}>
+                <Plus className="mr-1 h-3 w-3" /> {showAddDialog ? 'Close' : 'Add'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Inline Add Form */}
+          {showAddDialog && (
+            <Card>
+              <CardContent className="pt-4">
+                <form onSubmit={handleAddApplication} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><Label className="text-xs">University Name *</Label><Input name="university_name" required className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">Program Name *</Label><Input name="program_name" required className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">IELTS</Label><Input name="ielts_requirement" className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">German</Label><Input name="german_requirement" className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">Fees (EUR)</Label><Input name="fees_eur" type="number" className="h-8 text-xs" /></div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Application Method</Label>
+                      <Select name="application_method">
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Uni-assist">Uni-assist</SelectItem>
+                          <SelectItem value="Direct">Direct</SelectItem>
+                          <SelectItem value="VPD + University">VPD + University</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1"><Label className="text-xs">Start Date</Label><Input name="application_start_date" type="date" className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">End Date</Label><Input name="application_end_date" type="date" className="h-8 text-xs" /></div>
+                    <div className="col-span-2 space-y-1"><Label className="text-xs">Portal Link</Label><Input name="portal_link" type="url" className="h-8 text-xs" /></div>
+                    <div className="col-span-2 space-y-1"><Label className="text-xs">Notes</Label><Input name="notes" className="h-8 text-xs" /></div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+                    <Button type="submit" size="sm">Add Application</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
          {/* TABLE SECTION */}
          <Card>
