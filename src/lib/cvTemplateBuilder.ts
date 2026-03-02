@@ -74,13 +74,28 @@ export interface CVCertification {
   date?: string;
 }
 
+export interface CVCustomSection {
+  title: string;
+  items: { label: string; description?: string }[];
+}
+
+export interface CVRecommendation {
+  name: string;
+  designation?: string;
+  institution?: string;
+  email?: string;
+  contact?: string;
+}
+
 export function buildCVHtml(
   personal: CVPersonalInfo,
   educations: CVEducation[],
   workExperiences: CVWorkExperience[],
   languages: CVLanguage[],
   publications: CVPublication[],
-  certifications: CVCertification[]
+  certifications: CVCertification[],
+  customSections: CVCustomSection[] = [],
+  recommendations: CVRecommendation[] = []
 ): string {
   const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join(", ");
   const otherLangs = languages.filter(l => !l.mother_tongue);
@@ -134,6 +149,24 @@ ${langRows}
     }).join("<br>")}
     </div>` : "";
 
+  // Custom sections (Research Experience, Technical Skills, Academic Projects, etc.)
+  const customHtml = customSections.filter(s => s.items.length > 0).map(section => `
+    <div class="section-title">${escapeHtml(section.title)}</div>
+    <div class="bullet-list">
+    ${section.items.map(item => 
+      `• ${escapeHtml(item.label)}${item.description ? ` — ${escapeHtml(item.description)}` : ""}`
+    ).join("<br>")}
+    </div>`).join("\n");
+
+  // Recommendations / LOR section
+  const recHtml = recommendations.length > 0 ? `
+    <div class="section-title">Recommendations / Referees</div>
+    ${recommendations.map(r => `
+<div class="entry">
+    <strong>${escapeHtml(r.name)}</strong>
+    <div class="academic-meta">${[r.designation, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}</div>
+</div>`).join("\n")}` : "";
+
   const linkedinBlock = personal.linkedin_url ? `<div><span class="label">LinkedIn:</span><a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>` : "";
   const profilePicBlock = personal.avatar_url ? `<img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle">` : "";
   const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
@@ -146,8 +179,8 @@ ${langRows}
 <style>
     @page { size: A4; margin: 12mm 15mm; }
     * { margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.3; color: #000; margin: 0; padding: 0; font-size: 10px; background: #fff; }
-    .container { width: 100%; max-width: 800px; margin: auto; }
+    body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.3; color: #000; margin: 0; padding: 0; font-size: 10px; background: #fff; width: 210mm; }
+    .container { width: 100%; max-width: 800px; margin: auto; padding: 20px; box-sizing: border-box; }
     .header-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
     .profile-col { width: 85px; vertical-align: top; }
     .name-col { vertical-align: top; padding-left: 15px; }
@@ -201,6 +234,8 @@ ${langRows}
     ${langTableHtml}
 
     ${certHtml}
+    ${customHtml}
+    ${recHtml}
 
     <div class="sig-area">
         <div class="sig-left">

@@ -123,7 +123,8 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/converter" element={<Converter />} />
-        <Route path="/academic-cv-generator" element={<AcademicCVGenerator />} />
+        <Route path="/europass-cv" element={<AcademicCVGenerator />} />
+        <Route path="/academic-cv-generator" element={<Navigate to="/europass-cv" replace />} />
         {/* Redirect old /grade-converter to new /converter */}
         <Route path="/grade-converter" element={<Navigate to="/converter" replace />} />
         <Route path="/tools/grade-converter" element={

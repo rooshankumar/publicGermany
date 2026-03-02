@@ -771,29 +771,24 @@ const ServicesNew = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Request Dialog */}
-        <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Request Service</DialogTitle>
-              <DialogDescription>
-                {packageRequestName ? `Package: ${packageRequestName}` : 'Selected services'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
+        {/* Inline Request Form */}
+        {showRequestDialog && (
+          <Card className="mt-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Request Service</CardTitle>
+              <p className="text-xs text-muted-foreground">{packageRequestName ? `Package: ${packageRequestName}` : 'Selected services'}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {packageRequestName && (
                 <div className="bg-primary/5 p-3 rounded-lg">
                   <Label>Package Selected:</Label>
                   <p className="font-semibold mt-1">{packageRequestName}</p>
                   {(() => {
                     const pkg = packages.find(p => p.name === packageRequestName);
-                    return pkg?.price_range_inr ? (
-                      <p className="text-sm text-muted-foreground">Price Range: ₹{pkg.price_range_inr}</p>
-                    ) : null;
+                    return pkg?.price_range_inr ? <p className="text-sm text-muted-foreground">Price Range: ₹{pkg.price_range_inr}</p> : null;
                   })()}
                 </div>
               )}
-
               {selectedServices.length > 0 && (
                 <div>
                   <Label>{packageRequestName ? 'Additional Services:' : 'Selected Services:'}</Label>
@@ -805,13 +800,10 @@ const ServicesNew = () => {
                   </ul>
                 </div>
               )}
-
               <div>
                 <Label htmlFor="timeline">Preferred Timeline *</Label>
                 <Select value={timeline} onValueChange={setTimeline}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timeline" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select timeline" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1-3 days">1-3 days</SelectItem>
                     <SelectItem value="1 week">1 week</SelectItem>
@@ -821,59 +813,43 @@ const ServicesNew = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label htmlFor="details">Additional Details</Label>
-                <Textarea
-                  id="details"
-                  placeholder="Any specific requirements or notes..."
-                  value={requestDetails}
-                  onChange={(e) => setRequestDetails(e.target.value)}
-                  rows={4}
-                />
+                <Textarea id="details" placeholder="Any specific requirements or notes..." value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} rows={3} />
               </div>
-
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between pt-3 border-t">
                 <div>
                   {packageRequestName ? (
-                    <>
-                      {(() => {
-                        const pkg = packages.find(p => p.name === packageRequestName);
-                        return pkg?.price_range_inr ? (
-                          <>
-                            <p className="text-sm text-muted-foreground">Estimated Range</p>
-                            <p className="font-semibold text-lg">₹{pkg.price_range_inr}</p>
-                            {selectedServices.length > 0 && (
-                              <p className="text-xs text-muted-foreground">+ ₹{calculateTotalPrice().toLocaleString()} extras</p>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm text-muted-foreground">Total Amount</p>
-                            <p className="font-semibold text-lg">₹{getTotalAmount().toLocaleString()}</p>
-                          </>
-                        );
-                      })()}
-                    </>
+                    (() => {
+                      const pkg = packages.find(p => p.name === packageRequestName);
+                      return pkg?.price_range_inr ? (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Estimated Range</p>
+                          <p className="font-semibold">₹{pkg.price_range_inr}</p>
+                          {selectedServices.length > 0 && <p className="text-xs text-muted-foreground">+ ₹{calculateTotalPrice().toLocaleString()} extras</p>}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Amount</p>
+                          <p className="font-semibold">₹{getTotalAmount().toLocaleString()}</p>
+                        </div>
+                      );
+                    })()
                   ) : (
-                    <>
+                    <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
-                      <p className="font-semibold text-lg">₹{calculateTotalPrice().toLocaleString()}</p>
-                    </>
+                      <p className="font-semibold">₹{calculateTotalPrice().toLocaleString()}</p>
+                    </div>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleRequestSubmit}>
-                    Submit Request
-                  </Button>
+                  <Button variant="outline" onClick={() => setShowRequestDialog(false)}>Cancel</Button>
+                  <Button onClick={handleRequestSubmit}>Submit Request</Button>
                 </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );

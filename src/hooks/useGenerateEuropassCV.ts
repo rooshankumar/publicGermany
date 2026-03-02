@@ -45,7 +45,6 @@ export function useGenerateEuropassCV() {
   };
 
   const generateCVWithHtml2pdf = async (html: string, studentName: string) => {
-    // Load html2pdf from CDN if not loaded
     if (!window.html2pdf) {
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
@@ -56,9 +55,8 @@ export function useGenerateEuropassCV() {
       });
     }
 
-    // Use a hidden iframe for proper style isolation and rendering
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;height:1200px;border:none;';
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;min-height:1123px;border:none;';
     document.body.appendChild(iframe);
 
     try {
@@ -69,10 +67,9 @@ export function useGenerateEuropassCV() {
       iframeDoc.write(html);
       iframeDoc.close();
 
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
-      const element = iframeDoc.querySelector('.container') || iframeDoc.body;
+      const element = iframeDoc.body;
 
       const options = {
         margin: [12, 15, 12, 15],
@@ -84,6 +81,7 @@ export function useGenerateEuropassCV() {
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: true,
+          windowWidth: 794,
         },
         jsPDF: {
           unit: "mm",
@@ -121,7 +119,6 @@ export function useGenerateEuropassCV() {
         }
       }
 
-      // Call edge function
       const { data, error } = await supabase.functions.invoke("generate-europass-cv", {
         body: { user_id: userId },
       });
