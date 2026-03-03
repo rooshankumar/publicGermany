@@ -72,7 +72,7 @@ export function useGenerateEuropassCV() {
       const element = iframeDoc.body;
 
       const options = {
-        margin: [12, 15, 12, 15],
+        margin: 0,
         filename: `Academic_CV_${studentName.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
@@ -81,7 +81,10 @@ export function useGenerateEuropassCV() {
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: true,
+          width: 794,
           windowWidth: 794,
+          scrollX: 0,
+          scrollY: 0,
         },
         jsPDF: {
           unit: "mm",

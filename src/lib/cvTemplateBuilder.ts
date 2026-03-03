@@ -5,6 +5,17 @@ function escapeHtml(text: string | null | undefined): string {
   return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// Sanitize HTML - allow only safe formatting tags
+function sanitizeHtml(html: string | null | undefined): string {
+  if (!html) return "";
+  // Allow only: <strong>, <em>, <b>, <i>, <br>, <div style="text-align:...">
+  return String(html)
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/on\w+\s*=/gi, "")
+    .replace(/<(?!\/?(?:strong|em|b|i|br|div|span)\b)[^>]+>/gi, "");
+}
+
 function formatDateDMY(dateStr: string | null): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -87,6 +98,12 @@ export interface CVRecommendation {
   contact?: string;
 }
 
+export interface CVBuildOptions {
+  headerBgColor?: string;
+  photoPosition?: string;
+  photoZoom?: number;
+}
+
 export function buildCVHtml(
   personal: CVPersonalInfo,
   educations: CVEducation[],
@@ -95,8 +112,11 @@ export function buildCVHtml(
   publications: CVPublication[],
   certifications: CVCertification[],
   customSections: CVCustomSection[] = [],
-  recommendations: CVRecommendation[] = []
+  recommendations: CVRecommendation[] = [],
+  options: CVBuildOptions = {}
 ): string {
+  const { headerBgColor = "#ffffff", photoPosition = "center", photoZoom = 100 } = options;
+
   const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join(", ");
   const otherLangs = languages.filter(l => !l.mother_tongue);
 
@@ -107,7 +127,7 @@ export function buildCVHtml(
         <td class="entry-date">${edu.start_year} – ${edu.end_year}</td>
     </tr></table>
     <div class="sub-info">${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}</div>
-    ${edu.key_subjects ? `<div class="academic-meta"><strong>Focus:</strong> ${escapeHtml(edu.key_subjects)}</div>` : ""}
+    ${edu.key_subjects ? `<div class="academic-meta"><strong>Focus:</strong> ${sanitizeHtml(edu.key_subjects)}</div>` : ""}
     <div class="academic-meta">Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""} | Credits: ${edu.total_credits || "N/A"}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}</div>
 </div>`).join("\n");
 
@@ -128,7 +148,7 @@ export function buildCVHtml(
         <td class="entry-date">${formatDateDMY(w.start_date)} – ${w.is_current ? "Present" : formatDateDMY(w.end_date)}</td>
     </tr></table>
     <div class="sub-info">${escapeHtml(w.organisation)}${w.city_country ? `, ${escapeHtml(w.city_country)}` : ""}</div>
-    ${w.description ? `<div class="academic-meta">${escapeHtml(w.description)}</div>` : ""}
+    ${w.description ? `<div class="academic-meta">${sanitizeHtml(w.description)}</div>` : ""}
 </div>`).join("\n")}` : "";
 
   const langRows = otherLangs.map(l => `
@@ -149,16 +169,14 @@ ${langRows}
     }).join("<br>")}
     </div>` : "";
 
-  // Custom sections (Research Experience, Technical Skills, Academic Projects, etc.)
   const customHtml = customSections.filter(s => s.items.length > 0).map(section => `
     <div class="section-title">${escapeHtml(section.title)}</div>
     <div class="bullet-list">
     ${section.items.map(item => 
-      `• ${escapeHtml(item.label)}${item.description ? ` — ${escapeHtml(item.description)}` : ""}`
+      `• ${escapeHtml(item.label)}${item.description ? ` — ${sanitizeHtml(item.description)}` : ""}`
     ).join("<br>")}
     </div>`).join("\n");
 
-  // Recommendations / LOR section
   const recHtml = recommendations.length > 0 ? `
     <div class="section-title">Recommendations / Referees</div>
     ${recommendations.map(r => `
@@ -168,7 +186,9 @@ ${langRows}
 </div>`).join("\n")}` : "";
 
   const linkedinBlock = personal.linkedin_url ? `<div><span class="label">LinkedIn:</span><a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>` : "";
-  const profilePicBlock = personal.avatar_url ? `<img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle">` : "";
+  
+  const photoStyle = `object-fit: cover; object-position: ${photoPosition}; transform: scale(${photoZoom / 100});`;
+  const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
   const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
 
   return `<!DOCTYPE html>
@@ -177,14 +197,15 @@ ${langRows}
 <meta charset="UTF-8">
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
-    @page { size: A4; margin: 12mm 15mm; }
-    * { margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.3; color: #000; margin: 0; padding: 0; font-size: 10px; background: #fff; width: 210mm; }
-    .container { width: 100%; max-width: 800px; margin: auto; padding: 20px; box-sizing: border-box; }
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
+    @page { size: A4; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.3; color: #000; margin: 0; padding: 0; font-size: 10px; background: #fff; width: 794px; }
+    .container { width: 794px; padding: 20px 25px; box-sizing: border-box; }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; background-color: ${headerBgColor}; padding: 8px; }
     .profile-col { width: 85px; vertical-align: top; }
     .name-col { vertical-align: top; padding-left: 15px; }
-    .profile-pic-circle { width: 80px; height: 80px; border-radius: 50%; border: 0.5pt solid #999; object-fit: cover; }
+    .profile-pic-wrapper { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 0.5pt solid #999; }
+    .profile-pic-circle { width: 80px; height: 80px; border-radius: 50%; display: block; }
     .name-text { font-size: 18pt; font-weight: bold; color: #000; text-transform: uppercase; margin: 0; line-height: 1.1; }
     .header-divider { height: 0.5pt; background-color: #004a99; width: 100%; margin: 4px 0 8px 0; }
     .personal-details-block { line-height: 1.4; font-size: 9.5px; }
@@ -204,6 +225,7 @@ ${langRows}
     .sig-area { margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9px; }
     .sig-img { max-width: 130px; max-height: 50px; border-bottom: 0.5pt solid #000; filter: grayscale(1); display: block; margin: 0 auto 2px; }
     a { color: #004a99; text-decoration: none; }
+    .page-footer { text-align: center; font-size: 8px; color: #999; margin-top: 30px; padding-top: 8px; border-top: 0.5pt solid #eee; }
 </style>
 </head>
 <body>
@@ -247,6 +269,8 @@ ${langRows}
             <div style="font-weight: bold;">(${escapeHtml(personal.full_name)})</div>
         </div>
     </div>
+
+    <div class="page-footer">Curriculum Vitae — ${escapeHtml(personal.full_name)}</div>
 </div>
 </body>
 </html>`;
