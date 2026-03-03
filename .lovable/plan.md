@@ -1,125 +1,120 @@
 
 
-# CV Generator Production Fix + UI Improvements
+# CV Generator: Preview-PDF Parity + Professional Features
 
-## Problem Summary
-1. **PDF is blank** -- The `buildCVHtml()` function produces valid HTML but html2pdf renders a blank page because the iframe height is fixed at 1200px and the container element may not be found properly
-2. **Route rename** -- `/academic-cv-generator` needs to become `/europass-cv`
-3. **Missing sections** -- No custom/additional sections (Research Experience, Technical Skills, Academic Projects, LOR)
-4. **No profile pic / signature upload** on the public generator page
-5. **No live preview** while filling in details
-6. **No save/history** functionality
-7. **Services + Applications use popup dialogs** instead of inline forms
-8. **Student dashboard** needs to be more data-dense (Excel-inspired)
+## Problem Analysis
+1. **Preview does not match downloaded PDF** -- html2pdf.js renders from an iframe but has margin, scale, and dimension differences from the live preview iframe
+2. **No profile photo cropping/centering** -- uploaded photos render as-is with no positioning control
+3. **No rich text editing** for Focus/Key Subjects (no bold, italic, alignment)
+4. **No info (i) helper tooltips** on sections
+5. **No header background color picker**
+6. **No page count in PDF footer**
+7. **Build error** -- `npm:openai@^4.52.5` resolution failure (from Supabase functions JS types, not our code)
 
 ---
 
-## Part 1: Fix Blank PDF
+## Part 1: Fix Preview = PDF (No Exceptions)
 
-The blank PDF issue is caused by html2pdf targeting `.container` inside the iframe but the iframe dimensions and rendering timing are insufficient.
+The root cause is that the preview `<iframe srcDoc={html}>` renders at whatever width the panel is, while html2pdf captures at `windowWidth: 794` with `margin: [12, 15, 12, 15]`. This creates layout differences.
 
 **Fix in `src/lib/cvTemplateBuilder.ts`**:
-- Add explicit `padding: 20px` to the container div so content isn't clipped
-- Add `width: 210mm` (A4 width) to body for proper print layout
+- Set body width to `794px` (not `210mm`) so both preview and html2pdf use the exact same pixel width
+- Add explicit `box-sizing: border-box` to container
+- Remove `max-width: 800px` (use fixed `width: 794px` instead) so there's zero ambiguity
 
-**Fix in `src/pages/AcademicCVGenerator.tsx` (generatePDF function)**:
-- Increase iframe dimensions to `width:210mm; height:auto; min-height:297mm`
-- Target `iframeDoc.body` instead of `.container` for html2pdf capture
-- Increase render wait from 800ms to 1200ms for image loading
-- Set `html2canvas.windowWidth: 794` (A4 width in px at 96dpi)
+**Fix in `src/pages/AcademicCVGenerator.tsx` (generatePDF)**:
+- Use `margin: 0` in html2pdf (margins are already in the template CSS via `padding: 20px`)
+- Set `html2canvas.width: 794` and `html2canvas.windowWidth: 794` explicitly
+- Add `html2canvas.scrollY: 0` and `html2canvas.scrollX: 0` to prevent scroll offset issues
+- Set iframe width to exactly `794px` (matching body width)
+- The preview iframe should also be constrained to `794px` width inside its container, scaled down with CSS `transform: scale()` to fit the panel
+
+**Fix preview iframe scaling**:
+- Wrap the preview iframe in a container that calculates `scale = containerWidth / 794`
+- Apply `transform: scale(${scale})` and `transform-origin: top left` so the preview is a perfect miniature of the PDF
+- This guarantees pixel-perfect match between what you see and what you download
 
 **Fix in `src/hooks/useGenerateEuropassCV.ts`** (authenticated version):
-- Same html2pdf option fixes as above
+- Same margin and dimension fixes as above
 
 ---
 
-## Part 2: Route Rename
+## Part 2: Profile Photo Positioning Controls
 
-- Change route from `/academic-cv-generator` to `/europass-cv` in `src/App.tsx`
-- Add redirect: `/academic-cv-generator` -> `/europass-cv` for SEO preservation
-- Update all links referencing the old route (in `src/pages/Index.tsx`)
-- Update page title/meta to "Free Europass CV Generator for Germany"
-
----
-
-## Part 3: Custom Sections (Research Experience, Technical Skills, Academic Projects, LOR)
-
-**Add to `src/lib/cvTemplateBuilder.ts`**:
-- New interface `CVCustomSection` with `title: string` and `items: { label: string; description?: string }[]`
-- New interface `CVRecommendation` with `name, designation, institution, email, contact`
-- Update `buildCVHtml()` signature to accept `customSections` and `recommendations` arrays
-- Render custom sections as bullet-list entries between Certifications and Signature
-- Render Recommendations/LOR section with name, designation, institution, contact info
-
-**Add to `src/pages/AcademicCVGenerator.tsx` (public page)**:
-- "Custom Sections" card with ability to add sections (title + items with label/description)
-- Pre-suggested section titles: Research Experience, Technical Skills, Academic Projects
-- "Recommendations / Referees" card with fields: name, designation, institution, email, contact
-
-**Update edge function** (`supabase/functions/generate-europass-cv/index.ts`):
-- Already handles `profile_additional_sections` and `profile_recommendations` from DB
-- Ensure the template renders them correctly (already does -- just need template alignment)
+Add simple crop/position controls to the photo upload:
+- **Object Position selector**: dropdown with options "Center", "Top", "Bottom" (maps to CSS `object-position: center/top/bottom`)
+- **Zoom slider**: range input 100%-200% that sets the photo `transform: scale()` inside a circular overflow-hidden container
+- Store these as extra state fields (`photoPosition`, `photoZoom`)
+- Update `buildCVHtml` to apply `object-position` style on the `profile-pic-circle` img tag
+- The photo circle already has `object-fit: cover` and `border-radius: 50%` so this will properly center the face
 
 ---
 
-## Part 4: Profile Photo & Signature Upload (Public Page)
+## Part 3: Rich Text Mini-Toolbar for Key Subjects / Focus
 
-Add to the Personal Information card in `AcademicCVGenerator.tsx`:
-- **Profile Photo**: File input that reads image as base64 data URL, stores in `personal.avatar_url`
-- **Signature**: File input that reads image as base64 data URL, stores in `personal.signature_url`
-- Small preview thumbnails next to each upload
-- No server upload needed -- stays client-side as data URLs embedded in the HTML
+Add a lightweight inline formatting toolbar (NOT a full WYSIWYG editor -- keep it simple and non-detectable):
+- Small toolbar above the "Key Subjects / Focus" textarea with buttons: **B** (bold), *I* (italic), alignment (left/center/right)
+- Use a `contenteditable` div instead of plain `<Input>` for these fields
+- On format button click, wrap selected text in `<strong>` or `<em>` tags
+- Store the value as simple HTML (the template already renders HTML via `innerHTML`)
+- Update `buildCVHtml` to NOT escape HTML in `key_subjects` field (use raw insertion with sanitization for dangerous tags only)
+- Keep it minimal -- no colors, no font sizes, just bold/italic/alignment
 
----
-
-## Part 5: Live Preview
-
-Add a split-panel layout on desktop (form left, preview right):
-- Use an `<iframe srcDoc={html}>` that updates in real-time as the user types
-- Debounce the HTML regeneration (300ms) to avoid excessive re-renders
-- On mobile: show a "Preview" toggle button that opens a full-screen preview overlay
-- The preview uses the exact same `buildCVHtml()` function so what-you-see-is-what-you-download
+**Fields that get this toolbar**:
+- Key Subjects / Focus (in Education)
+- Description (in Work Experience)
+- Custom section item descriptions
 
 ---
 
-## Part 6: Save & History
+## Part 4: Info (i) Helper Tooltips
 
-After PDF generation, show an inline prompt:
-- If user is logged in: auto-save CV data to a new `cv_history` concept using `profile_additional_sections` (reuse existing tables)
-- If user is NOT logged in: show a CTA banner "Sign up to save your CV" linking to `/auth`
-- For registered users on the Profile page: the existing CV generation card already works with saved data
-
-**No new database tables needed** -- the public page is stateless (data in browser), and logged-in users already have their data in profile tables.
-
----
-
-## Part 7: Inline Forms (Replace Popups)
-
-**`src/pages/Applications.tsx`**:
-- Replace the "Add Application" Dialog with a collapsible inline form at the top of the page
-- Use `Collapsible` component (already imported) with a card containing the form fields
-- Same form fields, just rendered inline instead of in a modal
-
-**`src/pages/ServicesNew.tsx`**:
-- Replace the service request Dialog with an inline expandable panel
-- When user clicks "Request Services", expand an inline card below the button with timeline, details fields, and submit button
-- Remove the `Dialog` import and `showRequestDialog` state, replace with `showInlineForm` boolean
+Add a small `(i)` icon next to every section title that shows a tooltip on click/hover:
+- Use the existing `Tooltip` component from shadcn/ui
+- Helper text per section:
+  - **Personal Information**: "Include all details as they appear on your passport. This helps universities verify your identity."
+  - **Education & Training**: "List degrees in reverse chronological order. Include ECTS/credit equivalents and grading scale."
+  - **Research Publications**: "Include peer-reviewed papers, conference proceedings, and working papers. Use standard citation format."
+  - **Work Experience**: "Include relevant professional experience, internships, and research positions."
+  - **Language Skills**: "Use CEFR levels (A1-C2). Mother tongue languages are listed separately."
+  - **Certifications**: "Include relevant certificates, MOOCs, and professional development courses."
+  - **Custom Sections**: "Add sections like Research Experience, Technical Skills, or Academic Projects."
+  - **Recommendations**: "Include 2-3 academic referees who can vouch for your work."
+- Render as a small `Info` icon (from lucide-react) next to each CardTitle
 
 ---
 
-## Part 8: Student Dashboard Cleanup
+## Part 5: Header Background Color Picker
 
-Redesign `src/pages/Dashboard.tsx` for data density:
+Add a color selector for the personal details header area:
+- Dropdown/swatches with 5-6 professional solid colors:
+  - White (default), Light Gray (#f5f5f5), Light Blue (#e8f0fe), Navy subtle (#f0f4f8), Cream (#faf8f5), Light Sage (#f0f5f0)
+- Store as `headerBgColor` state
+- Update `buildCVHtml` to accept an optional `headerBgColor` parameter
+- Apply as `background-color` on the `.header-table` element
+- Keep it subtle -- these are professional academic CVs
 
-- **Remove** the large circular icon stat cards -- replace with a single-row compact stats bar:
+---
+
+## Part 6: Page Count Footer
+
+Add automatic page numbering to the PDF:
+- In `buildCVHtml`, add a CSS `@page` footer rule (won't work in html2pdf)
+- Instead, use html2pdf's `displayHeaderFooter` equivalent -- since html2pdf doesn't support this natively, add a footer div at the bottom of the HTML:
+  ```html
+  <div class="page-footer">Page 1 of X</div>
   ```
-  Profile: 80% | Documents: 12 | Applications: 5 (3 submitted) | Services
-  ```
-- **Remove** the QuickLinks section (redundant with nav)
-- **Keep** nearest deadline card but make it more compact (single line)
-- **Keep** contracts section but make it denser
-- **Add** a compact "Recent Activity" list showing last 3-5 events (document uploads, application status changes)
-- Overall: reduce from ~5 visual sections to 3 (stats bar, deadline/alerts, contracts)
+- For single-page CVs, show "Page 1 of 1"
+- For multi-page: use CSS `counter-increment` with `@page` or add a JS-calculated page count after html2pdf renders
+- Simpler approach: Add `displayHeaderFooter: true` in jsPDF options with page numbers, or add a manual footer line in the HTML template
+
+---
+
+## Part 7: Fix Build Error
+
+The `npm:openai@^4.52.5` error comes from `@supabase/functions-js` types resolution, not from our code. Fix by adding a `deno.json` or updating the edge function imports. Since we don't use OpenAI, this is a transient type resolution issue.
+
+**Fix**: Add `// @ts-nocheck` is already present in the edge function. The build error may be from the Supabase CLI type checking. We can add a `supabase/functions/deno.json` with `"nodeModulesDir": "auto"` or pin the `@supabase/functions-js` version.
 
 ---
 
@@ -127,20 +122,15 @@ Redesign `src/pages/Dashboard.tsx` for data density:
 
 | File | Changes |
 |---|---|
-| `src/lib/cvTemplateBuilder.ts` | Add CVCustomSection, CVRecommendation interfaces; update buildCVHtml with custom sections, recommendations, fix container styling |
-| `src/pages/AcademicCVGenerator.tsx` | Full rewrite: live preview, photo/signature upload, custom sections, recommendations, inline form, fix PDF generation, save prompt |
-| `src/App.tsx` | Rename route to `/europass-cv`, add redirect from old path |
-| `src/pages/Index.tsx` | Update link to `/europass-cv` |
-| `src/hooks/useGenerateEuropassCV.ts` | Fix html2pdf options (windowWidth, body target) |
-| `src/pages/Dashboard.tsx` | Compact stats bar, remove QuickLinks, add activity list |
-| `src/pages/Applications.tsx` | Replace add Dialog with inline collapsible form |
-| `src/pages/ServicesNew.tsx` | Replace request Dialog with inline expandable panel |
+| `src/lib/cvTemplateBuilder.ts` | Fixed body width (794px), accept `headerBgColor` param, raw HTML for rich-text fields, photo `object-position`, page footer |
+| `src/pages/AcademicCVGenerator.tsx` | Scaled preview iframe, photo position/zoom controls, rich text toolbar, info tooltips, color picker, margin fixes in generatePDF |
+| `src/hooks/useGenerateEuropassCV.ts` | Same margin/dimension fixes for authenticated PDF generation |
+| `supabase/functions/deno.json` | Add `"nodeModulesDir": "auto"` to fix OpenAI type resolution |
 
 ## What Does NOT Change
-- All Supabase tables, RLS, edge functions logic
-- Edge function `generate-europass-cv/index.ts` (already handles all sections)
-- Template HTML file (template_academic.html)
-- Admin pages
-- Authentication flow
-- All other student pages (Documents, Profile, Payments)
+- Edge function logic (`generate-europass-cv/index.ts`)
+- Template HTML file (`template_academic.html`) -- used only by edge function for authenticated users
+- Database tables, RLS policies
+- All other pages (Dashboard, Applications, etc.)
+- Routing, authentication
 
