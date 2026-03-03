@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff } from "lucide-react";
-import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation } from "@/lib/cvTemplateBuilder";
+import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -20,6 +22,26 @@ declare global {
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Research Experience", "Technical Skills", "Academic Projects"];
+
+const HEADER_COLORS = [
+  { label: "White", value: "#ffffff" },
+  { label: "Light Gray", value: "#f5f5f5" },
+  { label: "Light Blue", value: "#e8f0fe" },
+  { label: "Navy Subtle", value: "#f0f4f8" },
+  { label: "Cream", value: "#faf8f5" },
+  { label: "Light Sage", value: "#f0f5f0" },
+];
+
+const SECTION_TIPS: Record<string, string> = {
+  personal: "Include all details as they appear on your passport. This helps universities verify your identity.",
+  education: "List degrees in reverse chronological order. Include ECTS/credit equivalents and grading scale.",
+  publications: "Include peer-reviewed papers, conference proceedings, and working papers. Use standard citation format.",
+  work: "Include relevant professional experience, internships, and research positions.",
+  languages: "Use CEFR levels (A1-C2). Mother tongue languages are listed separately.",
+  certifications: "Include relevant certificates, MOOCs, and professional development courses.",
+  custom: "Add sections like Research Experience, Technical Skills, or Academic Projects.",
+  recommendations: "Include 2-3 academic referees who can vouch for your work.",
+};
 
 const emptyEducation = (): CVEducation => ({
   degree_title: "", field_of_study: "", institution: "", country: "",
@@ -46,11 +68,72 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Info tooltip component
+function SectionTip({ tipKey }: { tipKey: string }) {
+  const tip = SECTION_TIPS[tipKey];
+  if (!tip) return null;
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help ml-1.5 inline-block" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[260px] text-xs">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// Rich text mini-toolbar + contenteditable field
+function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const execCmd = (cmd: string, val?: string) => {
+    document.execCommand(cmd, false, val);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/50 border-b">
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Bold" onMouseDown={e => { e.preventDefault(); execCmd("bold"); }}><Bold className="w-3 h-3" /></button>
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Italic" onMouseDown={e => { e.preventDefault(); execCmd("italic"); }}><Italic className="w-3 h-3" /></button>
+        <div className="w-px h-4 bg-border mx-0.5" />
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Left" onMouseDown={e => { e.preventDefault(); execCmd("justifyLeft"); }}><AlignLeft className="w-3 h-3" /></button>
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Center" onMouseDown={e => { e.preventDefault(); execCmd("justifyCenter"); }}><AlignCenter className="w-3 h-3" /></button>
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Right" onMouseDown={e => { e.preventDefault(); execCmd("justifyRight"); }}><AlignRight className="w-3 h-3" /></button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        className="px-3 py-2 text-sm min-h-[36px] focus:outline-none"
+        dangerouslySetInnerHTML={{ __html: value || "" }}
+        onBlur={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); }}
+        data-placeholder={placeholder}
+        style={{ minHeight: 36 }}
+      />
+    </div>
+  );
+}
+
 export default function AcademicCVGenerator() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(1);
+
+  // Photo controls
+  const [photoPosition, setPhotoPosition] = useState("center");
+  const [photoZoom, setPhotoZoom] = useState(100);
+  // Header color
+  const [headerBgColor, setHeaderBgColor] = useState("#ffffff");
 
   const [personal, setPersonal] = useState<CVPersonalInfo>({
     full_name: "", passport_number: "", date_of_birth: "", nationality: "",
@@ -80,12 +163,27 @@ export default function AcademicCVGenerator() {
     reader.readAsDataURL(file);
   };
 
+  const buildOptions: CVBuildOptions = { headerBgColor, photoPosition, photoZoom };
+
   // Build HTML for preview (debounced)
   const rawHtml = useMemo(() =>
-    buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations),
-    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations]
+    buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions),
+    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, headerBgColor, photoPosition, photoZoom]
   );
   const previewHtml = useDebounce(rawHtml, 300);
+
+  // Calculate preview scale to fit container
+  useEffect(() => {
+    const updateScale = () => {
+      if (previewContainerRef.current) {
+        const containerWidth = previewContainerRef.current.clientWidth;
+        setPreviewScale(Math.min(containerWidth / 794, 1));
+      }
+    };
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, [showPreview]);
 
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
@@ -99,9 +197,9 @@ export default function AcademicCVGenerator() {
         script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
         await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; document.head.appendChild(script); });
       }
-      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations);
+      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
       const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;min-height:1123px;border:none;';
+      iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;border:none;';
       document.body.appendChild(iframe);
       try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -109,12 +207,12 @@ export default function AcademicCVGenerator() {
         iframeDoc.open();
         iframeDoc.write(html);
         iframeDoc.close();
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1500));
         await window.html2pdf().set({
-          margin: [12, 15, 12, 15],
+          margin: 0,
           filename: `Academic_CV_${personal.full_name.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff", allowTaint: true, windowWidth: 794 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff", allowTaint: true, width: 794, windowWidth: 794, scrollX: 0, scrollY: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
           pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         }).from(iframeDoc.body).save();
@@ -138,9 +236,31 @@ export default function AcademicCVGenerator() {
 
   const formContent = (
     <div className="space-y-4">
+      {/* Header Color Picker */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center">CV Style Options</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="text-xs mb-2 block">Header Background Color</Label>
+          <div className="flex flex-wrap gap-2">
+            {HEADER_COLORS.map(c => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setHeaderBgColor(c.value)}
+                className={`w-8 h-8 rounded-md border-2 transition-all ${headerBgColor === c.value ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                style={{ backgroundColor: c.value }}
+                title={c.label}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Personal Info */}
       <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-base flex items-center">Personal Information <SectionTip tipKey="personal" /></CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
@@ -159,7 +279,29 @@ export default function AcademicCVGenerator() {
             <div>
               <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Profile Photo</Label>
               <Input type="file" accept="image/*" onChange={handleFileUpload('avatar_url')} className="text-xs mt-1" />
-              {personal.avatar_url && <img src={personal.avatar_url} alt="Profile" className="w-12 h-12 rounded-full object-cover mt-2 border" />}
+              {personal.avatar_url && (
+                <div className="mt-2 space-y-2">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border" style={{ display: "inline-block" }}>
+                    <img src={personal.avatar_url} alt="Profile" className="w-full h-full object-cover" style={{ objectPosition: photoPosition, transform: `scale(${photoZoom / 100})` }} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Position:</Label>
+                    <Select value={photoPosition} onValueChange={setPhotoPosition}>
+                      <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="bottom">Bottom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Zoom:</Label>
+                    <Slider value={[photoZoom]} onValueChange={v => setPhotoZoom(v[0])} min={100} max={200} step={5} className="w-32" />
+                    <span className="text-xs text-muted-foreground">{photoZoom}%</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Signature</Label>
@@ -173,7 +315,7 @@ export default function AcademicCVGenerator() {
       {/* Education */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Education & Training *</CardTitle>
+          <CardTitle className="text-base flex items-center">Education & Training * <SectionTip tipKey="education" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setEducations([...educations, emptyEducation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -192,7 +334,14 @@ export default function AcademicCVGenerator() {
                 <div><Label className="text-xs">Total Credits</Label><Input type="number" value={edu.total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} /></div>
                 <div><Label className="text-xs">Credit System</Label><Input value={edu.credit_system || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], credit_system: e.target.value }; setEducations(n); }} placeholder="Indian Scale" /></div>
               </div>
-              <div><Label className="text-xs">Key Subjects / Focus</Label><Input value={edu.key_subjects || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], key_subjects: e.target.value }; setEducations(n); }} placeholder="Research methods, Statistics" /></div>
+              <div>
+                <Label className="text-xs">Key Subjects / Focus</Label>
+                <RichTextField
+                  value={edu.key_subjects || ""}
+                  onChange={v => { const n = [...educations]; n[i] = { ...n[i], key_subjects: v }; setEducations(n); }}
+                  placeholder="Research methods, Statistics, Clinical Psychology"
+                />
+              </div>
             </div>
           ))}
         </CardContent>
@@ -201,7 +350,7 @@ export default function AcademicCVGenerator() {
       {/* Publications */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Research Publications</CardTitle>
+          <CardTitle className="text-base flex items-center">Research Publications <SectionTip tipKey="publications" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setPublications([...publications, emptyPublication()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -222,7 +371,7 @@ export default function AcademicCVGenerator() {
       {/* Work Experience */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Work Experience</CardTitle>
+          <CardTitle className="text-base flex items-center">Work Experience <SectionTip tipKey="work" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setWorkExperiences([...workExperiences, emptyWork()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -237,7 +386,14 @@ export default function AcademicCVGenerator() {
                 <div><Label className="text-xs">Start Date</Label><Input type="date" value={w.start_date} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
                 <div><Label className="text-xs">End Date</Label><Input type="date" value={w.end_date || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} /></div>
               </div>
-              <div><Label className="text-xs">Description</Label><Input value={w.description || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], description: e.target.value }; setWorkExperiences(n); }} /></div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <RichTextField
+                  value={w.description || ""}
+                  onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
+                  placeholder="Key responsibilities and achievements"
+                />
+              </div>
             </div>
           ))}
         </CardContent>
@@ -246,7 +402,7 @@ export default function AcademicCVGenerator() {
       {/* Languages */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Language Skills *</CardTitle>
+          <CardTitle className="text-base flex items-center">Language Skills * <SectionTip tipKey="languages" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setLanguages([...languages, emptyLanguage()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -283,7 +439,7 @@ export default function AcademicCVGenerator() {
       {/* Certifications */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Certifications</CardTitle>
+          <CardTitle className="text-base flex items-center">Certifications <SectionTip tipKey="certifications" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setCertifications([...certifications, emptyCertification()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -304,7 +460,7 @@ export default function AcademicCVGenerator() {
       {/* Custom Sections */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Additional Sections</CardTitle>
+          <CardTitle className="text-base flex items-center">Additional Sections <SectionTip tipKey="custom" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setCustomSections([...customSections, emptyCustomSection()])}><Plus className="w-3 h-3 mr-1" />Add Section</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -325,10 +481,16 @@ export default function AcademicCVGenerator() {
               <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-6 w-6" onClick={() => setCustomSections(customSections.filter((_, j) => j !== si))}><Trash2 className="w-3 h-3" /></Button>
               <div><Label className="text-xs">Section Title</Label><Input value={section.title} onChange={e => { const n = [...customSections]; n[si] = { ...n[si], title: e.target.value }; setCustomSections(n); }} placeholder="e.g. Research Experience" /></div>
               {section.items.map((item, ii) => (
-                <div key={ii} className="flex gap-2 items-start">
-                  <div className="flex-1"><Input value={item.label} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], label: e.target.value }; setCustomSections([...n]); }} placeholder="Item label" className="text-xs" /></div>
-                  <div className="flex-1"><Input value={item.description || ""} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: e.target.value }; setCustomSections([...n]); }} placeholder="Description (optional)" className="text-xs" /></div>
-                  {section.items.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => { const n = [...customSections]; n[si].items = n[si].items.filter((_, j) => j !== ii); setCustomSections(n); }}><Trash2 className="w-3 h-3" /></Button>}
+                <div key={ii} className="space-y-1">
+                  <div className="flex gap-2 items-start">
+                    <div className="flex-1"><Input value={item.label} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], label: e.target.value }; setCustomSections([...n]); }} placeholder="Item label" className="text-xs" /></div>
+                    {section.items.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => { const n = [...customSections]; n[si].items = n[si].items.filter((_, j) => j !== ii); setCustomSections(n); }}><Trash2 className="w-3 h-3" /></Button>}
+                  </div>
+                  <RichTextField
+                    value={item.description || ""}
+                    onChange={v => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: v }; setCustomSections([...n]); }}
+                    placeholder="Description (optional)"
+                  />
                 </div>
               ))}
               <Button size="sm" variant="ghost" className="text-xs" onClick={() => { const n = [...customSections]; n[si].items.push({ label: "", description: "" }); setCustomSections([...n]); }}><Plus className="w-3 h-3 mr-1" />Add Item</Button>
@@ -340,7 +502,7 @@ export default function AcademicCVGenerator() {
       {/* Recommendations / LOR */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Recommendations / Referees</CardTitle>
+          <CardTitle className="text-base flex items-center">Recommendations / Referees <SectionTip tipKey="recommendations" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -414,8 +576,10 @@ export default function AcademicCVGenerator() {
       <main className="max-w-7xl mx-auto px-4 pb-8">
         {isMobile ? (
           showPreview ? (
-            <div className="border rounded-lg overflow-hidden bg-white" style={{ height: "70vh" }}>
-              <iframe srcDoc={previewHtml} className="w-full h-full border-0" title="CV Preview" />
+            <div ref={previewContainerRef} className="border rounded-lg overflow-hidden bg-white" style={{ height: "70vh" }}>
+              <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+                <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+              </div>
             </div>
           ) : formContent
         ) : (
@@ -423,9 +587,11 @@ export default function AcademicCVGenerator() {
             <div className="w-1/2 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
               {formContent}
             </div>
-            <div className="w-1/2 sticky top-28 h-[calc(100vh-200px)]">
+            <div className="w-1/2 sticky top-28 h-[calc(100vh-200px)]" ref={previewContainerRef}>
               <div className="border rounded-lg overflow-hidden bg-white h-full shadow-sm">
-                <iframe srcDoc={previewHtml} className="w-full h-full border-0" title="CV Preview" />
+                <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+                  <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                </div>
               </div>
             </div>
           </div>
