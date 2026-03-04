@@ -14,11 +14,7 @@ import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage,
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-declare global {
-  interface Window {
-    html2pdf?: any;
-  }
-}
+// No html2pdf needed — we use browser-native print for pixel-perfect PDF
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Research Experience", "Technical Skills", "Academic Projects"];
@@ -124,7 +120,6 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
 export default function AcademicCVGenerator() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -185,47 +180,40 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  const generatePDF = async () => {
+  const generatePDF = () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
       return;
     }
-    setIsGenerating(true);
-    try {
-      if (!window.html2pdf) {
-        const script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; document.head.appendChild(script); });
-      }
-      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;border:none;';
-      document.body.appendChild(iframe);
-      try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) throw new Error('Could not access iframe');
-        iframeDoc.open();
-        iframeDoc.write(html);
-        iframeDoc.close();
-        await new Promise(r => setTimeout(r, 1500));
-        await window.html2pdf().set({
-          margin: 0,
-          filename: `Academic_CV_${personal.full_name.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff", allowTaint: true, width: 794, windowWidth: 794, scrollX: 0, scrollY: 0 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        }).from(iframeDoc.body).save();
-        toast({ title: "CV Generated!", description: "Your Academic CV has been downloaded." });
-      } finally {
-        document.body.removeChild(iframe);
-      }
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
+
+    const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
+
+    // Open a new window with the CV HTML and trigger the browser's native print dialog
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({ title: "Popup Blocked", description: "Please allow popups for this site to download your CV as PDF.", variant: "destructive" });
+      return;
     }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    // Wait for images to load, then trigger print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+    };
+
+    // Fallback if onload already fired
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 1500);
+
+    toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' in the print dialog to download your CV." });
   };
 
   useEffect(() => {
@@ -524,8 +512,8 @@ export default function AcademicCVGenerator() {
 
       {/* Generate Button */}
       <div className="text-center space-y-4 mt-6">
-        <Button size="lg" onClick={generatePDF} disabled={isGenerating} className="w-full sm:w-auto px-8">
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF...</> : <><Download className="w-4 h-4 mr-2" />Generate & Download CV</>}
+        <Button size="lg" onClick={generatePDF} className="w-full sm:w-auto px-8">
+          <Download className="w-4 h-4 mr-2" />Download CV as PDF
         </Button>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}
