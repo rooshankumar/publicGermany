@@ -513,8 +513,8 @@ export default function AcademicCVGenerator() {
 
       {/* Generate Button */}
       <div className="text-center space-y-4 mt-6">
-        <Button size="lg" onClick={generatePDF} disabled={isGenerating} className="w-full sm:w-auto px-8">
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF...</> : <><Download className="w-4 h-4 mr-2" />Generate & Download CV</>}
+        <Button size="lg" onClick={generatePDF} className="w-full sm:w-auto px-8">
+          <Download className="w-4 h-4 mr-2" />Download CV as PDF
         </Button>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}
