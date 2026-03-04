@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Plus, Trash2, Download, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
+import CVImportUpload from "@/components/CVImportUpload";
+import type { ImportedCVData } from "@/lib/cvImporter";
 
 // No html2pdf needed — we use browser-native print for pixel-perfect PDF
 
