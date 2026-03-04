@@ -192,34 +192,87 @@ export default function AcademicCVGenerator() {
     }
     setIsGenerating(true);
     try {
-      if (!window.html2pdf) {
-        const script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; document.head.appendChild(script); });
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const html = buildCVHtml(
+        personal,
+        educations,
+        workExperiences,
+        languages,
+        publications,
+        certifications,
+        customSections,
+        recommendations,
+        buildOptions
+      );
+
+      // Offscreen container similar to contract/bill generation
+      const container = document.createElement("div");
+      container.innerHTML = html;
+      container.style.position = "absolute";
+      container.style.left = "0";
+      container.style.top = "-10000px";
+      container.style.width = "210mm";
+      container.style.margin = "0";
+      container.style.padding = "0";
+      container.style.backgroundColor = "#ffffff";
+      document.body.appendChild(container);
+
+      // Wait for layout and images
+      await new Promise((r) => setTimeout(r, 800));
+      const images = container.querySelectorAll("img");
+      await Promise.all(
+        Array.from(images).map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) return resolve();
+              const timeout = setTimeout(resolve, 4000);
+              img.onload = () => {
+                clearTimeout(timeout);
+                resolve();
+              };
+              img.onerror = () => {
+                clearTimeout(timeout);
+                resolve();
+              };
+            })
+        )
+      );
+
+      const cvElement = (container.querySelector(".cv-container") as HTMLElement) || container;
+
+      const canvas = await html2canvas(cvElement, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        windowHeight: cvElement.scrollHeight,
+        windowWidth: cvElement.scrollWidth,
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`Academic_CV_${personal.full_name.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`);
+
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
       }
-      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;border:none;';
-      document.body.appendChild(iframe);
-      try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) throw new Error('Could not access iframe');
-        iframeDoc.open();
-        iframeDoc.write(html);
-        iframeDoc.close();
-        await new Promise(r => setTimeout(r, 1500));
-        await window.html2pdf().set({
-          margin: 0,
-          filename: `Academic_CV_${personal.full_name.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff", allowTaint: true, width: 794, windowWidth: 794, scrollX: 0, scrollY: 0 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        }).from(iframeDoc.body).save();
-        toast({ title: "CV Generated!", description: "Your Academic CV has been downloaded." });
-      } finally {
-        document.body.removeChild(iframe);
-      }
+
+      toast({ title: "CV Generated!", description: "Your Academic CV has been downloaded." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });

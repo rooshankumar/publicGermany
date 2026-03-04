@@ -27,6 +27,9 @@ interface Profile {
   full_name?: string;
   nationality?: string;
   date_of_birth?: string;
+  gender?: string;
+  phone?: string;
+  passport_number?: string;
 }
 
 interface CVGenerationCardProps {
@@ -62,28 +65,32 @@ export function CVGenerationCard({
         e.total_credits
     );
 
-  // Check mandatory fields from correct sources
+  // Validate mandatory fields matching cvValidation.ts requirements
   const mandatoryFields = {
     name: !!profile?.full_name,
     nationality: !!profile?.nationality,
     dateOfBirth: !!profile?.date_of_birth,
-    email: !!userEmail,
+    gender: !!profile?.gender,
+    phone: !!profile?.phone,
+    passportNumber: !!profile?.passport_number,
     hasEducation: educations.length > 0,
     educationComplete: hasCompleteEducation,
     hasLanguage: languages.length > 0,
   };
 
-  // Calculate completion percentage
+  // Calculate completion percentage (12 points total like cvValidation.ts)
   const completionItems = Object.values(mandatoryFields).filter(Boolean).length;
   const totalItems = Object.keys(mandatoryFields).length;
   const completionPercentage = Math.round((completionItems / totalItems) * 100);
 
-  // Determine status
+  // Determine status - must meet all mandatory fields
   const isReadyToGenerate =
     mandatoryFields.name &&
     mandatoryFields.nationality &&
     mandatoryFields.dateOfBirth &&
-    mandatoryFields.email &&
+    mandatoryFields.gender &&
+    mandatoryFields.phone &&
+    mandatoryFields.passportNumber &&
     mandatoryFields.educationComplete &&
     mandatoryFields.hasLanguage;
 
@@ -97,8 +104,12 @@ export function CVGenerationCard({
           return "Nationality";
         case "dateOfBirth":
           return "Date of birth";
-        case "email":
-          return "Email";
+        case "gender":
+          return "Gender";
+        case "phone":
+          return "Phone number";
+        case "passportNumber":
+          return "Passport number";
         case "hasEducation":
           return "At least one education entry";
         case "educationComplete":

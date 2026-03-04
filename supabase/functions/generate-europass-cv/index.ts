@@ -208,6 +208,126 @@ Tools: ${escapeHtml(tools)}
 `;
 }
 
+// Embedded fallback template (minimal Europass CV)
+function getEmbeddedFallbackTemplate(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Europass CV - {{FULL_NAME}}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+  body {
+    font-family: "Helvetica", "Arial", sans-serif;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #000;
+  }
+  .cv-container {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 12mm 15mm;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+  .header { margin-bottom: 15px; }
+  .name { font-size: 18pt; font-weight: bold; text-transform: uppercase; }
+  .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ccc; margin: 12px 0 6px 0; padding-bottom: 2px; page-break-after: avoid; break-after: avoid-page; }
+  .entry { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid-page; }
+  .entry-title { font-weight: bold; font-size: 10px; }
+  .entry-date { float: right; font-weight: bold; }
+  .sub-info { font-style: italic; color: #444; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; page-break-inside: avoid; break-inside: avoid-page; }
+  th, td { border: 1px solid #666; padding: 4px; text-align: center; font-size: 9px; }
+  th { background: #f0f0f0; }
+  .sig-area { margin-top: 30px; display: flex; justify-content: space-between; page-break-inside: avoid; break-inside: avoid-page; }
+  .signature img { width: 120px; height: auto; }
+  img { max-width: 100%; height: auto; }
+  @media print {
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cv-container {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="cv-container">
+  <div class="header">
+    <div class="name">{{FULL_NAME}}</div>
+    <div>{{NATIONALITY}} | {{DATE_OF_BIRTH}} | {{PLACE_OF_BIRTH}}</div>
+    <div>{{PHONE}} | {{EMAIL}}</div>
+    {{#LINKEDIN}}<div>LinkedIn: {{LINKEDIN_URL}}</div>{{/LINKEDIN}}
+    <div>{{ADDRESS}}</div>
+  </div>
+  
+  <div class="section-title">Education</div>
+  {{EDUCATIONS}}
+  
+  {{#WORK_EXPERIENCES_SECTION}}
+  <div class="section-title">Work Experience</div>
+  {{WORK_EXPERIENCES}}
+  {{/WORK_EXPERIENCES_SECTION}}
+  
+  <div class="section-title">Languages</div>
+  {{MOTHER_TONGUES}}
+  {{LANGUAGES_TABLE}}
+  
+  {{#DIGITAL_RESEARCH_SKILLS}}
+  <div class="section-title">Skills</div>
+  {{DIGITAL_RESEARCH_SKILLS}}
+  {{/DIGITAL_RESEARCH_SKILLS}}
+  
+  {{#CERTIFICATIONS_SECTION}}
+  <div class="section-title">Certifications</div>
+  {{CERTIFICATIONS}}
+  {{/CERTIFICATIONS_SECTION}}
+  
+  {{#PUBLICATIONS_SECTION}}
+  <div class="section-title">Publications</div>
+  {{PUBLICATIONS}}
+  {{/PUBLICATIONS_SECTION}}
+  
+  {{#RECOMMENDATIONS_SECTION}}
+  <div class="section-title">Recommendations</div>
+  {{RECOMMENDATIONS}}
+  {{/RECOMMENDATIONS_SECTION}}
+  
+  {{ADDITIONAL_SECTIONS}}
+  
+  <div class="sig-area">
+    <div></div>
+    <div>
+      {{#SIGNATURE_URL}}<img src="{{SIGNATURE_URL}}" style="max-width:120px;max-height:50px">{{/SIGNATURE_URL}}
+      <div>Date: {{SIGNATURE_DATE}}</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -276,21 +396,30 @@ serve(async (req) => {
       sections: sections.data?.length || 0,
     });
 
-    // Import academic template (with fallback to professional template)
+    // Import academic template (with multiple fallback strategies)
     let templateText: string;
-    try {
-      // Try reading academic template first
-      templateText = await Deno.readTextFile("./template_academic.html");
-    } catch {
-      // Fallback to professional template
+    const templateSources = [
+      { name: "academic", source: "template_academic.html", tryRead: async () => await Deno.readTextFile("./template_academic.html") },
+      { name: "professional", source: "template_professional.html", tryRead: async () => await Deno.readTextFile("./template_professional.html") },
+      { name: "default", source: "template.html", tryRead: async () => await Deno.readTextFile("./template.html") },
+    ];
+
+    let templateError = "";
+    for (const template of templateSources) {
       try {
-        templateText = await Deno.readTextFile("./template_professional.html");
-      } catch {
-        // Ultimate fallback: fetch from GitHub
-        templateText = await fetch(
-          "https://raw.githubusercontent.com/rooshankumar/publicGermany/main/supabase/functions/generate-europass-cv/template_professional.html"
-        ).then((r) => r.text());
+        templateText = await template.tryRead();
+        console.log(`✅ Loaded template: ${template.name}`);
+        break;
+      } catch (err) {
+        console.warn(`⚠️ Failed to load template ${template.name}:`, err?.message || err);
+        templateError += `${template.source}: ${err?.message || err}; `;
       }
+    }
+
+    // Ultimate fallback: embedded minimal template
+    if (!templateText) {
+      console.warn("⚠️ All file templates failed, using embedded fallback template");
+      templateText = getEmbeddedFallbackTemplate();
     }
 
     // Build HTML by replacing placeholders

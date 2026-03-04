@@ -19,20 +19,7 @@
 
         @page {
             size: A4;
-            margin: 12mm 10mm 12mm 10mm;
-        }
-
-        @media print {
-            body {
-                margin: 0;
-                padding: 12mm 10mm;
-                width: 210mm;
-                height: auto;
-            }
-            .container {
-                width: 100%;
-                max-width: 190mm;
-            }
+            margin: 0;
         }
 
         body {
@@ -41,14 +28,51 @@
             line-height: 1.4;
             color: #1a1a1a;
             background: #ffffff;
-            padding: 12mm 10mm;
-            width: 100%;
-            max-width: 210mm;
         }
 
-        .container {
-            max-width: 100%;
-            margin: 0;
+        .cv-container {
+            width: 100%;
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 12mm 10mm;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .cv-container {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                background: #ffffff;
+                box-sizing: border-box;
+            }
+
+            .section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
         }
 
         /* HEADER SECTION */
@@ -190,6 +214,11 @@
             margin-right: 8px;
         }
 
+        .signature img {
+            width: 120px;
+            height: auto;
+        }
+
         /* PAGE BREAK RULES */
         .section {
             page-break-inside: avoid;
@@ -230,33 +259,15 @@
         }
 
         /* PRINT-FRIENDLY */
-        @media print {
-            * {
-                box-shadow: none !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            body {
-                background: white !important;
-                color: #1a1a1a !important;
-            }
-            a {
-                text-decoration: none;
-            }
-            .section {
-                page-break-inside: avoid;
-            }
-        }
-
-        /* Force color preservation for HTML2PDF */
+        /* Preserve colors for HTML2PDF and printing */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
     </style>
 </head>
-<body>
-    <div class="container">
+    <body>
+    <div class="cv-container">
         <!-- HEADER -->
         <div class="header">
             <div class="name">{{FULL_NAME}}</div>
