@@ -242,6 +242,9 @@ export default function AcademicCVGenerator() {
 
   const formContent = (
     <div className="space-y-4">
+      {/* CV Import */}
+      <CVImportUpload onImport={handleCVImport} />
+
       {/* Header Color Picker */}
       <Card>
         <CardHeader className="pb-3">
