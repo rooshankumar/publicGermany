@@ -222,7 +222,8 @@ ${langRows}
     .lang-table th { background-color: #f9f9f9; font-weight: bold; }
     .mother-tongue-text { margin: 2px 0; font-size: 10px; }
     .bullet-list { margin: 2px 0; font-size: 10px; line-height: 1.5; }
-    .sig-area { margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9px; }
+    .sig-table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 9px; }
+    .sig-table td { vertical-align: bottom; padding: 0; }
     .sig-img { max-width: 130px; max-height: 50px; border-bottom: 0.5pt solid #000; filter: grayscale(1); display: block; margin: 0 auto 2px; }
     a { color: #004a99; text-decoration: none; }
     .page-footer { text-align: center; font-size: 8px; color: #999; margin-top: 30px; padding-top: 8px; border-top: 0.5pt solid #eee; }
