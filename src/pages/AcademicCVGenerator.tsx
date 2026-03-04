@@ -160,6 +160,22 @@ export default function AcademicCVGenerator() {
     reader.readAsDataURL(file);
   };
 
+  // Handle CV import
+  const handleCVImport = (data: ImportedCVData) => {
+    if (data.personal) {
+      setPersonal(prev => ({
+        ...prev,
+        ...Object.fromEntries(
+          Object.entries(data.personal).filter(([_, v]) => v !== undefined && v !== "")
+        ),
+      }));
+    }
+    if (data.educations.length > 0) setEducations(data.educations);
+    if (data.workExperiences.length > 0) setWorkExperiences(data.workExperiences);
+    if (data.languages.length > 0) setLanguages(data.languages);
+    if (data.certifications.length > 0) setCertifications(data.certifications);
+  };
+
   const buildOptions: CVBuildOptions = { headerBgColor, photoPosition, photoZoom };
 
   // Build HTML for preview (debounced)
