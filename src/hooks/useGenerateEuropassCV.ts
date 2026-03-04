@@ -91,9 +91,9 @@ export function useGenerateEuropassCV() {
       if (error) throw error;
       if (!data?.html) throw new Error("No HTML returned from generation function");
 
-      await generateCVWithHtml2pdf(data.html, studentName);
+      generateCVWithPrint(data.html);
 
-      toast({ title: "Success", description: "Your Academic CV has been generated and downloaded." });
+      toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' in the print dialog to download your CV." });
     } catch (err) {
       console.error("CV generation error:", err);
       toast({

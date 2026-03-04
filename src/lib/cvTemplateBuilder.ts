@@ -226,6 +226,16 @@ ${langRows}
     .sig-img { max-width: 130px; max-height: 50px; border-bottom: 0.5pt solid #000; filter: grayscale(1); display: block; margin: 0 auto 2px; }
     a { color: #004a99; text-decoration: none; }
     .page-footer { text-align: center; font-size: 8px; color: #999; margin-top: 30px; padding-top: 8px; border-top: 0.5pt solid #eee; }
+    @media print {
+        @page { size: A4; margin: 10mm 12mm; }
+        body { margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .container { width: 100%; padding: 0; }
+        .entry { page-break-inside: avoid; break-inside: avoid; }
+        .section-title { page-break-after: avoid; }
+        .header-table { page-break-inside: avoid; }
+        .sig-table { page-break-inside: avoid; }
+        .page-footer { position: fixed; bottom: 0; left: 0; right: 0; }
+    }
 </style>
 </head>
 <body>
