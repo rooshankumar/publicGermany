@@ -14,11 +14,7 @@ import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage,
 import ThemeToggle from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-declare global {
-  interface Window {
-    html2pdf?: any;
-  }
-}
+// No html2pdf needed — we use browser-native print for pixel-perfect PDF
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Research Experience", "Technical Skills", "Academic Projects"];
