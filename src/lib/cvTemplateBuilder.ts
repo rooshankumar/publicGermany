@@ -270,16 +270,16 @@ ${langRows}
     ${customHtml}
     ${recHtml}
 
-    <div class="sig-area">
-        <div class="sig-left">
+    <table class="sig-table"><tr>
+        <td style="text-align:left; width:50%;">
             <div>Date: ${formatDateDMY(personal.signature_date || new Date().toISOString())}</div>
             <div>Place: ${escapeHtml(personal.place_of_birth)}</div>
-        </div>
-        <div class="sig-right">
+        </td>
+        <td style="text-align:right; width:50%;">
             ${signatureBlock}
             <div style="font-weight: bold;">(${escapeHtml(personal.full_name)})</div>
-        </div>
-    </div>
+        </td>
+    </tr></table>
 
     <div class="page-footer">Curriculum Vitae — ${escapeHtml(personal.full_name)}</div>
 </div>
