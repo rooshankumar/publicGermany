@@ -40,62 +40,28 @@ export function useGenerateEuropassCV() {
     }
   };
 
-  const generateCVWithHtml2pdf = async (html: string, studentName: string) => {
-    if (!window.html2pdf) {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
+  const generateCVWithPrint = (html: string) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({ title: "Popup Blocked", description: "Please allow popups to download your CV as PDF.", variant: "destructive" });
+      return;
     }
 
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;min-height:1123px;border:none;';
-    document.body.appendChild(iframe);
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
 
-    try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) throw new Error('Could not access iframe document');
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+    };
 
-      iframeDoc.open();
-      iframeDoc.write(html);
-      iframeDoc.close();
-
-      await new Promise(resolve => setTimeout(resolve, 1200));
-
-      const element = iframeDoc.body;
-
-      const options = {
-        margin: 0,
-        filename: `Academic_CV_${studentName.replace(/\s+/g, "_")}_${new Date().getFullYear()}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-          allowTaint: true,
-          width: 794,
-          windowWidth: 794,
-          scrollX: 0,
-          scrollY: 0,
-        },
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait" as const,
-          compress: true,
-        },
-        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-      };
-
-      await window.html2pdf().set(options).from(element).save();
-      console.log('✅ PDF generated successfully');
-    } finally {
-      document.body.removeChild(iframe);
-    }
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 1500);
   };
 
   const generateCV = async (userId: string, studentName: string) => {
