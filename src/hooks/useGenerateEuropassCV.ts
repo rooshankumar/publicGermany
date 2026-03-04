@@ -3,11 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCVCompletion, CVCompletionStatus, formatValidationErrors, formatValidationWarnings } from "@/lib/cvValidation";
 
-declare global {
-  interface Window {
-    html2pdf?: any;
-  }
-}
+// Uses browser-native print for pixel-perfect PDF generation
 
 export function useGenerateEuropassCV() {
   const [isGenerating, setIsGenerating] = useState(false);
