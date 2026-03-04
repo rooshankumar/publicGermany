@@ -121,7 +121,6 @@ export default function AcademicCVGenerator() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [showPreview, setShowPreview] = useState(!isMobile);
-  const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
 
