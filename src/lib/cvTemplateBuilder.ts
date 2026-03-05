@@ -190,29 +190,43 @@ ${langRows}
     <div class="academic-meta">${[r.designation, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}${r.lor_link ? ` | <em>Download LOR Certificate</em>: <a href="${escapeHtml(r.lor_link)}">${escapeHtml(r.lor_link)}</a>` : ""}</div>
 </div>`).join("\n")}` : "";
 
-  const linkedinLine = personal.linkedin_url ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>` : "";
-  
-  const photoStyle = `object-fit: cover; object-position: ${photoPosition}; transform: scale(${photoZoom / 100});`;
-  const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
-  const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
+const linkedinLine = personal.linkedin_url
+  ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>`
+  : "";
 
-  // Build personal details lines - only show filled fields
-  const personalLines: string[] = [];
-  const line1Parts: string[] = [];
-  if (personal.passport_number) line1Parts.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
-  if (personal.date_of_birth) line1Parts.push(`<span class="label">DOB:</span> ${formatDateDMY(personal.date_of_birth)}`);
-  if (personal.nationality) line1Parts.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
-  if (personal.gender) line1Parts.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
-  if (line1Parts.length > 0) personalLines.push(`<div>${line1Parts.join(" | ")}</div>`);
-  
-  if (personal.place_of_birth) personalLines.push(`<div><span class="label">Place of Birth:</span> ${escapeHtml(personal.place_of_birth)}</div>`);
-  
-  const contactParts: string[] = [];
-  if (personal.phone) contactParts.push(`<span class="label">Phone:</span> ${escapeHtml(personal.phone)}`);
-  if (personal.email) contactParts.push(`<span class="label">Email:</span> <a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a>`);
-  if (contactParts.length > 0) personalLines.push(`<div>${contactParts.join(" | ")}</div>`);
-  
-  if (personal.address) personalLines.push(`<div><span class="label">Address:</span> ${escapeHtml(personal.address)}</div>`);
+const addressLine = personal.address
+  ? `<div><span class="label">Address:</span> ${escapeHtml(personal.address)}</div>`
+  : "";
+
+const photoStyle = `object-fit: cover; object-position: ${photoPosition}; transform: scale(${photoZoom / 100});`;
+const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
+const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
+
+// Build personal details lines - only show filled fields
+const personalLines: string[] = [];
+const line1Parts: string[] = [];
+
+if (personal.passport_number) line1Parts.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
+if (personal.date_of_birth) line1Parts.push(`<span class="label">DOB:</span> ${formatDateDMY(personal.date_of_birth)}`);
+if (personal.nationality) line1Parts.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
+if (personal.gender) line1Parts.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
+
+if (line1Parts.length > 0)
+  personalLines.push(`<div>${line1Parts.join(" | ")}</div>`);
+
+if (personal.place_of_birth)
+  personalLines.push(`<div><span class="label">Place of Birth:</span> ${escapeHtml(personal.place_of_birth)}</div>`);
+
+const contactParts: string[] = [];
+
+if (personal.phone)
+  contactParts.push(`<span class="label">Phone:</span> ${escapeHtml(personal.phone)}`);
+
+if (personal.email)
+  contactParts.push(`<span class="label">Email:</span> <a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a>`);
+
+if (contactParts.length > 0)
+  personalLines.push(`<div>${contactParts.join(" | ")}</div>`);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -301,12 +315,21 @@ ${langRows}
   color: #ffffff;
 }
 
-.label { 
-  font-weight: bold; 
-  color: #ffffff; 
-  text-transform: uppercase; 
-  font-size: 8.5pt; 
-  margin-right: 2px; 
+.personal-details-block div {
+  margin-bottom: 2px;
+}
+
+.label {
+  font-weight: 600;
+  color: inherit;
+  text-transform: none;
+  margin-right: 4px;
+}
+
+.personal-details-block span,
+.personal-details-block a {
+  color: inherit;
+  font-weight: normal;
 }
 
 /* clickable links in header */
@@ -384,10 +407,11 @@ ${langRows}
       <div class="name-col">
         <h1 class="name-text">${escapeHtml(personal.full_name)}</h1>
         <div class="header-divider"></div>
-        <div class="personal-details-block">
-          ${personalLines.join("\n          ")}
-          ${linkedinLine}
-        </div>
+       <div class="personal-details-block">
+  ${personalLines.join("\n          ")}
+  ${linkedinLine}
+  ${addressLine}
+</div>
       </div>
     </div>
   </div>
