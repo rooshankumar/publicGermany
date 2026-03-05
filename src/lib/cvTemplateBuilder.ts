@@ -239,12 +239,10 @@ ${langRows}
       position: relative;
     }
     /* ===== HEADER: full-width background ===== */
-.header-band {
+..header-band {
   background-color: ${headerBgColor};
   width: 100%;
-  padding: 18px 28px 14px 28px;
-  box-sizing: border-box;
-  color: #ffffff;
+  padding: 22px 28px 18px 28px;
 }
 
 .header-inner { 
