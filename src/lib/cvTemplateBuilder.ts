@@ -8,12 +8,11 @@ function escapeHtml(text: string | null | undefined): string {
 // Sanitize HTML - allow only safe formatting tags
 function sanitizeHtml(html: string | null | undefined): string {
   if (!html) return "";
-  // Allow only: <strong>, <em>, <b>, <i>, <br>, <div style="text-align:...">
   return String(html)
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "")
     .replace(/on\w+\s*=/gi, "")
-    .replace(/<(?!\/?(?:strong|em|b|i|br|div|span)\b)[^>]+>/gi, "");
+    .replace(/<(?!\/?(?:strong|em|b|i|br|div|span|ul|li)\b)[^>]+>/gi, "");
 }
 
 function formatDateDMY(dateStr: string | null): string {
@@ -96,6 +95,7 @@ export interface CVRecommendation {
   institution?: string;
   email?: string;
   contact?: string;
+  lor_link?: string;
 }
 
 export interface CVBuildOptions {
@@ -115,17 +115,17 @@ export function buildCVHtml(
   recommendations: CVRecommendation[] = [],
   options: CVBuildOptions = {}
 ): string {
-  const { headerBgColor = "#ffffff", photoPosition = "center", photoZoom = 100 } = options;
+  const { headerBgColor = "#004494", photoPosition = "center", photoZoom = 100 } = options;
 
-  const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join(", ");
+  const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join("  &nbsp;  ");
   const otherLangs = languages.filter(l => !l.mother_tongue);
 
   const eduHtml = educations.map(edu => `
 <div class="entry education-entry">
-  <div class="entry-header">
-    <div class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</div>
-    <div class="entry-date">${edu.start_year} – ${edu.end_year}</div>
-  </div>
+  <table class="entry-row-table"><tr>
+    <td class="entry-title-cell">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</td>
+    <td class="entry-date-cell">${edu.start_year} – ${edu.end_year}</td>
+  </tr></table>
   <div class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</div>
   ${edu.key_subjects ? `<div class="academic-meta"><strong>Core coursework:</strong> ${sanitizeHtml(edu.key_subjects)}</div>` : ""}
   <div class="academic-meta">
@@ -148,16 +148,16 @@ export function buildCVHtml(
     <div class="section-title">Work Experience</div>
     ${workExperiences.map(w => `
 <div class="entry work-entry">
-  <div class="entry-header">
-    <div class="entry-title">${escapeHtml(w.job_title).toUpperCase()}</div>
-    <div class="entry-date">${formatDateDMY(w.start_date)} – ${w.is_current ? "Present" : formatDateDMY(w.end_date)}</div>
-  </div>
+  <table class="entry-row-table"><tr>
+    <td class="entry-title-cell">${escapeHtml(w.job_title).toUpperCase()}</td>
+    <td class="entry-date-cell">${formatDateDMY(w.start_date)} – ${w.is_current ? "Present" : formatDateDMY(w.end_date)}</td>
+  </tr></table>
   <div class="sub-info">${escapeHtml(w.organisation)}${w.city_country ? `, ${escapeHtml(w.city_country)}` : ""}</div>
   ${w.description ? `<div class="academic-meta">${sanitizeHtml(w.description)}</div>` : ""}
 </div>`).join("\n")}` : "";
 
   const langRows = otherLangs.map(l => `
-<tr><td>${escapeHtml(l.language_name).toUpperCase()}</td><td>${l.listening || "—"}</td><td>${l.reading || "—"}</td><td>${l.writing || "—"}</td><td>${l.speaking || "—"}</td></tr>`).join("");
+<tr><td class="lang-name-cell">${escapeHtml(l.language_name).toUpperCase()}</td><td>${l.listening || "—"}</td><td>${l.reading || "—"}</td><td>${l.writing || "—"}</td><td>${l.speaking || "—"}</td></tr>`).join("");
 
   const langTableHtml = otherLangs.length > 0 ? `
 <table class="lang-table">
@@ -187,138 +187,173 @@ ${langRows}
     ${recommendations.map(r => `
 <div class="entry">
     <strong>${escapeHtml(r.name)}</strong>
-    <div class="academic-meta">${[r.designation, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}</div>
+    <div class="academic-meta">${[r.designation, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}${r.lor_link ? ` | <em>Download LOR Certificate</em>: <a href="${escapeHtml(r.lor_link)}">${escapeHtml(r.lor_link)}</a>` : ""}</div>
 </div>`).join("\n")}` : "";
 
-  const linkedinBlock = personal.linkedin_url ? `<div><span class="label">LinkedIn:</span><a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>` : "";
+  const linkedinLine = personal.linkedin_url ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>` : "";
   
   const photoStyle = `object-fit: cover; object-position: ${photoPosition}; transform: scale(${photoZoom / 100});`;
   const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
   const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
 
+  // Build personal details lines - only show filled fields
+  const personalLines: string[] = [];
+  const line1Parts: string[] = [];
+  if (personal.passport_number) line1Parts.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
+  if (personal.date_of_birth) line1Parts.push(`<span class="label">DOB:</span> ${formatDateDMY(personal.date_of_birth)}`);
+  if (personal.nationality) line1Parts.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
+  if (personal.gender) line1Parts.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
+  if (line1Parts.length > 0) personalLines.push(`<div>${line1Parts.join(" | ")}</div>`);
+  
+  if (personal.place_of_birth) personalLines.push(`<div><span class="label">Place of Birth:</span> ${escapeHtml(personal.place_of_birth)}</div>`);
+  
+  const contactParts: string[] = [];
+  if (personal.phone) contactParts.push(`<span class="label">Phone:</span> ${escapeHtml(personal.phone)}`);
+  if (personal.email) contactParts.push(`<span class="label">Email:</span> <a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a>`);
+  if (contactParts.length > 0) personalLines.push(`<div>${contactParts.join(" | ")}</div>`);
+  
+  if (personal.address) personalLines.push(`<div><span class="label">Address:</span> ${escapeHtml(personal.address)}</div>`);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="generator" content="PublicGermany-CV-Generator-v2">
+<meta name="cv-format" content="europass-academic">
+<meta name="cv-created" content="${new Date().toISOString()}">
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
     @page { size: A4; margin: 0; }
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { width: 100%; margin: 0; padding: 0; background: #f0f2f5; }
-    body { font-family: "Helvetica", "Arial", sans-serif; line-height: 1.3; color: #000; font-size: 10px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
+    body { font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif; line-height: 1.35; color: #000; font-size: 10.5px; }
     .cv-container {
       width: 794px;
       min-height: 1123px;
-      margin: 16px auto;
-      padding: 20px 25px 24px 25px;
+      margin: 0 auto;
+      padding: 0;
       background: #fff;
       box-sizing: border-box;
       word-wrap: break-word;
       overflow-wrap: anywhere;
-      box-shadow: 0 0 4px rgba(0,0,0,0.08);
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
+      position: relative;
     }
-    .cv-main {
-      flex: 1;
+    /* ===== HEADER: full-width background ===== */
+    .header-band {
+      background-color: ${headerBgColor};
+      width: 100%;
+      padding: 18px 28px 14px 28px;
+      box-sizing: border-box;
     }
-    .cv-footer {
-      margin-top: 18px;
-    }
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; background-color: ${headerBgColor}; padding: 0; }
-    .header-row { display: flex; align-items: center; gap: 18px; padding: 14px 18px; }
-    .profile-col { flex: 0 0 auto; }
-    .name-col { flex: 1 1 auto; }
-    .profile-pic-wrapper { width: 90px; height: 90px; border-radius: 50%; overflow: hidden; border: 3px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.1); }
+    .header-inner { display: table; width: 100%; }
+    .profile-col { display: table-cell; vertical-align: top; width: 100px; padding-right: 16px; }
+    .name-col { display: table-cell; vertical-align: top; }
+    .profile-pic-wrapper { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; border: 3px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
     .profile-pic-circle { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
     .name-text { font-size: 26px; font-weight: 700; color: #000; text-transform: uppercase; margin: 0 0 4px 0; line-height: 1.15; letter-spacing: 0.5px; }
-    .header-divider { height: 1px; background-color: #004a99; width: 100%; margin: 4px 0 8px 0; }
-    .personal-details-block { line-height: 1.35; font-size: 10px; }
-    .label { font-weight: bold; color: #333; text-transform: uppercase; font-size: 8pt; margin-right: 3px; }
-    .section-title { font-size: 12px; font-weight: 700; color: #004a99; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #d5d5d5; margin: 18px 0 8px 0; padding-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-    .section-title::before { content: "•"; font-size: 14px; line-height: 1; }
-    .entry-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-    .entry-title { font-weight: 700; font-size: 11px; text-align: left; }
-    .entry-date { font-weight: 700; font-size: 10px; text-align: right; white-space: nowrap; min-width: 110px; }
-    .entry { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid-page; }
+    .header-divider { height: 1.5px; background-color: #004a99; width: 100%; margin: 5px 0 8px 0; }
+    .personal-details-block { line-height: 1.4; font-size: 10.5px; }
+    .label { font-weight: bold; color: #333; text-transform: uppercase; font-size: 8.5pt; margin-right: 2px; }
+    /* ===== BODY CONTENT ===== */
+    .cv-body { padding: 0 28px 20px 28px; }
+    .section-title { font-size: 12px; font-weight: 700; color: #004a99; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #d5d5d5; margin: 16px 0 8px 0; padding-bottom: 5px; }
+    .section-title::before { content: "• "; font-size: 14px; line-height: 1; }
+    /* Entry header using table for no-flex alignment */
+    .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
+    .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
+    .entry-title-cell { font-weight: 700; font-size: 11px; text-align: left; }
+    .entry-date-cell { font-weight: 700; font-size: 10px; text-align: right; white-space: nowrap; width: 160px; }
+    .entry { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
     .sub-info { font-style: italic; color: #444; margin: 1px 0; font-size: 10px; }
-    .academic-meta { font-size: 9px; color: #555; margin: 2px 0; }
-    .lang-table { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; border: 1px solid #cccccc; }
-    .lang-table th, .lang-table td { border: 1px solid #cccccc; padding: 4px; text-align: center; font-size: 9px; }
-    .lang-table th { background-color: #f3f4f6; font-weight: 700; }
-    .mother-tongue-text { margin: 2px 0; font-size: 10px; }
-    .bullet-list { margin: 4px 0 4px 18px; font-size: 10px; line-height: 1.4; padding-left: 0; }
-    .bullet-list li { margin-bottom: 4px; }
-    .sig-area { margin-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9px; }
-    .sig-img { max-width: 120px; height: auto; border-bottom: 0.5pt solid #000; filter: grayscale(1); display: block; margin: 0 auto 2px; }
-    .signature img { width: 120px; height: auto; }
+    .academic-meta { font-size: 9.5px; color: #444; margin: 2px 0; line-height: 1.4; }
+    /* Language table */
+    .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+    .lang-table th, .lang-table td { border: 1px solid #bbb; padding: 5px 8px; text-align: center; font-size: 10px; }
+    .lang-table th { background-color: #f0f2f5; font-weight: 700; font-size: 9.5px; }
+    .lang-name-cell { font-weight: 600; text-align: center; }
+    .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
+    .bullet-list { margin: 4px 0 4px 18px; font-size: 10px; line-height: 1.5; padding-left: 0; }
+    .bullet-list li { margin-bottom: 3px; }
+    /* Footer: signature + page number only */
+    .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; }
+    .sig-table { width: 100%; border-collapse: collapse; }
+    .sig-table td { padding: 0; border: none; vertical-align: bottom; }
+    .sig-left-cell { text-align: left; width: 50%; font-size: 9px; }
+    .sig-right-cell { text-align: right; width: 50%; }
+    .sig-img { max-width: 120px; height: auto; filter: grayscale(1); display: block; margin-left: auto; }
+    .sig-name { font-weight: bold; font-size: 10px; text-align: right; margin-top: 2px; }
+    .page-footer { text-align: right; font-size: 8px; color: #888; margin-top: 8px; padding-top: 4px; border-top: 0.5pt solid #ddd; }
     table { width: 100%; border-collapse: collapse; }
     img { max-width: 100%; height: auto; }
-    .section { page-break-inside: avoid; break-inside: avoid; }
-    .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid-page; }
     a { color: #004a99; text-decoration: none; }
-    .page-footer { text-align: center; font-size: 8px; color: #999; margin-top: 10px; padding-top: 6px; border-top: 0.5pt solid #eee; }
+    .section { page-break-inside: avoid; break-inside: avoid; }
+    .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
+
     @media print {
-      html, body { width: 210mm; height: 297mm; margin: 0; padding: 0; background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; zoom: 0.9; }
-      .cv-container {
-        width: 210mm;
-        min-height: 297mm;
-        margin: 0 auto;
-        padding: 14mm 16mm 16mm 16mm;
-        background: #ffffff;
-        box-sizing: border-box;
-        box-shadow: none;
-        border-radius: 0;
-      }
+      html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
+      .cv-container { width: 210mm; min-height: 297mm; margin: 0; box-shadow: none; border-radius: 0; }
+      .header-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+      .page-footer::after { content: counter(page); }
+    }
+    @media screen {
+      .cv-container { box-shadow: 0 0 6px rgba(0,0,0,0.1); border-radius: 4px; margin: 16px auto; }
     }
 </style>
 </head>
 <body>
+<!-- PublicGermany CV Metadata (machine-readable) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "${escapeHtml(personal.full_name)}",
+  "generator": "PublicGermany Europass CV Generator",
+  "version": "2.0",
+  "dateCreated": "${new Date().toISOString()}"
+}
+</script>
 <div class="cv-container">
-  <div class="cv-main">
-    <table class="header-table"><tr>
-        <td class="profile-col">${profilePicBlock}</td>
-        <td class="name-col">
-            <h1 class="name-text">${escapeHtml(personal.full_name)}</h1>
-            <div class="header-divider"></div>
-            <div class="personal-details-block">
-                <div><span class="label">Passport:</span>${escapeHtml(personal.passport_number)} | <span class="label">DOB:</span>${formatDateDMY(personal.date_of_birth)} | <span class="label">Nationality:</span>${escapeHtml(personal.nationality)} | <span class="label">Gender:</span>${escapeHtml(personal.gender)}</div>
-                <div><span class="label">Place of Birth:</span>${escapeHtml(personal.place_of_birth)}</div>
-                <div><span class="label">Phone:</span>${escapeHtml(personal.phone)} | <span class="label">Email:</span><a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a></div>
-                <div><span class="label">Address:</span>${escapeHtml(personal.address)}</div>
-                ${linkedinBlock}
-            </div>
-        </td>
-    </tr></table>
+  <!-- HEADER BAND -->
+  <div class="header-band">
+    <div class="header-inner">
+      ${personal.avatar_url ? `<div class="profile-col">${profilePicBlock}</div>` : ""}
+      <div class="name-col">
+        <h1 class="name-text">${escapeHtml(personal.full_name)}</h1>
+        <div class="header-divider"></div>
+        <div class="personal-details-block">
+          ${personalLines.join("\n          ")}
+          ${linkedinLine}
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- CV BODY -->
+  <div class="cv-body">
     <div class="section-title">Education and Training</div>
     ${eduHtml}
 
-    ${pubHtml}
     ${workHtml}
+    ${pubHtml}
 
     <div class="section-title">Language Skills</div>
-    ${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong> ${motherTongues}</div>` : ""}
+    ${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}
     ${langTableHtml}
 
     ${certHtml}
     ${customHtml}
     ${recHtml}
-
   </div>
+
+  <!-- FOOTER: signature + page -->
   <div class="cv-footer">
-    <div class="sig-area">
-      <div class="sig-left">
-        <div>Date: ${formatDateDMY(personal.signature_date || new Date().toISOString())}</div>
-        <div>Place: ${escapeHtml(personal.place_of_birth)}</div>
-      </div>
-      <div class="sig-right">
+    <table class="sig-table"><tr>
+      <td class="sig-left-cell"></td>
+      <td class="sig-right-cell">
         ${signatureBlock}
-        <div style="font-weight: bold;">(${escapeHtml(personal.full_name)})</div>
-      </div>
-    </div>
-    <div class="page-footer">Curriculum Vitae — ${escapeHtml(personal.full_name)}</div>
+        <div class="sig-name">(${escapeHtml(personal.full_name)})</div>
+      </td>
+    </tr></table>
   </div>
 </div>
 </body>
