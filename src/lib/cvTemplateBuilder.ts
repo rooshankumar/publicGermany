@@ -239,7 +239,7 @@ ${langRows}
       position: relative;
     }
     /* ===== HEADER: full-width background ===== */
-..header-band {
+.header-band {
   background-color: ${headerBgColor};
   width: 100%;
   padding: 22px 28px 18px 28px;
@@ -279,27 +279,26 @@ ${langRows}
   object-fit: cover; 
 }
 
-.name-text { 
-  font-size: 26px; 
-  font-weight: 700; 
-  color: #ffffff; 
-  text-transform: uppercase; 
-  margin: 0 0 4px 0; 
-  line-height: 1.15; 
-  letter-spacing: 0.5px; 
+.name-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  line-height: 1.2;
+  letter-spacing: 1px;
 }
 
-.header-divider { 
-  height: 1.5px; 
-  background-color: rgba(255,255,255,0.7); 
-  width: 100%; 
-  margin: 5px 0 8px 0; 
+.header-divider {
+  height: 1px;
+  background-color: rgba(255,255,255,0.6);
+  margin: 6px 0 10px 0;
 }
 
-.personal-details-block { 
-  line-height: 1.4; 
-  font-size: 10.5px; 
-  color: #ffffff; 
+.personal-details-block {
+  line-height: 1.6;
+  font-size: 10px;
+  color: #ffffff;
 }
 
 .label { 
