@@ -174,13 +174,36 @@ ${langRows}
     }).join("")}
     </ul>` : "";
 
-  const customHtml = customSections.filter(s => s.items.length > 0).map(section => `
+const customHtml = customSections
+  .filter(s => s.items.length > 0)
+  .map(section => `
     <div class="section-title">${escapeHtml(section.title)}</div>
-    <ul class="bullet-list">
-    ${section.items.map(item => 
-      `<li>${escapeHtml(item.label)}${item.description ? ` — ${sanitizeHtml(item.description)}` : ""}</li>`
-    ).join("")}
-    </ul>`).join("\n");
+
+    ${section.items.map(item => {
+
+      // GROUPED FORMAT
+      if (item.content) {
+        return `
+        <div class="entry">
+          <strong>${escapeHtml(item.label)}</strong>: ${escapeHtml(item.content)}
+        </div>`;
+      }
+
+      // TITLE + DESCRIPTION
+      if (item.description) {
+        return `
+        <div class="entry">
+          <strong>${escapeHtml(item.label)}</strong><br>
+          ${sanitizeHtml(item.description)}
+        </div>`;
+      }
+
+      // SIMPLE
+      return `<div class="entry">${escapeHtml(item.label)}</div>`;
+
+    }).join("")}
+
+  `).join("\n");
 
   const recHtml = recommendations.length > 0 ? `
     <div class="section-title">Recommendations / Referees</div>
