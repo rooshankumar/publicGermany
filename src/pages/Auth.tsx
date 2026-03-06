@@ -90,6 +90,17 @@ const Auth = () => {
     // Note: If successful, the user will be redirected, so we don't need to set loading to false
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!forgotEmail) { setError('Please enter your email'); return; }
+    setForgotLoading(true);
+    const { error } = await resetPasswordForEmail(forgotEmail);
+    if (error) { setError(error); } else { setMessage('Password reset link sent! Check your email.'); }
+    setForgotLoading(false);
+  };
+
   const features = [
     { icon: GraduationCap, text: "APS Certification Guidance" },
     { icon: Globe, text: "University Application Support" },
