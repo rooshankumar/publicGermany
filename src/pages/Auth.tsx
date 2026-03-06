@@ -223,6 +223,9 @@ const Auth = () => {
                           className="h-11"
                         />
                       </div>
+                      <div className="text-right">
+                        <button type="button" className="text-xs text-primary hover:underline" onClick={() => { setShowForgotPassword(true); setError(null); setMessage(null); }}>Forgot Password?</button>
+                      </div>
                       
                       {error && (
                         <Alert variant="destructive">
