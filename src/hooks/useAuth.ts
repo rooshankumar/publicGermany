@@ -347,6 +347,7 @@ export const useAuth = () => {
     signInWithGoogle,
     signOut,
     updateProfile,
+    resetPasswordForEmail,
     refetchProfile: () => user && fetchProfile(user.id),
   };
 };
