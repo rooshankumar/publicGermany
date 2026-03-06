@@ -181,14 +181,6 @@ const customHtml = customSections
 
     ${section.items.map(item => {
 
-      // GROUPED FORMAT
-      if (item.content) {
-        return `
-        <div class="entry">
-          <strong>${escapeHtml(item.label)}</strong>: ${escapeHtml(item.content)}
-        </div>`;
-      }
-
       // TITLE + DESCRIPTION
       if (item.description) {
         return `
