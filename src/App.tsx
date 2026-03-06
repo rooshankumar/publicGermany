@@ -46,7 +46,8 @@ const Reviews = lazy(() => import("./pages/Reviews"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const AcademicCVGenerator = lazy(() => import("./pages/AcademicCVGenerator"));
-import Notifications from "./pages/Notifications";
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,6 +121,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/dashboard" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/converter" element={<Converter />} />

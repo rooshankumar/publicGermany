@@ -252,7 +252,7 @@ if (contactParts.length > 0)
 <meta name="cv-created" content="${new Date().toISOString()}">
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
-    @page { size: A4; margin: 0; }
+    @page { size: A4; margin: 10mm 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body { font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif; line-height: 1.35; color: #000; font-size: 10.5px; }
@@ -358,7 +358,7 @@ if (contactParts.length > 0)
 }
     /* ===== BODY CONTENT ===== */
     .cv-body { padding: 0 28px 20px 28px; }
-    .section-title { font-size: 12px; font-weight: 700; color: #004a99; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #d5d5d5; margin: 16px 0 8px 0; padding-bottom: 5px; }
+    .section-title { font-size: 12px; font-weight: 700; color: #004a99; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #d5d5d5; margin: 16px 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     .section-title::before { content: "• "; font-size: 14px; line-height: 1; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
@@ -369,15 +369,15 @@ if (contactParts.length > 0)
     .sub-info { font-style: italic; color: #444; margin: 1px 0; font-size: 10px; }
     .academic-meta { font-size: 9.5px; color: #444; margin: 2px 0; line-height: 1.4; }
     /* Language table */
-    .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
-    .lang-table th, .lang-table td { border: 1px solid #bbb; padding: 5px 8px; text-align: center; font-size: 10px; }
+    .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
+    .lang-table th, .lang-table td { border: 1px solid #bbb; padding: 5px 8px; text-align: center; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
     .lang-table th { background-color: #f0f2f5; font-weight: 700; font-size: 9.5px; }
     .lang-name-cell { font-weight: 600; text-align: center; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
-    .bullet-list { margin: 4px 0 4px 18px; font-size: 10px; line-height: 1.5; padding-left: 0; }
+    .bullet-list { margin: 4px 0 4px 18px; font-size: 10px; line-height: 1.5; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
     .bullet-list li { margin-bottom: 3px; }
     /* Footer: signature + page number only */
-    .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; }
+    .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; page-break-inside: avoid; break-inside: avoid; }
     .sig-table { width: 100%; border-collapse: collapse; }
     .sig-table td { padding: 0; border: none; vertical-align: bottom; }
     .sig-left-cell { text-align: left; width: 50%; font-size: 9px; }
@@ -388,14 +388,19 @@ if (contactParts.length > 0)
     table { width: 100%; border-collapse: collapse; }
     img { max-width: 100%; height: auto; }
     a { color: #004a99; text-decoration: none; }
+    /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
+    /* Keep section titles with their following content */
+    .section-title + .entry, .section-title + .bullet-list, .section-title + .lang-table, .section-title + .mother-tongue-text { page-break-before: avoid; break-before: avoid; }
 
     @media print {
       html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
-      .cv-container { width: 210mm; min-height: 297mm; margin: 0; box-shadow: none; border-radius: 0; }
+      .cv-container { width: 210mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
       .header-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-      .page-footer::after { content: counter(page); }
+      .cv-body { padding-bottom: 10mm; }
+      /* Orphan/widow control */
+      p, li, .entry, .academic-meta { orphans: 3; widows: 3; }
     }
     @media screen {
       .cv-container { box-shadow: 0 0 6px rgba(0,0,0,0.1); border-radius: 4px; margin: 16px auto; }

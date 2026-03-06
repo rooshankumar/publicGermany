@@ -10,16 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen } from 'lucide-react';
+import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen, ArrowLeft } from 'lucide-react';
 import logos from '@/assets/logos.png';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
-  const { signIn, signUp, signInWithGoogle, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPasswordForEmail, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +90,17 @@ const Auth = () => {
     // Note: If successful, the user will be redirected, so we don't need to set loading to false
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!forgotEmail) { setError('Please enter your email'); return; }
+    setForgotLoading(true);
+    const { error } = await resetPasswordForEmail(forgotEmail);
+    if (error) { setError(error); } else { setMessage('Password reset link sent! Check your email.'); }
+    setForgotLoading(false);
+  };
+
   const features = [
     { icon: GraduationCap, text: "APS Certification Guidance" },
     { icon: Globe, text: "University Application Support" },
@@ -149,6 +162,30 @@ const Auth = () => {
 
           {/* Right Side - Auth Forms */}
           <div className="w-full max-w-md mx-auto">
+            {showForgotPassword ? (
+              <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">Reset Password</CardTitle>
+                  <CardDescription>Enter your email to receive a reset link</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="forgot-email">Email Address</Label>
+                      <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="your@email.com" required className="h-11" />
+                    </div>
+                    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                    {message && <Alert className="border-success/20 bg-success/10"><AlertDescription className="text-success">{message}</AlertDescription></Alert>}
+                    <Button type="submit" className="w-full h-11" disabled={forgotLoading}>
+                      {forgotLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send Reset Link'}
+                    </Button>
+                    <Button type="button" variant="ghost" className="w-full" onClick={() => { setShowForgotPassword(false); setError(null); setMessage(null); }}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back to Sign In
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : (
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
@@ -185,6 +222,9 @@ const Auth = () => {
                           required 
                           className="h-11"
                         />
+                      </div>
+                      <div className="text-right">
+                        <button type="button" className="text-xs text-primary hover:underline" onClick={() => { setShowForgotPassword(true); setError(null); setMessage(null); }}>Forgot Password?</button>
                       </div>
                       
                       {error && (
@@ -393,6 +433,7 @@ const Auth = () => {
                 </Card>
               </TabsContent>
             </Tabs>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
