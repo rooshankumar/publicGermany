@@ -432,6 +432,7 @@ const Auth = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+            </Tabs>
             )}
 
             <div className="mt-6 text-center">
