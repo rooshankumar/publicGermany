@@ -278,13 +278,24 @@ export const useAuth = () => {
     }
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  };
+
   const signOut = async () => {
     // Try to sign out from Supabase first. Even if it fails with session-missing, proceed to clear local state.
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
         const msg = String((error as any)?.message || '').toLowerCase();
-        // Ignore expected "no active session" conditions
         if (msg.includes('session missing') || msg.includes('no active session')) {
           if (import.meta.env.MODE !== 'production') {
             console.debug('Sign out: no active Supabase session, proceeding to clear local state');
@@ -294,16 +305,13 @@ export const useAuth = () => {
         }
       }
     } catch (e) {
-      // Network or other unexpected error; continue clearing local state to ensure UI signs out
       console.warn('Sign out request threw, proceeding anyway:', e);
     } finally {
-      // Clear local state and app-specific cached data
       setUser(null);
       setSession(null);
       setProfile(null);
       try { 
         localStorage.removeItem('pg_profile');
-        // Clear all Supabase auth storage to force re-authentication
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
       } catch {}
