@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen } from 'lucide-react';
+import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen, ArrowLeft } from 'lucide-react';
 import logos from '@/assets/logos.png';
 import { supabase } from '@/integrations/supabase/client';
 
