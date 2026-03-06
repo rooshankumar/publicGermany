@@ -162,6 +162,30 @@ const Auth = () => {
 
           {/* Right Side - Auth Forms */}
           <div className="w-full max-w-md mx-auto">
+            {showForgotPassword ? (
+              <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">Reset Password</CardTitle>
+                  <CardDescription>Enter your email to receive a reset link</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="forgot-email">Email Address</Label>
+                      <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="your@email.com" required className="h-11" />
+                    </div>
+                    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                    {message && <Alert className="border-success/20 bg-success/10"><AlertDescription className="text-success">{message}</AlertDescription></Alert>}
+                    <Button type="submit" className="w-full h-11" disabled={forgotLoading}>
+                      {forgotLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send Reset Link'}
+                    </Button>
+                    <Button type="button" variant="ghost" className="w-full" onClick={() => { setShowForgotPassword(false); setError(null); setMessage(null); }}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> Back to Sign In
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : (
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
