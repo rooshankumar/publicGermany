@@ -46,7 +46,7 @@ const Reviews = lazy(() => import("./pages/Reviews"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const AcademicCVGenerator = lazy(() => import("./pages/AcademicCVGenerator"));
-import Notifications from "./pages/Notifications";
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
