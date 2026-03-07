@@ -33,6 +33,15 @@ const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; 
   { label: "Expanded", value: "expanded", hint: "Slightly larger text and spacing to fill short CVs." },
 ];
 
+const REORDERABLE_SECTIONS: Array<{ key: NonNullable<CVBuildOptions["sectionOrder"]>[number]; label: string }> = [
+  { key: "work", label: "Work Experience" },
+  { key: "publications", label: "Research Publications" },
+  { key: "languages", label: "Language Skills" },
+  { key: "certifications", label: "Certifications" },
+  { key: "custom", label: "Custom Sections" },
+  { key: "recommendations", label: "Recommendations" },
+];
+
 const SECTION_TIPS: Record<string, string> = {
   personal: "Include all details as they appear on your passport. This helps universities verify your identity.",
   education: "List degrees in reverse chronological order. Include ECTS/credit equivalents and grading scale.",
@@ -250,8 +259,14 @@ export default function AcademicCVGenerator() {
 
   const [photoPosition, setPhotoPosition] = useState("center");
   const [photoZoom, setPhotoZoom] = useState(100);
+  const [photoPositionX, setPhotoPositionX] = useState(50);
+  const [photoPositionY, setPhotoPositionY] = useState(50);
   const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
   const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
+  const [styleOptionsOpen, setStyleOptionsOpen] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
+    ["work", "publications", "languages", "certifications", "custom", "recommendations"],
+  );
 
   const [personal, setPersonal] = useState<CVPersonalInfo>({
     full_name: "", passport_number: "", date_of_birth: "", nationality: "",
@@ -307,13 +322,16 @@ export default function AcademicCVGenerator() {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.photoPosition) setPhotoPosition(data.buildOptions.photoPosition);
       if (data.buildOptions.photoZoom) setPhotoZoom(data.buildOptions.photoZoom);
+      if (typeof data.buildOptions.photoPositionX === "number") setPhotoPositionX(data.buildOptions.photoPositionX);
+      if (typeof data.buildOptions.photoPositionY === "number") setPhotoPositionY(data.buildOptions.photoPositionY);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
+      if (data.buildOptions.sectionOrder?.length) setSectionOrder(data.buildOptions.sectionOrder);
     }
   }, []);
 
   const buildOptions = useMemo<CVBuildOptions>(
-    () => ({ headerBgColor, photoPosition, photoZoom, density }),
-    [headerBgColor, photoPosition, photoZoom, density],
+    () => ({ headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder }),
+    [headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder],
   );
 
   const rawHtml = useMemo(() =>
@@ -485,9 +503,12 @@ export default function AcademicCVGenerator() {
       {/* Header Color Picker */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">CV Style Options</CardTitle>
+          <button type="button" className="w-full flex items-center justify-between" onClick={() => setStyleOptionsOpen(v => !v)}>
+            <CardTitle className="text-base">CV Style Options</CardTitle>
+            <ChevronDown className={`w-4 h-4 transition-transform ${styleOptionsOpen ? "rotate-180" : ""}`} />
+          </button>
         </CardHeader>
-        <CardContent>
+        {styleOptionsOpen && <CardContent>
           <Label className="text-xs mb-2 block">Header Background Color (Select one)</Label>
           <div className="space-y-1.5">
             {HEADER_COLORS.map(c => (
@@ -560,7 +581,43 @@ export default function AcademicCVGenerator() {
               ))}
             </div>
           </div>
-        </CardContent>
+
+          <div className="mt-4">
+            <Label className="text-xs mb-2 block">Section Order (after Education)</Label>
+            <div className="space-y-1.5">
+              {sectionOrder.map((key, index) => {
+                const label = REORDERABLE_SECTIONS.find(section => section.key === key)?.label || key;
+                return (
+                  <div key={key} className="flex items-center justify-between border rounded-md px-2 py-1.5">
+                    <span className="text-xs">{label}</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={index === 0}
+                        onClick={() => setSectionOrder(prev => moveUp(prev, index))}
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={index === sectionOrder.length - 1}
+                        onClick={() => setSectionOrder(prev => moveDown(prev, index))}
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>}
       </Card>
 
       {/* Personal Info */}
@@ -603,6 +660,14 @@ export default function AcademicCVGenerator() {
                     <Label className="text-xs whitespace-nowrap">Zoom:</Label>
                     <Slider value={[photoZoom]} onValueChange={v => setPhotoZoom(v[0])} min={100} max={200} step={5} className="w-32" />
                     <span className="text-xs text-muted-foreground">{photoZoom}%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Face Area (Horizontal)</Label>
+                    <Slider value={[photoPositionX]} onValueChange={v => setPhotoPositionX(v[0])} min={0} max={100} step={1} className="w-40" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Face Area (Vertical)</Label>
+                    <Slider value={[photoPositionY]} onValueChange={v => setPhotoPositionY(v[0])} min={0} max={100} step={1} className="w-40" />
                   </div>
                 </div>
               )}
@@ -844,7 +909,7 @@ export default function AcademicCVGenerator() {
       {/* Recommendations */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Recommendations / Referees <SectionTip tipKey="recommendations" /></CardTitle>
+          <CardTitle className="text-base flex items-center">Recommendations <SectionTip tipKey="recommendations" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">

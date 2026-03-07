@@ -197,7 +197,10 @@ export interface CVBuildOptions {
   headerBgColor?: string;
   photoPosition?: string;
   photoZoom?: number;
+  photoPositionX?: number;
+  photoPositionY?: number;
   density?: "compact" | "standard" | "expanded";
+  sectionOrder?: Array<"work" | "publications" | "languages" | "certifications" | "custom" | "recommendations">;
 }
 
 export function buildCVHtml(
@@ -211,7 +214,15 @@ export function buildCVHtml(
   recommendations: CVRecommendation[] = [],
   options: CVBuildOptions = {}
 ): string {
-  const { headerBgColor = "#154a8a", photoPosition = "center", photoZoom = 100, density = "standard" } = options;
+  const {
+    headerBgColor = "#154a8a",
+    photoPosition = "center",
+    photoZoom = 100,
+    photoPositionX = 50,
+    photoPositionY = photoPosition === "top" ? 20 : photoPosition === "bottom" ? 80 : 50,
+    density = "standard",
+    sectionOrder = ["work", "publications", "languages", "certifications", "custom", "recommendations"],
+  } = options;
 
   const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join("  &nbsp;  ");
   const otherLangs = languages.filter(l => !l.mother_tongue);
@@ -231,6 +242,7 @@ export function buildCVHtml(
 </div>`).join("\n");
 
   const pubHtml = publications.length > 0 ? `
+    <div class="section publications-section">
     <div class="section-title">Research Publications</div>
     ${publications.map(pub => `
 <div class="entry research-entry">
@@ -238,7 +250,8 @@ export function buildCVHtml(
   <div class="academic-meta">
     ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}">${escapeHtml(pub.doi_url)}</a>` : ""}
   </div>
-</div>`).join("\n")}` : "";
+  </div>`).join("\n")}
+    </div>` : "";
 
   const workHtml = workExperiences.length > 0 ? `
     <div class="section work-section">
@@ -264,13 +277,15 @@ ${langRows}
 </table>` : "";
 
   const certHtml = certifications.length > 0 ? `
+    <div class="section certifications-section">
     <div class="section-title">Certifications</div>
     <ul class="bullet-list">
     ${certifications.map(c => {
       const certDate = formatMonthYear(c.date);
       return `<li>${escapeHtml(c.title)}${c.institution ? ` | ${escapeHtml(c.institution)}` : ""}${certDate ? ` | ${certDate}` : ""}</li>`;
     }).join("")}
-    </ul>` : "";
+    </ul>
+    </div>` : "";
 
 const customHtml = customSections
   .filter(s => s.items.length > 0)
@@ -308,7 +323,7 @@ const customHtml = customSections
 
   const recHtml = recommendations.length > 0 ? `
     <div class="section referees-section">
-    <div class="section-title">Recommendations / Referees</div>
+    <div class="section-title">Recommendations</div>
     ${recommendations.map(r => `
 <div class="entry">
     <div class="ref-row-1"><strong>${escapeHtml(r.name)}</strong>${[r.designation, r.department, r.institution].filter(Boolean).length ? `, ${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}` : ""}</div>
@@ -324,7 +339,7 @@ const addressLine = personal.address
   ? `<div><span class="label">Address:</span> ${escapeHtml(personal.address)}</div>`
   : "";
 
-const photoStyle = `object-fit: cover; object-position: ${photoPosition}; transform: scale(${photoZoom / 100});`;
+const photoStyle = `object-fit: cover; object-position: ${photoPositionX}% ${photoPositionY}%; transform: scale(${photoZoom / 100});`;
 const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
 const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
 
@@ -478,13 +493,13 @@ if (contactParts.length > 0)
 }
 
 .personal-details-block {
-  line-height: 1.55;
-  font-size: 10.2px;
+  line-height: 1.7;
+  font-size: 11.1px;
   color: #ffffff;
 }
 
 .personal-details-block div {
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .label {
@@ -541,7 +556,7 @@ if (contactParts.length > 0)
       break-inside: avoid;
     }
     .bullet-list li, .work-bullet-list li, .core-coursework-list li {
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       line-height: 1.55;
       font-size: 10px;
       color: #111;
@@ -635,18 +650,15 @@ if (contactParts.length > 0)
     ${eduHtml}
     </div>
 
-    ${workHtml}
-    ${pubHtml}
-
-    <div class="section language-section">
-    <div class="section-title">Language Skills</div>
-    ${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}
-    ${langTableHtml}
-    </div>
-
-    ${certHtml}
-    ${customHtml}
-    ${recHtml}
+    ${sectionOrder.map(section => {
+      if (section === "work") return workHtml;
+      if (section === "publications") return pubHtml;
+      if (section === "languages") return `<div class="section language-section"><div class="section-title">Language Skills</div>${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}${langTableHtml}</div>`;
+      if (section === "certifications") return certHtml;
+      if (section === "custom") return customHtml;
+      if (section === "recommendations") return recHtml;
+      return "";
+    }).join("\n")}
   </div>
 
   <!-- FOOTER: signature + page -->
