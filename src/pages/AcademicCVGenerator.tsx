@@ -349,17 +349,48 @@ export default function AcademicCVGenerator() {
         throw new Error("Failed to render CV content for PDF export.");
       }
 
-      const [{ jsPDF }] = await Promise.all([import("jspdf")]);
+      cvElement.classList.add("pdf-export");
+
+      const images = Array.from(cvElement.querySelectorAll("img"));
+      await Promise.all(images.map(img => {
+        if ((img as HTMLImageElement).complete) return Promise.resolve();
+        return new Promise<void>(resolve => {
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        });
+      }));
+
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
       const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
 
-      await new Promise<void>((resolve) => {
-        doc.html(cvElement, {
-          margin: [0, 0, 0, 0],
-          autoPaging: "text",
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          callback: () => resolve(),
-        });
+      const canvas = await html2canvas(cvElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: cvElement.scrollWidth,
+        windowWidth: cvElement.scrollWidth,
       });
+
+      const margin = 8;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const printableWidth = pageWidth - margin * 2;
+      const printableHeight = pageHeight - margin * 2;
+      const imageHeight = (canvas.height * printableWidth) / canvas.width;
+      const imageData = canvas.toDataURL("image/jpeg", 0.98);
+
+      let heightLeft = imageHeight;
+      let position = margin;
+
+      doc.addImage(imageData, "JPEG", margin, position, printableWidth, imageHeight, undefined, "FAST");
+      heightLeft -= printableHeight;
+
+      while (heightLeft > 0) {
+        position = margin - (imageHeight - heightLeft);
+        doc.addPage();
+        doc.addImage(imageData, "JPEG", margin, position, printableWidth, imageHeight, undefined, "FAST");
+        heightLeft -= printableHeight;
+      }
 
       const safeName = (personal.full_name || "candidate")
         .trim()

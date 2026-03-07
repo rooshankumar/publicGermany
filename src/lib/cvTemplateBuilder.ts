@@ -351,6 +351,10 @@ if (contactParts.length > 0)
 .profile-pic-wrapper { 
   width: 88px; 
   height: 88px; 
+  min-width: 88px;
+  min-height: 88px;
+  max-width: 88px;
+  max-height: 88px;
   border-radius: 50%; 
   overflow: hidden; 
   border: 3px solid #ffffff; 
@@ -358,11 +362,14 @@ if (contactParts.length > 0)
 }
 
 .profile-pic-circle { 
-  width: 100%; 
-  height: 100%; 
+  width: 88px !important; 
+  height: 88px !important; 
+  max-width: 88px !important;
+  max-height: 88px !important;
   border-radius: 50%; 
   display: block; 
   object-fit: cover; 
+  transform-origin: center center;
 }
 
 .name-text {
@@ -450,6 +457,17 @@ if (contactParts.length > 0)
     /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
+
+    .pdf-export { width: 794px !important; min-height: 1123px !important; }
+    .pdf-export .section,
+    .pdf-export .entry,
+    .pdf-export .lang-table,
+    .pdf-export .bullet-list,
+    .pdf-export .cv-footer,
+    .pdf-export .section-title {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
     /* Keep section titles with their following content */
     .section-title + .entry, .section-title + .bullet-list, .section-title + .lang-table, .section-title + .mother-tongue-text { page-break-before: avoid; break-before: avoid; }
 
