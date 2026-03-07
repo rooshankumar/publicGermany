@@ -429,9 +429,10 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 <meta name="generator" content="PublicGermany-CV-Generator-v2">
 <meta name="cv-format" content="europass-academic">
 <meta name="cv-created" content="${new Date().toISOString()}">
+<meta name="pgcv-meta" content="${escapeHtml(metadataText)}">
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
-    @page { size: A4; margin: 0; }
+    @page { size: A4; margin: 22mm 18mm 22mm 18mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; user-select: text; -webkit-user-select: text; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body {
@@ -487,6 +488,13 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
   padding: calc(var(--header-vpad) - 10px) 28px calc(var(--header-vpad) - 14px) 28px;
 }
 
+.cv-header {
+  display: flex;
+  align-items: center;
+  max-height: 160px;
+  overflow: hidden;
+}
+
 .header-inner { 
   display: table; 
   width: 100%; 
@@ -505,12 +513,12 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 }
 
 .profile-pic-wrapper { 
-  width: 104px; 
-  height: 104px; 
-  min-width: 104px;
-  min-height: 104px;
-  max-width: 104px;
-  max-height: 104px;
+  width: 90px; 
+  height: 90px; 
+  min-width: 90px;
+  min-height: 90px;
+  max-width: 90px;
+  max-height: 90px;
   border-radius: 50%; 
   overflow: hidden; 
   border: 3px solid #ffffff; 
@@ -518,10 +526,10 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 }
 
 .profile-pic-circle { 
-  width: 104px !important; 
-  height: 104px !important; 
-  max-width: 104px !important;
-  max-height: 104px !important;
+  width: 90px !important; 
+  height: 90px !important; 
+  max-width: 90px !important;
+  max-height: 90px !important;
   border-radius: 50%; 
   display: block; 
   object-fit: cover; 
@@ -578,7 +586,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
   text-decoration: underline;
 }
     /* ===== BODY CONTENT ===== */
-    .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
+    .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; white-space: normal; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     .section-content { display: block; page-break-inside: avoid; break-inside: avoid; }
     /* Entry header using table for no-flex alignment */
@@ -612,8 +620,8 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     }
     .cv-list li, .bullet-list li, .work-bullet-list li, .core-coursework-list li {
       display: list-item;
-      margin-bottom: 5px;
-      line-height: 1.35;
+      margin-bottom: 4px;
+      line-height: 1.4;
       font-size: 11.5px;
       color: #111;
     }
@@ -673,14 +681,6 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     @media screen {
       .cv-container { box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08); border-radius: 10px; margin: 16px auto; }
     }
-    .cv-metadata {
-      font-size: 1px;
-      line-height: 1;
-      color: #ffffff;
-      user-select: none;
-      word-break: break-all;
-      margin-top: 2px;
-    }
 </style>
 </head>
 <body>
@@ -697,7 +697,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 </script>
 <div class="cv-container density-${density}">
   <!-- HEADER BAND -->
-  <div class="header-band">
+  <div class="header-band cv-header">
     <div class="header-inner">
       ${personal.avatar_url ? `<div class="profile-col">${profilePicBlock}</div>` : ""}
       <div class="name-col">
@@ -739,7 +739,6 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
         <div class="sig-name">(${escapeHtml(personal.full_name)})</div>
       </td>
     </tr></table>
-    ${metadataText ? `<div class="cv-metadata">${metadataText}</div>` : ""}
   </div>
 </div>
 </body>

@@ -355,7 +355,7 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Same-tab PDF generation to avoid popup/new-tab blockers.
+  // Same-tab print flow via hidden iframe keeps text selectable and avoids popup blockers.
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
@@ -372,73 +372,77 @@ export default function AcademicCVGenerator() {
       toast({ title: "Education timeline warning", description: timelineWarnings[0] });
     }
 
-    let exportRoot: HTMLDivElement | null = null;
+    let printFrame: HTMLIFrameElement | null = null;
     setIsGenerating(true);
     try {
-      exportRoot = document.createElement("div");
-      exportRoot.style.position = "fixed";
-      exportRoot.style.left = "-99999px";
-      exportRoot.style.top = "0";
-      exportRoot.style.width = "210mm";
-      exportRoot.style.background = "#fff";
-      exportRoot.innerHTML = previewHtml;
-      document.body.appendChild(exportRoot);
+      const safeTitle = `${personal.full_name || "Candidate"} CV`;
+      const printableHtml = previewHtml.replace("</head>", `<title>${safeTitle}</title></head>`);
 
-      const exportCv = exportRoot.querySelector(".cv-container") as HTMLElement | null;
-      if (!exportCv) {
-        throw new Error("Preview not ready yet. Please wait a moment and try again.");
+      printFrame = document.createElement("iframe");
+      printFrame.setAttribute("aria-hidden", "true");
+      printFrame.style.position = "fixed";
+      printFrame.style.right = "0";
+      printFrame.style.bottom = "0";
+      printFrame.style.width = "0";
+      printFrame.style.height = "0";
+      printFrame.style.border = "0";
+      printFrame.style.visibility = "hidden";
+      document.body.appendChild(printFrame);
+
+      const frameDoc = printFrame.contentDocument;
+      const frameWindow = printFrame.contentWindow;
+      if (!frameDoc || !frameWindow) {
+        throw new Error("Unable to initialize print frame.");
       }
 
-      const images = Array.from(exportCv.querySelectorAll("img"));
-      await Promise.all(images.map((img) => {
-        if ((img as HTMLImageElement).complete) return Promise.resolve();
-        return new Promise<void>((resolve) => {
-          img.addEventListener("load", () => resolve(), { once: true });
-          img.addEventListener("error", () => resolve(), { once: true });
-        });
-      }));
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
 
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
+      await new Promise<void>((resolve, reject) => {
+        const onReady = async () => {
+          try {
+            const images = Array.from(frameDoc.querySelectorAll("img"));
+            await Promise.all(images.map((img) => {
+              if ((img as HTMLImageElement).complete) return Promise.resolve();
+              return new Promise<void>((imageResolve) => {
+                img.addEventListener("load", () => imageResolve(), { once: true });
+                img.addEventListener("error", () => imageResolve(), { once: true });
+              });
+            }));
 
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
+            if (frameDoc.fonts?.ready) {
+              await frameDoc.fonts.ready;
+            }
 
-      await doc.html(exportCv, {
-        x: 0,
-        y: 0,
-        width: 210,
-        windowWidth: exportCv.scrollWidth,
-        autoPaging: "text",
-        margin: [0, 0, 0, 0],
-        html2canvas: {
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          scale: Math.max(window.devicePixelRatio, 2),
-        },
+            setTimeout(() => {
+              frameWindow.focus();
+              frameWindow.print();
+              resolve();
+            }, 100);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        if (frameDoc.readyState === "complete") {
+          void onReady();
+          return;
+        }
+
+        printFrame?.addEventListener("load", () => {
+          void onReady();
+        }, { once: true });
       });
 
-      const safeName = (personal.full_name || "candidate")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "")
-        .replace(/^_+|_+$/g, "") || "candidate";
-
-      doc.setProperties({
-        title: `${personal.full_name || "Candidate"} CV`,
-        subject: "PublicGermany Academic CV",
-        creator: "PublicGermany CV Generator",
-      });
-      doc.save(`${safeName}_CV.pdf`);
-
-      toast({ title: "Download started", description: "Your CV PDF has been generated in the same tab." });
+      toast({ title: "Print dialog opened", description: "Choose Save as PDF to download your CV." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
     } finally {
-      exportRoot?.remove();
+      if (printFrame && printFrame.parentNode) {
+        printFrame.parentNode.removeChild(printFrame);
+      }
       setIsGenerating(false);
     }
   };
