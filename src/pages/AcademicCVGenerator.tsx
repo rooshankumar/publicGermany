@@ -355,7 +355,7 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Browser-native HTML print export keeps selectable text, links, and ATS readability.
+  // Same-tab PDF generation to avoid popup/new-tab blockers.
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
@@ -372,58 +372,73 @@ export default function AcademicCVGenerator() {
       toast({ title: "Education timeline warning", description: timelineWarnings[0] });
     }
 
+    let exportRoot: HTMLDivElement | null = null;
     setIsGenerating(true);
     try {
-      const printWindow = window.open("", "_blank", "noopener,noreferrer");
-      if (!printWindow) {
-        throw new Error("Unable to open print window. Please allow popups and try again.");
+      exportRoot = document.createElement("div");
+      exportRoot.style.position = "fixed";
+      exportRoot.style.left = "-99999px";
+      exportRoot.style.top = "0";
+      exportRoot.style.width = "210mm";
+      exportRoot.style.background = "#fff";
+      exportRoot.innerHTML = previewHtml;
+      document.body.appendChild(exportRoot);
+
+      const exportCv = exportRoot.querySelector(".cv-container") as HTMLElement | null;
+      if (!exportCv) {
+        throw new Error("Preview not ready yet. Please wait a moment and try again.");
       }
 
-      const safeTitle = `${personal.full_name || "Candidate"} CV`;
-      const printableHtml = previewHtml.replace("</head>", `<title>${safeTitle}</title></head>`);
+      const images = Array.from(exportCv.querySelectorAll("img"));
+      await Promise.all(images.map((img) => {
+        if ((img as HTMLImageElement).complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        });
+      }));
 
-      printWindow.document.open();
-      printWindow.document.write(printableHtml);
-      printWindow.document.close();
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
 
-      await new Promise<void>((resolve) => {
-        const onReady = async () => {
-          const images = Array.from(printWindow.document.querySelectorAll("img"));
-          await Promise.all(images.map((img) => {
-            if ((img as HTMLImageElement).complete) return Promise.resolve();
-            return new Promise<void>((imageResolve) => {
-              img.addEventListener("load", () => imageResolve(), { once: true });
-              img.addEventListener("error", () => imageResolve(), { once: true });
-            });
-          }));
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
 
-          if (printWindow.document.fonts?.ready) {
-            await printWindow.document.fonts.ready;
-          }
-
-          printWindow.focus();
-          printWindow.print();
-          setTimeout(() => {
-            printWindow.close();
-            resolve();
-          }, 500);
-        };
-
-        if (printWindow.document.readyState === "complete") {
-          void onReady();
-          return;
-        }
-
-        printWindow.addEventListener("load", () => {
-          void onReady();
-        }, { once: true });
+      await doc.html(exportCv, {
+        x: 0,
+        y: 0,
+        width: 210,
+        windowWidth: exportCv.scrollWidth,
+        autoPaging: "text",
+        margin: [0, 0, 0, 0],
+        html2canvas: {
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          scale: Math.max(window.devicePixelRatio, 2),
+        },
       });
 
-      toast({ title: "Print dialog opened", description: "Use Save as PDF to export a selectable, ATS-friendly CV." });
+      const safeName = (personal.full_name || "candidate")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "")
+        .replace(/^_+|_+$/g, "") || "candidate";
+
+      doc.setProperties({
+        title: `${personal.full_name || "Candidate"} CV`,
+        subject: "PublicGermany Academic CV",
+        creator: "PublicGermany CV Generator",
+      });
+      doc.save(`${safeName}_CV.pdf`);
+
+      toast({ title: "Download started", description: "Your CV PDF has been generated in the same tab." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
     } finally {
+      exportRoot?.remove();
       setIsGenerating(false);
     }
   };
