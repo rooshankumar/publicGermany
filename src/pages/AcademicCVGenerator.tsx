@@ -21,10 +21,10 @@ const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Academic Research", "Technical Skills", "Academic Projects", "Digital & Research Skills"];
 
 const HEADER_COLORS = [
-  { label: "Europass Blue", value: "#154a8a" },
-  { label: "Dark Academic Blue", value: "#1f4e79" },
-  { label: "Deep Navy", value: "#0f3a6d" },
-  { label: "Neutral Gray", value: "#4a4a4a" },
+  { label: "Europass Blue", value: "#154a8a", hint: "Classic Europass academic blue theme." },
+  { label: "Dark Academic Blue", value: "#1f4e79", hint: "Formal university-style blue for strong contrast." },
+  { label: "Deep Navy", value: "#0f3a6d", hint: "Premium deep navy look for research-focused CVs." },
+  { label: "Neutral Gray", value: "#4a4a4a", hint: "Minimal neutral style with understated tone." },
 ] as const;
 
 const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; hint: string }> = [
@@ -488,53 +488,75 @@ export default function AcademicCVGenerator() {
           <CardTitle className="text-base">CV Style Options</CardTitle>
         </CardHeader>
         <CardContent>
-          <Label className="text-xs mb-2 block">Header Background Color</Label>
-          <div className="flex flex-wrap gap-2 items-center">
+          <Label className="text-xs mb-2 block">Header Background Color (Select one)</Label>
+          <div className="space-y-1.5">
             {HEADER_COLORS.map(c => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setHeaderBgColor(c.value)}
-                className={`px-2.5 py-1.5 text-xs rounded-md border transition-all ${headerBgColor === c.value ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
-                style={{ backgroundColor: c.value, color: "#fff" }}
-                title={c.label}
-              >
-                {c.label}
-              </button>
+              <div key={c.value} className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHeaderBgColor(c.value)}
+                  className={`flex items-center gap-2 text-xs rounded-md px-2 py-1 w-full text-left transition border ${headerBgColor.toLowerCase() === c.value.toLowerCase() ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+                >
+                  <span className="w-4 h-4 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: c.value }} />
+                  <span>{c.label}</span>
+                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="text-xs max-w-56">{c.hint}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             ))}
-          </div>
-
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
-            <div>
-              <Label className="text-xs">Custom HEX Color</Label>
-              <Input
+            <div className="flex items-center justify-between gap-2 border rounded-md px-2 py-1.5">
+              <div className="flex items-center gap-2 text-xs">
+                <span>🎨</span>
+                <span>Custom Color</span>
+                <span className="text-muted-foreground">({headerBgColor})</span>
+              </div>
+              <input
+                type="color"
                 value={headerBgColor}
                 onChange={e => setHeaderBgColor(e.target.value)}
-                placeholder="#154a8a"
-                className="h-8 text-xs font-mono"
+                className="w-8 h-8 p-0 border rounded cursor-pointer bg-transparent"
+                aria-label="Pick custom header color"
               />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-2">
-                <span className="inline-block w-4 h-4 rounded border" style={{ backgroundColor: headerBgColor }} />
-                {HEADER_COLORS.find(c => c.value.toLowerCase() === headerBgColor.toLowerCase())?.label || "Custom"} ({headerBgColor})
-              </span>
             </div>
           </div>
 
           <div className="mt-4">
-            <Label className="text-xs mb-2 block">Layout Density</Label>
+            <div className="flex items-center gap-1 mb-2">
+              <Label className="text-xs">Layout Density</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Adjust spacing and font scale to fit short or long CVs.</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {DENSITY_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setDensity(option.value)}
-                  className={`text-left rounded-md border px-3 py-2 transition ${density === option.value ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
-                >
-                  <div className="text-xs font-semibold">{option.label}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{option.hint}</div>
-                </button>
+                <div key={option.value} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDensity(option.value)}
+                    className={`text-left rounded-md border px-3 py-2 transition w-full ${density === option.value ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+                  >
+                    <div className="text-xs font-semibold">{option.label}</div>
+                  </button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs max-w-52">{option.hint}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               ))}
             </div>
           </div>

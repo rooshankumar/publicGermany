@@ -95,13 +95,16 @@ function formatCoreCoursework(subjects?: string): string {
 function plainLinesFromHtml(value?: string): string[] {
   if (!value) return [];
   return sanitizeHtml(value)
+    .replace(/<\/(?:p|div|h[1-6])>/gi, "\n")
+    .replace(/<(?:p|div|h[1-6])[^>]*>/gi, "")
     .replace(/<br\s*\/?\s*>/gi, "\n")
     .replace(/<\/li>/gi, "\n")
     .replace(/<li[^>]*>/gi, "")
     .replace(/<[^>]+>/g, "")
     .split(/\n|\u2022|•|;|\|/)
     .map(item => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(line => line.replace(/\s{2,}/g, " ").trim());
 }
 
 function formatBullets(value?: string, className = "bullet-list"): string {
@@ -529,13 +532,25 @@ if (contactParts.length > 0)
     .lang-level-cell, .lang-table th:not(:first-child) { text-align: center; }
     .lang-table th:first-child { text-align: left; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
-    .bullet-list { margin: 5px 0 5px 18px; font-size: 10px; line-height: 1.55; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
-    .bullet-list li { margin-bottom: 3px; }
-    .work-bullet-list { margin: 5px 0 2px 18px; padding: 0; list-style: disc; }
-    .work-bullet-list li { margin-bottom: 3px; }
+    .bullet-list, .work-bullet-list, .core-coursework-list {
+      margin: 6px 0 6px 22px;
+      padding: 0;
+      list-style: disc;
+      list-style-position: outside;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .bullet-list li, .work-bullet-list li, .core-coursework-list li {
+      margin-bottom: 4px;
+      line-height: 1.55;
+      font-size: 10px;
+      color: #111;
+    }
+    .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
+      font-size: 1.1em;
+      color: #111;
+    }
     .core-coursework-title { font-weight: 700; margin: 4px 0 3px 0; color: #1f2937; }
-    .core-coursework-list { margin: 0 0 6px 18px; padding: 0; list-style: disc; }
-    .core-coursework-list li { margin: 0 0 2px 0; line-height: 1.45; }
     .ref-row-1 { font-size: 10.3px; color: #111; margin-bottom: 2px; }
     .ref-row-2 { font-size: 10.2px; color: #111; }
     .ref-label { font-weight: 700; color: #111; }
