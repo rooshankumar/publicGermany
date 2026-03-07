@@ -94,6 +94,38 @@ function SectionTip({ tipKey }: { tipKey: string }) {
   );
 }
 
+
+function CVPreviewFrame({ html }: { html: string }) {
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = previewRef.current;
+    if (!container) return;
+
+    const frame = document.createElement("iframe");
+    frame.setAttribute("title", "CV Preview");
+    frame.setAttribute("sandbox", "allow-same-origin");
+    frame.style.width = "794px";
+    frame.style.height = "100%";
+    frame.style.border = "none";
+
+    container.replaceChildren(frame);
+
+    const doc = frame.contentDocument;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    return () => {
+      container.replaceChildren();
+    };
+  }, [html]);
+
+  return <div id="cv-preview" ref={previewRef} style={{ width: 794, height: "100%" }} />;
+}
+
 function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const execCmd = (cmd: string) => {
@@ -944,7 +976,7 @@ export default function AcademicCVGenerator() {
           showPreview ? (
             <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
               <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                <CVPreviewFrame html={previewHtml} />
               </div>
             </div>
           ) : <div className="h-full overflow-y-auto pr-1">{formContent}</div>
@@ -956,7 +988,7 @@ export default function AcademicCVGenerator() {
             <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
               <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
                 <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                  <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                  <CVPreviewFrame html={previewHtml} />
                 </div>
               </div>
             </div>
