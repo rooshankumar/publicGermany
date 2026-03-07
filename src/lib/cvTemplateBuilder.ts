@@ -117,9 +117,15 @@ function plainLinesFromHtml(value?: string): string[] {
 }
 
 function formatBullets(value?: string, className = "bullet-list"): string {
-  const lines = plainLinesFromHtml(value);
+  const raw = value || "";
+  const multiline = raw
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map(line => line.replace(/<[^>]+>/g, "").trim())
+    .filter(Boolean);
+  const lines = multiline.length > 1 ? multiline.map(line => escapeHtml(line)) : plainLinesFromHtml(value).map(line => escapeHtml(line));
   if (!lines.length) return "";
-  return `<ul class="${className}">${lines.map(line => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
+  return `<ul class="cv-bullets ${className}">${lines.map(line => `<li>${line}</li>`).join("")}</ul>`;
 }
 
 export interface CVPersonalInfo {
@@ -237,7 +243,7 @@ export function buildCVHtml(
   const otherLangs = languages.filter(l => !l.mother_tongue);
 
   const eduHtml = educations.map(edu => `
-<div class="entry education-entry">
+<div class="entry education-entry education-item">
   <table class="entry-row-table"><tr>
     <td class="entry-title-cell">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</td>
     <td class="entry-date-cell">${formatMonthYear(edu.start_date) || edu.start_year} – ${formatMonthYear(edu.end_date) || edu.end_year}</td>
@@ -253,6 +259,7 @@ export function buildCVHtml(
   const pubHtml = publications.length > 0 ? `
     <div class="section publications-section">
     <div class="section-title">Research Publications</div>
+    <div class="section-content">
     ${publications.map(pub => `
 <div class="entry research-entry">
   <div class="research-title"><strong>${escapeHtml(pub.title)}</strong>${pub.year ? ` — ${pub.year}` : ""}</div>
@@ -260,19 +267,22 @@ export function buildCVHtml(
     ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(pub.doi_url)}</a>` : ""}
   </div>
   </div>`).join("\n")}
+    </div>
     </div>` : "";
 
   const workHtml = workExperiences.length > 0 ? `
     <div class="section work-section">
     <div class="section-title">Work Experience</div>
+    <div class="section-content">
     ${workExperiences.map(w => `
-<div class="entry work-entry">
+<div class="entry work-entry experience-item">
   <table class="entry-row-table"><tr>
     <td class="entry-title-cell">${escapeHtml([w.job_title, w.organisation, w.city_country].filter(Boolean).join(", "))}</td>
     <td class="entry-date-cell">${formatMonthYear(w.start_date)} – ${w.is_current ? "Present" : formatMonthYear(w.end_date)}</td>
   </tr></table>
   ${formatBullets(w.description, "work-bullet-list")}
 </div>`).join("\n")}
+    </div>
     </div>` : "";
 
   const langRows = otherLangs.map(l => `
@@ -288,12 +298,14 @@ ${langRows}
   const certHtml = certifications.length > 0 ? `
     <div class="section certifications-section">
     <div class="section-title">Certifications</div>
+    <div class="section-content">
     <ul class="bullet-list">
     ${certifications.map(c => {
       const certDate = formatMonthYear(c.date);
       return `<li>${escapeHtml(c.title)}${c.institution ? ` | ${escapeHtml(c.institution)}` : ""}${certDate ? ` | ${certDate}` : ""}</li>`;
     }).join("")}
     </ul>
+    </div>
     </div>` : "";
 
 const customHtml = customSections
@@ -301,6 +313,7 @@ const customHtml = customSections
   .map(section => `
     <div class="section custom-section">
     <div class="section-title">${escapeHtml(section.title)}</div>
+    <div class="section-content">
 
     ${section.items.map(item => {
 
@@ -316,32 +329,35 @@ const customHtml = customSections
         const label = escapeHtml(item.label || "Skills");
         const unique = Array.from(new Set(values.map(v => String(v).trim()).filter(Boolean)));
         const list = unique.join(", ") || "—";
-        return `<div class="entry skills-line-entry"><strong>${label}:</strong> ${list}</div>`;
+        return `<div class="entry skills-line-entry project-item"><strong>${label}:</strong> ${list}</div>`;
       }
 
       if (item.description) {
         return `
-        <div class="entry ${isTechnicalSkillsSection ? "skills-entry" : ""}">
+        <div class="entry ${isTechnicalSkillsSection ? "skills-entry" : ""} project-item">
           <strong>${escapeHtml(item.label)}</strong>${isTechnicalSkillsSection ? ":" : "<br>"}
           ${formatBullets(item.description, "bullet-list") || sanitizeHtml(item.description)}
         </div>`;
       }
 
       // SIMPLE
-      return `<div class="entry">${escapeHtml(item.label)}</div>`;
+      return `<div class="entry project-item">${escapeHtml(item.label)}</div>`;
 
     }).join("")}
 
+  </div>
   </div>`).join("\n");
 
   const recHtml = recommendations.length > 0 ? `
     <div class="section referees-section">
     <div class="section-title">Recommendations</div>
+    <div class="section-content">
     ${recommendations.map(r => `
 <div class="entry">
     <div class="ref-row-1"><strong>${escapeHtml(r.name)}</strong>${[r.designation, r.department, r.institution].filter(Boolean).length ? `, ${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}` : ""}</div>
     <div class="ref-row-2">${r.email ? `<span class="ref-label">Email:</span> <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.lor_link ? `<span class="ref-sep">&nbsp;&nbsp;</span><span class="ref-label">Download LOR Certificate:</span> <a href="${escapeHtml(r.lor_link)}" target="_blank" rel="noopener noreferrer">Clickable Link</a>` : ""}${r.contact ? `<span class="ref-sep">&nbsp;&nbsp;</span>${escapeHtml(r.contact)}` : ""}</div>
 </div>`).join("\n")}
+    </div>
     </div>` : "";
 
 const linkedinLine = personal.linkedin_url
@@ -531,6 +547,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     /* ===== BODY CONTENT ===== */
     .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
+    .section-content { page-break-inside: avoid; break-inside: avoid; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
     .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
@@ -551,7 +568,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .lang-level-cell, .lang-table th:not(:first-child) { text-align: center; }
     .lang-table th:first-child { text-align: left; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
-    .bullet-list, .work-bullet-list, .core-coursework-list {
+    .cv-bullets, .bullet-list, .work-bullet-list, .core-coursework-list {
       margin: 6px 0 6px 18px;
       padding-left: 18px;
       list-style: disc;
@@ -559,13 +576,13 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .bullet-list li, .work-bullet-list li, .core-coursework-list li {
+    .cv-bullets li, .bullet-list li, .work-bullet-list li, .core-coursework-list li {
       margin-bottom: 1px;
       line-height: 1.4;
       font-size: 11.5px;
       color: #111;
     }
-    .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
+    .cv-bullets li::marker, .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
       font-size: 1.1em;
       color: #111;
     }
@@ -589,6 +606,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     a { color: #0b4a8b; text-decoration: underline; cursor: pointer; pointer-events: auto; }
     /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; margin-bottom: 18px; }
+    .experience-item, .education-item, .project-item { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
 
     .pdf-export { width: 794px !important; min-height: 1123px !important; }
@@ -651,13 +669,13 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
   <div class="cv-body">
     <div class="section education-section">
     <div class="section-title">Education and Training</div>
-    ${eduHtml}
+    <div class="section-content">${eduHtml}</div>
     </div>
 
     ${sectionOrder.map(section => {
       if (section === "work") return workHtml;
       if (section === "publications") return pubHtml;
-      if (section === "languages") return `<div class="section language-section"><div class="section-title">Language Skills</div>${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}${langTableHtml}</div>`;
+      if (section === "languages") return `<div class="section language-section"><div class="section-title">Language Skills</div><div class="section-content">${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}${langTableHtml}</div></div>`;
       if (section === "certifications") return certHtml;
       if (section === "custom") return customHtml;
       if (section === "recommendations") return recHtml;

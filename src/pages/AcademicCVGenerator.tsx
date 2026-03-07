@@ -307,6 +307,9 @@ export default function AcademicCVGenerator() {
         linkedin_url: data.personal?.linkedin_url || prev.linkedin_url,
         nationality: data.personal?.nationality || prev.nationality,
         date_of_birth: data.personal?.date_of_birth || prev.date_of_birth,
+        passport_number: data.personal?.passport_number || prev.passport_number,
+        gender: data.personal?.gender || prev.gender,
+        place_of_birth: data.personal?.place_of_birth || prev.place_of_birth,
         avatar_url: data.personal?.avatar_url || prev.avatar_url,
         signature_url: data.personal?.signature_url || prev.signature_url,
       }));
