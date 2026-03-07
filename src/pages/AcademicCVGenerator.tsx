@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, Printer } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -43,6 +43,7 @@ const SECTION_TIPS: Record<string, string> = {
 const emptyEducation = (): CVEducation => ({
   degree_title: "", field_of_study: "", institution: "", country: "",
   start_year: new Date().getFullYear() - 4, end_year: new Date().getFullYear(),
+  start_date: "", end_date: "",
   key_subjects: "", final_grade: "", max_scale: 10, total_credits: 0, credit_system: "Indian Scale",
 });
 const emptyWork = (): CVWorkExperience => ({
@@ -112,8 +113,8 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
 
 
 function isValidDOB(value: string): boolean {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return false;
+  const d = parseDOB(value);
+  if (!d) return false;
   const now = new Date();
   if (d > now) return false;
   const age = now.getFullYear() - d.getFullYear() - (now < new Date(now.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
@@ -137,9 +138,44 @@ function normalizeMonthYearInput(value: string): string {
   return value;
 }
 
+function parseYearFromMonthYear(value?: string): number | null {
+  if (!value) return null;
+  const normalized = normalizeMonthYearInput(value);
+  const yearMatch = normalized.match(/(\d{4})$/);
+  return yearMatch ? Number(yearMatch[1]) : null;
+}
+
+function parseDOB(value: string): Date | null {
+  const v = value.trim();
+  if (!v) return null;
+
+  const ddmmyyyy = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyy] = ddmmyyyy;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, yyyy, mm, dd] = iso;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  const fallback = new Date(v);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function normalizeDOBInput(value: string): string {
+  const parsed = parseDOB(value);
+  if (!parsed) return value;
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 function validateEducationTimeline(educations: CVEducation[]): string[] {
   const warnings: string[] = [];
-  const sorted = [...educations].sort((a, b) => a.start_year - b.start_year);
+  const sorted = [...educations].sort((a, b) => (parseYearFromMonthYear(a.start_date) ?? a.start_year) - (parseYearFromMonthYear(b.start_date) ?? b.start_year));
   const levelScore = (degree: string) => {
     const value = degree.toLowerCase();
     if (value.includes("school") || value.includes("secondary") || value.includes("high school")) return 1;
@@ -150,13 +186,18 @@ function validateEducationTimeline(educations: CVEducation[]): string[] {
   };
 
   sorted.forEach((edu, index) => {
-    if (edu.end_year < edu.start_year) {
+    const startYear = parseYearFromMonthYear(edu.start_date) ?? edu.start_year;
+    const endYear = parseYearFromMonthYear(edu.end_date) ?? edu.end_year;
+
+    if (endYear < startYear) {
       warnings.push(`${edu.degree_title || "Education entry"}: end year is before start year.`);
     }
 
     if (index > 0) {
       const prev = sorted[index - 1];
-      const gap = edu.start_year - prev.end_year;
+      const prevEndYear = parseYearFromMonthYear(prev.end_date) ?? prev.end_year;
+      const currentStartYear = parseYearFromMonthYear(edu.start_date) ?? edu.start_year;
+      const gap = currentStartYear - prevEndYear;
       if (gap > 2) warnings.push(`Gap of ${gap} years between ${prev.degree_title || "previous education"} and ${edu.degree_title || "next education"}.`);
 
       const prevScore = levelScore(prev.degree_title || "");
@@ -273,7 +314,7 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Print-based PDF export: opens CV in new window and triggers print
+  // Direct PDF export: generate and download automatically
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
@@ -287,50 +328,47 @@ export default function AcademicCVGenerator() {
 
     const timelineWarnings = validateEducationTimeline(educations);
     if (timelineWarnings.length > 0) {
-      toast({
-        title: "Education timeline warning",
-        description: timelineWarnings[0],
-      });
+      toast({ title: "Education timeline warning", description: timelineWarnings[0] });
     }
 
     setIsGenerating(true);
     try {
       const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
 
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast({ title: "Pop-up blocked", description: "Please allow pop-ups to download the PDF.", variant: "destructive" });
-        setIsGenerating(false);
-        return;
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-99999px";
+      container.style.top = "0";
+      container.style.width = "794px";
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      const cvElement = container.querySelector(".cv-container") as HTMLElement | null;
+      if (!cvElement) {
+        container.remove();
+        throw new Error("Failed to render CV content for PDF export.");
       }
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.title = `Academic CV - ${personal.full_name || "Candidate"}`;
-      printWindow.document.close();
+      const [{ jsPDF }] = await Promise.all([import("jspdf")]);
+      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
 
-      // Wait for content and images to load then print
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          setIsGenerating(false);
-        }, 500);
-      };
+      await new Promise<void>((resolve) => {
+        doc.html(cvElement, {
+          margin: [0, 0, 0, 0],
+          autoPaging: "text",
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          callback: () => resolve(),
+        });
+      });
 
-      // Fallback if onload doesn't fire
-      setTimeout(() => {
-        if (isGenerating) {
-          printWindow.focus();
-          printWindow.print();
-          setIsGenerating(false);
-        }
-      }, 3000);
-
-      toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' to download your CV and disable browser headers/footers for a clean export." });
+      const safeName = (personal.full_name || "candidate").trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-]/g, "");
+      doc.save(`Academic_CV_${safeName || "candidate"}.pdf`);
+      container.remove();
+      toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -384,7 +422,7 @@ export default function AcademicCVGenerator() {
             <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
             <div><Label className="text-xs">Email *</Label><Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" /></div>
             <div><Label className="text-xs">Phone</Label><Input value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="+91 9876543210" /></div>
-            <div><Label className="text-xs">Date of Birth</Label><Input type="date" value={personal.date_of_birth} max={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split("T")[0]} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
+            <div><Label className="text-xs">Date of Birth</Label><Input value={personal.date_of_birth} placeholder="15 Aug 1998" onBlur={e => updatePersonal("date_of_birth", normalizeDOBInput(e.target.value))} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
             <div><Label className="text-xs">Nationality</Label><Input value={personal.nationality} onChange={e => updatePersonal("nationality", e.target.value)} placeholder="Indian" /></div>
             <div><Label className="text-xs">Gender</Label><Input value={personal.gender} onChange={e => updatePersonal("gender", e.target.value)} placeholder="Male / Female" /></div>
             <div><Label className="text-xs">Passport Number</Label><Input value={personal.passport_number} onChange={e => updatePersonal("passport_number", e.target.value)} /></div>
@@ -446,8 +484,8 @@ export default function AcademicCVGenerator() {
                     <div><Label className="text-xs">Field of Study *</Label><Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" /></div>
                     <div><Label className="text-xs">Institution *</Label><Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} /></div>
                     <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
-                    <div><Label className="text-xs">Start Year</Label><Input type="number" value={edu.start_year} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_year: Number(e.target.value) }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">End Year</Label><Input type="number" value={edu.end_year} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_year: Number(e.target.value) }; setEducations(n); }} /></div>
+                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
+                    <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
                     <div><Label className="text-xs">Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" /></div>
                     <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
                     <div><Label className="text-xs">Total Credits</Label><Input type="number" value={edu.total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} /></div>
@@ -685,10 +723,10 @@ export default function AcademicCVGenerator() {
       {/* Generate Button */}
       <div className="text-center space-y-4 mt-6">
         <Button size="lg" onClick={generatePDF} disabled={isGenerating} className="w-full sm:w-auto px-8">
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Opening Print…</> : <><Printer className="w-4 h-4 mr-2" />Print / Save as PDF</>}
+          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF…</> : <><Download className="w-4 h-4 mr-2" />Download PDF</>}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Opens the CV in a new tab. Select <strong>"Save as PDF"</strong> in the print dialog to download.
+          Downloads the generated CV directly as a PDF file.
         </p>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}

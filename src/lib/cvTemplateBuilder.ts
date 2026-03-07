@@ -96,6 +96,8 @@ export interface CVEducation {
   country: string;
   start_year: number;
   end_year: number;
+  start_date?: string;
+  end_date?: string;
   key_subjects?: string;
   final_grade?: string;
   max_scale?: number;
@@ -177,7 +179,7 @@ export function buildCVHtml(
 <div class="entry education-entry">
   <table class="entry-row-table"><tr>
     <td class="entry-title-cell">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</td>
-    <td class="entry-date-cell">${edu.start_year} – ${edu.end_year}</td>
+    <td class="entry-date-cell">${formatMonthYear(edu.start_date) || edu.start_year} – ${formatMonthYear(edu.end_date) || edu.end_year}</td>
   </tr></table>
   <div class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</div>
   ${edu.key_subjects ? `<div class="academic-meta"><strong>Core coursework:</strong> ${sanitizeHtml(edu.key_subjects)}</div>` : ""}
