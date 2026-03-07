@@ -69,8 +69,20 @@ export function extractEmbeddedCVDataFromText(text: string): ImportedCVData | nu
 }
 
 export async function extractEmbeddedCVDataFromPDF(file: File): Promise<ImportedCVData | null> {
-  const text = await extractTextFromPDF(file);
-  return extractEmbeddedCVDataFromText(text);
+  const arrayBuffer = await file.arrayBuffer();
+
+  // Strategy 1: raw PDF byte scan (works for image-heavy PDFs exported by this app).
+  const rawPdfText = new TextDecoder("latin1").decode(new Uint8Array(arrayBuffer));
+  const fromRawScan = extractEmbeddedCVDataFromText(rawPdfText);
+  if (fromRawScan) return fromRawScan;
+
+  // Strategy 2: fallback through text extraction for PDFs where metadata appears in text layer.
+  try {
+    const text = await extractTextFromPDF(file, arrayBuffer);
+    return extractEmbeddedCVDataFromText(text);
+  } catch {
+    return null;
+  }
 }
 
 function splitIntoSections(text: string): Record<string, string[]> {
@@ -341,13 +353,15 @@ export function parseExtractedText(text: string): ImportedCVData {
   return { personal, educations, workExperiences, languages, certifications };
 }
 
-export async function extractTextFromPDF(file: File): Promise<string> {
+export async function extractTextFromPDF(file: File, preloadedBuffer?: ArrayBuffer): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
 
-  // Use the bundled worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  // Use locally bundled worker to avoid CDN dependency failures.
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+  }
 
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = preloadedBuffer ?? await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
   const textParts: string[] = [];

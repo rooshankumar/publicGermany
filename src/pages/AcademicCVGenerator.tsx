@@ -430,6 +430,12 @@ export default function AcademicCVGenerator() {
         },
       };
       const encodedMetadata = btoa(unescape(encodeURIComponent(JSON.stringify(metadataPayload))));
+      doc.setProperties({
+        title: `${personal.full_name || "Candidate"} CV`,
+        subject: "PublicGermany Academic CV",
+        keywords: `PGCVMETA:${encodedMetadata}`,
+        creator: "PublicGermany CV Generator",
+      });
       doc.setPage(1);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(1);
