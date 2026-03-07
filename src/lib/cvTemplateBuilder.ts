@@ -623,13 +623,14 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .section-title + .entry, .section-title + .bullet-list, .section-title + .lang-table, .section-title + .mother-tongue-text { page-break-before: avoid; break-before: avoid; }
 
     @media print {
-      html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
-      .cv-container { width: 210mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
-      .section { page-break-inside: avoid; break-inside: avoid; }
-      .header-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+      html, body { width: 210mm; height: 297mm; margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .cv-container { width: 210mm; min-height: 297mm; margin: 0; padding: 0; box-shadow: none; border-radius: 0; overflow: visible; }
+      .header-band { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .cv-body { padding-bottom: 10mm; }
       /* Orphan/widow control */
       p, li, .entry, .academic-meta { orphans: 3; widows: 3; }
+      /* Force display of background colors */
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     @media screen {
       .cv-container { box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08); border-radius: 10px; margin: 16px auto; }
