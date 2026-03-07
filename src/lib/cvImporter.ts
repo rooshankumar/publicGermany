@@ -126,6 +126,18 @@ function extractPersonalInfo(text: string, sections: Record<string, string[]>): 
   const linkedinMatch = text.match(LINKEDIN_RE);
   if (linkedinMatch) personal.linkedin_url = linkedinMatch[0];
 
+  // Passport number
+  const passportMatch = text.match(/passport(?:\s*number)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i);
+  if (passportMatch) personal.passport_number = passportMatch[1].toUpperCase();
+
+  // Gender
+  const genderMatch = text.match(/gender\s*[:\-]?\s*(male|female|other|non[-\s]?binary)/i);
+  if (genderMatch) personal.gender = genderMatch[1].replace(/\b\w/g, c => c.toUpperCase());
+
+  // Place of Birth
+  const pobMatch = text.match(/place\s*of\s*birth\s*[:\-]?\s*([^\n|]+)/i);
+  if (pobMatch) personal.place_of_birth = pobMatch[1].trim();
+
   // Name: usually the first non-empty line in the document
   const allLines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
   if (allLines.length > 0) {

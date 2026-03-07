@@ -257,7 +257,7 @@ export function buildCVHtml(
 <div class="entry research-entry">
   <div class="research-title"><strong>${escapeHtml(pub.title)}</strong>${pub.year ? ` — ${pub.year}` : ""}</div>
   <div class="academic-meta">
-    ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}">${escapeHtml(pub.doi_url)}</a>` : ""}
+    ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(pub.doi_url)}</a>` : ""}
   </div>
   </div>`).join("\n")}
     </div>` : "";
@@ -340,12 +340,12 @@ const customHtml = customSections
     ${recommendations.map(r => `
 <div class="entry">
     <div class="ref-row-1"><strong>${escapeHtml(r.name)}</strong>${[r.designation, r.department, r.institution].filter(Boolean).length ? `, ${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}` : ""}</div>
-    <div class="ref-row-2">${r.email ? `<span class="ref-label">Email:</span> <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.lor_link ? `<span class="ref-sep">&nbsp;&nbsp;</span><span class="ref-label">Download LOR Certificate:</span> <a href="${escapeHtml(r.lor_link)}">Clickable Link</a>` : ""}${r.contact ? `<span class="ref-sep">&nbsp;&nbsp;</span>${escapeHtml(r.contact)}` : ""}</div>
+    <div class="ref-row-2">${r.email ? `<span class="ref-label">Email:</span> <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.lor_link ? `<span class="ref-sep">&nbsp;&nbsp;</span><span class="ref-label">Download LOR Certificate:</span> <a href="${escapeHtml(r.lor_link)}" target="_blank" rel="noopener noreferrer">Clickable Link</a>` : ""}${r.contact ? `<span class="ref-sep">&nbsp;&nbsp;</span>${escapeHtml(r.contact)}` : ""}</div>
 </div>`).join("\n")}
     </div>` : "";
 
 const linkedinLine = personal.linkedin_url
-  ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>`
+  ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(personal.linkedin_url)}</a></div>`
   : "";
 
 const addressLine = personal.address
@@ -435,7 +435,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 .header-band {
   background-color: ${headerBgColor};
   width: 100%;
-  padding: var(--header-vpad) 28px calc(var(--header-vpad) - 4px) 28px;
+  padding: calc(var(--header-vpad) - 10px) 28px calc(var(--header-vpad) - 14px) 28px;
 }
 
 .header-inner { 
@@ -529,7 +529,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
   text-decoration: underline;
 }
     /* ===== BODY CONTENT ===== */
-    .cv-body { padding: 0 28px 20px 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
+    .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
@@ -553,15 +553,15 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
     .bullet-list, .work-bullet-list, .core-coursework-list {
       margin: 6px 0 6px 18px;
-      padding: 0;
+      padding-left: 18px;
       list-style: disc;
       list-style-position: outside;
       page-break-inside: avoid;
       break-inside: avoid;
     }
     .bullet-list li, .work-bullet-list li, .core-coursework-list li {
-      margin-bottom: 2px;
-      line-height: 1.5;
+      margin-bottom: 1px;
+      line-height: 1.4;
       font-size: 11.5px;
       color: #111;
     }
@@ -586,7 +586,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .page-footer { text-align: right; font-size: 8px; color: #888; margin-top: 8px; padding-top: 4px; border-top: 0.5pt solid #ddd; }
     table { width: 100%; border-collapse: collapse; }
     img { max-width: 100%; height: auto; }
-    a { color: #0b4a8b; text-decoration: none; }
+    a { color: #0b4a8b; text-decoration: underline; cursor: pointer; pointer-events: auto; }
     /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; margin-bottom: 18px; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
