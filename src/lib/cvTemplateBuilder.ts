@@ -73,6 +73,25 @@ function formatGrade(finalGrade?: string, maxScale?: number, creditSystem?: stri
   return `Grade: ${escapeHtml(finalGrade)}`;
 }
 
+
+function formatCoreCoursework(subjects?: string): string {
+  if (!subjects) return "";
+  const plain = sanitizeHtml(subjects)
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "");
+
+  const parts = plain
+    .split(/\n|,|;|\u2022|•/)
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return "";
+
+  return `<div class="core-coursework-title">Core Coursework</div><ul class="core-coursework-list">${parts.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+}
+
 export interface CVPersonalInfo {
   full_name?: string;
   passport_number?: string;
@@ -157,6 +176,7 @@ export interface CVBuildOptions {
   headerBgColor?: string;
   photoPosition?: string;
   photoZoom?: number;
+  density?: "compact" | "standard" | "expanded";
 }
 
 export function buildCVHtml(
@@ -170,7 +190,7 @@ export function buildCVHtml(
   recommendations: CVRecommendation[] = [],
   options: CVBuildOptions = {}
 ): string {
-  const { headerBgColor = "#004494", photoPosition = "center", photoZoom = 100 } = options;
+  const { headerBgColor = "#154a8a", photoPosition = "center", photoZoom = 100, density = "standard" } = options;
 
   const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join("  &nbsp;  ");
   const otherLangs = languages.filter(l => !l.mother_tongue);
@@ -182,7 +202,7 @@ export function buildCVHtml(
     <td class="entry-date-cell">${formatMonthYear(edu.start_date) || edu.start_year} – ${formatMonthYear(edu.end_date) || edu.end_year}</td>
   </tr></table>
   <div class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</div>
-  ${edu.key_subjects ? `<div class="academic-meta"><strong>Core coursework:</strong> ${sanitizeHtml(edu.key_subjects)}</div>` : ""}
+  ${formatCoreCoursework(edu.key_subjects)}
   <div class="academic-meta">
     ${edu.thesis_title ? `<strong>Thesis:</strong> <em>${escapeHtml(edu.thesis_title)}</em><br>` : ""}
     ${formatGrade(edu.final_grade, edu.max_scale, edu.credit_system)}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}
@@ -212,10 +232,11 @@ export function buildCVHtml(
 </div>`).join("\n")}` : "";
 
   const langRows = otherLangs.map(l => `
-<tr><td class="lang-name-cell">${escapeHtml(l.language_name).toUpperCase()}</td><td>${l.listening || "—"}</td><td>${l.reading || "—"}</td><td>${l.writing || "—"}</td><td>${l.speaking || "—"}</td></tr>`).join("");
+<tr><td class="lang-name-cell">${escapeHtml(l.language_name)}</td><td class="lang-level-cell">${l.listening || "—"}</td><td class="lang-level-cell">${l.reading || "—"}</td><td class="lang-level-cell">${l.writing || "—"}</td><td class="lang-level-cell">${l.speaking || "—"}</td></tr>`).join("");
 
   const langTableHtml = otherLangs.length > 0 ? `
 <table class="lang-table">
+<colgroup><col class="lang-col-name"><col class="lang-col-level"><col class="lang-col-level"><col class="lang-col-level"><col class="lang-col-level"></colgroup>
 <tr><th>Language</th><th>Listening</th><th>Reading</th><th>Writing</th><th>Speaking</th></tr>
 ${langRows}
 </table>` : "";
@@ -309,7 +330,7 @@ if (contactParts.length > 0)
 <meta name="cv-created" content="${new Date().toISOString()}">
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
-    @page { size: A4; margin: 10mm 0; }
+    @page { size: A4; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body {
@@ -331,13 +352,38 @@ if (contactParts.length > 0)
       word-wrap: break-word;
       overflow-wrap: anywhere;
       position: relative;
+      --base-font-size: 10.5px;
+      --base-line-height: 1.45;
+      --header-vpad: 22px;
+      --section-gap: 16px;
+      --entry-gap: 11px;
+    }
+    .cv-container.density-compact {
+      --base-font-size: 10px;
+      --base-line-height: 1.38;
+      --header-vpad: 18px;
+      --section-gap: 13px;
+      --entry-gap: 8px;
+    }
+    .cv-container.density-standard {
+      --base-font-size: 10.5px;
+      --base-line-height: 1.45;
+      --header-vpad: 22px;
+      --section-gap: 16px;
+      --entry-gap: 11px;
+    }
+    .cv-container.density-expanded {
+      --base-font-size: 11px;
+      --base-line-height: 1.52;
+      --header-vpad: 26px;
+      --section-gap: 20px;
+      --entry-gap: 13px;
     }
     /* ===== HEADER: full-width background ===== */
 .header-band {
   background-color: ${headerBgColor};
-  background-image: linear-gradient(120deg, ${headerBgColor} 0%, #0f172a 140%);
   width: 100%;
-  padding: 22px 28px 18px 28px;
+  padding: var(--header-vpad) 28px calc(var(--header-vpad) - 4px) 28px;
 }
 
 .header-inner { 
@@ -348,8 +394,8 @@ if (contactParts.length > 0)
 .profile-col { 
   display: table-cell; 
   vertical-align: top; 
-  width: 100px; 
-  padding-right: 16px; 
+  width: 116px; 
+  padding-right: 18px; 
 }
 
 .name-col { 
@@ -358,12 +404,12 @@ if (contactParts.length > 0)
 }
 
 .profile-pic-wrapper { 
-  width: 88px; 
-  height: 88px; 
-  min-width: 88px;
-  min-height: 88px;
-  max-width: 88px;
-  max-height: 88px;
+  width: 104px; 
+  height: 104px; 
+  min-width: 104px;
+  min-height: 104px;
+  max-width: 104px;
+  max-height: 104px;
   border-radius: 50%; 
   overflow: hidden; 
   border: 3px solid #ffffff; 
@@ -371,10 +417,10 @@ if (contactParts.length > 0)
 }
 
 .profile-pic-circle { 
-  width: 88px !important; 
-  height: 88px !important; 
-  max-width: 88px !important;
-  max-height: 88px !important;
+  width: 104px !important; 
+  height: 104px !important; 
+  max-width: 104px !important;
+  max-height: 104px !important;
   border-radius: 50%; 
   display: block; 
   object-fit: cover; 
@@ -382,10 +428,11 @@ if (contactParts.length > 0)
 }
 
 .name-text {
-  font-size: 25px;
+  font-size: 28px;
   font-weight: 700;
   color: #ffffff;
   text-transform: uppercase;
+  margin-top: -4px;
   margin-bottom: 6px;
   line-height: 1.2;
   letter-spacing: 1px;
@@ -430,27 +477,33 @@ if (contactParts.length > 0)
   text-decoration: underline;
 }
     /* ===== BODY CONTENT ===== */
-    .cv-body { padding: 0 28px 20px 28px; }
-    .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: 16px 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
-    .section-title::before { content: "• "; font-size: 14px; line-height: 1; }
+    .cv-body { padding: 0 28px 20px 28px; font-size: var(--base-font-size); line-height: var(--base-line-height); }
+    .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
     .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
     .entry-title-cell { font-weight: 700; font-size: 11.1px; text-align: left; }
     .entry-date-cell { font-weight: 700; font-size: 10.1px; text-align: right; white-space: nowrap; width: 160px; color: #1f2937; }
-    .entry { margin-bottom: 11px; page-break-inside: avoid; break-inside: avoid; }
+    .entry { margin-bottom: var(--entry-gap); page-break-inside: avoid; break-inside: avoid; }
     .skills-entry { margin-bottom: 3px; }
     .skills-entry strong { margin-right: 3px; }
     .sub-info { font-style: italic; color: #374151; margin: 2px 0; font-size: 10px; }
     .academic-meta { font-size: 9.7px; color: #374151; margin: 2px 0; line-height: 1.45; }
     /* Language table */
     .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
-    .lang-table th, .lang-table td { border: 1px solid #c8d2df; padding: 5px 8px; text-align: center; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+    .lang-table th, .lang-table td { border: 1px solid #c8d2df; padding: 6px 8px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
     .lang-table th { background-color: #f3f6fa; font-weight: 700; font-size: 9.5px; }
-    .lang-name-cell { font-weight: 600; text-align: center; }
+    .lang-col-name { width: 36%; }
+    .lang-col-level { width: 16%; }
+    .lang-name-cell { font-weight: 600; text-align: left; }
+    .lang-level-cell, .lang-table th:not(:first-child) { text-align: center; }
+    .lang-table th:first-child { text-align: left; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
     .bullet-list { margin: 5px 0 5px 18px; font-size: 10px; line-height: 1.55; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
     .bullet-list li { margin-bottom: 3px; }
+    .core-coursework-title { font-weight: 700; margin: 4px 0 3px 0; color: #1f2937; }
+    .core-coursework-list { margin: 0 0 6px 18px; padding: 0; list-style: disc; }
+    .core-coursework-list li { margin: 0 0 2px 0; line-height: 1.45; }
     /* Footer: signature + page number only */
     .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; page-break-inside: avoid; break-inside: avoid; }
     .sig-table { width: 100%; border-collapse: collapse; }
@@ -505,7 +558,7 @@ if (contactParts.length > 0)
   "dateCreated": "${new Date().toISOString()}"
 }
 </script>
-<div class="cv-container">
+<div class="cv-container density-${density}">
   <!-- HEADER BAND -->
   <div class="header-band">
     <div class="header-inner">

@@ -21,12 +21,16 @@ const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Academic Research", "Technical Skills", "Academic Projects", "Digital & Research Skills"];
 
 const HEADER_COLORS = [
-  { label: "EU Blue", value: "#004494" },
-  { label: "Professional Blue", value: "#1A5FB4" },
-  { label: "Indigo", value: "#4B5D88" },
-  { label: "Steel Blue", value: "#3A6EA5" },
-  { label: "Light Blue", value: "#6C8EBF" },
-  { label: "White", value: "#ffffff" },
+  { label: "Europass Blue", value: "#154a8a" },
+  { label: "Dark Academic Blue", value: "#1f4e79" },
+  { label: "Deep Navy", value: "#0f3a6d" },
+  { label: "Neutral Gray", value: "#4a4a4a" },
+] as const;
+
+const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; hint: string }> = [
+  { label: "Compact", value: "compact", hint: "Smaller font and tighter spacing to fit more content." },
+  { label: "Standard", value: "standard", hint: "Balanced default academic layout." },
+  { label: "Expanded", value: "expanded", hint: "Slightly larger text and spacing to fill short CVs." },
 ];
 
 const SECTION_TIPS: Record<string, string> = {
@@ -245,7 +249,8 @@ export default function AcademicCVGenerator() {
 
   const [photoPosition, setPhotoPosition] = useState("center");
   const [photoZoom, setPhotoZoom] = useState(100);
-  const [headerBgColor, setHeaderBgColor] = useState("#004494");
+  const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
+  const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
 
   const [personal, setPersonal] = useState<CVPersonalInfo>({
     full_name: "", passport_number: "", date_of_birth: "", nationality: "",
@@ -299,14 +304,18 @@ export default function AcademicCVGenerator() {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.photoPosition) setPhotoPosition(data.buildOptions.photoPosition);
       if (data.buildOptions.photoZoom) setPhotoZoom(data.buildOptions.photoZoom);
+      if (data.buildOptions.density) setDensity(data.buildOptions.density);
     }
   }, []);
 
-  const buildOptions: CVBuildOptions = { headerBgColor, photoPosition, photoZoom };
+  const buildOptions = useMemo<CVBuildOptions>(
+    () => ({ headerBgColor, photoPosition, photoZoom, density }),
+    [headerBgColor, photoPosition, photoZoom, density],
+  );
 
   const rawHtml = useMemo(() =>
     buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions),
-    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, headerBgColor, photoPosition, photoZoom]
+    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions]
   );
   const previewHtml = useDebounce(rawHtml, 300);
 
@@ -348,7 +357,7 @@ export default function AcademicCVGenerator() {
       exportRoot.style.top = "0";
       exportRoot.style.width = "210mm";
       exportRoot.style.background = "#fff";
-      exportRoot.innerHTML = rawHtml;
+      exportRoot.innerHTML = previewHtml;
       document.body.appendChild(exportRoot);
 
       const exportCv = exportRoot.querySelector(".cv-container") as HTMLElement | null;
@@ -483,19 +492,30 @@ export default function AcademicCVGenerator() {
                 key={c.value}
                 type="button"
                 onClick={() => setHeaderBgColor(c.value)}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${headerBgColor === c.value ? "border-primary ring-2 ring-primary/30 scale-110" : "border-border"}`}
-                style={{ backgroundColor: c.value }}
+                className={`px-2.5 py-1.5 text-xs rounded-md border transition-all ${headerBgColor === c.value ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                style={{ backgroundColor: c.value, color: "#fff" }}
                 title={c.label}
-              />
+              >
+                {c.label}
+              </button>
             ))}
-            {/* Custom color picker */}
-            <label className="relative cursor-pointer" title="Custom color">
-              <div className={`w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center text-xs font-bold text-muted-foreground ${!HEADER_COLORS.find(c => c.value === headerBgColor) ? "ring-2 ring-primary/30 scale-110" : ""}`}
-                style={{ backgroundColor: !HEADER_COLORS.find(c => c.value === headerBgColor) ? headerBgColor : undefined }}>
-                +
-              </div>
-              <input type="color" value={headerBgColor} onChange={e => setHeaderBgColor(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-8 h-8" />
-            </label>
+          </div>
+
+          <div className="mt-4">
+            <Label className="text-xs mb-2 block">Layout Density</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {DENSITY_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setDensity(option.value)}
+                  className={`text-left rounded-md border px-3 py-2 transition ${density === option.value ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+                >
+                  <div className="text-xs font-semibold">{option.label}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{option.hint}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -812,7 +832,7 @@ export default function AcademicCVGenerator() {
           {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF…</> : <><Download className="w-4 h-4 mr-2" />Download PDF</>}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Preview is exported exactly as shown (A4, no extra margins).
+          Preview is exported exactly as shown (A4, no extra margins, no scaling drift).
         </p>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}
