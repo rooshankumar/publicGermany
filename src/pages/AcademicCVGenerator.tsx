@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -361,8 +361,13 @@ export default function AcademicCVGenerator() {
         });
       });
 
-      const safeName = (personal.full_name || "candidate").trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-]/g, "");
-      doc.save(`Academic_CV_${safeName || "candidate"}.pdf`);
+      const safeName = (personal.full_name || "candidate")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "")
+        .replace(/^_+|_+$/g, "") || "candidate";
+      doc.save(`${safeName}_CV.pdf`);
       container.remove();
       toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
     } catch (err) {
@@ -737,13 +742,20 @@ export default function AcademicCVGenerator() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background overflow-hidden">
       <nav className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-4 h-4" /> publicgermany
-          </Link>
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground shrink-0">
+              <ArrowLeft className="w-4 h-4" /> publicgermany
+            </Link>
+            <span className="text-muted-foreground/50">|</span>
+            <p className="text-sm min-w-0 truncate">
+              <span className="font-semibold">Europass CV Generator</span>
+              <span className="text-muted-foreground"> — Create a professional Europass-format academic CV for German university applications.</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             {isMobile && (
               <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
                 {showPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
@@ -760,33 +772,22 @@ export default function AcademicCVGenerator() {
 
       <div className="german-stripe" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <GraduationCap className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Europass CV Generator</h1>
-        </div>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Create a professional Europass-format academic CV for German university applications.
-          Your data stays in your browser — nothing is stored on our servers.
-        </p>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 pb-8">
+      <main className="max-w-7xl mx-auto px-4 py-3 h-[calc(100vh-64px)] overflow-hidden">
         {isMobile ? (
           showPreview ? (
-            <div ref={previewContainerRef} className="border rounded-lg overflow-hidden bg-white" style={{ height: "70vh" }}>
+            <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
               <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
                 <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
               </div>
             </div>
-          ) : formContent
+          ) : <div className="h-full overflow-y-auto pr-1">{formContent}</div>
         ) : (
-          <div className="flex gap-6">
-            <div className="w-1/2 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+          <div className="grid grid-cols-12 gap-4 h-full overflow-hidden">
+            <div className="col-span-8 h-full overflow-y-auto pr-2">
               {formContent}
             </div>
-            <div className="w-1/2 sticky top-28 h-[calc(100vh-200px)]" ref={previewContainerRef}>
-              <div className="border rounded-lg overflow-hidden bg-white h-full shadow-sm">
+            <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
+              <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
                 <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
                   <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
                 </div>
