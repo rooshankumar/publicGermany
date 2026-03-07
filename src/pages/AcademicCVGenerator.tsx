@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Printer, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -241,7 +241,6 @@ export default function AcademicCVGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
 
   const [photoPosition, setPhotoPosition] = useState("center");
@@ -323,7 +322,7 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Direct PDF export: generate and download automatically
+  // Print-based export: opens print dialog so users can save as PDF using browser print backend
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
@@ -342,68 +341,7 @@ export default function AcademicCVGenerator() {
 
     setIsGenerating(true);
     try {
-      const previewDoc = previewIframeRef.current?.contentDocument;
-      const previewCv = previewDoc?.querySelector(".cv-container") as HTMLElement | null;
-
-      const container = document.createElement("div");
-      container.style.position = "fixed";
-      container.style.left = "-99999px";
-      container.style.top = "0";
-
-      let cvElement: HTMLElement | null = null;
-      if (previewCv) {
-        cvElement = previewCv.cloneNode(true) as HTMLElement;
-        container.appendChild(cvElement);
-      } else {
-        const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
-        container.style.width = "210mm";
-        container.innerHTML = html;
-        cvElement = container.querySelector(".cv-container") as HTMLElement | null;
-      }
-
-      document.body.appendChild(container);
-      if (!cvElement) {
-        container.remove();
-        throw new Error("Failed to render CV content for PDF export.");
-      }
-
-      const images = Array.from(cvElement.querySelectorAll("img"));
-      await Promise.all(images.map(img => {
-        if ((img as HTMLImageElement).complete) return Promise.resolve();
-        return new Promise<void>(resolve => {
-          img.addEventListener("load", () => resolve(), { once: true });
-          img.addEventListener("error", () => resolve(), { once: true });
-        });
-      }));
-
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-
-      const canvas = await html2canvas(cvElement, {
-        scale: 1,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        width: cvElement.scrollWidth,
-        windowWidth: cvElement.scrollWidth,
-      });
-
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const imageHeight = (canvas.height * pageWidth) / canvas.width;
-      const imageData = canvas.toDataURL("image/jpeg", 1.0);
-
-      let heightLeft = imageHeight;
-      let position = 0;
-
-      doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = -(imageHeight - heightLeft);
-        doc.addPage();
-        doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
-        heightLeft -= pageHeight;
-      }
+      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
 
       const metadataPayload = {
         generator: "publicgermany-cv",
@@ -421,26 +359,41 @@ export default function AcademicCVGenerator() {
         },
       };
       const encodedMetadata = btoa(unescape(encodeURIComponent(JSON.stringify(metadataPayload))));
-      doc.setPage(1);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(1);
-      doc.text(`PGCVMETA:${encodedMetadata}`, 1, 296, { baseline: "bottom" });
+      const metadataMarker = `<div style="font-size:1px;color:#fff;line-height:1;opacity:0;position:absolute;left:0;bottom:0;">PGCVMETA:${encodedMetadata}</div>`;
+      const htmlWithMetadata = html.replace('</body>', `${metadataMarker}</body>`);
 
-      container.remove();
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast({ title: "Pop-up blocked", description: "Please allow pop-ups to export your CV.", variant: "destructive" });
+        setIsGenerating(false);
+        return;
+      }
 
-      const safeName = (personal.full_name || "candidate")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "")
-        .replace(/^_+|_+$/g, "") || "candidate";
-      doc.save(`${safeName}_CV.pdf`);
-      container.remove();
-      toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
+      printWindow.document.open();
+      printWindow.document.write(htmlWithMetadata);
+      printWindow.document.title = `${(personal.full_name || "candidate").toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").replace(/^_+|_+$/g, "") || "candidate"}_CV`;
+      printWindow.document.close();
+
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          setIsGenerating(false);
+        }, 400);
+      };
+
+      setTimeout(() => {
+        if (isGenerating) {
+          printWindow.focus();
+          printWindow.print();
+          setIsGenerating(false);
+        }
+      }, 2500);
+
+      toast({ title: "Print dialog opened", description: "Use Save as PDF in the browser dialog." });
     } catch (err) {
       console.error(err);
-      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
-    } finally {
+      toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
       setIsGenerating(false);
     }
   };
@@ -795,10 +748,10 @@ export default function AcademicCVGenerator() {
       {/* Generate Button */}
       <div className="text-center space-y-4 mt-6">
         <Button size="lg" onClick={generatePDF} disabled={isGenerating} className="w-full sm:w-auto px-8">
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF…</> : <><Download className="w-4 h-4 mr-2" />Download PDF</>}
+          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Opening Print…</> : <><Printer className="w-4 h-4 mr-2" />Print / Save as PDF</>}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Downloads the generated CV directly as a PDF file.
+          Uses your browser print backend (stable layout) so you can Save as PDF.
         </p>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}
@@ -844,7 +797,7 @@ export default function AcademicCVGenerator() {
           showPreview ? (
             <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
               <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                <iframe ref={previewIframeRef} srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
               </div>
             </div>
           ) : <div className="h-full overflow-y-auto pr-1">{formContent}</div>
@@ -856,7 +809,7 @@ export default function AcademicCVGenerator() {
             <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
               <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
                 <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                  <iframe ref={previewIframeRef} srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                  <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
                 </div>
               </div>
             </div>
