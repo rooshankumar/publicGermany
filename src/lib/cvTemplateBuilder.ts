@@ -89,7 +89,7 @@ function formatCoreCoursework(subjects?: string): string {
 
   if (parts.length === 0) return "";
 
-  return `<div class="core-coursework-title">Core Coursework</div><ul class="core-coursework-list">${parts.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  return `<div class="core-coursework-title">Core Coursework</div><ul class="cv-list core-coursework-list">${parts.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
 function plainLinesFromHtml(value?: string): string[] {
@@ -125,7 +125,23 @@ function formatBullets(value?: string, className = "bullet-list"): string {
     .filter(Boolean);
   const lines = multiline.length > 1 ? multiline.map(line => escapeHtml(line)) : plainLinesFromHtml(value).map(line => escapeHtml(line));
   if (!lines.length) return "";
-  return `<ul class="cv-bullets ${className}">${lines.map(line => `<li>${line}</li>`).join("")}</ul>`;
+  return `<ul class="cv-list ${className}">${lines.map(line => `<li>${line}</li>`).join("")}</ul>`;
+}
+
+function encodeBase64Unicode(value: string): string {
+  try {
+    if (typeof globalThis !== "undefined" && typeof globalThis.btoa === "function") {
+      return globalThis.btoa(unescape(encodeURIComponent(value)));
+    }
+  } catch {
+    // no-op
+  }
+
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(value, "utf-8").toString("base64");
+  }
+
+  return "";
 }
 
 export interface CVPersonalInfo {
@@ -299,7 +315,7 @@ ${langRows}
     <div class="section certifications-section">
     <div class="section-title">Certifications</div>
     <div class="section-content">
-    <ul class="bullet-list">
+    <ul class="cv-list bullet-list">
     ${certifications.map(c => {
       const certDate = formatMonthYear(c.date);
       return `<li>${escapeHtml(c.title)}${c.institution ? ` | ${escapeHtml(c.institution)}` : ""}${certDate ? ` | ${certDate}` : ""}</li>`;
@@ -371,6 +387,23 @@ const addressLine = personal.address
 const photoStyle = `object-fit: cover; object-position: ${photoPositionX}% ${photoPositionY}%; transform: scale(${photoZoom / 100});`;
 const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
 const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
+const metadataPayload = {
+  generator: "publicgermany-cv",
+  version: "1.0",
+  data: {
+    personal,
+    educations,
+    workExperiences,
+    languages,
+    certifications,
+    publications,
+    customSections,
+    recommendations,
+    buildOptions: options,
+  },
+};
+const encodedMetadata = encodeBase64Unicode(JSON.stringify(metadataPayload));
+const metadataText = encodedMetadata ? `PGCVMETA:${encodedMetadata}` : "";
 
 // Build personal details lines - compact academic grouping
 const personalLines: string[] = [];
@@ -547,7 +580,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     /* ===== BODY CONTENT ===== */
     .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
-    .section-content { page-break-inside: avoid; break-inside: avoid; }
+    .section-content { display: block; page-break-inside: avoid; break-inside: avoid; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
     .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
@@ -568,21 +601,23 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .lang-level-cell, .lang-table th:not(:first-child) { text-align: center; }
     .lang-table th:first-child { text-align: left; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
-    .cv-bullets, .bullet-list, .work-bullet-list, .core-coursework-list {
-      margin: 6px 0 6px 18px;
-      padding-left: 18px;
+    .cv-list, .bullet-list, .work-bullet-list, .core-coursework-list {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
       list-style: disc;
       list-style-position: outside;
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .cv-bullets li, .bullet-list li, .work-bullet-list li, .core-coursework-list li {
-      margin-bottom: 1px;
-      line-height: 1.4;
+    .cv-list li, .bullet-list li, .work-bullet-list li, .core-coursework-list li {
+      display: list-item;
+      margin-bottom: 5px;
+      line-height: 1.35;
       font-size: 11.5px;
       color: #111;
     }
-    .cv-bullets li::marker, .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
+    .cv-list li::marker, .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
       font-size: 1.1em;
       color: #111;
     }
@@ -606,8 +641,11 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     a { color: #0b4a8b; text-decoration: underline; cursor: pointer; pointer-events: auto; }
     /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; margin-bottom: 18px; }
+    .section-title { page-break-after: avoid; }
+    .section-content { page-break-inside: avoid; break-inside: avoid; }
     .experience-item, .education-item, .project-item { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
+    .cv-list { page-break-inside: avoid; break-inside: avoid; }
 
     .pdf-export { width: 794px !important; min-height: 1123px !important; }
     .pdf-export .section,
@@ -623,6 +661,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .section-title + .entry, .section-title + .bullet-list, .section-title + .lang-table, .section-title + .mother-tongue-text { page-break-before: avoid; break-before: avoid; }
 
     @media print {
+      @page { margin: 22mm 18mm 22mm 18mm; }
       html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
       .cv-container { width: 210mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
       .section { page-break-inside: avoid; break-inside: avoid; }
@@ -633,6 +672,14 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     }
     @media screen {
       .cv-container { box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08); border-radius: 10px; margin: 16px auto; }
+    }
+    .cv-metadata {
+      font-size: 1px;
+      line-height: 1;
+      color: #ffffff;
+      user-select: none;
+      word-break: break-all;
+      margin-top: 2px;
     }
 </style>
 </head>
@@ -692,6 +739,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
         <div class="sig-name">(${escapeHtml(personal.full_name)})</div>
       </td>
     </tr></table>
+    ${metadataText ? `<div class="cv-metadata">${metadataText}</div>` : ""}
   </div>
 </div>
 </body>

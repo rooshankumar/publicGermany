@@ -355,7 +355,7 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Direct PDF export from preview: what you see is what gets downloaded
+  // Browser-native HTML print export keeps selectable text, links, and ATS readability.
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
@@ -372,122 +372,58 @@ export default function AcademicCVGenerator() {
       toast({ title: "Education timeline warning", description: timelineWarnings[0] });
     }
 
-    let exportRoot: HTMLDivElement | null = null;
     setIsGenerating(true);
     try {
-      exportRoot = document.createElement("div");
-      exportRoot.style.position = "fixed";
-      exportRoot.style.left = "-99999px";
-      exportRoot.style.top = "0";
-      exportRoot.style.width = "210mm";
-      exportRoot.style.background = "#fff";
-      exportRoot.innerHTML = previewHtml;
-      document.body.appendChild(exportRoot);
-
-      const exportCv = exportRoot.querySelector(".cv-container") as HTMLElement | null;
-      if (!exportCv) {
-        exportRoot.remove();
-        throw new Error("Preview not ready yet. Please wait a moment and try again.");
+      const printWindow = window.open("", "_blank", "noopener,noreferrer");
+      if (!printWindow) {
+        throw new Error("Unable to open print window. Please allow popups and try again.");
       }
 
-      const images = Array.from(exportCv.querySelectorAll("img"));
-      await Promise.all(images.map(img => {
-        if ((img as HTMLImageElement).complete) return Promise.resolve();
-        return new Promise<void>(resolve => {
-          img.addEventListener("load", () => resolve(), { once: true });
-          img.addEventListener("error", () => resolve(), { once: true });
-        });
-      }));
+      const safeTitle = `${personal.full_name || "Candidate"} CV`;
+      const printableHtml = previewHtml.replace("</head>", `<title>${safeTitle}</title></head>`);
 
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      printWindow.document.open();
+      printWindow.document.write(printableHtml);
+      printWindow.document.close();
 
-      const canvas = await html2canvas(exportCv, {
-        scale: Math.max(window.devicePixelRatio, 3),
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        width: exportCv.scrollWidth,
-        windowWidth: exportCv.scrollWidth,
-        height: exportCv.scrollHeight,
-        windowHeight: exportCv.scrollHeight,
+      await new Promise<void>((resolve) => {
+        const onReady = async () => {
+          const images = Array.from(printWindow.document.querySelectorAll("img"));
+          await Promise.all(images.map((img) => {
+            if ((img as HTMLImageElement).complete) return Promise.resolve();
+            return new Promise<void>((imageResolve) => {
+              img.addEventListener("load", () => imageResolve(), { once: true });
+              img.addEventListener("error", () => imageResolve(), { once: true });
+            });
+          }));
+
+          if (printWindow.document.fonts?.ready) {
+            await printWindow.document.fonts.ready;
+          }
+
+          printWindow.focus();
+          printWindow.print();
+          setTimeout(() => {
+            printWindow.close();
+            resolve();
+          }, 500);
+        };
+
+        if (printWindow.document.readyState === "complete") {
+          void onReady();
+          return;
+        }
+
+        printWindow.addEventListener("load", () => {
+          void onReady();
+        }, { once: true });
       });
 
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const pxPerMm = canvas.width / pageWidth;
-      const pageHeightPx = Math.floor(pageHeight * pxPerMm);
-      const pageCount = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
-
-      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-        if (pageIndex > 0) doc.addPage();
-
-        const sourceY = pageIndex * pageHeightPx;
-        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - sourceY);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeightPx;
-
-        const context = pageCanvas.getContext("2d");
-        if (!context) throw new Error("Unable to create export canvas context");
-
-        context.drawImage(
-          canvas,
-          0,
-          sourceY,
-          canvas.width,
-          sliceHeightPx,
-          0,
-          0,
-          canvas.width,
-          sliceHeightPx,
-        );
-
-        const imageData = pageCanvas.toDataURL("image/png");
-        const renderHeightMm = sliceHeightPx / pxPerMm;
-        doc.addImage(imageData, "PNG", 0, 0, pageWidth, renderHeightMm, undefined, "SLOW");
-      }
-
-      const metadataPayload = {
-        generator: "publicgermany-cv",
-        version: "1.0",
-        data: {
-          personal,
-          educations,
-          workExperiences,
-          languages,
-          certifications,
-          publications,
-          customSections,
-          recommendations,
-          buildOptions,
-        },
-      };
-      const encodedMetadata = btoa(unescape(encodeURIComponent(JSON.stringify(metadataPayload))));
-      doc.setProperties({
-        title: `${personal.full_name || "Candidate"} CV`,
-        subject: "PublicGermany Academic CV",
-        keywords: `PGCVMETA:${encodedMetadata}`,
-        creator: "PublicGermany CV Generator",
-      });
-      doc.setPage(1);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(1);
-      doc.text(`PGCVMETA:${encodedMetadata}`, 1, 296, { baseline: "bottom" });
-
-      const safeName = (personal.full_name || "candidate")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "")
-        .replace(/^_+|_+$/g, "") || "candidate";
-      doc.save(`${safeName}_CV.pdf`);
-
-      toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
+      toast({ title: "Print dialog opened", description: "Use Save as PDF to export a selectable, ATS-friendly CV." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
     } finally {
-      exportRoot?.remove();
       setIsGenerating(false);
     }
   };
