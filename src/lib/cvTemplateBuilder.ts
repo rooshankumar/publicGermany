@@ -94,7 +94,7 @@ function formatCoreCoursework(subjects?: string): string {
 
 function plainLinesFromHtml(value?: string): string[] {
   if (!value) return [];
-  return sanitizeHtml(value)
+  const lines = sanitizeHtml(value)
     .replace(/<\/(?:p|div|h[1-6])>/gi, "\n")
     .replace(/<(?:p|div|h[1-6])[^>]*>/gi, "")
     .replace(/<br\s*\/?\s*>/gi, "\n")
@@ -105,6 +105,15 @@ function plainLinesFromHtml(value?: string): string[] {
     .map(item => item.trim())
     .filter(Boolean)
     .map(line => line.replace(/\s{2,}/g, " ").trim());
+
+  if (lines.length === 1 && /[.!?]/.test(lines[0])) {
+    return lines[0]
+      .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return lines;
 }
 
 function formatBullets(value?: string, className = "bullet-list"): string {
@@ -299,10 +308,14 @@ const customHtml = customSections
       const isTechnicalSkillsSection = /technical\s+skills/i.test(section.title);
 
       if (isTechnicalSkillsSection) {
-        const values = [item.label, ...plainLinesFromHtml(item.description).map(v => escapeHtml(v))].filter(Boolean);
+        const values = plainLinesFromHtml(item.description)
+          .flatMap(v => v.split(","))
+          .map(v => v.trim())
+          .filter(Boolean)
+          .map(v => escapeHtml(v));
         const label = escapeHtml(item.label || "Skills");
         const unique = Array.from(new Set(values.map(v => String(v).trim()).filter(Boolean)));
-        const list = unique.join(", ");
+        const list = unique.join(", ") || "—";
         return `<div class="entry skills-line-entry"><strong>${label}:</strong> ${list}</div>`;
       }
 
@@ -343,31 +356,22 @@ const photoStyle = `object-fit: cover; object-position: ${photoPositionX}% ${pho
 const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
 const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
 
-// Build personal details lines - only show filled fields
+// Build personal details lines - compact academic grouping
 const personalLines: string[] = [];
-const line1Parts: string[] = [];
+const row2: string[] = [];
+const row3: string[] = [];
 
-if (personal.passport_number) line1Parts.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
-if (personal.date_of_birth) line1Parts.push(`<span class="label">Date of Birth:</span> ${formatDateDMY(personal.date_of_birth)}`);
-if (personal.nationality) line1Parts.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
-if (personal.gender) line1Parts.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
+if (personal.passport_number) row2.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
+if (personal.date_of_birth) row2.push(`<span class="label">Date of Birth:</span> ${formatDateDMY(personal.date_of_birth)}`);
+if (personal.place_of_birth) row2.push(`<span class="label">Place of Birth:</span> ${escapeHtml(personal.place_of_birth)}`);
 
-if (line1Parts.length > 0)
-  personalLines.push(`<div>${line1Parts.join(" | ")}</div>`);
+if (personal.nationality) row3.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
+if (personal.gender) row3.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
+if (personal.phone) row3.push(`<span class="label">Phone:</span> ${escapeHtml(personal.phone)}`);
+if (personal.email) row3.push(`<span class="label">Email:</span> <a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a>`);
 
-if (personal.place_of_birth)
-  personalLines.push(`<div><span class="label">Place of Birth:</span> ${escapeHtml(personal.place_of_birth)}</div>`);
-
-const contactParts: string[] = [];
-
-if (personal.phone)
-  contactParts.push(`<span class="label">Phone:</span> ${escapeHtml(personal.phone)}`);
-
-if (personal.email)
-  contactParts.push(`<span class="label">Email:</span> <a href="mailto:${escapeHtml(personal.email)}">${escapeHtml(personal.email)}</a>`);
-
-if (contactParts.length > 0)
-  personalLines.push(`<div>${contactParts.join(" | ")}</div>`);
+if (row2.length > 0) personalLines.push(`<div>${row2.join(" | ")}</div>`);
+if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -548,7 +552,7 @@ if (contactParts.length > 0)
     .lang-table th:first-child { text-align: left; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
     .bullet-list, .work-bullet-list, .core-coursework-list {
-      margin: 6px 0 6px 22px;
+      margin: 6px 0 6px 18px;
       padding: 0;
       list-style: disc;
       list-style-position: outside;
@@ -557,8 +561,8 @@ if (contactParts.length > 0)
     }
     .bullet-list li, .work-bullet-list li, .core-coursework-list li {
       margin-bottom: 2px;
-      line-height: 1.55;
-      font-size: 10px;
+      line-height: 1.5;
+      font-size: 11.5px;
       color: #111;
     }
     .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
@@ -584,7 +588,7 @@ if (contactParts.length > 0)
     img { max-width: 100%; height: auto; }
     a { color: #0b4a8b; text-decoration: none; }
     /* Section-level page break control */
-    .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; }
+    .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; margin-bottom: 18px; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
 
     .pdf-export { width: 794px !important; min-height: 1123px !important; }
