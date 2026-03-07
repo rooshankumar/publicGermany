@@ -54,7 +54,7 @@ const emptyLanguage = (): CVLanguage => ({
 const emptyPublication = (): CVPublication => ({ title: "", journal: "", year: undefined });
 const emptyCertification = (): CVCertification => ({ title: "", institution: "", date: "" });
 const emptyCustomSection = (): CVCustomSection => ({ title: "", items: [{ label: "", description: "" }] });
-const emptyRecommendation = (): CVRecommendation => ({ name: "", designation: "", institution: "", email: "", contact: "" });
+const emptyRecommendation = (): CVRecommendation => ({ name: "", designation: "", department: "", institution: "", email: "", contact: "" });
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -108,6 +108,66 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
       />
     </div>
   );
+}
+
+
+function isValidDOB(value: string): boolean {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  if (d > now) return false;
+  const age = now.getFullYear() - d.getFullYear() - (now < new Date(now.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+  return age >= 15 && age <= 100;
+}
+
+function normalizeMonthYearInput(value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  if (/^\d{4}$/.test(v)) return v;
+  const normalized = v.replace(/\./g, " ").replace(/\s+/g, " ").trim();
+  const match = normalized.match(/^([A-Za-z]{3,9})\s+(\d{4})$/);
+  if (match) {
+    const d = new Date(`${match[1]} 1, ${match[2]}`);
+    if (!Number.isNaN(d.getTime())) return `${d.toLocaleString("en-US", { month: "short" })} ${match[2]}`;
+  }
+  if (/^\d{4}-\d{2}$/.test(v)) {
+    const [year, month] = v.split("-").map(Number);
+    if (month >= 1 && month <= 12) return `${new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" })} ${year}`;
+  }
+  return value;
+}
+
+function validateEducationTimeline(educations: CVEducation[]): string[] {
+  const warnings: string[] = [];
+  const sorted = [...educations].sort((a, b) => a.start_year - b.start_year);
+  const levelScore = (degree: string) => {
+    const value = degree.toLowerCase();
+    if (value.includes("school") || value.includes("secondary") || value.includes("high school")) return 1;
+    if (value.includes("bachelor") || value.includes("b.tech") || value.includes("bsc") || value.includes("ba")) return 2;
+    if (value.includes("master") || value.includes("m.tech") || value.includes("msc") || value.includes("ma")) return 3;
+    if (value.includes("phd") || value.includes("doctor")) return 4;
+    return 0;
+  };
+
+  sorted.forEach((edu, index) => {
+    if (edu.end_year < edu.start_year) {
+      warnings.push(`${edu.degree_title || "Education entry"}: end year is before start year.`);
+    }
+
+    if (index > 0) {
+      const prev = sorted[index - 1];
+      const gap = edu.start_year - prev.end_year;
+      if (gap > 2) warnings.push(`Gap of ${gap} years between ${prev.degree_title || "previous education"} and ${edu.degree_title || "next education"}.`);
+
+      const prevScore = levelScore(prev.degree_title || "");
+      const currentScore = levelScore(edu.degree_title || "");
+      if (prevScore > 0 && currentScore > 0 && currentScore < prevScore) {
+        warnings.push(`Education order may be inconsistent: ${prev.degree_title} appears before ${edu.degree_title}.`);
+      }
+    }
+  });
+
+  return warnings;
 }
 
 // Reorder helpers
@@ -219,6 +279,20 @@ export default function AcademicCVGenerator() {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
       return;
     }
+
+    if (personal.date_of_birth && !isValidDOB(personal.date_of_birth)) {
+      toast({ title: "Invalid Date of Birth", description: "Use a realistic date (age should be at least 15 and not in the future).", variant: "destructive" });
+      return;
+    }
+
+    const timelineWarnings = validateEducationTimeline(educations);
+    if (timelineWarnings.length > 0) {
+      toast({
+        title: "Education timeline warning",
+        description: timelineWarnings[0],
+      });
+    }
+
     setIsGenerating(true);
     try {
       const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
@@ -232,6 +306,7 @@ export default function AcademicCVGenerator() {
 
       printWindow.document.open();
       printWindow.document.write(html);
+      printWindow.document.title = `Academic CV - ${personal.full_name || "Candidate"}`;
       printWindow.document.close();
 
       // Wait for content and images to load then print
@@ -252,7 +327,7 @@ export default function AcademicCVGenerator() {
         }
       }, 3000);
 
-      toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' to download your CV." });
+      toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' to download your CV and disable browser headers/footers for a clean export." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
@@ -309,7 +384,7 @@ export default function AcademicCVGenerator() {
             <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
             <div><Label className="text-xs">Email *</Label><Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" /></div>
             <div><Label className="text-xs">Phone</Label><Input value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="+91 9876543210" /></div>
-            <div><Label className="text-xs">Date of Birth</Label><Input type="date" value={personal.date_of_birth} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
+            <div><Label className="text-xs">Date of Birth</Label><Input type="date" value={personal.date_of_birth} max={new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split("T")[0]} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
             <div><Label className="text-xs">Nationality</Label><Input value={personal.nationality} onChange={e => updatePersonal("nationality", e.target.value)} placeholder="Indian" /></div>
             <div><Label className="text-xs">Gender</Label><Input value={personal.gender} onChange={e => updatePersonal("gender", e.target.value)} placeholder="Male / Female" /></div>
             <div><Label className="text-xs">Passport Number</Label><Input value={personal.passport_number} onChange={e => updatePersonal("passport_number", e.target.value)} /></div>
@@ -411,11 +486,11 @@ export default function AcademicCVGenerator() {
                     <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div><Label className="text-xs">Start Date</Label><Input type="date" value={w.start_date} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
+                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div className="flex items-end gap-3">
                       <div className="flex-1">
-                        <Label className="text-xs">End Date</Label>
-                        <Input type="date" value={w.end_date || ""} disabled={w.is_current} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
+                        <Label className="text-xs">End Date (Mon YYYY)</Label>
+                        <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
                       </div>
                       <div className="flex items-center gap-1.5 pb-1.5">
                         <Switch
@@ -523,7 +598,7 @@ export default function AcademicCVGenerator() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div><Label className="text-xs">Title *</Label><Input value={c.title} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], title: e.target.value }; setCertifications(n); }} /></div>
                   <div><Label className="text-xs">Institution</Label><Input value={c.institution || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], institution: e.target.value }; setCertifications(n); }} /></div>
-                  <div><Label className="text-xs">Date</Label><Input type="date" value={c.date || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
+                  <div><Label className="text-xs">Date (YYYY or Mon YYYY)</Label><Input value={c.date || ""} placeholder="2023 or Jun 2023" onBlur={e => { const n = [...certifications]; n[i] = { ...n[i], date: normalizeMonthYearInput(e.target.value) }; setCertifications(n); }} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
                 </div>
                 <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setCertifications(certifications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
               </div>
@@ -594,6 +669,7 @@ export default function AcademicCVGenerator() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div><Label className="text-xs">Name *</Label><Input value={r.name} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], name: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Designation</Label><Input value={r.designation || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], designation: e.target.value }; setRecommendations(n); }} /></div>
+                  <div><Label className="text-xs">Department</Label><Input value={r.department || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], department: e.target.value }; setRecommendations(n); }} placeholder="Department of Computer Science" /></div>
                   <div><Label className="text-xs">Institution</Label><Input value={r.institution || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], institution: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Email</Label><Input value={r.email || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], email: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Contact</Label><Input value={r.contact || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], contact: e.target.value }; setRecommendations(n); }} /></div>

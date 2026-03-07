@@ -21,6 +21,58 @@ function formatDateDMY(dateStr: string | null): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function formatMonthYear(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const value = dateStr.trim();
+  if (!value) return "";
+
+  const normalized = value.replace(/\./g, " ").replace(/\s+/g, " ").trim();
+  const monthYearMatch = normalized.match(/^([A-Za-z]{3,9})\s+(\d{4})$/);
+  if (monthYearMatch) {
+    const monthName = new Date(`${monthYearMatch[1]} 1, 2000`).toLocaleString("en-US", { month: "short" });
+    if (monthName !== "Invalid Date") return `${monthName} ${monthYearMatch[2]}`;
+  }
+
+  if (/^\d{4}$/.test(normalized)) return normalized;
+
+  if (/^\d{4}-\d{2}$/.test(normalized)) {
+    const [year, month] = normalized.split("-").map(Number);
+    if (month >= 1 && month <= 12) {
+      return `${new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" })} ${year}`;
+    }
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    const d = new Date(`${normalized}T00:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    }
+  }
+
+  const fallback = new Date(value);
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+
+  return escapeHtml(value);
+}
+
+function formatGrade(finalGrade?: string, maxScale?: number, creditSystem?: string): string {
+  if (!finalGrade) return "";
+  const numericGrade = Number(finalGrade);
+  const isPercentageSystem = (creditSystem || "").toLowerCase().includes("percent") || maxScale === 100;
+
+  if (isPercentageSystem && !Number.isNaN(numericGrade)) {
+    return `Grade: ${Math.min(Math.max(numericGrade, 0), 100)}%`;
+  }
+
+  if (maxScale && maxScale > 0) {
+    return `Grade: ${escapeHtml(finalGrade)} / ${maxScale}`;
+  }
+
+  return `Grade: ${escapeHtml(finalGrade)}`;
+}
+
 export interface CVPersonalInfo {
   full_name?: string;
   passport_number?: string;
@@ -92,6 +144,7 @@ export interface CVCustomSection {
 export interface CVRecommendation {
   name: string;
   designation?: string;
+  department?: string;
   institution?: string;
   email?: string;
   contact?: string;
@@ -130,7 +183,7 @@ export function buildCVHtml(
   ${edu.key_subjects ? `<div class="academic-meta"><strong>Core coursework:</strong> ${sanitizeHtml(edu.key_subjects)}</div>` : ""}
   <div class="academic-meta">
     ${edu.thesis_title ? `<strong>Thesis:</strong> <em>${escapeHtml(edu.thesis_title)}</em><br>` : ""}
-    ${edu.final_grade ? `Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale || ""}` : ""}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}
+    ${formatGrade(edu.final_grade, edu.max_scale, edu.credit_system)}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}
   </div>
 </div>`).join("\n");
 
@@ -138,9 +191,9 @@ export function buildCVHtml(
     <div class="section-title">Research Publications</div>
     ${publications.map(pub => `
 <div class="entry research-entry">
-  <div class="research-title"><strong>${escapeHtml(pub.title)}</strong></div>
+  <div class="research-title"><strong>${escapeHtml(pub.title)}</strong>${pub.year ? ` — ${pub.year}` : ""}</div>
   <div class="academic-meta">
-    ${escapeHtml(pub.journal)}${pub.year ? ` — ${pub.year}` : ""}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}">${escapeHtml(pub.doi_url)}</a>` : ""}
+    ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}">${escapeHtml(pub.doi_url)}</a>` : ""}
   </div>
 </div>`).join("\n")}` : "";
 
@@ -150,7 +203,7 @@ export function buildCVHtml(
 <div class="entry work-entry">
   <table class="entry-row-table"><tr>
     <td class="entry-title-cell">${escapeHtml(w.job_title).toUpperCase()}</td>
-    <td class="entry-date-cell">${formatDateDMY(w.start_date)} – ${w.is_current ? "Present" : formatDateDMY(w.end_date)}</td>
+    <td class="entry-date-cell">${formatMonthYear(w.start_date)} – ${w.is_current ? "Present" : formatMonthYear(w.end_date)}</td>
   </tr></table>
   <div class="sub-info">${escapeHtml(w.organisation)}${w.city_country ? `, ${escapeHtml(w.city_country)}` : ""}</div>
   ${w.description ? `<div class="academic-meta">${sanitizeHtml(w.description)}</div>` : ""}
@@ -169,8 +222,8 @@ ${langRows}
     <div class="section-title">Certifications</div>
     <ul class="bullet-list">
     ${certifications.map(c => {
-      const yr = c.date ? new Date(c.date).getFullYear() : "";
-      return `<li>${escapeHtml(c.title)}${c.institution ? ` | ${escapeHtml(c.institution)}` : ""}${yr ? ` | ${yr}` : ""}</li>`;
+      const certDate = formatMonthYear(c.date);
+      return `<li>${escapeHtml(c.title)}${c.institution ? ` | ${escapeHtml(c.institution)}` : ""}${certDate ? ` | ${certDate}` : ""}</li>`;
     }).join("")}
     </ul>` : "";
 
@@ -182,10 +235,12 @@ const customHtml = customSections
     ${section.items.map(item => {
 
       // TITLE + DESCRIPTION
+      const isTechnicalSkillsSection = /technical\s+skills/i.test(section.title);
+
       if (item.description) {
         return `
-        <div class="entry">
-          <strong>${escapeHtml(item.label)}</strong><br>
+        <div class="entry ${isTechnicalSkillsSection ? "skills-entry" : ""}">
+          <strong>${escapeHtml(item.label)}</strong>${isTechnicalSkillsSection ? ":" : "<br>"}
           ${sanitizeHtml(item.description)}
         </div>`;
       }
@@ -202,7 +257,7 @@ const customHtml = customSections
     ${recommendations.map(r => `
 <div class="entry">
     <strong>${escapeHtml(r.name)}</strong>
-    <div class="academic-meta">${[r.designation, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}${r.lor_link ? ` | <em>Download LOR Certificate</em>: <a href="${escapeHtml(r.lor_link)}">${escapeHtml(r.lor_link)}</a>` : ""}</div>
+    <div class="academic-meta">${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}${r.lor_link ? ` | <em>Download LOR Certificate</em>: <a href="${escapeHtml(r.lor_link)}">${escapeHtml(r.lor_link)}</a>` : ""}</div>
 </div>`).join("\n")}` : "";
 
 const linkedinLine = personal.linkedin_url
@@ -222,7 +277,7 @@ const personalLines: string[] = [];
 const line1Parts: string[] = [];
 
 if (personal.passport_number) line1Parts.push(`<span class="label">Passport:</span> ${escapeHtml(personal.passport_number)}`);
-if (personal.date_of_birth) line1Parts.push(`<span class="label">DOB:</span> ${formatDateDMY(personal.date_of_birth)}`);
+if (personal.date_of_birth) line1Parts.push(`<span class="label">Date of Birth:</span> ${formatDateDMY(personal.date_of_birth)}`);
 if (personal.nationality) line1Parts.push(`<span class="label">Nationality:</span> ${escapeHtml(personal.nationality)}`);
 if (personal.gender) line1Parts.push(`<span class="label">Gender:</span> ${escapeHtml(personal.gender)}`);
 
@@ -366,6 +421,8 @@ if (contactParts.length > 0)
     .entry-title-cell { font-weight: 700; font-size: 11px; text-align: left; }
     .entry-date-cell { font-weight: 700; font-size: 10px; text-align: right; white-space: nowrap; width: 160px; }
     .entry { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+    .skills-entry { margin-bottom: 3px; }
+    .skills-entry strong { margin-right: 3px; }
     .sub-info { font-style: italic; color: #444; margin: 1px 0; font-size: 10px; }
     .academic-meta { font-size: 9.5px; color: #444; margin: 2px 0; line-height: 1.4; }
     /* Language table */
