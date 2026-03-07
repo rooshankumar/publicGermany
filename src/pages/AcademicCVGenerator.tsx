@@ -241,6 +241,7 @@ export default function AcademicCVGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
 
   const [photoPosition, setPhotoPosition] = useState("center");
@@ -292,6 +293,14 @@ export default function AcademicCVGenerator() {
     if (data.workExperiences?.length) setWorkExperiences(data.workExperiences);
     if (data.languages?.length) setLanguages(data.languages);
     if (data.certifications?.length) setCertifications(data.certifications);
+    if (data.publications?.length) setPublications(data.publications);
+    if (data.customSections?.length) setCustomSections(data.customSections);
+    if (data.recommendations?.length) setRecommendations(data.recommendations);
+    if (data.buildOptions) {
+      if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
+      if (data.buildOptions.photoPosition) setPhotoPosition(data.buildOptions.photoPosition);
+      if (data.buildOptions.photoZoom) setPhotoZoom(data.buildOptions.photoZoom);
+    }
   }, []);
 
   const buildOptions: CVBuildOptions = { headerBgColor, photoPosition, photoZoom };
@@ -333,23 +342,30 @@ export default function AcademicCVGenerator() {
 
     setIsGenerating(true);
     try {
-      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
+      const previewDoc = previewIframeRef.current?.contentDocument;
+      const previewCv = previewDoc?.querySelector(".cv-container") as HTMLElement | null;
 
       const container = document.createElement("div");
       container.style.position = "fixed";
       container.style.left = "-99999px";
       container.style.top = "0";
-      container.style.width = "794px";
-      container.innerHTML = html;
-      document.body.appendChild(container);
 
-      const cvElement = container.querySelector(".cv-container") as HTMLElement | null;
+      let cvElement: HTMLElement | null = null;
+      if (previewCv) {
+        cvElement = previewCv.cloneNode(true) as HTMLElement;
+        container.appendChild(cvElement);
+      } else {
+        const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
+        container.style.width = "210mm";
+        container.innerHTML = html;
+        cvElement = container.querySelector(".cv-container") as HTMLElement | null;
+      }
+
+      document.body.appendChild(container);
       if (!cvElement) {
         container.remove();
         throw new Error("Failed to render CV content for PDF export.");
       }
-
-      cvElement.classList.add("pdf-export");
 
       const images = Array.from(cvElement.querySelectorAll("img"));
       await Promise.all(images.map(img => {
@@ -364,33 +380,53 @@ export default function AcademicCVGenerator() {
       const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
 
       const canvas = await html2canvas(cvElement, {
-        scale: 2,
+        scale: 1,
         useCORS: true,
         backgroundColor: "#ffffff",
         width: cvElement.scrollWidth,
         windowWidth: cvElement.scrollWidth,
       });
 
-      const margin = 8;
       const pageWidth = 210;
       const pageHeight = 297;
-      const printableWidth = pageWidth - margin * 2;
-      const printableHeight = pageHeight - margin * 2;
-      const imageHeight = (canvas.height * printableWidth) / canvas.width;
-      const imageData = canvas.toDataURL("image/jpeg", 0.98);
+      const imageHeight = (canvas.height * pageWidth) / canvas.width;
+      const imageData = canvas.toDataURL("image/jpeg", 1.0);
 
       let heightLeft = imageHeight;
-      let position = margin;
+      let position = 0;
 
-      doc.addImage(imageData, "JPEG", margin, position, printableWidth, imageHeight, undefined, "FAST");
-      heightLeft -= printableHeight;
+      doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
+      heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position = margin - (imageHeight - heightLeft);
+        position = -(imageHeight - heightLeft);
         doc.addPage();
-        doc.addImage(imageData, "JPEG", margin, position, printableWidth, imageHeight, undefined, "FAST");
-        heightLeft -= printableHeight;
+        doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
+        heightLeft -= pageHeight;
       }
+
+      const metadataPayload = {
+        generator: "publicgermany-cv",
+        version: "1.0",
+        data: {
+          personal,
+          educations,
+          workExperiences,
+          languages,
+          certifications,
+          publications,
+          customSections,
+          recommendations,
+          buildOptions,
+        },
+      };
+      const encodedMetadata = btoa(unescape(encodeURIComponent(JSON.stringify(metadataPayload))));
+      doc.setPage(1);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(1);
+      doc.text(`PGCVMETA:${encodedMetadata}`, 1, 296, { baseline: "bottom" });
+
+      container.remove();
 
       const safeName = (personal.full_name || "candidate")
         .trim()
@@ -808,7 +844,7 @@ export default function AcademicCVGenerator() {
           showPreview ? (
             <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
               <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                <iframe ref={previewIframeRef} srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
               </div>
             </div>
           ) : <div className="h-full overflow-y-auto pr-1">{formContent}</div>
@@ -820,7 +856,7 @@ export default function AcademicCVGenerator() {
             <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
               <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
                 <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                  <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+                  <iframe ref={previewIframeRef} srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
                 </div>
               </div>
             </div>

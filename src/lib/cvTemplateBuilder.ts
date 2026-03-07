@@ -314,8 +314,8 @@ if (contactParts.length > 0)
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body { font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif; line-height: 1.35; color: #000; font-size: 10.5px; }
     .cv-container {
-      width: 794px;
-      min-height: 1123px;
+      width: 210mm;
+      min-height: 297mm;
       margin: 0 auto;
       padding: 0;
       background: #fff;

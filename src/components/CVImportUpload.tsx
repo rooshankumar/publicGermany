@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { parseExtractedText, extractTextFromPDF, extractTextFromDOCX, ImportedCVData } from "@/lib/cvImporter";
+import { parseExtractedText, extractTextFromPDF, extractTextFromDOCX, extractEmbeddedCVDataFromPDF, ImportedCVData } from "@/lib/cvImporter";
 
 interface CVImportUploadProps {
   onImport: (data: ImportedCVData) => void;
@@ -36,6 +36,18 @@ export default function CVImportUpload({ onImport }: CVImportUploadProps) {
     try {
       let text: string;
       if (ext === "pdf") {
+        const embeddedData = await extractEmbeddedCVDataFromPDF(file);
+        if (embeddedData) {
+          onImport(embeddedData);
+          setImported(true);
+          toast({
+            title: "CV Imported for Editing",
+            description: "Detected PublicGermany metadata and restored your editable CV data.",
+          });
+          setIsParsing(false);
+          if (inputRef.current) inputRef.current.value = "";
+          return;
+        }
         text = await extractTextFromPDF(file);
       } else {
         text = await extractTextFromDOCX(file);

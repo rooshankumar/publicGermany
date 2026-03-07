@@ -3,7 +3,7 @@
  * Uses pattern matching to identify common CV sections and populate form fields.
  */
 
-import type { CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVCertification } from "./cvTemplateBuilder";
+import type { CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVCertification, CVPublication, CVCustomSection, CVRecommendation, CVBuildOptions } from "./cvTemplateBuilder";
 
 export interface ImportedCVData {
   personal: Partial<CVPersonalInfo>;
@@ -11,6 +11,10 @@ export interface ImportedCVData {
   workExperiences: CVWorkExperience[];
   languages: CVLanguage[];
   certifications: CVCertification[];
+  publications?: CVPublication[];
+  customSections?: CVCustomSection[];
+  recommendations?: CVRecommendation[];
+  buildOptions?: CVBuildOptions;
 }
 
 // Section header patterns
@@ -41,6 +45,33 @@ const COMMON_LANGUAGES = [
   "Turkish", "Dutch", "Bengali", "Tamil", "Telugu", "Urdu", "Marathi",
   "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia",
 ];
+
+const EMBEDDED_META_PREFIX = "PGCVMETA:";
+
+function decodeEmbeddedPayload(encoded: string): ImportedCVData | null {
+  try {
+    const normalized = encoded.replace(/\s+/g, "");
+    const json = decodeURIComponent(escape(atob(normalized)));
+    const parsed = JSON.parse(json);
+    if (parsed?.generator !== "publicgermany-cv" || !parsed?.data) return null;
+    return parsed.data as ImportedCVData;
+  } catch {
+    return null;
+  }
+}
+
+export function extractEmbeddedCVDataFromText(text: string): ImportedCVData | null {
+  if (!text) return null;
+  const compact = text.replace(/\s+/g, "");
+  const match = compact.match(new RegExp(`${EMBEDDED_META_PREFIX}([A-Za-z0-9+/=_-]+)`));
+  if (!match) return null;
+  return decodeEmbeddedPayload(match[1]);
+}
+
+export async function extractEmbeddedCVDataFromPDF(file: File): Promise<ImportedCVData | null> {
+  const text = await extractTextFromPDF(file);
+  return extractEmbeddedCVDataFromText(text);
+}
 
 function splitIntoSections(text: string): Record<string, string[]> {
   const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
