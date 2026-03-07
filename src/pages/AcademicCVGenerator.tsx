@@ -339,9 +339,10 @@ export default function AcademicCVGenerator() {
       toast({ title: "Education timeline warning", description: timelineWarnings[0] });
     }
 
+    let exportRoot: HTMLDivElement | null = null;
     setIsGenerating(true);
     try {
-      const exportRoot = document.createElement("div");
+      exportRoot = document.createElement("div");
       exportRoot.style.position = "fixed";
       exportRoot.style.left = "-99999px";
       exportRoot.style.top = "0";
@@ -369,7 +370,7 @@ export default function AcademicCVGenerator() {
       const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
 
       const canvas = await html2canvas(exportCv, {
-        scale: 2,
+        scale: Math.max(window.devicePixelRatio, 3),
         useCORS: true,
         backgroundColor: "#ffffff",
         width: exportCv.scrollWidth,
@@ -380,21 +381,39 @@ export default function AcademicCVGenerator() {
 
       const pageWidth = 210;
       const pageHeight = 297;
-      const imageHeight = (canvas.height * pageWidth) / canvas.width;
-      const imageData = canvas.toDataURL("image/jpeg", 1.0);
+      const pxPerMm = canvas.width / pageWidth;
+      const pageHeightPx = Math.floor(pageHeight * pxPerMm);
+      const pageCount = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
 
-      let heightLeft = imageHeight;
-      let position = 0;
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        if (pageIndex > 0) doc.addPage();
 
-      doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
+        const sourceY = pageIndex * pageHeightPx;
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - sourceY);
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
 
-      while (heightLeft > 0) {
-        position = -(imageHeight - heightLeft);
-        doc.addPage();
-        doc.addImage(imageData, "JPEG", 0, position, pageWidth, imageHeight, undefined, "FAST");
-        heightLeft -= pageHeight;
+        const context = pageCanvas.getContext("2d");
+        if (!context) throw new Error("Unable to create export canvas context");
+
+        context.drawImage(
+          canvas,
+          0,
+          sourceY,
+          canvas.width,
+          sliceHeightPx,
+          0,
+          0,
+          canvas.width,
+          sliceHeightPx,
+        );
+
+        const imageData = pageCanvas.toDataURL("image/png");
+        const renderHeightMm = sliceHeightPx / pxPerMm;
+        doc.addImage(imageData, "PNG", 0, 0, pageWidth, renderHeightMm, undefined, "SLOW");
       }
+
       const metadataPayload = {
         generator: "publicgermany-cv",
         version: "1.0",
@@ -424,12 +443,12 @@ export default function AcademicCVGenerator() {
         .replace(/^_+|_+$/g, "") || "candidate";
       doc.save(`${safeName}_CV.pdf`);
 
-      exportRoot.remove();
       toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
     } finally {
+      exportRoot?.remove();
       setIsGenerating(false);
     }
   };

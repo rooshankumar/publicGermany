@@ -312,7 +312,15 @@ if (contactParts.length > 0)
     @page { size: A4; margin: 10mm 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
-    body { font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif; line-height: 1.35; color: #000; font-size: 10.5px; }
+    body {
+      font-family: "Inter", "Segoe UI", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+      line-height: 1.45;
+      color: #111827;
+      font-size: 10.5px;
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
     .cv-container {
       width: 210mm;
       min-height: 297mm;
@@ -327,6 +335,7 @@ if (contactParts.length > 0)
     /* ===== HEADER: full-width background ===== */
 .header-band {
   background-color: ${headerBgColor};
+  background-image: linear-gradient(120deg, ${headerBgColor} 0%, #0f172a 140%);
   width: 100%;
   padding: 22px 28px 18px 28px;
 }
@@ -373,8 +382,8 @@ if (contactParts.length > 0)
 }
 
 .name-text {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 25px;
+  font-weight: 700;
   color: #ffffff;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -389,8 +398,8 @@ if (contactParts.length > 0)
 }
 
 .personal-details-block {
-  line-height: 1.6;
-  font-size: 10px;
+  line-height: 1.55;
+  font-size: 10.2px;
   color: #ffffff;
 }
 
@@ -422,25 +431,25 @@ if (contactParts.length > 0)
 }
     /* ===== BODY CONTENT ===== */
     .cv-body { padding: 0 28px 20px 28px; }
-    .section-title { font-size: 12px; font-weight: 700; color: #004a99; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #d5d5d5; margin: 16px 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
+    .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: 16px 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     .section-title::before { content: "• "; font-size: 14px; line-height: 1; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
     .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
-    .entry-title-cell { font-weight: 700; font-size: 11px; text-align: left; }
-    .entry-date-cell { font-weight: 700; font-size: 10px; text-align: right; white-space: nowrap; width: 160px; }
-    .entry { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+    .entry-title-cell { font-weight: 700; font-size: 11.1px; text-align: left; }
+    .entry-date-cell { font-weight: 700; font-size: 10.1px; text-align: right; white-space: nowrap; width: 160px; color: #1f2937; }
+    .entry { margin-bottom: 11px; page-break-inside: avoid; break-inside: avoid; }
     .skills-entry { margin-bottom: 3px; }
     .skills-entry strong { margin-right: 3px; }
-    .sub-info { font-style: italic; color: #444; margin: 1px 0; font-size: 10px; }
-    .academic-meta { font-size: 9.5px; color: #444; margin: 2px 0; line-height: 1.4; }
+    .sub-info { font-style: italic; color: #374151; margin: 2px 0; font-size: 10px; }
+    .academic-meta { font-size: 9.7px; color: #374151; margin: 2px 0; line-height: 1.45; }
     /* Language table */
     .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
-    .lang-table th, .lang-table td { border: 1px solid #bbb; padding: 5px 8px; text-align: center; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
-    .lang-table th { background-color: #f0f2f5; font-weight: 700; font-size: 9.5px; }
+    .lang-table th, .lang-table td { border: 1px solid #c8d2df; padding: 5px 8px; text-align: center; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+    .lang-table th { background-color: #f3f6fa; font-weight: 700; font-size: 9.5px; }
     .lang-name-cell { font-weight: 600; text-align: center; }
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
-    .bullet-list { margin: 4px 0 4px 18px; font-size: 10px; line-height: 1.5; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
+    .bullet-list { margin: 5px 0 5px 18px; font-size: 10px; line-height: 1.55; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
     .bullet-list li { margin-bottom: 3px; }
     /* Footer: signature + page number only */
     .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; page-break-inside: avoid; break-inside: avoid; }
@@ -453,7 +462,7 @@ if (contactParts.length > 0)
     .page-footer { text-align: right; font-size: 8px; color: #888; margin-top: 8px; padding-top: 4px; border-top: 0.5pt solid #ddd; }
     table { width: 100%; border-collapse: collapse; }
     img { max-width: 100%; height: auto; }
-    a { color: #004a99; text-decoration: none; }
+    a { color: #0b4a8b; text-decoration: none; }
     /* Section-level page break control */
     .section { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
@@ -480,7 +489,7 @@ if (contactParts.length > 0)
       p, li, .entry, .academic-meta { orphans: 3; widows: 3; }
     }
     @media screen {
-      .cv-container { box-shadow: 0 0 6px rgba(0,0,0,0.1); border-radius: 4px; margin: 16px auto; }
+      .cv-container { box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08); border-radius: 10px; margin: 16px auto; }
     }
 </style>
 </head>
