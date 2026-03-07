@@ -344,21 +344,11 @@ export default function AcademicCVGenerator() {
     try {
       const previewDoc = previewIframeRef.current?.contentDocument;
       const previewCv = previewDoc?.querySelector(".cv-container") as HTMLElement | null;
-      if (!previewCv) {
+      if (!previewCv || !previewDoc) {
         throw new Error("Preview not ready yet. Please wait a moment and try again.");
       }
 
-      const exportContainer = document.createElement("div");
-      exportContainer.style.position = "fixed";
-      exportContainer.style.left = "-99999px";
-      exportContainer.style.top = "0";
-      exportContainer.style.width = `${previewCv.scrollWidth}px`;
-
-      const cvClone = previewCv.cloneNode(true) as HTMLElement;
-      exportContainer.appendChild(cvClone);
-      document.body.appendChild(exportContainer);
-
-      const images = Array.from(cvClone.querySelectorAll("img"));
+      const images = Array.from(previewCv.querySelectorAll("img"));
       await Promise.all(images.map(img => {
         if ((img as HTMLImageElement).complete) return Promise.resolve();
         return new Promise<void>(resolve => {
@@ -367,15 +357,19 @@ export default function AcademicCVGenerator() {
         });
       }));
 
+      const originalOverflow = previewDoc.documentElement.style.overflow;
+      previewDoc.documentElement.style.overflow = "visible";
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
       const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
 
-      const canvas = await html2canvas(cvClone, {
-        scale: 1,
+      const canvas = await html2canvas(previewCv, {
+        scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        width: cvClone.scrollWidth,
-        windowWidth: cvClone.scrollWidth,
+        width: previewCv.scrollWidth,
+        windowWidth: previewCv.scrollWidth,
+        height: previewCv.scrollHeight,
+        windowHeight: previewCv.scrollHeight,
       });
 
       const pageWidth = 210;
@@ -425,9 +419,13 @@ export default function AcademicCVGenerator() {
         .replace(/^_+|_+$/g, "") || "candidate";
       doc.save(`${safeName}_CV.pdf`);
 
-      exportContainer.remove();
+      previewDoc.documentElement.style.overflow = originalOverflow;
       toast({ title: "Download started", description: "Your CV PDF has been generated and downloaded." });
     } catch (err) {
+      try {
+        const previewDoc = previewIframeRef.current?.contentDocument;
+        if (previewDoc) previewDoc.documentElement.style.overflow = "";
+      } catch {}
       console.error(err);
       toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
     } finally {
