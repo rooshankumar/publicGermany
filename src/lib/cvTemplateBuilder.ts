@@ -210,10 +210,6 @@ export interface CVRecommendation {
 
 export interface CVBuildOptions {
   headerBgColor?: string;
-  photoPosition?: string;
-  photoZoom?: number;
-  photoPositionX?: number;
-  photoPositionY?: number;
   density?: "compact" | "standard" | "expanded";
   sectionOrder?: Array<"work" | "publications" | "languages" | "certifications" | "custom" | "recommendations">;
 }
@@ -231,10 +227,6 @@ export function buildCVHtml(
 ): string {
   const {
     headerBgColor = "#154a8a",
-    photoPosition = "center",
-    photoZoom = 100,
-    photoPositionX = 50,
-    photoPositionY = photoPosition === "top" ? 20 : photoPosition === "bottom" ? 80 : 50,
     density = "standard",
     sectionOrder = ["work", "publications", "languages", "certifications", "custom", "recommendations"],
   } = options;
@@ -256,18 +248,22 @@ export function buildCVHtml(
   </div>
 </div>`).join("\n");
 
-  const pubHtml = publications.length > 0 ? `
-    <div class="section publications-section">
-    <div class="section-title">Research Publications</div>
-    <div class="section-content">
-    ${publications.map(pub => `
-<div class="entry research-entry">
-  <div class="research-title"><strong>${escapeHtml(pub.title)}</strong>${pub.year ? ` — ${pub.year}` : ""}</div>
-  <div class="academic-meta">
-    ${escapeHtml(pub.journal)}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(pub.doi_url)}</a>` : ""}
-  </div>
-  </div>`).join("\n")}
-    </div>
+  const pubHtml = publications.length > 0 ? `<div class="section publication-section">
+      <div class="section-title">Research Publications</div>
+      <div class="section-content">
+        ${publications.map(pub => `
+          <div class="entry">
+            <table class="entry-row-table">
+              <tr>
+                <td class="entry-title-cell">${escapeHtml(pub.title)}</td>
+                <td class="entry-date-cell">${escapeHtml(String(pub.year))}</td>
+              </tr>
+            </table>
+            ${pub.journal ? `<div class="sub-info">${escapeHtml(pub.journal)}</div>` : ""}
+            ${pub.doi_url ? `<div class="academic-meta"><a href="${escapeHtml(pub.doi_url)}">${escapeHtml(pub.doi_url)}</a></div>` : ""}
+          </div>
+        `).join("")}
+      </div>
     </div>` : "";
 
   const workHtml = workExperiences.length > 0 ? `
@@ -368,8 +364,7 @@ const addressLine = personal.address
   ? `<div><span class="label">Address:</span> ${escapeHtml(personal.address)}</div>`
   : "";
 
-const photoStyle = `object-fit: cover; object-position: ${photoPositionX}% ${photoPositionY}%; transform: scale(${photoZoom / 100});`;
-const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle" style="${photoStyle}"></div>` : "";
+const profilePicBlock = personal.avatar_url ? `<div class="profile-pic-wrapper"><img src="${escapeHtml(personal.avatar_url)}" alt="Profile" class="profile-pic-circle"></div>` : "";
 const signatureBlock = personal.signature_url ? `<img src="${escapeHtml(personal.signature_url)}" alt="Signature" class="sig-img">` : "";
 
 // Build personal details lines - compact academic grouping
@@ -399,6 +394,8 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
     @page { size: A4; margin: 0; }
+    @page :first { margin-top: 0; }
+    @page { margin-top: 0.8cm; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; user-select: text; -webkit-user-select: text; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body {
@@ -412,7 +409,8 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     }
     .cv-container {
       width: 210mm;
-      min-height: 297mm;
+      min-height: 295.5mm;
+      max-height: 295.5mm;
       margin: 0 auto;
       padding: 0;
       background: #fff;
@@ -420,6 +418,9 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
       word-wrap: break-word;
       overflow-wrap: anywhere;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       --base-font-size: 10.5px;
       --base-line-height: 1.45;
       --header-vpad: 22px;
@@ -447,105 +448,89 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
       --section-gap: 20px;
       --entry-gap: 13px;
     }
-    /* ===== HEADER: full-width background ===== */
-.header-band {
-  background-color: ${headerBgColor};
-  width: 100%;
-  padding: calc(var(--header-vpad) - 10px) 28px calc(var(--header-vpad) - 14px) 28px;
-}
-
-.header-inner { 
-  display: table; 
-  width: 100%; 
-}
-
-.profile-col { 
-  display: table-cell; 
-  vertical-align: top; 
-  width: 116px; 
-  padding-right: 18px; 
-}
-
-.name-col { 
-  display: table-cell; 
-  vertical-align: top; 
-}
-
-.profile-pic-wrapper { 
-  width: 104px; 
-  height: 104px; 
-  min-width: 104px;
-  min-height: 104px;
-  max-width: 104px;
-  max-height: 104px;
-  border-radius: 50%; 
-  overflow: hidden; 
-  border: 3px solid #ffffff; 
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15); 
-}
-
-.profile-pic-circle { 
-  width: 104px !important; 
-  height: 104px !important; 
-  max-width: 104px !important;
-  max-height: 104px !important;
-  border-radius: 50%; 
-  display: block; 
-  object-fit: cover; 
-  transform-origin: center center;
-}
-
-.name-text {
-  font-size: 28px;
-  font-weight: 700;
-  color: #ffffff;
-  text-transform: uppercase;
-  margin-top: -4px;
-  margin-bottom: 6px;
-  line-height: 1.2;
-  letter-spacing: 1px;
-}
-
-.header-divider {
-  height: 1px;
-  background-color: rgba(255,255,255,0.6);
-  margin: 6px 0 10px 0;
-}
-
-.personal-details-block {
-  line-height: 1.7;
-  font-size: 11.1px;
-  color: #ffffff;
-}
-
-.personal-details-block div {
-  margin-bottom: 4px;
-}
-
-.label {
-  font-weight: 600;
-  color: inherit;
-  text-transform: none;
-  margin-right: 4px;
-}
-
-.personal-details-block span,
-.personal-details-block a {
-  color: inherit;
-  font-weight: normal;
-}
-
-/* clickable links in header */
-.header-band a { 
-  color: #ffffff; 
-  text-decoration: none; 
-}
-
-.header-band a:hover {
-  text-decoration: underline;
-}
+    .header-band {
+      background-color: ${headerBgColor};
+      width: 100%;
+      padding: calc(var(--header-vpad) - 10px) 28px calc(var(--header-vpad) - 14px) 28px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .header-inner { 
+      display: table; 
+      width: 100%; 
+    }
+    .profile-col { 
+      display: table-cell; 
+      vertical-align: top; 
+      width: 116px; 
+      padding-right: 18px; 
+    }
+    .name-col { 
+      display: table-cell; 
+      vertical-align: top; 
+    }
+    .profile-pic-wrapper { 
+      width: 104px; 
+      height: 104px; 
+      border-radius: 50%; 
+      overflow: hidden; 
+      border: 3px solid #ffffff; 
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15); 
+    }
+    .profile-pic-circle { 
+      width: 100%;
+      height: 100%;
+      display: block; 
+      object-fit: cover; 
+    }
+    .name-text {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      text-transform: uppercase;
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+      letter-spacing: 1px;
+    }
+    .header-divider {
+      height: 1px;
+      background-color: rgba(255,255,255,0.6);
+      margin: 6px 0 10px 0;
+    }
+    .personal-details-block {
+      line-height: 1.5;
+      font-size: 11.5px;
+      color: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+    .personal-details-block > div {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+    .personal-details-block a { 
+      color: #ffffff; 
+      text-decoration: underline; 
+    }
+    .label {
+      font-weight: 600;
+      color: inherit;
+      text-transform: none;
+      margin-right: 4px;
+    }
+    .personal-details-block span,
+    .personal-details-block a {
+      color: inherit;
+      font-weight: normal;
+    }
+    /* clickable links in header */
+    .header-band a { 
+      color: #ffffff; 
+      text-decoration: underline; 
+    }
     /* ===== BODY CONTENT ===== */
-    .cv-body { padding: 0 28px 14mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
+    .cv-body { flex: 1; padding: 0 28px 5mm 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; overflow: hidden; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     .section-content { page-break-inside: avoid; break-inside: avoid; }
     /* Entry header using table for no-flex alignment */
@@ -553,8 +538,8 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .entry-row-table td { padding: 0; border: none; vertical-align: baseline; }
     .entry-title-cell { font-weight: 700; font-size: 11.1px; text-align: left; }
     .entry-date-cell { font-weight: 700; font-size: 10.1px; text-align: right; white-space: nowrap; width: 160px; color: #1f2937; }
-    .entry { margin-bottom: var(--entry-gap); page-break-inside: avoid; break-inside: avoid; }
-    .skills-entry { margin-bottom: 3px; }
+    .entry { margin-bottom: calc(var(--entry-gap) - 4px); page-break-inside: avoid; break-inside: avoid; }
+    .skills-entry { margin-bottom: 8px; }
     .skills-entry strong { margin-right: 3px; }
     .sub-info { font-style: italic; color: #1f2937; margin: 2px 0; font-size: 10.2px; }
     .academic-meta { font-size: 10px; color: #111; margin: 2px 0; line-height: 1.5; }
@@ -573,13 +558,11 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
       padding-left: 18px;
       list-style: disc;
       list-style-position: outside;
-      page-break-inside: avoid;
-      break-inside: avoid;
     }
     .cv-bullets li, .bullet-list li, .work-bullet-list li, .core-coursework-list li {
       margin-bottom: 1px;
       line-height: 1.4;
-      font-size: 11.5px;
+      font-size: 11px;
       color: #111;
     }
     .cv-bullets li::marker, .bullet-list li::marker, .work-bullet-list li::marker, .core-coursework-list li::marker {
@@ -593,7 +576,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .ref-sep { display: inline-block; min-width: 12px; }
 
     /* Footer: signature + page number only */
-    .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; page-break-inside: avoid; break-inside: avoid; }
+    .cv-footer { margin-top: auto; padding: 12px 28px 10px 28px; page-break-inside: avoid; break-inside: avoid; }
     .sig-table { width: 100%; border-collapse: collapse; }
     .sig-table td { padding: 0; border: none; vertical-align: bottom; }
     .sig-left-cell { text-align: left; width: 50%; font-size: 9px; }
@@ -609,12 +592,12 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
     .experience-item, .education-item, .project-item { page-break-inside: avoid; break-inside: avoid; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
 
-    .pdf-export { width: 794px !important; min-height: 1123px !important; }
+    .pdf-export { width: 210mm !important; height: 295.5mm !important; min-height: 295.5mm !important; max-height: 295.5mm !important; overflow: hidden !important; }
+    .pdf-export .cv-footer,
     .pdf-export .section,
     .pdf-export .entry,
     .pdf-export .lang-table,
     .pdf-export .bullet-list,
-    .pdf-export .cv-footer,
     .pdf-export .section-title {
       page-break-inside: avoid !important;
       break-inside: avoid !important;

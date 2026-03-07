@@ -10,10 +10,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout, CheckCircle2, Settings } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
+import { ImageCropper } from "@/components/ImageCropper";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ImportedCVData } from "@/lib/cvImporter";
 
@@ -256,14 +258,21 @@ export default function AcademicCVGenerator() {
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [activeStep, setActiveStep] = useState(0);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
-  const [photoPosition, setPhotoPosition] = useState("center");
-  const [photoZoom, setPhotoZoom] = useState(100);
-  const [photoPositionX, setPhotoPositionX] = useState(50);
-  const [photoPositionY, setPhotoPositionY] = useState(50);
+  const STEPS = [
+    { id: "personal", label: "Personal", icon: User },
+    { id: "education", label: "Education", icon: GraduationCap },
+    { id: "experience", label: "Work", icon: Briefcase },
+    { id: "skills", label: "Skills", icon: Languages },
+    { id: "extra", label: "Extra", icon: Award },
+    { id: "style", label: "Style", icon: Settings },
+  ];
+
   const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
   const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
-  const [styleOptionsOpen, setStyleOptionsOpen] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
     ["work", "publications", "languages", "certifications", "custom", "recommendations"],
   );
@@ -292,8 +301,22 @@ export default function AcademicCVGenerator() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => updatePersonal(field, reader.result as string);
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (field === 'avatar_url') {
+        setTempImageUrl(result);
+        setIsCropperOpen(true);
+      } else {
+        updatePersonal(field, result);
+      }
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (croppedImage: string) => {
+    updatePersonal('avatar_url', croppedImage);
+    setIsCropperOpen(false);
+    setTempImageUrl(null);
   };
 
   const handleCVImport = useCallback((data: ImportedCVData) => {
@@ -323,18 +346,14 @@ export default function AcademicCVGenerator() {
     if (data.recommendations?.length) setRecommendations(data.recommendations);
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
-      if (data.buildOptions.photoPosition) setPhotoPosition(data.buildOptions.photoPosition);
-      if (data.buildOptions.photoZoom) setPhotoZoom(data.buildOptions.photoZoom);
-      if (typeof data.buildOptions.photoPositionX === "number") setPhotoPositionX(data.buildOptions.photoPositionX);
-      if (typeof data.buildOptions.photoPositionY === "number") setPhotoPositionY(data.buildOptions.photoPositionY);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
       if (data.buildOptions.sectionOrder?.length) setSectionOrder(data.buildOptions.sectionOrder);
     }
   }, []);
 
   const buildOptions = useMemo<CVBuildOptions>(
-    () => ({ headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder }),
-    [headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder],
+    () => ({ headerBgColor, density, sectionOrder }),
+    [headerBgColor, density, sectionOrder],
   );
 
   const rawHtml = useMemo(() =>
@@ -398,460 +417,517 @@ export default function AcademicCVGenerator() {
   }, []);
 
   const formContent = (
-    <div className="space-y-4">
-      {/* Import CV */}
-      <CVImportUpload onImport={handleCVImport} />
-
-      {/* Header Color Picker */}
-      <Card>
-        <CardHeader className="pb-3">
-          <button type="button" className="w-full flex items-center justify-between" onClick={() => setStyleOptionsOpen(v => !v)}>
-            <CardTitle className="text-base">CV Style Options</CardTitle>
-            <ChevronDown className={`w-4 h-4 transition-transform ${styleOptionsOpen ? "rotate-180" : ""}`} />
-          </button>
-        </CardHeader>
-        {styleOptionsOpen && <CardContent>
-          <Label className="text-xs mb-2 block">Header Background Color (Select one)</Label>
-          <div className="space-y-1.5">
-            {HEADER_COLORS.map(c => (
-              <div key={c.value} className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setHeaderBgColor(c.value)}
-                  className={`flex items-center gap-2 text-xs rounded-md px-2 py-1 w-full text-left transition border ${headerBgColor.toLowerCase() === c.value.toLowerCase() ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
-                >
-                  <span className="w-4 h-4 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: c.value }} />
-                  <span>{c.label}</span>
-                </button>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="text-xs max-w-56">{c.hint}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+    <div className="space-y-4 pb-20">
+      {/* Progress Stepper */}
+      <div className="bg-muted/30 p-2 rounded-xl border flex justify-between items-center mb-6 overflow-x-auto no-scrollbar">
+        {STEPS.map((step, idx) => {
+          const Icon = step.icon;
+          const isActive = activeStep === idx;
+          const isCompleted = activeStep > idx;
+          return (
+            <button
+              key={step.id}
+              onClick={() => setActiveStep(idx)}
+              className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-lg transition-all min-w-[70px] ${
+                isActive ? "bg-background shadow-sm border text-primary" : 
+                isCompleted ? "text-green-600 opacity-80" : "text-muted-foreground opacity-60 hover:opacity-100"
+              }`}
+            >
+              <div className="relative">
+                <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
+                {isCompleted && <CheckCircle2 className="w-3 h-3 absolute -top-1 -right-1 bg-background rounded-full" />}
               </div>
-            ))}
-            <div className="flex items-center justify-between gap-2 border rounded-md px-2 py-1.5">
-              <div className="flex items-center gap-2 text-xs">
-                <span>🎨</span>
-                <span>Custom Color</span>
-                <span className="text-muted-foreground">({headerBgColor})</span>
-              </div>
-              <input
-                type="color"
-                value={headerBgColor}
-                onChange={e => setHeaderBgColor(e.target.value)}
-                className="w-8 h-8 p-0 border rounded cursor-pointer bg-transparent"
-                aria-label="Pick custom header color"
-              />
-            </div>
-          </div>
+              <span className="text-[10px] font-medium uppercase tracking-wider">{step.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          <div className="mt-4">
-            <div className="flex items-center gap-1 mb-2">
-              <Label className="text-xs">Layout Density</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">Adjust spacing and font scale to fit short or long CVs.</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {DENSITY_OPTIONS.map(option => (
-                <div key={option.value} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setDensity(option.value)}
-                    className={`text-left rounded-md border px-3 py-2 transition w-full ${density === option.value ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
-                  >
-                    <div className="text-xs font-semibold">{option.label}</div>
-                  </button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs max-w-52">{option.hint}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+      <div className="min-h-[400px]">
+        {activeStep === 0 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <CVImportUpload onImport={handleCVImport} />
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base flex items-center">Personal Information <SectionTip tipKey="personal" /></CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
+                  <div><Label className="text-xs">Email *</Label><Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="+91 9876543210" /></div>
+                  <div><Label className="text-xs">Date of Birth</Label><Input value={personal.date_of_birth} placeholder="15 Aug 1998" onBlur={e => updatePersonal("date_of_birth", normalizeDOBInput(e.target.value))} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
+                  <div><Label className="text-xs">Nationality</Label><Input value={personal.nationality} onChange={e => updatePersonal("nationality", e.target.value)} placeholder="Indian" /></div>
+                  <div><Label className="text-xs">Gender</Label><Input value={personal.gender} onChange={e => updatePersonal("gender", e.target.value)} placeholder="Male / Female" /></div>
+                  <div><Label className="text-xs">Passport Number</Label><Input value={personal.passport_number} onChange={e => updatePersonal("passport_number", e.target.value)} /></div>
+                  <div><Label className="text-xs">Place of Birth</Label><Input value={personal.place_of_birth} onChange={e => updatePersonal("place_of_birth", e.target.value)} placeholder="City, State, Country" /></div>
+                  <div className="sm:col-span-2"><Label className="text-xs">Address</Label><Input value={personal.address} onChange={e => updatePersonal("address", e.target.value)} placeholder="Street, City, Postal Code, Country" /></div>
+                  <div className="sm:col-span-2"><Label className="text-xs">LinkedIn URL</Label><Input value={personal.linkedin_url} onChange={e => updatePersonal("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/yourname" /></div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <Label className="text-xs mb-2 block">Section Order (after Education)</Label>
-            <div className="space-y-1.5">
-              {sectionOrder.map((key, index) => {
-                const label = REORDERABLE_SECTIONS.find(section => section.key === key)?.label || key;
-                return (
-                  <div key={key} className="flex items-center justify-between border rounded-md px-2 py-1.5">
-                    <span className="text-xs">{label}</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        disabled={index === 0}
-                        onClick={() => setSectionOrder(prev => moveUp(prev, index))}
-                      >
-                        <ChevronUp className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        disabled={index === sectionOrder.length - 1}
-                        onClick={() => setSectionOrder(prev => moveDown(prev, index))}
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>}
-      </Card>
-
-      {/* Personal Info */}
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base flex items-center">Personal Information <SectionTip tipKey="personal" /></CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
-            <div><Label className="text-xs">Email *</Label><Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" /></div>
-            <div><Label className="text-xs">Phone</Label><Input value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="+91 9876543210" /></div>
-            <div><Label className="text-xs">Date of Birth</Label><Input value={personal.date_of_birth} placeholder="15 Aug 1998" onBlur={e => updatePersonal("date_of_birth", normalizeDOBInput(e.target.value))} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
-            <div><Label className="text-xs">Nationality</Label><Input value={personal.nationality} onChange={e => updatePersonal("nationality", e.target.value)} placeholder="Indian" /></div>
-            <div><Label className="text-xs">Gender</Label><Input value={personal.gender} onChange={e => updatePersonal("gender", e.target.value)} placeholder="Male / Female" /></div>
-            <div><Label className="text-xs">Passport Number</Label><Input value={personal.passport_number} onChange={e => updatePersonal("passport_number", e.target.value)} /></div>
-            <div><Label className="text-xs">Place of Birth</Label><Input value={personal.place_of_birth} onChange={e => updatePersonal("place_of_birth", e.target.value)} placeholder="City, State, Country" /></div>
-            <div className="sm:col-span-2"><Label className="text-xs">Address</Label><Input value={personal.address} onChange={e => updatePersonal("address", e.target.value)} placeholder="Street, City, Postal Code, Country" /></div>
-            <div className="sm:col-span-2"><Label className="text-xs">LinkedIn URL</Label><Input value={personal.linkedin_url} onChange={e => updatePersonal("linkedin_url", e.target.value)} placeholder="https://linkedin.com/in/yourname" /></div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Profile Photo</Label>
-              <Input type="file" accept="image/*" onChange={handleFileUpload('avatar_url')} className="text-xs mt-1" />
-              {personal.avatar_url && (
-                <div className="mt-2 space-y-2">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border" style={{ display: "inline-block" }}>
-                    <img src={personal.avatar_url} alt="Profile" className="w-full h-full object-cover" style={{ objectPosition: photoPosition, transform: `scale(${photoZoom / 100})` }} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs whitespace-nowrap">Position:</Label>
-                    <Select value={photoPosition} onValueChange={setPhotoPosition}>
-                      <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="top">Top</SelectItem>
-                        <SelectItem value="bottom">Bottom</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs whitespace-nowrap">Zoom:</Label>
-                    <Slider value={[photoZoom]} onValueChange={v => setPhotoZoom(v[0])} min={100} max={200} step={5} className="w-32" />
-                    <span className="text-xs text-muted-foreground">{photoZoom}%</span>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Face Area (Horizontal)</Label>
-                    <Slider value={[photoPositionX]} onValueChange={v => setPhotoPositionX(v[0])} min={0} max={100} step={1} className="w-40" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Face Area (Vertical)</Label>
-                    <Slider value={[photoPositionY]} onValueChange={v => setPhotoPositionY(v[0])} min={0} max={100} step={1} className="w-40" />
-                  </div>
-                </div>
-              )}
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Signature</Label>
-              <Input type="file" accept="image/*" onChange={handleFileUpload('signature_url')} className="text-xs mt-1" />
-              {personal.signature_url && <img src={personal.signature_url} alt="Signature" className="h-8 mt-2 border" />}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Education */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Education & Training * <SectionTip tipKey="education" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEducations([...educations, emptyEducation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {educations.map((edu, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={educations.length} onMove={dir => setEducations(dir === "up" ? moveUp(educations, i) : moveDown(educations, i))} />
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div><Label className="text-xs">Degree Title *</Label><Input value={edu.degree_title} onChange={e => { const n = [...educations]; n[i] = { ...n[i], degree_title: e.target.value }; setEducations(n); }} placeholder="Bachelor of Arts (Honours)" /></div>
-                    <div><Label className="text-xs">Field of Study *</Label><Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" /></div>
-                    <div><Label className="text-xs">Institution *</Label><Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
-                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" /></div>
-                    <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
-                    <div><Label className="text-xs">Total Credits</Label><Input type="number" value={edu.total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">Credit System</Label><Input value={edu.credit_system || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], credit_system: e.target.value }; setEducations(n); }} placeholder="Indian Scale" /></div>
-                  </div>
-                  <div className="mt-2">
-                    <Label className="text-xs">Key Subjects / Focus</Label>
-                    <RichTextField
-                      value={edu.key_subjects || ""}
-                      onChange={v => { const n = [...educations]; n[i] = { ...n[i], key_subjects: v }; setEducations(n); }}
-                      placeholder="Research methods, Statistics, Clinical Psychology"
-                    />
-                  </div>
-                </div>
-                {educations.length > 1 && <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setEducations(educations.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Work Experience */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Work Experience <SectionTip tipKey="work" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setWorkExperiences([...workExperiences, emptyWork()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {workExperiences.length === 0 && <p className="text-xs text-muted-foreground">No work experience added (optional).</p>}
-          {workExperiences.map((w, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={workExperiences.length} onMove={dir => setWorkExperiences(dir === "up" ? moveUp(workExperiences, i) : moveDown(workExperiences, i))} />
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <Label className="text-xs">End Date (Mon YYYY)</Label>
-                        <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
-                      </div>
-                      <div className="flex items-center gap-1.5 pb-1.5">
-                        <Switch
-                          checked={w.is_current || false}
-                          onCheckedChange={checked => { const n = [...workExperiences]; n[i] = { ...n[i], is_current: checked, end_date: checked ? "" : n[i].end_date }; setWorkExperiences(n); }}
-                        />
-                        <Label className="text-xs whitespace-nowrap">Ongoing</Label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <Label className="text-xs">Description</Label>
-                    <RichTextField
-                      value={w.description || ""}
-                      onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
-                      placeholder="Key responsibilities and achievements"
-                    />
-                  </div>
-                </div>
-                <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setWorkExperiences(workExperiences.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Publications */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Research Publications <SectionTip tipKey="publications" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setPublications([...publications, emptyPublication()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {publications.length === 0 && <p className="text-xs text-muted-foreground">No publications added (optional).</p>}
-          {publications.map((pub, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={publications.length} onMove={dir => setPublications(dir === "up" ? moveUp(publications, i) : moveDown(publications, i))} />
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="sm:col-span-2"><Label className="text-xs">Title *</Label><Input value={pub.title} onChange={e => { const n = [...publications]; n[i] = { ...n[i], title: e.target.value }; setPublications(n); }} /></div>
-                  <div><Label className="text-xs">Year</Label><Input type="number" value={pub.year || ""} onChange={e => { const n = [...publications]; n[i] = { ...n[i], year: Number(e.target.value) || undefined }; setPublications(n); }} /></div>
-                  <div className="sm:col-span-3"><Label className="text-xs">Journal / ISSN</Label><Input value={pub.journal || ""} onChange={e => { const n = [...publications]; n[i] = { ...n[i], journal: e.target.value }; setPublications(n); }} /></div>
-                </div>
-                <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setPublications(publications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Languages */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Language Skills * <SectionTip tipKey="languages" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setLanguages([...languages, emptyLanguage()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {languages.map((lang, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={languages.length} onMove={dir => setLanguages(dir === "up" ? moveUp(languages, i) : moveDown(languages, i))} />
-                <div className="flex-1">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <div><Label className="text-xs">Language *</Label><Input value={lang.language_name} onChange={e => { const n = [...languages]; n[i] = { ...n[i], language_name: e.target.value }; setLanguages(n); }} placeholder="English" /></div>
-                    <div className="flex items-end gap-2">
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                        <input type="checkbox" checked={lang.mother_tongue || false} onChange={e => { const n = [...languages]; n[i] = { ...n[i], mother_tongue: e.target.checked }; setLanguages(n); }} className="rounded" />
-                        Mother Tongue
-                      </label>
-                    </div>
-                  </div>
-                  {!lang.mother_tongue && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                      {(["listening", "reading", "writing", "speaking"] as const).map(skill => (
-                        <div key={skill}>
-                          <Label className="text-xs capitalize">{skill}</Label>
-                          <Select value={lang[skill] || ""} onValueChange={v => { const n = [...languages]; n[i] = { ...n[i], [skill]: v }; setLanguages(n); }}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Level" /></SelectTrigger>
-                            <SelectContent>{CEFR_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-                          </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t">
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Profile Photo</Label>
+                    <Input type="file" accept="image/*" onChange={handleFileUpload('avatar_url')} className="text-xs mt-1" />
+                    {personal.avatar_url && (
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="w-20 h-20 rounded-full overflow-hidden border shadow-sm shrink-0">
+                          <img src={personal.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setTempImageUrl(personal.avatar_url);
+                            setIsCropperOpen(true);
+                          }}
+                          className="text-xs"
+                        >
+                          Recrop Photo
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center gap-1"><Upload className="w-3 h-3" /> Signature</Label>
+                    <Input type="file" accept="image/*" onChange={handleFileUpload('signature_url')} className="text-xs mt-1" />
+                    {personal.signature_url && <img src={personal.signature_url} alt="Signature" className="h-8 mt-2 border" />}
+                  </div>
+                </div>
+                {tempImageUrl && (
+                  <ImageCropper
+                    image={tempImageUrl}
+                    open={isCropperOpen}
+                    onCropComplete={handleCropComplete}
+                    onCancel={() => {
+                      setIsCropperOpen(false);
+                      setTempImageUrl(null);
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeStep === 1 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Education & Training * <SectionTip tipKey="education" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setEducations([...educations, emptyEducation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {educations.map((edu, i) => (
+                  <div key={i} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={educations.length} onMove={dir => setEducations(dir === "up" ? moveUp(educations, i) : moveDown(educations, i))} />
+                      <div className="flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div><Label className="text-xs">Degree Title *</Label><Input value={edu.degree_title} onChange={e => { const n = [...educations]; n[i] = { ...n[i], degree_title: e.target.value }; setEducations(n); }} placeholder="Bachelor of Arts (Honours)" /></div>
+                          <div><Label className="text-xs">Field of Study *</Label><Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" /></div>
+                          <div><Label className="text-xs">Institution *</Label><Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} /></div>
+                          <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
+                          <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
+                          <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
+                          <div><Label className="text-xs">Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" /></div>
+                          <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
+                        </div>
+                        <div className="mt-2">
+                          <Label className="text-xs">Key Subjects / Focus</Label>
+                          <RichTextField
+                            value={edu.key_subjects || ""}
+                            onChange={v => { const n = [...educations]; n[i] = { ...n[i], key_subjects: v }; setEducations(n); }}
+                            placeholder="Research methods, Statistics, Clinical Psychology"
+                          />
+                        </div>
+                      </div>
+                      {educations.length > 1 && <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setEducations(educations.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeStep === 2 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Work Experience <SectionTip tipKey="work" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setWorkExperiences([...workExperiences, emptyWork()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {workExperiences.length === 0 && <p className="text-xs text-muted-foreground">No work experience added (optional).</p>}
+                {workExperiences.map((w, i) => (
+                  <div key={i} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={workExperiences.length} onMove={dir => setWorkExperiences(dir === "up" ? moveUp(workExperiences, i) : moveDown(workExperiences, i))} />
+                      <div className="flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div className="flex items-end gap-3">
+                            <div className="flex-1">
+                              <Label className="text-xs">End Date (Mon YYYY)</Label>
+                              <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
+                            </div>
+                            <div className="flex items-center gap-1.5 pb-1.5">
+                              <Switch
+                                checked={w.is_current || false}
+                                onCheckedChange={checked => { const n = [...workExperiences]; n[i] = { ...n[i], is_current: checked, end_date: checked ? "" : n[i].end_date }; setWorkExperiences(n); }}
+                              />
+                              <Label className="text-xs whitespace-nowrap">Ongoing</Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <Label className="text-xs">Description</Label>
+                          <RichTextField
+                            value={w.description || ""}
+                            onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
+                            placeholder="Key responsibilities and achievements"
+                          />
+                        </div>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setWorkExperiences(workExperiences.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Research Publications <SectionTip tipKey="publications" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setPublications([...publications, emptyPublication()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {publications.length === 0 && <p className="text-xs text-muted-foreground">No publications added (optional).</p>}
+                {publications.map((pub, i) => (
+                  <div key={i} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={publications.length} onMove={dir => setPublications(dir === "up" ? moveUp(publications, i) : moveDown(publications, i))} />
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="sm:col-span-2"><Label className="text-xs">Title *</Label><Input value={pub.title} onChange={e => { const n = [...publications]; n[i] = { ...n[i], title: e.target.value }; setPublications(n); }} /></div>
+                        <div><Label className="text-xs">Year</Label><Input type="number" value={pub.year || ""} onChange={e => { const n = [...publications]; n[i] = { ...n[i], year: Number(e.target.value) || undefined }; setPublications(n); }} /></div>
+                        <div className="sm:col-span-3"><Label className="text-xs">Journal / ISSN</Label><Input value={pub.journal || ""} onChange={e => { const n = [...publications]; n[i] = { ...n[i], journal: e.target.value }; setPublications(n); }} /></div>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setPublications(publications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeStep === 3 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Language Skills * <SectionTip tipKey="languages" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setLanguages([...languages, emptyLanguage()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {languages.map((lang, i) => (
+                  <div key={i} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={languages.length} onMove={dir => setLanguages(dir === "up" ? moveUp(languages, i) : moveDown(languages, i))} />
+                      <div className="flex-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <div><Label className="text-xs">Language *</Label><Input value={lang.language_name} onChange={e => { const n = [...languages]; n[i] = { ...n[i], language_name: e.target.value }; setLanguages(n); }} placeholder="English" /></div>
+                          <div className="flex items-end gap-2">
+                            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                              <input type="checkbox" checked={lang.mother_tongue || false} onChange={e => { const n = [...languages]; n[i] = { ...n[i], mother_tongue: e.target.checked }; setLanguages(n); }} className="rounded" />
+                              Mother Tongue
+                            </label>
+                          </div>
+                        </div>
+                        {!lang.mother_tongue && (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                            {(["listening", "reading", "writing", "speaking"] as const).map(skill => (
+                              <div key={skill}>
+                                <Label className="text-xs capitalize">{skill}</Label>
+                                <Select value={lang[skill] || ""} onValueChange={v => { const n = [...languages]; n[i] = { ...n[i], [skill]: v }; setLanguages(n); }}>
+                                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Level" /></SelectTrigger>
+                                  <SelectContent>{CEFR_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {languages.length > 1 && <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setLanguages(languages.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Certifications <SectionTip tipKey="certifications" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setCertifications([...certifications, emptyCertification()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {certifications.length === 0 && <p className="text-xs text-muted-foreground">No certifications added (optional).</p>}
+                {certifications.map((c, i) => (
+                  <div key={i} className="border rounded-md p-3 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={certifications.length} onMove={dir => setCertifications(dir === "up" ? moveUp(certifications, i) : moveDown(certifications, i))} />
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div><Label className="text-xs">Title *</Label><Input value={c.title} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], title: e.target.value }; setCertifications(n); }} /></div>
+                        <div><Label className="text-xs">Institution</Label><Input value={c.institution || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], institution: e.target.value }; setCertifications(n); }} /></div>
+                        <div><Label className="text-xs">Date (YYYY or Mon YYYY)</Label><Input value={c.date || ""} placeholder="2023 or Jun 2023" onBlur={e => { const n = [...certifications]; n[i] = { ...n[i], date: normalizeMonthYearInput(e.target.value) }; setCertifications(n); }} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setCertifications(certifications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeStep === 4 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Additional Sections <SectionTip tipKey="custom" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setCustomSections([...customSections, emptyCustomSection()])}><Plus className="w-3 h-3 mr-1" />Add Section</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {customSections.length === 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Add custom sections like:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {SUGGESTED_SECTIONS.map(s => (
+                        <Badge key={s} variant="outline" className="cursor-pointer text-xs hover:bg-primary/10" onClick={() => setCustomSections([...customSections, { title: s, items: [{ label: "", description: "" }] }])}>
+                          + {s}
+                        </Badge>
                       ))}
                     </div>
-                  )}
-                </div>
-                {languages.length > 1 && <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setLanguages(languages.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Certifications */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Certifications <SectionTip tipKey="certifications" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setCertifications([...certifications, emptyCertification()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {certifications.length === 0 && <p className="text-xs text-muted-foreground">No certifications added (optional).</p>}
-          {certifications.map((c, i) => (
-            <div key={i} className="border rounded-md p-3 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={certifications.length} onMove={dir => setCertifications(dir === "up" ? moveUp(certifications, i) : moveDown(certifications, i))} />
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div><Label className="text-xs">Title *</Label><Input value={c.title} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], title: e.target.value }; setCertifications(n); }} /></div>
-                  <div><Label className="text-xs">Institution</Label><Input value={c.institution || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], institution: e.target.value }; setCertifications(n); }} /></div>
-                  <div><Label className="text-xs">Date (YYYY or Mon YYYY)</Label><Input value={c.date || ""} placeholder="2023 or Jun 2023" onBlur={e => { const n = [...certifications]; n[i] = { ...n[i], date: normalizeMonthYearInput(e.target.value) }; setCertifications(n); }} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
-                </div>
-                <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setCertifications(certifications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Custom Sections */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Additional Sections <SectionTip tipKey="custom" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setCustomSections([...customSections, emptyCustomSection()])}><Plus className="w-3 h-3 mr-1" />Add Section</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {customSections.length === 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">Add custom sections like:</p>
-              <div className="flex flex-wrap gap-1">
-                {SUGGESTED_SECTIONS.map(s => (
-                  <Badge key={s} variant="outline" className="cursor-pointer text-xs hover:bg-primary/10" onClick={() => setCustomSections([...customSections, { title: s, items: [{ label: "", description: "" }] }])}>
-                    + {s}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-          {customSections.map((section, si) => (
-            <div key={si} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start gap-1">
-                <ReorderButtons index={si} length={customSections.length} onMove={dir => setCustomSections(dir === "up" ? moveUp(customSections, si) : moveDown(customSections, si))} />
-                <div className="flex-1">
-                  <div><Label className="text-xs">Section Title (editable)</Label><Input value={section.title} onChange={e => { const n = [...customSections]; n[si] = { ...n[si], title: e.target.value }; setCustomSections(n); }} placeholder="e.g. Research Experience" /></div>
-                  {section.items.map((item, ii) => (
-                    <div key={ii} className="space-y-1 mt-2">
-                      <div className="flex gap-2 items-start">
-                        <div className="flex-1"><Input value={item.label} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], label: e.target.value }; setCustomSections([...n]); }} placeholder="Item label" className="text-xs" /></div>
-                        {section.items.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => { const n = [...customSections]; n[si].items = n[si].items.filter((_, j) => j !== ii); setCustomSections(n); }}><Trash2 className="w-3 h-3" /></Button>}
+                  </div>
+                )}
+                {customSections.map((section, si) => (
+                  <div key={si} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start gap-1">
+                      <ReorderButtons index={si} length={customSections.length} onMove={dir => setCustomSections(dir === "up" ? moveUp(customSections, si) : moveDown(customSections, si))} />
+                      <div className="flex-1">
+                        <div><Label className="text-xs">Section Title (editable)</Label><Input value={section.title} onChange={e => { const n = [...customSections]; n[si] = { ...n[si], title: e.target.value }; setCustomSections(n); }} placeholder="e.g. Research Experience" /></div>
+                        {section.items.map((item, ii) => (
+                          <div key={ii} className="space-y-1 mt-2">
+                            <div className="flex gap-2 items-start">
+                              <div className="flex-1"><Input value={item.label} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], label: e.target.value }; setCustomSections([...n]); }} placeholder="Item label" className="text-xs" /></div>
+                              {section.items.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => { const n = [...customSections]; n[si].items = n[si].items.filter((_, j) => j !== ii); setCustomSections(n); }}><Trash2 className="w-3 h-3" /></Button>}
+                            </div>
+                            <RichTextField
+                              value={item.description || ""}
+                              onChange={v => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: v }; setCustomSections([...n]); }}
+                              placeholder="Description (optional)"
+                            />
+                          </div>
+                        ))}
+                        <Button size="sm" variant="ghost" className="text-xs mt-1" onClick={() => { const n = [...customSections]; n[si].items.push({ label: "", description: "" }); setCustomSections([...n]); }}><Plus className="w-3 h-3 mr-1" />Add Item</Button>
                       </div>
-                      <RichTextField
-                        value={item.description || ""}
-                        onChange={v => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: v }; setCustomSections([...n]); }}
-                        placeholder="Description (optional)"
-                      />
+                      <Button size="icon" variant="ghost" className="h-6 w-6 flex-shrink-0" onClick={() => setCustomSections(customSections.filter((_, j) => j !== si))}><Trash2 className="w-3 h-3" /></Button>
                     </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center">Recommendations <SectionTip tipKey="recommendations" /></CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recommendations.length === 0 && <p className="text-xs text-muted-foreground">No referees added (optional).</p>}
+                {recommendations.map((r, i) => (
+                  <div key={i} className="border rounded-md p-3 space-y-2 relative">
+                    <div className="flex items-start">
+                      <ReorderButtons index={i} length={recommendations.length} onMove={dir => setRecommendations(dir === "up" ? moveUp(recommendations, i) : moveDown(recommendations, i))} />
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div><Label className="text-xs">Name *</Label><Input value={r.name} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], name: e.target.value }; setRecommendations(n); }} /></div>
+                        <div><Label className="text-xs">Designation</Label><Input value={r.designation || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], designation: e.target.value }; setRecommendations(n); }} /></div>
+                        <div><Label className="text-xs">Department</Label><Input value={r.department || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], department: e.target.value }; setRecommendations(n); }} placeholder="Department of Computer Science" /></div>
+                        <div><Label className="text-xs">Institution</Label><Input value={r.institution || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], institution: e.target.value }; setRecommendations(n); }} /></div>
+                        <div><Label className="text-xs">Email</Label><Input value={r.email || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], email: e.target.value }; setRecommendations(n); }} /></div>
+                        <div><Label className="text-xs">Contact</Label><Input value={r.contact || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], contact: e.target.value }; setRecommendations(n); }} /></div>
+                        <div><Label className="text-xs">LOR Link</Label><Input value={r.lor_link || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], lor_link: e.target.value }; setRecommendations(n); }} placeholder="https://..." /></div>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setRecommendations(recommendations.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeStep === 5 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">CV Appearance & Style</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Label className="text-xs mb-3 block">Header Background Color</Label>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {HEADER_COLORS.map(c => (
+                    <TooltipProvider key={c.value}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setHeaderBgColor(c.value)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${headerBgColor.toLowerCase() === c.value.toLowerCase() ? "border-primary ring-2 ring-primary/20 scale-110" : "border-transparent"}`}
+                            style={{ backgroundColor: c.value }}
+                            aria-label={c.label}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-[10px]">{c.label}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ))}
-                  <Button size="sm" variant="ghost" className="text-xs mt-1" onClick={() => { const n = [...customSections]; n[si].items.push({ label: "", description: "" }); setCustomSections([...n]); }}><Plus className="w-3 h-3 mr-1" />Add Item</Button>
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-muted hover:scale-110 transition-all">
+                    <input
+                      type="color"
+                      value={headerBgColor}
+                      onChange={e => setHeaderBgColor(e.target.value)}
+                      className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer bg-transparent border-none"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px]">🎨</div>
+                  </div>
                 </div>
-                <Button size="icon" variant="ghost" className="h-6 w-6 flex-shrink-0" onClick={() => setCustomSections(customSections.filter((_, j) => j !== si))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
 
-      {/* Recommendations */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Recommendations <SectionTip tipKey="recommendations" /></CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {recommendations.length === 0 && <p className="text-xs text-muted-foreground">No referees added (optional).</p>}
-          {recommendations.map((r, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 relative">
-              <div className="flex items-start">
-                <ReorderButtons index={i} length={recommendations.length} onMove={dir => setRecommendations(dir === "up" ? moveUp(recommendations, i) : moveDown(recommendations, i))} />
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div><Label className="text-xs">Name *</Label><Input value={r.name} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], name: e.target.value }; setRecommendations(n); }} /></div>
-                  <div><Label className="text-xs">Designation</Label><Input value={r.designation || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], designation: e.target.value }; setRecommendations(n); }} /></div>
-                  <div><Label className="text-xs">Department</Label><Input value={r.department || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], department: e.target.value }; setRecommendations(n); }} placeholder="Department of Computer Science" /></div>
-                  <div><Label className="text-xs">Institution</Label><Input value={r.institution || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], institution: e.target.value }; setRecommendations(n); }} /></div>
-                  <div><Label className="text-xs">Email</Label><Input value={r.email || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], email: e.target.value }; setRecommendations(n); }} /></div>
-                  <div><Label className="text-xs">Contact</Label><Input value={r.contact || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], contact: e.target.value }; setRecommendations(n); }} /></div>
-                  <div><Label className="text-xs">LOR Link</Label><Input value={r.lor_link || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], lor_link: e.target.value }; setRecommendations(n); }} placeholder="https://..." /></div>
+                <div className="mt-6">
+                  <Label className="text-xs mb-3 block">Layout Density (Font size & Spacing)</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {DENSITY_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setDensity(option.value)}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                          density === option.value 
+                            ? "border-primary bg-primary/5 ring-4 ring-primary/10" 
+                            : "border-muted bg-muted/20 hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background border shadow-sm">
+                          <Layout className={`w-4 h-4 ${density === option.value ? "text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="text-[11px] font-bold uppercase tracking-tight">{option.label}</div>
+                        <div className="text-[9px] text-muted-foreground leading-tight text-center px-1">{option.hint}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setRecommendations(recommendations.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
 
-      <div className="text-center space-y-4 mt-6">
-        <Button 
-          onClick={generatePDF} 
-          disabled={isGenerating} 
-          className="w-full bg-[#154a8a] hover:bg-[#0f3a6d] h-12 text-lg shadow-lg transition-all hover:scale-[1.02]"
-        >
-          {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
-          Download Academic CV (PDF)
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          Generates a high-quality, searchable, and clickable CV. Select <strong>'Save as PDF'</strong> in the print dialog.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Want to save your CV and access more features?{" "}
-          <Link to="/auth" className="text-primary font-medium hover:underline">Sign up for free →</Link>
-        </p>
+                <div className="mt-8">
+                  <Label className="text-xs mb-3 block">Section Order (Drag & Drop coming soon)</Label>
+                  <div className="space-y-2">
+                    {(() => {
+                      interface OrderedItem {
+                        key: string;
+                        label: string;
+                        originalKey: string;
+                        customIndex?: number;
+                      }
+
+                      // Map the keys to their actual names including custom ones
+                      const orderedItems: OrderedItem[] = sectionOrder.flatMap(key => {
+                        if (key === 'custom') {
+                          return customSections.map((s, idx) => ({ 
+                            key: `custom-${idx}`, 
+                            label: s.title || `Additional Section ${idx + 1}`,
+                            originalKey: 'custom',
+                            customIndex: idx
+                          }));
+                        }
+                        return [{ 
+                          key, 
+                          label: REORDERABLE_SECTIONS.find(s => s.key === key)?.label || key,
+                          originalKey: key
+                        }];
+                      });
+
+                      return orderedItems.map((item, index) => (
+                        <div key={item.key} className="flex items-center justify-between border-2 border-muted/50 rounded-xl px-4 py-3 bg-background hover:border-primary/20 transition-colors shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-full bg-muted/30 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                              {index + 1}
+                            </div>
+                            <span className="text-xs font-semibold">{item.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                              disabled={index === 0} 
+                              onClick={() => {
+                                setSectionOrder(prev => moveUp(prev, prev.indexOf(item.originalKey as any)));
+                              }}
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                              disabled={index === orderedItems.length - 1} 
+                              onClick={() => {
+                                setSectionOrder(prev => moveDown(prev, prev.indexOf(item.originalKey as any)));
+                              }}
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Footer */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-40 lg:absolute lg:bg-transparent lg:border-none lg:p-0 lg:bottom-4 lg:right-12 lg:left-auto">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 lg:justify-end">
+          <Button
+            variant="outline"
+            onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+            disabled={activeStep === 0}
+            className="flex-1 lg:flex-none"
+          >
+            Back
+          </Button>
+          
+          {activeStep < STEPS.length - 1 ? (
+            <Button
+              onClick={() => setActiveStep(activeStep + 1)}
+              className="flex-1 lg:flex-none bg-[#154a8a] hover:bg-[#0f3a6d]"
+            >
+              Next: {STEPS[activeStep + 1].label}
+            </Button>
+          ) : (
+            <Button
+              onClick={generatePDF}
+              disabled={isGenerating}
+              className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700 shadow-lg"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Download CV
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -866,8 +942,7 @@ export default function AcademicCVGenerator() {
             </Link>
             <span className="text-muted-foreground/50">|</span>
             <p className="text-sm min-w-0 truncate">
-              <span className="font-semibold">Europass CV Generator</span>
-              <span className="text-muted-foreground"> — Create a professional Europass-format academic CV for German university applications.</span>
+              <span className="font-semibold">Europass CV</span>
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
