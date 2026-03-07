@@ -42,6 +42,8 @@ const REORDERABLE_SECTIONS: Array<{ key: NonNullable<CVBuildOptions["sectionOrde
   { key: "recommendations", label: "Recommendations" },
 ];
 
+const CV_PREVIEW_WIDTH_PX = 658;
+
 const SECTION_TIPS: Record<string, string> = {
   personal: "Include all details as they appear on your passport. This helps universities verify your identity.",
   education: "List degrees in reverse chronological order. Include ECTS/credit equivalents and grading scale.",
@@ -105,7 +107,7 @@ function CVPreviewFrame({ html }: { html: string }) {
     const frame = document.createElement("iframe");
     frame.setAttribute("title", "CV Preview");
     frame.setAttribute("sandbox", "allow-same-origin");
-    frame.style.width = "794px";
+    frame.style.width = `${CV_PREVIEW_WIDTH_PX}px`;
     frame.style.height = "100%";
     frame.style.border = "none";
 
@@ -123,7 +125,7 @@ function CVPreviewFrame({ html }: { html: string }) {
     };
   }, [html]);
 
-  return <div id="cv-preview" ref={previewRef} style={{ width: 794, height: "100%" }} />;
+  return <div id="cv-preview" className="cv-preview-frame" ref={previewRef} style={{ width: CV_PREVIEW_WIDTH_PX, height: "100%" }} />;
 }
 
 function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -379,7 +381,7 @@ export default function AcademicCVGenerator() {
     const updateScale = () => {
       if (previewContainerRef.current) {
         const containerWidth = previewContainerRef.current.clientWidth;
-        setPreviewScale(Math.min(containerWidth / 794, 1));
+        setPreviewScale(Math.min(containerWidth / CV_PREVIEW_WIDTH_PX, 1));
       }
     };
     updateScale();
@@ -975,7 +977,7 @@ export default function AcademicCVGenerator() {
         {isMobile ? (
           showPreview ? (
             <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
-              <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+              <div style={{ width: CV_PREVIEW_WIDTH_PX, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
                 <CVPreviewFrame html={previewHtml} />
               </div>
             </div>
@@ -987,7 +989,7 @@ export default function AcademicCVGenerator() {
             </div>
             <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
               <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
-                <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+                <div style={{ width: CV_PREVIEW_WIDTH_PX, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
                   <CVPreviewFrame html={previewHtml} />
                 </div>
               </div>

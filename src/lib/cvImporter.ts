@@ -113,29 +113,40 @@ function splitIntoSections(text: string): Record<string, string[]> {
 
 function extractPersonalInfo(text: string, sections: Record<string, string[]>): Partial<CVPersonalInfo> {
   const personal: Partial<CVPersonalInfo> = {};
+  const normalizedText = text.replace(/\s+/g, " ").trim();
 
   // Email
-  const emailMatch = text.match(EMAIL_RE);
+  const emailMatch = normalizedText.match(EMAIL_RE);
   if (emailMatch) personal.email = emailMatch[0];
 
   // Phone
-  const phoneMatch = text.match(PHONE_RE);
-  if (phoneMatch) personal.phone = phoneMatch[0];
+  const phoneMatch = normalizedText.match(/phone\s*[:\-]?\s*([+\d][+\d\s().-]{6,})/i) || normalizedText.match(PHONE_RE);
+  if (phoneMatch) {
+    personal.phone = (phoneMatch[1] || phoneMatch[0]).trim();
+  }
 
   // LinkedIn
-  const linkedinMatch = text.match(LINKEDIN_RE);
+  const linkedinMatch = normalizedText.match(LINKEDIN_RE);
   if (linkedinMatch) personal.linkedin_url = linkedinMatch[0];
 
   // Passport number
-  const passportMatch = text.match(/passport(?:\s*number)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i);
+  const passportMatch = normalizedText.match(/passport(?:\s*number)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i);
   if (passportMatch) personal.passport_number = passportMatch[1].toUpperCase();
 
+  // Date of birth
+  const dobMatch = normalizedText.match(/date\s*of\s*birth\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|nationality|gender|phone|email|address|$))/i);
+  if (dobMatch) personal.date_of_birth = dobMatch[1].trim();
+
+  // Nationality
+  const nationalityMatch = normalizedText.match(/nationality\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|gender|phone|email|address|$))/i);
+  if (nationalityMatch) personal.nationality = nationalityMatch[1].trim();
+
   // Gender
-  const genderMatch = text.match(/gender\s*[:\-]?\s*(male|female|other|non[-\s]?binary)/i);
+  const genderMatch = normalizedText.match(/gender\s*[:\-]?\s*(male|female|other|non[-\s]?binary)/i);
   if (genderMatch) personal.gender = genderMatch[1].replace(/\b\w/g, c => c.toUpperCase());
 
   // Place of Birth
-  const pobMatch = text.match(/place\s*of\s*birth\s*[:\-]?\s*([^\n|]+)/i);
+  const pobMatch = normalizedText.match(/place\s*of\s*birth\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|nationality|gender|phone|email|address|$))/i);
   if (pobMatch) personal.place_of_birth = pobMatch[1].trim();
 
   // Name: usually the first non-empty line in the document

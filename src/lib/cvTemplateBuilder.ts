@@ -434,7 +434,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 <style>
     @page { size: A4; margin: 22mm 18mm 22mm 18mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; user-select: text; -webkit-user-select: text; }
-    html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
+    html, body { margin: 0; padding: 0; background: #fff; }
     body {
       font-family: "Inter", "Segoe UI", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
       line-height: 1.45;
@@ -444,9 +444,14 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
+    .cv-page {
+      width: 174mm;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
     .cv-container {
-      width: 210mm;
-      min-height: 297mm;
+      width: 174mm;
+      min-height: 253mm;
       margin: 0 auto;
       padding: 0;
       background: #fff;
@@ -670,8 +675,9 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
 
     @media print {
       @page { margin: 22mm 18mm 22mm 18mm; }
-      html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
-      .cv-container { width: 210mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      .cv-page { width: 174mm; margin: 0 auto; }
+      .cv-container { width: 174mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
       .section { page-break-inside: avoid; break-inside: avoid; }
       .header-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
       .cv-body { padding-bottom: 10mm; }
@@ -695,7 +701,7 @@ if (row3.length > 0) personalLines.push(`<div>${row3.join(" | ")}</div>`);
   "dateCreated": "${new Date().toISOString()}"
 }
 </script>
-<div class="cv-container density-${density}">
+<div class="cv-page cv-container density-${density}">
   <!-- HEADER BAND -->
   <div class="header-band cv-header">
     <div class="header-inner">
