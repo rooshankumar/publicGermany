@@ -92,6 +92,24 @@ function formatCoreCoursework(subjects?: string): string {
   return `<div class="core-coursework-title">Core Coursework</div><ul class="core-coursework-list">${parts.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
+function plainLinesFromHtml(value?: string): string[] {
+  if (!value) return [];
+  return sanitizeHtml(value)
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .split(/\n|\u2022|•|;|\|/)
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function formatBullets(value?: string, className = "bullet-list"): string {
+  const lines = plainLinesFromHtml(value);
+  if (!lines.length) return "";
+  return `<ul class="${className}">${lines.map(line => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
+}
+
 export interface CVPersonalInfo {
   full_name?: string;
   passport_number?: string;
@@ -220,16 +238,17 @@ export function buildCVHtml(
 </div>`).join("\n")}` : "";
 
   const workHtml = workExperiences.length > 0 ? `
+    <div class="section work-section">
     <div class="section-title">Work Experience</div>
     ${workExperiences.map(w => `
 <div class="entry work-entry">
   <table class="entry-row-table"><tr>
-    <td class="entry-title-cell">${escapeHtml(w.job_title).toUpperCase()}</td>
+    <td class="entry-title-cell">${escapeHtml([w.job_title, w.organisation, w.city_country].filter(Boolean).join(", "))}</td>
     <td class="entry-date-cell">${formatMonthYear(w.start_date)} – ${w.is_current ? "Present" : formatMonthYear(w.end_date)}</td>
   </tr></table>
-  <div class="sub-info">${escapeHtml(w.organisation)}${w.city_country ? `, ${escapeHtml(w.city_country)}` : ""}</div>
-  ${w.description ? `<div class="academic-meta">${sanitizeHtml(w.description)}</div>` : ""}
-</div>`).join("\n")}` : "";
+  ${formatBullets(w.description, "work-bullet-list")}
+</div>`).join("\n")}
+    </div>` : "";
 
   const langRows = otherLangs.map(l => `
 <tr><td class="lang-name-cell">${escapeHtml(l.language_name)}</td><td class="lang-level-cell">${l.listening || "—"}</td><td class="lang-level-cell">${l.reading || "—"}</td><td class="lang-level-cell">${l.writing || "—"}</td><td class="lang-level-cell">${l.speaking || "—"}</td></tr>`).join("");
@@ -253,6 +272,7 @@ ${langRows}
 const customHtml = customSections
   .filter(s => s.items.length > 0)
   .map(section => `
+    <div class="section custom-section">
     <div class="section-title">${escapeHtml(section.title)}</div>
 
     ${section.items.map(item => {
@@ -260,11 +280,19 @@ const customHtml = customSections
       // TITLE + DESCRIPTION
       const isTechnicalSkillsSection = /technical\s+skills/i.test(section.title);
 
+      if (isTechnicalSkillsSection) {
+        const values = [item.label, ...plainLinesFromHtml(item.description).map(v => escapeHtml(v))].filter(Boolean);
+        const label = escapeHtml(item.label || "Skills");
+        const unique = Array.from(new Set(values.map(v => String(v).trim()).filter(Boolean)));
+        const list = unique.join(", ");
+        return `<div class="entry skills-line-entry"><strong>${label}:</strong> ${list}</div>`;
+      }
+
       if (item.description) {
         return `
         <div class="entry ${isTechnicalSkillsSection ? "skills-entry" : ""}">
           <strong>${escapeHtml(item.label)}</strong>${isTechnicalSkillsSection ? ":" : "<br>"}
-          ${sanitizeHtml(item.description)}
+          ${formatBullets(item.description, "bullet-list") || sanitizeHtml(item.description)}
         </div>`;
       }
 
@@ -273,15 +301,17 @@ const customHtml = customSections
 
     }).join("")}
 
-  `).join("\n");
+  </div>`).join("\n");
 
   const recHtml = recommendations.length > 0 ? `
+    <div class="section referees-section">
     <div class="section-title">Recommendations / Referees</div>
     ${recommendations.map(r => `
 <div class="entry">
-    <strong>${escapeHtml(r.name)}</strong>
-    <div class="academic-meta">${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}${r.email ? ` | <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.contact ? ` | ${escapeHtml(r.contact)}` : ""}${r.lor_link ? ` | <em>Download LOR Certificate</em>: <a href="${escapeHtml(r.lor_link)}">${escapeHtml(r.lor_link)}</a>` : ""}</div>
-</div>`).join("\n")}` : "";
+    <div class="ref-row-1"><strong>${escapeHtml(r.name)}</strong>${[r.designation, r.department, r.institution].filter(Boolean).length ? `, ${[r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(", ")}` : ""}</div>
+    <div class="ref-row-2">${r.email ? `<span class="ref-label">Email:</span> <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}${r.lor_link ? `<span class="ref-sep">&nbsp;&nbsp;</span><span class="ref-label">Download LOR Certificate:</span> <a href="${escapeHtml(r.lor_link)}">Clickable Link</a>` : ""}${r.contact ? `<span class="ref-sep">&nbsp;&nbsp;</span>${escapeHtml(r.contact)}` : ""}</div>
+</div>`).join("\n")}
+    </div>` : "";
 
 const linkedinLine = personal.linkedin_url
   ? `<div><span class="label">LinkedIn:</span> <a href="${escapeHtml(personal.linkedin_url)}">${escapeHtml(personal.linkedin_url)}</a></div>`
@@ -331,7 +361,7 @@ if (contactParts.length > 0)
 <title>Academic_CV_${escapeHtml(personal.full_name)}</title>
 <style>
     @page { size: A4; margin: 0; }
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; user-select: text; -webkit-user-select: text; }
     html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
     body {
       font-family: "Inter", "Segoe UI", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
@@ -477,7 +507,7 @@ if (contactParts.length > 0)
   text-decoration: underline;
 }
     /* ===== BODY CONTENT ===== */
-    .cv-body { padding: 0 28px 20px 28px; font-size: var(--base-font-size); line-height: var(--base-line-height); }
+    .cv-body { padding: 0 28px 20px 28px; font-size: calc(var(--base-font-size) + 0.3px); line-height: var(--base-line-height); color: #111; }
     .section-title { font-size: 12.2px; font-weight: 800; color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid #d5dbe4; margin: var(--section-gap) 0 8px 0; padding-bottom: 5px; page-break-after: avoid; break-after: avoid; }
     /* Entry header using table for no-flex alignment */
     .entry-row-table { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
@@ -487,8 +517,8 @@ if (contactParts.length > 0)
     .entry { margin-bottom: var(--entry-gap); page-break-inside: avoid; break-inside: avoid; }
     .skills-entry { margin-bottom: 3px; }
     .skills-entry strong { margin-right: 3px; }
-    .sub-info { font-style: italic; color: #374151; margin: 2px 0; font-size: 10px; }
-    .academic-meta { font-size: 9.7px; color: #374151; margin: 2px 0; line-height: 1.45; }
+    .sub-info { font-style: italic; color: #1f2937; margin: 2px 0; font-size: 10.2px; }
+    .academic-meta { font-size: 10px; color: #111; margin: 2px 0; line-height: 1.5; }
     /* Language table */
     .lang-table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
     .lang-table th, .lang-table td { border: 1px solid #c8d2df; padding: 6px 8px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
@@ -501,9 +531,16 @@ if (contactParts.length > 0)
     .mother-tongue-text { margin: 4px 0; font-size: 10.5px; }
     .bullet-list { margin: 5px 0 5px 18px; font-size: 10px; line-height: 1.55; padding-left: 0; page-break-inside: avoid; break-inside: avoid; }
     .bullet-list li { margin-bottom: 3px; }
+    .work-bullet-list { margin: 5px 0 2px 18px; padding: 0; list-style: disc; }
+    .work-bullet-list li { margin-bottom: 3px; }
     .core-coursework-title { font-weight: 700; margin: 4px 0 3px 0; color: #1f2937; }
     .core-coursework-list { margin: 0 0 6px 18px; padding: 0; list-style: disc; }
     .core-coursework-list li { margin: 0 0 2px 0; line-height: 1.45; }
+    .ref-row-1 { font-size: 10.3px; color: #111; margin-bottom: 2px; }
+    .ref-row-2 { font-size: 10.2px; color: #111; }
+    .ref-label { font-weight: 700; color: #111; }
+    .ref-sep { display: inline-block; min-width: 12px; }
+
     /* Footer: signature + page number only */
     .cv-footer { margin-top: auto; padding: 16px 28px 14px 28px; page-break-inside: avoid; break-inside: avoid; }
     .sig-table { width: 100%; border-collapse: collapse; }
@@ -517,7 +554,7 @@ if (contactParts.length > 0)
     img { max-width: 100%; height: auto; }
     a { color: #0b4a8b; text-decoration: none; }
     /* Section-level page break control */
-    .section { page-break-inside: avoid; break-inside: avoid; }
+    .section { page-break-inside: avoid; break-inside: avoid; page-break-before: auto; }
     .entry, .lang-table, .section-title { page-break-inside: avoid; break-inside: avoid; }
 
     .pdf-export { width: 794px !important; min-height: 1123px !important; }
@@ -536,6 +573,7 @@ if (contactParts.length > 0)
     @media print {
       html, body { width: 210mm; margin: 0; padding: 0; background: #fff; }
       .cv-container { width: 210mm; min-height: auto; margin: 0; box-shadow: none; border-radius: 0; }
+      .section { page-break-inside: avoid; break-inside: avoid; }
       .header-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
       .cv-body { padding-bottom: 10mm; }
       /* Orphan/widow control */
@@ -577,15 +615,19 @@ if (contactParts.length > 0)
 
   <!-- CV BODY -->
   <div class="cv-body">
+    <div class="section education-section">
     <div class="section-title">Education and Training</div>
     ${eduHtml}
+    </div>
 
     ${workHtml}
     ${pubHtml}
 
+    <div class="section language-section">
     <div class="section-title">Language Skills</div>
     ${motherTongues ? `<div class="mother-tongue-text"><strong>Mother Tongue(s):</strong>&nbsp; ${motherTongues}</div>` : ""}
     ${langTableHtml}
+    </div>
 
     ${certHtml}
     ${customHtml}

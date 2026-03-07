@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -100,6 +100,7 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
         <button type="button" className="p-1 rounded hover:bg-muted" title="Left" onMouseDown={e => { e.preventDefault(); execCmd("justifyLeft"); }}><AlignLeft className="w-3 h-3" /></button>
         <button type="button" className="p-1 rounded hover:bg-muted" title="Center" onMouseDown={e => { e.preventDefault(); execCmd("justifyCenter"); }}><AlignCenter className="w-3 h-3" /></button>
         <button type="button" className="p-1 rounded hover:bg-muted" title="Right" onMouseDown={e => { e.preventDefault(); execCmd("justifyRight"); }}><AlignRight className="w-3 h-3" /></button>
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Bullets" onMouseDown={e => { e.preventDefault(); execCmd("insertUnorderedList"); }}><List className="w-3 h-3" /></button>
       </div>
       <div
         ref={editorRef}
@@ -291,6 +292,8 @@ export default function AcademicCVGenerator() {
         linkedin_url: data.personal?.linkedin_url || prev.linkedin_url,
         nationality: data.personal?.nationality || prev.nationality,
         date_of_birth: data.personal?.date_of_birth || prev.date_of_birth,
+        avatar_url: data.personal?.avatar_url || prev.avatar_url,
+        signature_url: data.personal?.signature_url || prev.signature_url,
       }));
     }
     if (data.educations?.length) setEducations(data.educations);
@@ -499,6 +502,24 @@ export default function AcademicCVGenerator() {
                 {c.label}
               </button>
             ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
+            <div>
+              <Label className="text-xs">Custom HEX Color</Label>
+              <Input
+                value={headerBgColor}
+                onChange={e => setHeaderBgColor(e.target.value)}
+                placeholder="#154a8a"
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block w-4 h-4 rounded border" style={{ backgroundColor: headerBgColor }} />
+                {HEADER_COLORS.find(c => c.value.toLowerCase() === headerBgColor.toLowerCase())?.label || "Custom"} ({headerBgColor})
+              </span>
+            </div>
           </div>
 
           <div className="mt-4">
