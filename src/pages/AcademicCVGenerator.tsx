@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Download, Loader2, GraduationCap, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, ChevronUp, ChevronDown, Printer } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown } from "lucide-react";
 import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -21,13 +21,28 @@ const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Academic Research", "Technical Skills", "Academic Projects", "Digital & Research Skills"];
 
 const HEADER_COLORS = [
-  { label: "EU Blue", value: "#004494" },
-  { label: "Professional Blue", value: "#1A5FB4" },
-  { label: "Indigo", value: "#4B5D88" },
-  { label: "Steel Blue", value: "#3A6EA5" },
-  { label: "Light Blue", value: "#6C8EBF" },
-  { label: "White", value: "#ffffff" },
+  { label: "Europass Blue", value: "#154a8a", hint: "Classic Europass academic blue theme." },
+  { label: "Dark Academic Blue", value: "#1f4e79", hint: "Formal university-style blue for strong contrast." },
+  { label: "Deep Navy", value: "#0f3a6d", hint: "Premium deep navy look for research-focused CVs." },
+  { label: "Neutral Gray", value: "#4a4a4a", hint: "Minimal neutral style with understated tone." },
+] as const;
+
+const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; hint: string }> = [
+  { label: "Compact", value: "compact", hint: "Smaller font and tighter spacing to fit more content." },
+  { label: "Standard", value: "standard", hint: "Balanced default academic layout." },
+  { label: "Expanded", value: "expanded", hint: "Slightly larger text and spacing to fill short CVs." },
 ];
+
+const REORDERABLE_SECTIONS: Array<{ key: NonNullable<CVBuildOptions["sectionOrder"]>[number]; label: string }> = [
+  { key: "work", label: "Work Experience" },
+  { key: "publications", label: "Research Publications" },
+  { key: "languages", label: "Language Skills" },
+  { key: "certifications", label: "Certifications" },
+  { key: "custom", label: "Custom Sections" },
+  { key: "recommendations", label: "Recommendations" },
+];
+
+const CV_PREVIEW_WIDTH_PX = 658;
 
 const SECTION_TIPS: Record<string, string> = {
   personal: "Include all details as they appear on your passport. This helps universities verify your identity.",
@@ -43,6 +58,7 @@ const SECTION_TIPS: Record<string, string> = {
 const emptyEducation = (): CVEducation => ({
   degree_title: "", field_of_study: "", institution: "", country: "",
   start_year: new Date().getFullYear() - 4, end_year: new Date().getFullYear(),
+  start_date: "", end_date: "",
   key_subjects: "", final_grade: "", max_scale: 10, total_credits: 0, credit_system: "Indian Scale",
 });
 const emptyWork = (): CVWorkExperience => ({
@@ -54,7 +70,7 @@ const emptyLanguage = (): CVLanguage => ({
 const emptyPublication = (): CVPublication => ({ title: "", journal: "", year: undefined });
 const emptyCertification = (): CVCertification => ({ title: "", institution: "", date: "" });
 const emptyCustomSection = (): CVCustomSection => ({ title: "", items: [{ label: "", description: "" }] });
-const emptyRecommendation = (): CVRecommendation => ({ name: "", designation: "", institution: "", email: "", contact: "" });
+const emptyRecommendation = (): CVRecommendation => ({ name: "", designation: "", department: "", institution: "", email: "", contact: "" });
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -80,6 +96,38 @@ function SectionTip({ tipKey }: { tipKey: string }) {
   );
 }
 
+
+function CVPreviewFrame({ html }: { html: string }) {
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = previewRef.current;
+    if (!container) return;
+
+    const frame = document.createElement("iframe");
+    frame.setAttribute("title", "CV Preview");
+    frame.setAttribute("sandbox", "allow-same-origin");
+    frame.style.width = `${CV_PREVIEW_WIDTH_PX}px`;
+    frame.style.height = "100%";
+    frame.style.border = "none";
+
+    container.replaceChildren(frame);
+
+    const doc = frame.contentDocument;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    return () => {
+      container.replaceChildren();
+    };
+  }, [html]);
+
+  return <div id="cv-preview" className="cv-preview-frame" ref={previewRef} style={{ width: CV_PREVIEW_WIDTH_PX, height: "100%" }} />;
+}
+
 function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const execCmd = (cmd: string) => {
@@ -95,6 +143,7 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
         <button type="button" className="p-1 rounded hover:bg-muted" title="Left" onMouseDown={e => { e.preventDefault(); execCmd("justifyLeft"); }}><AlignLeft className="w-3 h-3" /></button>
         <button type="button" className="p-1 rounded hover:bg-muted" title="Center" onMouseDown={e => { e.preventDefault(); execCmd("justifyCenter"); }}><AlignCenter className="w-3 h-3" /></button>
         <button type="button" className="p-1 rounded hover:bg-muted" title="Right" onMouseDown={e => { e.preventDefault(); execCmd("justifyRight"); }}><AlignRight className="w-3 h-3" /></button>
+        <button type="button" className="p-1 rounded hover:bg-muted" title="Bullets" onMouseDown={e => { e.preventDefault(); execCmd("insertUnorderedList"); }}><List className="w-3 h-3" /></button>
       </div>
       <div
         ref={editorRef}
@@ -108,6 +157,106 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
       />
     </div>
   );
+}
+
+
+function isValidDOB(value: string): boolean {
+  const d = parseDOB(value);
+  if (!d) return false;
+  const now = new Date();
+  if (d > now) return false;
+  const age = now.getFullYear() - d.getFullYear() - (now < new Date(now.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+  return age >= 15 && age <= 100;
+}
+
+function normalizeMonthYearInput(value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  if (/^\d{4}$/.test(v)) return v;
+  const normalized = v.replace(/\./g, " ").replace(/\s+/g, " ").trim();
+  const match = normalized.match(/^([A-Za-z]{3,9})\s+(\d{4})$/);
+  if (match) {
+    const d = new Date(`${match[1]} 1, ${match[2]}`);
+    if (!Number.isNaN(d.getTime())) return `${d.toLocaleString("en-US", { month: "short" })} ${match[2]}`;
+  }
+  if (/^\d{4}-\d{2}$/.test(v)) {
+    const [year, month] = v.split("-").map(Number);
+    if (month >= 1 && month <= 12) return `${new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" })} ${year}`;
+  }
+  return value;
+}
+
+function parseYearFromMonthYear(value?: string): number | null {
+  if (!value) return null;
+  const normalized = normalizeMonthYearInput(value);
+  const yearMatch = normalized.match(/(\d{4})$/);
+  return yearMatch ? Number(yearMatch[1]) : null;
+}
+
+function parseDOB(value: string): Date | null {
+  const v = value.trim();
+  if (!v) return null;
+
+  const ddmmyyyy = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyy] = ddmmyyyy;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, yyyy, mm, dd] = iso;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  const fallback = new Date(v);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function normalizeDOBInput(value: string): string {
+  const parsed = parseDOB(value);
+  if (!parsed) return value;
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function validateEducationTimeline(educations: CVEducation[]): string[] {
+  const warnings: string[] = [];
+  const sorted = [...educations].sort((a, b) => (parseYearFromMonthYear(a.start_date) ?? a.start_year) - (parseYearFromMonthYear(b.start_date) ?? b.start_year));
+  const levelScore = (degree: string) => {
+    const value = degree.toLowerCase();
+    if (value.includes("school") || value.includes("secondary") || value.includes("high school")) return 1;
+    if (value.includes("bachelor") || value.includes("b.tech") || value.includes("bsc") || value.includes("ba")) return 2;
+    if (value.includes("master") || value.includes("m.tech") || value.includes("msc") || value.includes("ma")) return 3;
+    if (value.includes("phd") || value.includes("doctor")) return 4;
+    return 0;
+  };
+
+  sorted.forEach((edu, index) => {
+    const startYear = parseYearFromMonthYear(edu.start_date) ?? edu.start_year;
+    const endYear = parseYearFromMonthYear(edu.end_date) ?? edu.end_year;
+
+    if (endYear < startYear) {
+      warnings.push(`${edu.degree_title || "Education entry"}: end year is before start year.`);
+    }
+
+    if (index > 0) {
+      const prev = sorted[index - 1];
+      const prevEndYear = parseYearFromMonthYear(prev.end_date) ?? prev.end_year;
+      const currentStartYear = parseYearFromMonthYear(edu.start_date) ?? edu.start_year;
+      const gap = currentStartYear - prevEndYear;
+      if (gap > 2) warnings.push(`Gap of ${gap} years between ${prev.degree_title || "previous education"} and ${edu.degree_title || "next education"}.`);
+
+      const prevScore = levelScore(prev.degree_title || "");
+      const currentScore = levelScore(edu.degree_title || "");
+      if (prevScore > 0 && currentScore > 0 && currentScore < prevScore) {
+        warnings.push(`Education order may be inconsistent: ${prev.degree_title} appears before ${edu.degree_title}.`);
+      }
+    }
+  });
+
+  return warnings;
 }
 
 // Reorder helpers
@@ -144,7 +293,14 @@ export default function AcademicCVGenerator() {
 
   const [photoPosition, setPhotoPosition] = useState("center");
   const [photoZoom, setPhotoZoom] = useState(100);
-  const [headerBgColor, setHeaderBgColor] = useState("#004494");
+  const [photoPositionX, setPhotoPositionX] = useState(50);
+  const [photoPositionY, setPhotoPositionY] = useState(50);
+  const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
+  const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
+  const [styleOptionsOpen, setStyleOptionsOpen] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
+    ["work", "publications", "languages", "certifications", "custom", "recommendations"],
+  );
 
   const [personal, setPersonal] = useState<CVPersonalInfo>({
     full_name: "", passport_number: "", date_of_birth: "", nationality: "",
@@ -185,19 +341,39 @@ export default function AcademicCVGenerator() {
         linkedin_url: data.personal?.linkedin_url || prev.linkedin_url,
         nationality: data.personal?.nationality || prev.nationality,
         date_of_birth: data.personal?.date_of_birth || prev.date_of_birth,
+        passport_number: data.personal?.passport_number || prev.passport_number,
+        gender: data.personal?.gender || prev.gender,
+        place_of_birth: data.personal?.place_of_birth || prev.place_of_birth,
+        avatar_url: data.personal?.avatar_url || prev.avatar_url,
+        signature_url: data.personal?.signature_url || prev.signature_url,
       }));
     }
     if (data.educations?.length) setEducations(data.educations);
     if (data.workExperiences?.length) setWorkExperiences(data.workExperiences);
     if (data.languages?.length) setLanguages(data.languages);
     if (data.certifications?.length) setCertifications(data.certifications);
+    if (data.publications?.length) setPublications(data.publications);
+    if (data.customSections?.length) setCustomSections(data.customSections);
+    if (data.recommendations?.length) setRecommendations(data.recommendations);
+    if (data.buildOptions) {
+      if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
+      if (data.buildOptions.photoPosition) setPhotoPosition(data.buildOptions.photoPosition);
+      if (data.buildOptions.photoZoom) setPhotoZoom(data.buildOptions.photoZoom);
+      if (typeof data.buildOptions.photoPositionX === "number") setPhotoPositionX(data.buildOptions.photoPositionX);
+      if (typeof data.buildOptions.photoPositionY === "number") setPhotoPositionY(data.buildOptions.photoPositionY);
+      if (data.buildOptions.density) setDensity(data.buildOptions.density);
+      if (data.buildOptions.sectionOrder?.length) setSectionOrder(data.buildOptions.sectionOrder);
+    }
   }, []);
 
-  const buildOptions: CVBuildOptions = { headerBgColor, photoPosition, photoZoom };
+  const buildOptions = useMemo<CVBuildOptions>(
+    () => ({ headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder }),
+    [headerBgColor, photoPosition, photoZoom, photoPositionX, photoPositionY, density, sectionOrder],
+  );
 
   const rawHtml = useMemo(() =>
     buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions),
-    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, headerBgColor, photoPosition, photoZoom]
+    [personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions]
   );
   const previewHtml = useDebounce(rawHtml, 300);
 
@@ -205,7 +381,7 @@ export default function AcademicCVGenerator() {
     const updateScale = () => {
       if (previewContainerRef.current) {
         const containerWidth = previewContainerRef.current.clientWidth;
-        setPreviewScale(Math.min(containerWidth / 794, 1));
+        setPreviewScale(Math.min(containerWidth / CV_PREVIEW_WIDTH_PX, 1));
       }
     };
     updateScale();
@@ -213,49 +389,94 @@ export default function AcademicCVGenerator() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showPreview]);
 
-  // Print-based PDF export: opens CV in new window and triggers print
+  // Same-tab print flow via hidden iframe keeps text selectable and avoids popup blockers.
   const generatePDF = async () => {
     if (!personal.full_name || !personal.email || educations.length === 0) {
       toast({ title: "Missing fields", description: "Please fill in at least your name, email, and one education entry.", variant: "destructive" });
       return;
     }
+
+    if (personal.date_of_birth && !isValidDOB(personal.date_of_birth)) {
+      toast({ title: "Invalid Date of Birth", description: "Use a realistic date (age should be at least 15 and not in the future).", variant: "destructive" });
+      return;
+    }
+
+    const timelineWarnings = validateEducationTimeline(educations);
+    if (timelineWarnings.length > 0) {
+      toast({ title: "Education timeline warning", description: timelineWarnings[0] });
+    }
+
+    let printFrame: HTMLIFrameElement | null = null;
     setIsGenerating(true);
     try {
-      const html = buildCVHtml(personal, educations, workExperiences, languages, publications, certifications, customSections, recommendations, buildOptions);
+      const safeTitle = `${personal.full_name || "Candidate"} CV`;
+      const printableHtml = previewHtml.replace("</head>", `<title>${safeTitle}</title></head>`);
 
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast({ title: "Pop-up blocked", description: "Please allow pop-ups to download the PDF.", variant: "destructive" });
-        setIsGenerating(false);
-        return;
+      printFrame = document.createElement("iframe");
+      printFrame.setAttribute("aria-hidden", "true");
+      printFrame.style.position = "fixed";
+      printFrame.style.right = "0";
+      printFrame.style.bottom = "0";
+      printFrame.style.width = "0";
+      printFrame.style.height = "0";
+      printFrame.style.border = "0";
+      printFrame.style.visibility = "hidden";
+      document.body.appendChild(printFrame);
+
+      const frameDoc = printFrame.contentDocument;
+      const frameWindow = printFrame.contentWindow;
+      if (!frameDoc || !frameWindow) {
+        throw new Error("Unable to initialize print frame.");
       }
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
 
-      // Wait for content and images to load then print
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          setIsGenerating(false);
-        }, 500);
-      };
+      await new Promise<void>((resolve, reject) => {
+        const onReady = async () => {
+          try {
+            const images = Array.from(frameDoc.querySelectorAll("img"));
+            await Promise.all(images.map((img) => {
+              if ((img as HTMLImageElement).complete) return Promise.resolve();
+              return new Promise<void>((imageResolve) => {
+                img.addEventListener("load", () => imageResolve(), { once: true });
+                img.addEventListener("error", () => imageResolve(), { once: true });
+              });
+            }));
 
-      // Fallback if onload doesn't fire
-      setTimeout(() => {
-        if (isGenerating) {
-          printWindow.focus();
-          printWindow.print();
-          setIsGenerating(false);
+            if (frameDoc.fonts?.ready) {
+              await frameDoc.fonts.ready;
+            }
+
+            setTimeout(() => {
+              frameWindow.focus();
+              frameWindow.print();
+              resolve();
+            }, 100);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        if (frameDoc.readyState === "complete") {
+          void onReady();
+          return;
         }
-      }, 3000);
 
-      toast({ title: "Print Dialog Opened", description: "Select 'Save as PDF' to download your CV." });
+        printFrame?.addEventListener("load", () => {
+          void onReady();
+        }, { once: true });
+      });
+
+      toast({ title: "Print dialog opened", description: "Choose Save as PDF to download your CV." });
     } catch (err) {
       console.error(err);
-      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to export CV. Please try again.", variant: "destructive" });
+    } finally {
+      if (printFrame && printFrame.parentNode) {
+        printFrame.parentNode.removeChild(printFrame);
+      }
       setIsGenerating(false);
     }
   };
@@ -274,31 +495,121 @@ export default function AcademicCVGenerator() {
       {/* Header Color Picker */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">CV Style Options</CardTitle>
+          <button type="button" className="w-full flex items-center justify-between" onClick={() => setStyleOptionsOpen(v => !v)}>
+            <CardTitle className="text-base">CV Style Options</CardTitle>
+            <ChevronDown className={`w-4 h-4 transition-transform ${styleOptionsOpen ? "rotate-180" : ""}`} />
+          </button>
         </CardHeader>
-        <CardContent>
-          <Label className="text-xs mb-2 block">Header Background Color</Label>
-          <div className="flex flex-wrap gap-2 items-center">
+        {styleOptionsOpen && <CardContent>
+          <Label className="text-xs mb-2 block">Header Background Color (Select one)</Label>
+          <div className="space-y-1.5">
             {HEADER_COLORS.map(c => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setHeaderBgColor(c.value)}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${headerBgColor === c.value ? "border-primary ring-2 ring-primary/30 scale-110" : "border-border"}`}
-                style={{ backgroundColor: c.value }}
-                title={c.label}
-              />
-            ))}
-            {/* Custom color picker */}
-            <label className="relative cursor-pointer" title="Custom color">
-              <div className={`w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center text-xs font-bold text-muted-foreground ${!HEADER_COLORS.find(c => c.value === headerBgColor) ? "ring-2 ring-primary/30 scale-110" : ""}`}
-                style={{ backgroundColor: !HEADER_COLORS.find(c => c.value === headerBgColor) ? headerBgColor : undefined }}>
-                +
+              <div key={c.value} className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHeaderBgColor(c.value)}
+                  className={`flex items-center gap-2 text-xs rounded-md px-2 py-1 w-full text-left transition border ${headerBgColor.toLowerCase() === c.value.toLowerCase() ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+                >
+                  <span className="w-4 h-4 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: c.value }} />
+                  <span>{c.label}</span>
+                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="text-xs max-w-56">{c.hint}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <input type="color" value={headerBgColor} onChange={e => setHeaderBgColor(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-8 h-8" />
-            </label>
+            ))}
+            <div className="flex items-center justify-between gap-2 border rounded-md px-2 py-1.5">
+              <div className="flex items-center gap-2 text-xs">
+                <span>🎨</span>
+                <span>Custom Color</span>
+                <span className="text-muted-foreground">({headerBgColor})</span>
+              </div>
+              <input
+                type="color"
+                value={headerBgColor}
+                onChange={e => setHeaderBgColor(e.target.value)}
+                className="w-8 h-8 p-0 border rounded cursor-pointer bg-transparent"
+                aria-label="Pick custom header color"
+              />
+            </div>
           </div>
-        </CardContent>
+
+          <div className="mt-4">
+            <div className="flex items-center gap-1 mb-2">
+              <Label className="text-xs">Layout Density</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Adjust spacing and font scale to fit short or long CVs.</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {DENSITY_OPTIONS.map(option => (
+                <div key={option.value} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDensity(option.value)}
+                    className={`text-left rounded-md border px-3 py-2 transition w-full ${density === option.value ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+                  >
+                    <div className="text-xs font-semibold">{option.label}</div>
+                  </button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground"><Info className="w-3.5 h-3.5" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs max-w-52">{option.hint}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Label className="text-xs mb-2 block">Section Order (after Education)</Label>
+            <div className="space-y-1.5">
+              {sectionOrder.map((key, index) => {
+                const label = REORDERABLE_SECTIONS.find(section => section.key === key)?.label || key;
+                return (
+                  <div key={key} className="flex items-center justify-between border rounded-md px-2 py-1.5">
+                    <span className="text-xs">{label}</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={index === 0}
+                        onClick={() => setSectionOrder(prev => moveUp(prev, index))}
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={index === sectionOrder.length - 1}
+                        onClick={() => setSectionOrder(prev => moveDown(prev, index))}
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>}
       </Card>
 
       {/* Personal Info */}
@@ -309,7 +620,7 @@ export default function AcademicCVGenerator() {
             <div><Label className="text-xs">Full Name *</Label><Input value={personal.full_name} onChange={e => updatePersonal("full_name", e.target.value)} placeholder="John Doe" /></div>
             <div><Label className="text-xs">Email *</Label><Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" /></div>
             <div><Label className="text-xs">Phone</Label><Input value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="+91 9876543210" /></div>
-            <div><Label className="text-xs">Date of Birth</Label><Input type="date" value={personal.date_of_birth} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
+            <div><Label className="text-xs">Date of Birth</Label><Input value={personal.date_of_birth} placeholder="15 Aug 1998" onBlur={e => updatePersonal("date_of_birth", normalizeDOBInput(e.target.value))} onChange={e => updatePersonal("date_of_birth", e.target.value)} /></div>
             <div><Label className="text-xs">Nationality</Label><Input value={personal.nationality} onChange={e => updatePersonal("nationality", e.target.value)} placeholder="Indian" /></div>
             <div><Label className="text-xs">Gender</Label><Input value={personal.gender} onChange={e => updatePersonal("gender", e.target.value)} placeholder="Male / Female" /></div>
             <div><Label className="text-xs">Passport Number</Label><Input value={personal.passport_number} onChange={e => updatePersonal("passport_number", e.target.value)} /></div>
@@ -342,6 +653,14 @@ export default function AcademicCVGenerator() {
                     <Slider value={[photoZoom]} onValueChange={v => setPhotoZoom(v[0])} min={100} max={200} step={5} className="w-32" />
                     <span className="text-xs text-muted-foreground">{photoZoom}%</span>
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Face Area (Horizontal)</Label>
+                    <Slider value={[photoPositionX]} onValueChange={v => setPhotoPositionX(v[0])} min={0} max={100} step={1} className="w-40" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Face Area (Vertical)</Label>
+                    <Slider value={[photoPositionY]} onValueChange={v => setPhotoPositionY(v[0])} min={0} max={100} step={1} className="w-40" />
+                  </div>
                 </div>
               )}
             </div>
@@ -371,8 +690,8 @@ export default function AcademicCVGenerator() {
                     <div><Label className="text-xs">Field of Study *</Label><Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" /></div>
                     <div><Label className="text-xs">Institution *</Label><Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} /></div>
                     <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
-                    <div><Label className="text-xs">Start Year</Label><Input type="number" value={edu.start_year} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_year: Number(e.target.value) }; setEducations(n); }} /></div>
-                    <div><Label className="text-xs">End Year</Label><Input type="number" value={edu.end_year} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_year: Number(e.target.value) }; setEducations(n); }} /></div>
+                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
+                    <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
                     <div><Label className="text-xs">Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" /></div>
                     <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
                     <div><Label className="text-xs">Total Credits</Label><Input type="number" value={edu.total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} /></div>
@@ -411,11 +730,11 @@ export default function AcademicCVGenerator() {
                     <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
-                    <div><Label className="text-xs">Start Date</Label><Input type="date" value={w.start_date} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
+                    <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
                     <div className="flex items-end gap-3">
                       <div className="flex-1">
-                        <Label className="text-xs">End Date</Label>
-                        <Input type="date" value={w.end_date || ""} disabled={w.is_current} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
+                        <Label className="text-xs">End Date (Mon YYYY)</Label>
+                        <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
                       </div>
                       <div className="flex items-center gap-1.5 pb-1.5">
                         <Switch
@@ -523,7 +842,7 @@ export default function AcademicCVGenerator() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div><Label className="text-xs">Title *</Label><Input value={c.title} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], title: e.target.value }; setCertifications(n); }} /></div>
                   <div><Label className="text-xs">Institution</Label><Input value={c.institution || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], institution: e.target.value }; setCertifications(n); }} /></div>
-                  <div><Label className="text-xs">Date</Label><Input type="date" value={c.date || ""} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
+                  <div><Label className="text-xs">Date (YYYY or Mon YYYY)</Label><Input value={c.date || ""} placeholder="2023 or Jun 2023" onBlur={e => { const n = [...certifications]; n[i] = { ...n[i], date: normalizeMonthYearInput(e.target.value) }; setCertifications(n); }} onChange={e => { const n = [...certifications]; n[i] = { ...n[i], date: e.target.value }; setCertifications(n); }} /></div>
                 </div>
                 <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setCertifications(certifications.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
               </div>
@@ -582,7 +901,7 @@ export default function AcademicCVGenerator() {
       {/* Recommendations */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center">Recommendations / Referees <SectionTip tipKey="recommendations" /></CardTitle>
+          <CardTitle className="text-base flex items-center">Recommendations <SectionTip tipKey="recommendations" /></CardTitle>
           <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -594,6 +913,7 @@ export default function AcademicCVGenerator() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div><Label className="text-xs">Name *</Label><Input value={r.name} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], name: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Designation</Label><Input value={r.designation || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], designation: e.target.value }; setRecommendations(n); }} /></div>
+                  <div><Label className="text-xs">Department</Label><Input value={r.department || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], department: e.target.value }; setRecommendations(n); }} placeholder="Department of Computer Science" /></div>
                   <div><Label className="text-xs">Institution</Label><Input value={r.institution || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], institution: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Email</Label><Input value={r.email || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], email: e.target.value }; setRecommendations(n); }} /></div>
                   <div><Label className="text-xs">Contact</Label><Input value={r.contact || ""} onChange={e => { const n = [...recommendations]; n[i] = { ...n[i], contact: e.target.value }; setRecommendations(n); }} /></div>
@@ -609,10 +929,10 @@ export default function AcademicCVGenerator() {
       {/* Generate Button */}
       <div className="text-center space-y-4 mt-6">
         <Button size="lg" onClick={generatePDF} disabled={isGenerating} className="w-full sm:w-auto px-8">
-          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Opening Print…</> : <><Printer className="w-4 h-4 mr-2" />Print / Save as PDF</>}
+          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating PDF…</> : <><Download className="w-4 h-4 mr-2" />Download PDF</>}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Opens the CV in a new tab. Select <strong>"Save as PDF"</strong> in the print dialog to download.
+          Preview is exported exactly as shown (A4, no extra margins, no scaling drift).
         </p>
         <p className="text-xs text-muted-foreground">
           Want to save your CV and access more features?{" "}
@@ -623,13 +943,20 @@ export default function AcademicCVGenerator() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background overflow-hidden">
       <nav className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-4 h-4" /> publicgermany
-          </Link>
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground shrink-0">
+              <ArrowLeft className="w-4 h-4" /> publicgermany
+            </Link>
+            <span className="text-muted-foreground/50">|</span>
+            <p className="text-sm min-w-0 truncate">
+              <span className="font-semibold">Europass CV Generator</span>
+              <span className="text-muted-foreground"> — Create a professional Europass-format academic CV for German university applications.</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             {isMobile && (
               <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
                 {showPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
@@ -646,35 +973,24 @@ export default function AcademicCVGenerator() {
 
       <div className="german-stripe" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <GraduationCap className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Europass CV Generator</h1>
-        </div>
-        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-          Create a professional Europass-format academic CV for German university applications.
-          Your data stays in your browser — nothing is stored on our servers.
-        </p>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 pb-8">
+      <main className="max-w-7xl mx-auto px-4 py-3 h-[calc(100vh-64px)] overflow-hidden">
         {isMobile ? (
           showPreview ? (
-            <div ref={previewContainerRef} className="border rounded-lg overflow-hidden bg-white" style={{ height: "70vh" }}>
-              <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+            <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
+              <div style={{ width: CV_PREVIEW_WIDTH_PX, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+                <CVPreviewFrame html={previewHtml} />
               </div>
             </div>
-          ) : formContent
+          ) : <div className="h-full overflow-y-auto pr-1">{formContent}</div>
         ) : (
-          <div className="flex gap-6">
-            <div className="w-1/2 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+          <div className="grid grid-cols-12 gap-4 h-full overflow-hidden">
+            <div className="col-span-8 h-full overflow-y-auto pr-2">
               {formContent}
             </div>
-            <div className="w-1/2 sticky top-28 h-[calc(100vh-200px)]" ref={previewContainerRef}>
-              <div className="border rounded-lg overflow-hidden bg-white h-full shadow-sm">
-                <div style={{ width: 794, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
-                  <iframe srcDoc={previewHtml} style={{ width: 794, height: "100%", border: "none" }} title="CV Preview" />
+            <div className="col-span-4 h-full overflow-hidden" ref={previewContainerRef}>
+              <div className="border rounded-lg overflow-auto bg-white h-full shadow-sm">
+                <div style={{ width: CV_PREVIEW_WIDTH_PX, transform: `scale(${previewScale})`, transformOrigin: "top left", height: `${100 / previewScale}%` }}>
+                  <CVPreviewFrame html={previewHtml} />
                 </div>
               </div>
             </div>

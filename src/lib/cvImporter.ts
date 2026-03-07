@@ -3,7 +3,7 @@
  * Uses pattern matching to identify common CV sections and populate form fields.
  */
 
-import type { CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVCertification } from "./cvTemplateBuilder";
+import type { CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVCertification, CVPublication, CVCustomSection, CVRecommendation, CVBuildOptions } from "./cvTemplateBuilder";
 
 export interface ImportedCVData {
   personal: Partial<CVPersonalInfo>;
@@ -11,6 +11,10 @@ export interface ImportedCVData {
   workExperiences: CVWorkExperience[];
   languages: CVLanguage[];
   certifications: CVCertification[];
+  publications?: CVPublication[];
+  customSections?: CVCustomSection[];
+  recommendations?: CVRecommendation[];
+  buildOptions?: CVBuildOptions;
 }
 
 // Section header patterns
@@ -42,6 +46,45 @@ const COMMON_LANGUAGES = [
   "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia",
 ];
 
+const EMBEDDED_META_PREFIX = "PGCVMETA:";
+
+function decodeEmbeddedPayload(encoded: string): ImportedCVData | null {
+  try {
+    const normalized = encoded.replace(/\s+/g, "");
+    const json = decodeURIComponent(escape(atob(normalized)));
+    const parsed = JSON.parse(json);
+    if (parsed?.generator !== "publicgermany-cv" || !parsed?.data) return null;
+    return parsed.data as ImportedCVData;
+  } catch {
+    return null;
+  }
+}
+
+export function extractEmbeddedCVDataFromText(text: string): ImportedCVData | null {
+  if (!text) return null;
+  const compact = text.replace(/\s+/g, "");
+  const match = compact.match(new RegExp(`${EMBEDDED_META_PREFIX}([A-Za-z0-9+/=_-]+)`));
+  if (!match) return null;
+  return decodeEmbeddedPayload(match[1]);
+}
+
+export async function extractEmbeddedCVDataFromPDF(file: File): Promise<ImportedCVData | null> {
+  const arrayBuffer = await file.arrayBuffer();
+
+  // Strategy 1: raw PDF byte scan (works for image-heavy PDFs exported by this app).
+  const rawPdfText = new TextDecoder("latin1").decode(new Uint8Array(arrayBuffer));
+  const fromRawScan = extractEmbeddedCVDataFromText(rawPdfText);
+  if (fromRawScan) return fromRawScan;
+
+  // Strategy 2: fallback through text extraction for PDFs where metadata appears in text layer.
+  try {
+    const text = await extractTextFromPDF(file, arrayBuffer);
+    return extractEmbeddedCVDataFromText(text);
+  } catch {
+    return null;
+  }
+}
+
 function splitIntoSections(text: string): Record<string, string[]> {
   const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
   const sections: Record<string, string[]> = { unknown: [] };
@@ -70,18 +113,41 @@ function splitIntoSections(text: string): Record<string, string[]> {
 
 function extractPersonalInfo(text: string, sections: Record<string, string[]>): Partial<CVPersonalInfo> {
   const personal: Partial<CVPersonalInfo> = {};
+  const normalizedText = text.replace(/\s+/g, " ").trim();
 
   // Email
-  const emailMatch = text.match(EMAIL_RE);
+  const emailMatch = normalizedText.match(EMAIL_RE);
   if (emailMatch) personal.email = emailMatch[0];
 
   // Phone
-  const phoneMatch = text.match(PHONE_RE);
-  if (phoneMatch) personal.phone = phoneMatch[0];
+  const phoneMatch = normalizedText.match(/phone\s*[:\-]?\s*([+\d][+\d\s().-]{6,})/i) || normalizedText.match(PHONE_RE);
+  if (phoneMatch) {
+    personal.phone = (phoneMatch[1] || phoneMatch[0]).trim();
+  }
 
   // LinkedIn
-  const linkedinMatch = text.match(LINKEDIN_RE);
+  const linkedinMatch = normalizedText.match(LINKEDIN_RE);
   if (linkedinMatch) personal.linkedin_url = linkedinMatch[0];
+
+  // Passport number
+  const passportMatch = normalizedText.match(/passport(?:\s*number)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i);
+  if (passportMatch) personal.passport_number = passportMatch[1].toUpperCase();
+
+  // Date of birth
+  const dobMatch = normalizedText.match(/date\s*of\s*birth\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|nationality|gender|phone|email|address|$))/i);
+  if (dobMatch) personal.date_of_birth = dobMatch[1].trim();
+
+  // Nationality
+  const nationalityMatch = normalizedText.match(/nationality\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|gender|phone|email|address|$))/i);
+  if (nationalityMatch) personal.nationality = nationalityMatch[1].trim();
+
+  // Gender
+  const genderMatch = normalizedText.match(/gender\s*[:\-]?\s*(male|female|other|non[-\s]?binary)/i);
+  if (genderMatch) personal.gender = genderMatch[1].replace(/\b\w/g, c => c.toUpperCase());
+
+  // Place of Birth
+  const pobMatch = normalizedText.match(/place\s*of\s*birth\s*[:\-]?\s*([^|,\n]+?)(?=\s*(?:\||,|nationality|gender|phone|email|address|$))/i);
+  if (pobMatch) personal.place_of_birth = pobMatch[1].trim();
 
   // Name: usually the first non-empty line in the document
   const allLines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
@@ -310,13 +376,15 @@ export function parseExtractedText(text: string): ImportedCVData {
   return { personal, educations, workExperiences, languages, certifications };
 }
 
-export async function extractTextFromPDF(file: File): Promise<string> {
+export async function extractTextFromPDF(file: File, preloadedBuffer?: ArrayBuffer): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
 
-  // Use the bundled worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  // Use locally bundled worker to avoid CDN dependency failures.
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+  }
 
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = preloadedBuffer ?? await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
   const textParts: string[] = [];
