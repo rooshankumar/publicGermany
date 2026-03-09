@@ -43,6 +43,7 @@ export interface CVEducation {
   total_credits?: number
   credit_system?: string
   thesis_title?: string
+  website_url?: string
 }
 
 export interface CVWorkExperience {
@@ -282,7 +283,7 @@ function buildEducation(educations: any[]): string {
   return `
 <div class="section">
   <div class="sec-title">Education and Training</div>
-  ${educations.map(edu => {
+  ${educations.map((edu, index) => {
     const title   = escapeHtml((edu.degree_title ?? "").trim()).toUpperCase();
     const field   = edu.field_of_study ? ` &ndash; ${escapeHtml((edu.field_of_study ?? "").trim()).toUpperCase()}` : "";
     const start   = fmtDate(edu.start_date) || escapeHtml(String(edu.start_year ?? ""));
@@ -295,6 +296,13 @@ function buildEducation(educations: any[]): string {
     const thesis  = edu.thesis_title ? `<p class="meta"><b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i></p>` : "";
     const subjHtml = subj.length
       ? `<p class="coursework-lbl">Core Coursework</p>${bullets(subj, "blist coursework-list")}` : "";
+    
+    // Support rich text descriptions
+    const desc = (edu as any).description ? `<div class="rich-text-desc">${(edu as any).description}</div>` : "";
+
+    const isLast = index === educations.length - 1;
+    const divider = !isLast ? `<div class="entry-divider"></div>` : "";
+
     return `
 <div class="entry">
   <table class="row-table"><tr>
@@ -302,7 +310,8 @@ function buildEducation(educations: any[]): string {
     <td class="row-date">${start} &ndash; ${end}</td>
   </tr></table>
   <p class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</p>
-  ${subjHtml}${thesis}${meta}
+  ${subjHtml}${thesis}${meta}${desc}
+  ${divider}
 </div>`;
   }).join("")}
 </div>`;
@@ -316,13 +325,17 @@ function buildWork(works: any[]): string {
   ${works.map(w => {
     const title = [w.job_title, w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
     const end   = w.is_current ? "Present" : fmtDate(w.end_date);
+    
+    // Support rich text descriptions
+    const desc = w.description ? `<div class="rich-text-desc">${w.description}</div>` : "";
+
     return `
 <div class="entry">
   <table class="row-table"><tr>
     <td class="row-title">${title}</td>
     <td class="row-date">${fmtDate(w.start_date)} &ndash; ${end}</td>
   </tr></table>
-  ${bullets(toLines(w.description), "blist work-list")}
+  ${desc}
 </div>`;
   }).join("")}
 </div>`;
@@ -407,11 +420,11 @@ function buildCustomSections(sections: any[]): string {
         const unique = [...new Set(vals)];
         return `<p class="skills-row"><b>${escapeHtml(item.label ?? "Skills")}:</b> ${unique.map(escapeHtml).join(", ") || "&mdash;"}</p>`;
       }
-      const descLines = toLines(item.description);
-      if (descLines.length) {
-        return `<div class="entry"><p class="item-lbl"><b>${escapeHtml(item.label)}</b></p>${bullets(descLines, "blist")}</div>`;
-      }
-      return `<div class="entry"><b>${escapeHtml(item.label)}</b></div>`;
+      
+      // Support rich text descriptions
+      const desc = item.description ? `<div class="rich-text-desc">${item.description}</div>` : "";
+
+      return `<div class="entry"><p class="item-lbl"><b>${escapeHtml(item.label)}</b></p>${desc}</div>`;
     }).join("\n");
 
     return `
@@ -559,8 +572,19 @@ html, body {
 /* ── Body — padding-bottom reserves space so content never overlaps the absolute-positioned footer ── */
 .cv-body { padding: 8px 28px 70px 28px; }
 
+/* ── Page Break Padding ──
+   Add 0.5cm top padding to content that starts at the top of a new page.
+*/
+@media print {
+  .section, .entry {
+    break-before: auto;
+    margin-top: 0;
+  }
+}
+
 /* ── Section ── */
-.section { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
+.section { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; padding-top: 0.5cm; }
+.section:first-child { padding-top: 0; }
 .sec-title {
   font-size: 11px; font-weight: 800;
   color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px;
@@ -588,6 +612,11 @@ html, body {
 }
 .sub-info { font-style: italic; font-size: 10.2px; color: #374151; margin: 2px 0 1px; }
 .meta     { font-size: 10px; color: #111; margin: 2px 0; line-height: 1.5; }
+.rich-text-desc { font-size: 10.3px; line-height: 1.45; color: #374151; margin-top: 4px; }
+.rich-text-desc p { margin-bottom: 2px; }
+.rich-text-desc ul, .rich-text-desc ol { padding-left: 18px; margin: 4px 0; }
+.rich-text-desc li { margin-bottom: 2px; }
+.entry-divider { border-bottom: 1px solid #c5d0df; margin: 12px 0; opacity: 0.6; }
 .item-lbl { margin-bottom: 2px; }
 .coursework-lbl { font-weight: 700; font-size: 10.3px; margin: 5px 0 2px; }
 

@@ -60,12 +60,174 @@ const SECTION_TIPS: Record<string, string> = {
   recommendations: "Include 2-3 academic referees who can vouch for your work.",
 };
 
+// ── Rich Text Editor ──────────────────────────────────────────────────────────
+// contentEditable mini-editor that matches the Europass description toolbar.
+//
+// CRITICAL: Never use dangerouslySetInnerHTML on a contentEditable div.
+// React re-runs dangerouslySetInnerHTML on every render, fighting the user's
+// edits and corrupting content (cursor jumps, characters dropped, garbled HTML).
+// Instead: set innerHTML once on mount via useEffect, sync external changes via
+// a second useEffect that guards against overwriting in-progress user edits.
+function RichTextEditor({ value, onChange, placeholder, minHeight = 80 }: {
+  value: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+  minHeight?: number;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  // Track whether the user is currently editing so we don't overwrite their work
+  const isEditing = React.useRef(false);
+  // Last HTML we committed outward — prevents false external-change detections
+  const committed = React.useRef<string | null>(null);
+
+  // ── Initial mount: set content once ───────────────────────────────────────
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = value || "";
+      committed.current = value || "";
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Sync external changes (import, clear) ─────────────────────────────────
+  // Only update the DOM when the value came from outside (not from our own onChange).
+  React.useEffect(() => {
+    if (!ref.current || isEditing.current) return;
+    const incoming = value || "";
+    // If we committed this value ourselves, skip — it's already in the DOM
+    if (committed.current === incoming) return;
+    ref.current.innerHTML = incoming;
+    committed.current = incoming;
+  }, [value]);
+
+  // ── Utility: Get selection or parent for formatting ────────────────────────
+  const getFormatTarget = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    let node = range.commonAncestorContainer;
+    if (node.nodeType === 3) node = node.parentNode!;
+    return node as HTMLElement;
+  };
+
+  // ── Strip browser-injected inline styles ──────────────────────────────────
+  // execCommand('bold'), execCommand('italic') etc. in some browsers wrap content
+  // in <span style="font-size:...;color:..."> copying parent computed styles.
+  // These bloat the stored HTML, pollute the PDF, and break the PGCVMETA payload limit.
+  // Strip all style attributes but keep structural tags (b, i, u, ul, ol, li, p, br, span).
+  const cleanHtml = (html: string): string =>
+    html
+      .replace(/\s+style="[^"]*"/gi, "")    // remove all style="" attrs
+      .replace(/\s+color="[^"]*"/gi, "")    // remove legacy color="" attrs
+      .replace(/\s+size="[^"]*"/gi, "")     // remove legacy size="" attrs
+      .replace(/\s+face="[^"]*"/gi, "")     // remove legacy font face attrs
+      .replace(/<font[^>]*>/gi, "")         // remove <font> tags (keep content)
+      .replace(/<\/font>/gi, "")
+      .replace(/(<span>(<\/span>)?|<span\s*\/>)/gi, "") // remove empty spans
+      .replace(/<span>([^<]*)<\/span>/gi, "$1");         // unwrap content-only spans
+
+  // ── Emit HTML outward ──────────────────────────────────────────────────────
+  const emit = React.useCallback(() => {
+    if (!ref.current) return;
+    const raw = ref.current.innerHTML;
+    const html = cleanHtml(raw);
+    
+    // Update internal state immediately
+    committed.current = html;
+    onChange(html);
+  }, [onChange]);
+
+  // Handle input events specifically to ensure live updates
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    emit();
+  };
+
+  // ── execCommand wrapper ────────────────────────────────────────────────────
+  const exec = (cmd: string, val?: string) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, val ?? undefined);
+    emit();
+  };
+
+  // ── Toolbar button helper ─────────────────────────────────────────────────
+  const Btn = ({ title, onClick, children, className = "" }: {
+    title: string; onClick: () => void; children: React.ReactNode; className?: string;
+  }) => (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={e => { e.preventDefault(); onClick(); }}
+      className={`px-1 py-0.5 rounded hover:bg-accent text-xs select-none ${className}`}
+    >{children}</button>
+  );
+  const Sep = () => <div className="w-px h-3.5 bg-border mx-0.5 self-center shrink-0" />;
+
+  return (
+    <div className="border rounded-md overflow-hidden text-xs focus-within:ring-1 focus-within:ring-ring">
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap items-center gap-0 px-1 py-0.5 border-b bg-muted/30 text-foreground">
+        <Btn title="Bold" onClick={() => exec("bold")}><b>B</b></Btn>
+        <Btn title="Italic" onClick={() => exec("italic")} className="italic">I</Btn>
+        <Btn title="Underline" onClick={() => exec("underline")} className="underline">U</Btn>
+        <Sep />
+        <Btn title="Subscript" onClick={() => exec("subscript")}>X<sub>2</sub></Btn>
+        <Btn title="Superscript" onClick={() => exec("superscript")}>X<sup>2</sup></Btn>
+        <Sep />
+        <Btn title="Bullet list" onClick={() => exec("insertUnorderedList")}>
+          <span className="font-mono">•≡</span>
+        </Btn>
+        <Btn title="Numbered list" onClick={() => exec("insertOrderedList")}>
+          <span className="font-mono">1≡</span>
+        </Btn>
+        <Btn title="Indent" onClick={() => exec("indent")}>→</Btn>
+        <Btn title="Outdent" onClick={() => exec("outdent")}>←</Btn>
+        <Sep />
+        <Btn title="Clear formatting" onClick={() => exec("removeFormat")} className="text-muted-foreground">Tx</Btn>
+        <Btn title="Undo" onClick={() => exec("undo")} className="text-muted-foreground">↩</Btn>
+        <Btn title="Redo" onClick={() => exec("redo")} className="text-muted-foreground">↪</Btn>
+        <Btn title="Clear all" onClick={() => { if (ref.current) { ref.current.innerHTML = ""; emit(); } }}
+          className="text-destructive ml-auto">🗑</Btn>
+      </div>
+
+      {/* ── Editable area — NO dangerouslySetInnerHTML ── */}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={() => { isEditing.current = true; }}
+        onBlur={() => { isEditing.current = false; emit(); }}
+        onInput={handleInput}
+        onKeyUp={handleInput}
+        onKeyDown={e => {
+          // Ctrl+B/I/U shortcuts
+          if (e.ctrlKey || e.metaKey) {
+            if (e.key === "b") { e.preventDefault(); exec("bold"); }
+            if (e.key === "i") { e.preventDefault(); exec("italic"); }
+            if (e.key === "u") { e.preventDefault(); exec("underline"); }
+          }
+        }}
+        onPaste={e => {
+          // Strip external styles on paste — accept plain text only to prevent
+          // pasting Tailwind/Word HTML blobs that pollute the description field.
+          e.preventDefault();
+          const text = e.clipboardData.getData("text/plain");
+          document.execCommand("insertText", false, text);
+        }}
+        data-placeholder={placeholder}
+        style={{ minHeight: minHeight + "px" }}
+        className="px-2 py-1.5 outline-none text-xs leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none"
+      />
+    </div>
+  );
+}
+
 const emptyEducation = (): CVEducation => ({
   degree_title: "", field_of_study: "", institution: "", country: "",
   start_year: new Date().getFullYear() - 4, end_year: new Date().getFullYear(),
   start_date: "", end_date: "",
+  description: "",
   key_subjects: [], final_grade: "", max_scale: 10, total_credits: 0, credit_system: "Indian Scale",
-});
+  website_url: "",
+} as any);
 const emptyWork = (): CVWorkExperience => ({
   job_title: "", organisation: "", city_country: "", start_date: "", end_date: "", is_current: false, description: [],
 });
@@ -118,10 +280,22 @@ function SectionTip({ tipKey }: { tipKey: string }) {
 
 function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const execCmd = (cmd: string) => {
-    document.execCommand(cmd, false);
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  };
+  const committed = useRef<string | null>(null);
+  const isEditing = useRef(false);
+
+  useEffect(() => {
+    if (editorRef.current) { editorRef.current.innerHTML = value || ""; committed.current = value || ""; }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!editorRef.current || isEditing.current) return;
+    const v = value || "";
+    if (committed.current !== v) { editorRef.current.innerHTML = v; committed.current = v; }
+  }, [value]);
+
+  const emit = () => { const h = editorRef.current?.innerHTML ?? ""; committed.current = h; onChange(h); };
+  const execCmd = (cmd: string) => { document.execCommand(cmd, false); emit(); };
+
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/50 border-b">
@@ -138,8 +312,9 @@ function RichTextField({ value, onChange, placeholder }: { value: string; onChan
         contentEditable
         suppressContentEditableWarning
         className="px-3 py-2 text-sm min-h-[36px] focus:outline-none"
-        dangerouslySetInnerHTML={{ __html: value || "" }}
-        onBlur={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); }}
+        onFocus={() => { isEditing.current = true; }}
+        onBlur={() => { isEditing.current = false; emit(); }}
+        onInput={emit}
         data-placeholder={placeholder}
         style={{ minHeight: 36 }}
       />
@@ -357,7 +532,25 @@ export default function AcademicCVGenerator() {
   };
 
   const handleCropComplete = (croppedImage: string) => {
-    updatePersonal('avatar_url', croppedImage);
+    // Compress to JPEG ≤300×300 @ 85% quality.
+    // Profile photos can be large PNGs (1–3 MB base64). The edge function
+    // payload limit and PDFShift rendering both benefit from a small image.
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 300;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/jpeg", 0.85);
+      updatePersonal("avatar_url", compressed);
+    };
+    img.onerror = () => updatePersonal("avatar_url", croppedImage); // fallback if compress fails
+    img.src = croppedImage;
     setIsCropperOpen(false);
     setTempImageUrl(null);
   };
@@ -385,28 +578,36 @@ export default function AcademicCVGenerator() {
         signature_url: data.personal?.signature_url ?? prev.signature_url,
       }));
     }
+    // toDescHtml: converts any legacy array description to <p>-based HTML string
+    const toDescHtml = (v: unknown): string => {
+      if (!v) return "";
+      if (typeof v === "string") return v; // already HTML
+      const lines = toLines(v);
+      return lines.map(l => `<p>${l}</p>`).join("");
+    };
     if (data.educations) setEducations(data.educations.map(e => ({
       ...e,
-      key_subjects: cleanLines(e.key_subjects),
+      description: toDescHtml((e as any).description ?? e.key_subjects),
+      key_subjects: [],
     })));
     if (data.workExperiences) setWorkExperiences(data.workExperiences.map(w => ({
       ...w,
-      description: cleanLines(w.description),
+      description: toDescHtml(w.description),
     })));
     if (data.languages) setLanguages(data.languages);
     if (data.certifications) setCertifications(data.certifications.map(c => ({
       ...c,
-      description: cleanLines((c as any).description),
+      description: toDescHtml((c as any).description),
     })));
     if (data.publications) setPublications(data.publications.map(p => ({
       ...p,
-      description: cleanLines((p as any).description),
+      description: toDescHtml((p as any).description),
     })));
     if (data.customSections) setCustomSections(data.customSections.map(s => ({
       ...s,
       items: s.items?.map((item: any) => ({
         ...item,
-        description: cleanLines(item.description),
+        description: toDescHtml(item.description),
       })) ?? s.items,
     })));
     if (data.recommendations) setRecommendations(data.recommendations);
@@ -706,9 +907,8 @@ export default function AcademicCVGenerator() {
         {activeStep === 1 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Education & Training * <SectionTip tipKey="education" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setEducations([...educations, emptyEducation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 {educations.map((edu, i) => (
@@ -723,15 +923,19 @@ export default function AcademicCVGenerator() {
                           <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
                           <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
                           <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
-                          <div><Label className="text-xs">Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" /></div>
+                          <div><Label className="text-xs">Final Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33 or 88%" /></div>
                           <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
+                          <div><Label className="text-xs">Type of Credits</Label><Input value={(edu as any).credit_system || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], credit_system: e.target.value }; setEducations(n); }} placeholder="Indian University Credit System" /></div>
+                          <div><Label className="text-xs">Number of Credits</Label><Input type="number" value={(edu as any).total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} placeholder="217" /></div>
+                          <div className="sm:col-span-2"><Label className="text-xs">Institution Website URL</Label><Input value={(edu as any).website_url || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], website_url: e.target.value }; setEducations(n); }} placeholder="https://www.university.edu/" /></div>
                         </div>
                         <div className="mt-2">
-                          <Label className="text-xs">Key Subjects / Focus (Comma separated)</Label>
-                          <Input
-                            value={Array.isArray(edu.key_subjects) ? edu.key_subjects.join(", ") : edu.key_subjects || ""}
-                            onChange={e => { const n = [...educations]; n[i] = { ...n[i], key_subjects: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }; setEducations(n); }}
-                            placeholder="Research methods, Statistics, Clinical Psychology"
+                          <Label className="text-xs">Description (Courses, thesis, achievements — formatted freely)</Label>
+                          <RichTextEditor
+                            value={(edu as any).description || ""}
+                            onChange={v => { const n = [...educations]; n[i] = { ...n[i], description: v } as any; setEducations(n); }}
+                            placeholder="e.g. Core Computer Science: Data Structures, Algorithms..."
+                            minHeight={80}
                           />
                         </div>
                       </div>
@@ -739,6 +943,7 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => setEducations([...educations, emptyEducation()])}><Plus className="w-3 h-3 mr-1" />Add Education</Button>
               </CardContent>
             </Card>
           </div>
@@ -747,9 +952,8 @@ export default function AcademicCVGenerator() {
         {activeStep === 2 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Work Experience <SectionTip tipKey="work" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setWorkExperiences([...workExperiences, emptyWork()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {workExperiences.length === 0 && <p className="text-xs text-muted-foreground">No work experience added (optional).</p>}
@@ -774,27 +978,29 @@ export default function AcademicCVGenerator() {
                             </div>
                           </div>
                         </div>
-                        <div className="mt-2">
-                          <Label className="text-xs">Description / Responsibilities (One per line)</Label>
-                          <Textarea
-                            value={Array.isArray(w.description) ? w.description.join("\n") : w.description || ""}
-                            onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], description: toLines(e.target.value) }; setWorkExperiences(n); }}
-                            placeholder="Developed React dashboards&#10;Optimized PostgreSQL queries"
-                            className="text-xs min-h-[80px]"
-                          />
-                        </div>
+                          <div className="mt-2">
+                            <Label className="text-xs">Description / Responsibilities</Label>
+                            <RichTextEditor
+                              value={Array.isArray(w.description) ? w.description.map((l: string) => `<p>${l}</p>`).join("") : (w.description || "")}
+                              onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
+                              placeholder="e.g. Developed React dashboards..."
+                              minHeight={80}
+                            />
+                          </div>
                       </div>
                       <Button size="icon" variant="ghost" className="h-6 w-6 ml-1 flex-shrink-0" onClick={() => setWorkExperiences(workExperiences.filter((_, j) => j !== i))}><Trash2 className="w-3 h-3" /></Button>
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setWorkExperiences([...workExperiences, emptyWork()])}><Plus className="w-3 h-3 mr-1" />Add Work Experience</Button>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Research Publications <SectionTip tipKey="publications" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setPublications([...publications, emptyPublication()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {publications.length === 0 && <p className="text-xs text-muted-foreground">No publications added (optional).</p>}
@@ -811,6 +1017,9 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setPublications([...publications, emptyPublication()])}><Plus className="w-3 h-3 mr-1" />Add Publication</Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -819,9 +1028,8 @@ export default function AcademicCVGenerator() {
         {activeStep === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Language Skills * <SectionTip tipKey="languages" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setLanguages([...languages, emptyLanguage()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {languages.map((lang, i) => (
@@ -856,13 +1064,15 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setLanguages([...languages, emptyLanguage()])}><Plus className="w-3 h-3 mr-1" />Add Language</Button>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Certifications <SectionTip tipKey="certifications" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setCertifications([...certifications, emptyCertification()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {certifications.length === 0 && <p className="text-xs text-muted-foreground">No certifications added (optional).</p>}
@@ -879,6 +1089,9 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setCertifications([...certifications, emptyCertification()])}><Plus className="w-3 h-3 mr-1" />Add Certification</Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -887,9 +1100,8 @@ export default function AcademicCVGenerator() {
         {activeStep === 4 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Additional Sections <SectionTip tipKey="custom" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setCustomSections([...customSections, emptyCustomSection()])}><Plus className="w-3 h-3 mr-1" />Add Section</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {customSections.length === 0 && (
@@ -914,12 +1126,15 @@ export default function AcademicCVGenerator() {
                               <div className="flex-1"><Input value={item.label} onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], label: e.target.value }; setCustomSections([...n]); }} placeholder="Item label" className="text-xs" /></div>
                               {section.items.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => { const n = [...customSections]; n[si].items = n[si].items.filter((_, j) => j !== ii); setCustomSections(n); }}><Trash2 className="w-3 h-3" /></Button>}
                             </div>
-                            <Textarea
-                              className="text-xs min-h-[60px]"
-                              value={Array.isArray(item.description) ? item.description.join("\n") : item.description || ""}
-                              onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: toLines(e.target.value) }; setCustomSections([...n]); }}
-                              placeholder="Description (One bullet per line)"
+                          <div className="mt-2">
+                            <Label className="text-xs">Description — format freely with bold, italic, bullets...</Label>
+                            <RichTextEditor
+                              value={Array.isArray(item.description) ? item.description.map((l: string) => `<p>${l}</p>`).join("") : (item.description || "")}
+                              onChange={v => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: v }; setCustomSections([...n]); }}
+                              placeholder="e.g. Conducted qualitative interviews..."
+                              minHeight={60}
                             />
+                          </div>
                           </div>
                         ))}
                         <Button size="sm" variant="ghost" className="text-xs mt-1" onClick={() => { const n = [...customSections]; n[si].items.push({ label: "", description: [] }); setCustomSections([...n]); }}><Plus className="w-3 h-3 mr-1" />Add Item</Button>
@@ -928,13 +1143,15 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setCustomSections([...customSections, emptyCustomSection()])}><Plus className="w-3 h-3 mr-1" />Add Section</Button>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center">Recommendations <SectionTip tipKey="recommendations" /></CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add</Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {recommendations.length === 0 && <p className="text-xs text-muted-foreground">No referees added (optional).</p>}
@@ -955,6 +1172,9 @@ export default function AcademicCVGenerator() {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-end pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setRecommendations([...recommendations, emptyRecommendation()])}><Plus className="w-3 h-3 mr-1" />Add Recommendation</Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -1043,7 +1263,6 @@ export default function AcademicCVGenerator() {
             <Button onClick={() => setActiveStep(activeStep + 1)} className="flex-1 lg:flex-none bg-[#154a8a] hover:bg-[#0f3a6d]">Next: {STEPS[activeStep + 1].label}</Button>
           ) : (
             <div className="flex-1 lg:flex-none flex items-center gap-2">
-              <Button variant="outline" onClick={downloadCVJson} className="flex-1 lg:flex-none">Download JSON</Button>
               <Button onClick={generatePDF} disabled={isGenerating} className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700 shadow-lg">
                 {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                 Download CV
@@ -1061,8 +1280,9 @@ export default function AcademicCVGenerator() {
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground shrink-0"><ArrowLeft className="w-4 h-4" /> publicgermany</Link>
-            <span className="text-muted-foreground/50">|</span>
-            <p className="text-sm min-w-0 truncate"><span className="font-semibold">Europass CV</span></p>
+          </div>
+          <div className="flex-1 flex justify-center">
+            <p className="text-sm font-bold uppercase tracking-wider text-primary">Europass CV</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isMobile && (

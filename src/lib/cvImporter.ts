@@ -60,17 +60,15 @@ function normalizeRawBytes(text: string): string {
 function extractPayload(text: string, prefix: string, suffix: string): string | null {
   const start = text.indexOf(prefix);
   if (start === -1) return null;
+  // Search up to 16000 chars ahead — rich HTML descriptions can push payload to ~12000 chars
+  const searchEnd = Math.min(text.length, start + prefix.length + 16000);
+const window = text.slice(start + prefix.length, searchEnd);
+const endRel = window.indexOf(suffix);
+if (endRel === -1) return null;
 
-  const searchStart = start + prefix.length;
-  const searchEnd = Math.min(text.length, searchStart + 8000);
-
-  const end = text.indexOf(suffix, searchStart);
-
-  if (end === -1 || end > searchEnd) return null;
-
-  return text
-    .slice(searchStart, end)
-    .replace(/[^A-Za-z0-9+/=_-]/g, "");
+const end = start + prefix.length + endRel;  if (end === -1) return null;
+  // Keep only base64url-safe chars in the payload itself
+  return text.slice(start + prefix.length, end).replace(/[^A-Za-z0-9+/=_-]/g, "");
 }
 
 function base64UrlToBase64(input: string): string {

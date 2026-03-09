@@ -6,13 +6,14 @@ export function escapeHtml(text: string | null | undefined): string {
   return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-export function sanitizeHtml(html: string | null | undefined): string {
-  if (!html) return "";
-  return String(html)
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "")
-    .replace(/on\w+\s*=/gi, "")
-    .replace(/<(?!(\/?)(?:strong|em|b|i|br|div|span|ul|li|a)\b)[^>]+>/gi, "");
+export function toLines(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(v => String(v ?? "").trim()).filter(Boolean);
+  let text = String(value);
+  text = text.replace(/&quot;/g, '"').replace(/&#0*34;/g, '"').replace(/&#x0*22;/gi, '"');
+  text = text.replace(/\s+style\s*=\s*"[^"]*"/gi, "").replace(/\s+style\s*=\s*'[^']*'/gi, "");
+  text = text.replace(/<\/(?:p|div|li|h[1-6]|br)[^>]*>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "");
+  return text.split(/\r?\n/).map(l => l.replace(/^\s*[-*•·]\s*/, "").replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
 function formatDateDMY(dateStr: string | null): string {
@@ -25,35 +26,23 @@ function formatMonthYear(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
   const value = dateStr.trim();
   if (!value) return "";
-
   const normalized = value.replace(/\./g, " ").replace(/\s+/g, " ").trim();
   const monthYearMatch = normalized.match(/^([A-Za-z]{3,9})\s+(\d{4})$/);
   if (monthYearMatch) {
     const monthName = new Date(`${monthYearMatch[1]} 1, 2000`).toLocaleString("en-US", { month: "short" });
     if (monthName !== "Invalid Date") return `${monthName} ${monthYearMatch[2]}`;
   }
-
   if (/^\d{4}$/.test(normalized)) return normalized;
-
   if (/^\d{4}-\d{2}$/.test(normalized)) {
     const [year, month] = normalized.split("-").map(Number);
-    if (month >= 1 && month <= 12) {
-      return `${new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" })} ${year}`;
-    }
+    if (month >= 1 && month <= 12) return `${new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" })} ${year}`;
   }
-
   if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
     const d = new Date(`${normalized}T00:00:00`);
-    if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-    }
+    if (!Number.isNaN(d.getTime())) return d.toLocaleDateString("en-US", { month: "short" }, { year: "numeric" });
   }
-
   const fallback = new Date(value);
-  if (!Number.isNaN(fallback.getTime())) {
-    return fallback.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-  }
-
+  if (!Number.isNaN(fallback.getTime())) return fallback.toLocaleDateString("en-US", { month: "short" }, { year: "numeric" });
   return escapeHtml(value);
 }
 
@@ -61,39 +50,23 @@ function formatGrade(finalGrade?: string, maxScale?: number, creditSystem?: stri
   if (!finalGrade) return "";
   const numericGrade = Number(finalGrade);
   const isPercentageSystem = (creditSystem || "").toLowerCase().includes("percent") || maxScale === 100;
-
-  if (isPercentageSystem && !Number.isNaN(numericGrade)) {
-    return `Grade: ${Math.min(Math.max(numericGrade, 0), 100)}%`;
-  }
-
-  if (maxScale && maxScale > 0) {
-    return `Grade: ${escapeHtml(finalGrade)} / ${maxScale}`;
-  }
-
+  if (isPercentageSystem && !Number.isNaN(numericGrade)) return `Grade: ${Math.min(Math.max(numericGrade, 0), 100)}%`;
+  if (maxScale && maxScale > 0) return `Grade: ${escapeHtml(finalGrade)} / ${maxScale}`;
   return `Grade: ${escapeHtml(finalGrade)}`;
 }
 
 function formatCoreCoursework(subjects?: string[]): string {
   if (!subjects) return "";
-  return `<div class="academic-meta">${subjects.map(escapeHtml).join(", ")}</div>`;
+  const list = Array.isArray(subjects) ? subjects : toLines(subjects);
+  if (!list.length) return "";
+  return `<div class="academic-meta">${list.map(escapeHtml).join(", ")}</div>`;
 }
 
-function formatBullets(value?: string[]): string {
+function formatBullets(value?: string[] | string): string {
   if (!value) return "";
-  return `<ul class="bullet-list">${value.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-}
-
-function formatBulletsIfExplicit(value?: string[], className = "bullet-list"): string {
-  if (!value) return "";
-
-  const v = String(value);
-  const hasHtmlList = /<\s*(ul|ol|li)\b/i.test(v);
-  const hasPlainBullets = /^\s*(?:[-*]|•|\u2022)\s+/m.test(v);
-
-  if (hasHtmlList) return sanitizeHtml(v);
-  if (hasPlainBullets) return formatBullets(v, className);
-
-  return sanitizeHtml(v);
+  const lines = Array.isArray(value) ? value : toLines(value);
+  if (!lines.length) return "";
+  return `<ul class="bullet-list">${lines.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
 export interface CVPersonalInfo {
@@ -198,32 +171,23 @@ export function buildCVHtml(
 
   const motherTongues = languages.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name).toUpperCase()).join("  &nbsp;  ");
   
-  const eduHtml = educations.map(edu => `
-<div class="entry">
-  <div class="entry-header">
-    <span class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</span>
-    <span class="entry-date">${formatMonthYear(edu.start_date) || edu.start_year} – ${formatMonthYear(edu.end_date) || edu.end_year}</span>
-  </div>
-  <div class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</div>
-  ${formatCoreCoursework(edu.key_subjects)}
-  <div class="academic-meta">
-    ${edu.thesis_title ? `<strong>Thesis:</strong> <em>${escapeHtml(edu.thesis_title)}</em><br>` : ""}
-    ${formatGrade(edu.final_grade, edu.max_scale, edu.credit_system)}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}
-  </div>
-</div>`).join("\n");
+  const eduHtml = buildEducation(educations);
 
   const workHtml = workExperiences.length > 0 ? `
     <div class="section">
       <div class="section-title">Work Experience</div>
       <div class="section-content">
-        ${workExperiences.map(w => `
+        ${workExperiences.map(w => {
+          const desc = w.description ? `<div class="rich-text-desc">${w.description}</div>` : "";
+          return `
           <div class="entry">
             <div class="entry-header">
               <span class="entry-title">${escapeHtml([w.job_title, w.organisation, w.city_country].filter(Boolean).join(", "))}</span>
               <span class="entry-date">${formatMonthYear(w.start_date)} – ${w.is_current ? "Present" : formatMonthYear(w.end_date)}</span>
             </div>
-            ${formatBullets(w.description)}
-          </div>`).join("\n")}
+            ${desc}
+          </div>`;
+        }).join("\n")}
       </div>
     </div>` : "";
 
@@ -250,15 +214,12 @@ export function buildCVHtml(
         <div class="section-title">${escapeHtml(section.title)}</div>
         <div class="section-content">
           ${section.items.map(item => {
-            if (item.description) {
-              return `
+            const desc = item.description ? `<div class="rich-text-desc">${item.description}</div>` : "";
+            return `
               <div class="entry">
                 <strong>${escapeHtml(item.label)}</strong><br>
-                ${formatBullets(item.description)}
+                ${desc}
               </div>`;
-            }
-
-            return `<div class="entry">${escapeHtml(item.label)}</div>`;
           }).join("")}
         </div>
       </div>`).join("\n");
@@ -361,15 +322,15 @@ export function buildCVHtml(
     .contact-info a { color: white; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.3); }
     
     .cv-body { padding: 30px 40px; }
-    .section { margin-bottom: 25px; }
-    .section-title {
+    /* ── Section ── */
+    .section { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; padding-top: 0.5cm; }
+    .section:first-child { padding-top: 0; }
+    .sec-title {
       font-size: 13px;
       font-weight: 800;
       color: var(--primary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
-      padding-bottom: 5px;
-      margin-bottom: 12px;
     }
     .entry { margin-bottom: 15px; }
     .entry-header {
@@ -383,6 +344,11 @@ export function buildCVHtml(
     .bullet-list { margin: 8px 0 8px 20px; }
     .bullet-list li { font-size: 10.5px; margin-bottom: 2px; }
     .academic-meta { font-size: 10px; margin-top: 4px; }
+    .rich-text-desc { font-size: 10.5px; line-height: 1.5; color: var(--text); margin-top: 4px; }
+    .rich-text-desc p { margin-bottom: 2px; }
+    .rich-text-desc ul, .rich-text-desc ol { padding-left: 18px; margin: 4px 0; }
+    .rich-text-desc li { margin-bottom: 2px; }
+    .entry-divider { border-bottom: 1px solid var(--border); margin: 15px 0; opacity: 0.6; }
     
     .footer { padding: 20px 40px; display: flex; justify-content: flex-end; }
     .signature { max-width: 150px; border-bottom: 1px solid #999; }
