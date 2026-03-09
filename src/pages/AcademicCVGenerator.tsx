@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout, CheckCircle2, Settings } from "lucide-react";
-import { buildCVHtml, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
+import { buildCVHtml, toLines, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ImageCropper } from "@/components/ImageCropper";
@@ -363,6 +363,11 @@ export default function AcademicCVGenerator() {
   };
 
   const handleCVImport = useCallback((data: ImportedCVData) => {
+    // Sanitize description fields — they may contain raw HTML blobs from rich-text
+    // editors (e.g. Tailwind-styled <h1 style="--tw-*:..."> wrappers).
+    // toLines() strips all tags/attrs and returns clean text; join with \n for textarea.
+    const cleanLines = (v: unknown) => toLines(v).join("\n");
+
     if (data.personal) {
       setPersonal(prev => ({
         ...prev,
@@ -380,19 +385,51 @@ export default function AcademicCVGenerator() {
         signature_url: data.personal?.signature_url ?? prev.signature_url,
       }));
     }
-    if (data.educations) setEducations(data.educations);
-    if (data.workExperiences) setWorkExperiences(data.workExperiences);
+    if (data.educations) setEducations(data.educations.map(e => ({
+      ...e,
+      key_subjects: cleanLines(e.key_subjects),
+    })));
+    if (data.workExperiences) setWorkExperiences(data.workExperiences.map(w => ({
+      ...w,
+      description: cleanLines(w.description),
+    })));
     if (data.languages) setLanguages(data.languages);
-    if (data.certifications) setCertifications(data.certifications);
-    if (data.publications) setPublications(data.publications);
-    if (data.customSections) setCustomSections(data.customSections);
+    if (data.certifications) setCertifications(data.certifications.map(c => ({
+      ...c,
+      description: cleanLines((c as any).description),
+    })));
+    if (data.publications) setPublications(data.publications.map(p => ({
+      ...p,
+      description: cleanLines((p as any).description),
+    })));
+    if (data.customSections) setCustomSections(data.customSections.map(s => ({
+      ...s,
+      items: s.items?.map((item: any) => ({
+        ...item,
+        description: cleanLines(item.description),
+      })) ?? s.items,
+    })));
     if (data.recommendations) setRecommendations(data.recommendations);
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
       if (data.buildOptions.sectionOrder?.length) setSectionOrder(data.buildOptions.sectionOrder);
     }
-  }, []);
+
+    const hasPhotos = !!(data.personal?.avatar_url || data.personal?.signature_url);
+    if (hasPhotos) {
+      toast({
+        title: "CV imported successfully",
+        description: "All data restored. Profile photo and signature were included in this file.",
+      });
+    } else {
+      toast({
+        title: "CV imported — photos not included",
+        description: "All text data restored. Profile photo and signature are not stored in PDFs — please re-upload them. Use 'Download JSON' next time for a full backup.",
+        duration: 8000,
+      });
+    }
+  }, [toast]);
 
   // Full export for JSON download — includes images for complete backup
   const buildExportData = useCallback((): ImportedCVData => ({
@@ -741,7 +778,7 @@ export default function AcademicCVGenerator() {
                           <Label className="text-xs">Description / Responsibilities (One per line)</Label>
                           <Textarea
                             value={Array.isArray(w.description) ? w.description.join("\n") : w.description || ""}
-                            onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], description: e.target.value.split("\n").filter(Boolean) }; setWorkExperiences(n); }}
+                            onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], description: toLines(e.target.value) }; setWorkExperiences(n); }}
                             placeholder="Developed React dashboards&#10;Optimized PostgreSQL queries"
                             className="text-xs min-h-[80px]"
                           />
@@ -880,7 +917,7 @@ export default function AcademicCVGenerator() {
                             <Textarea
                               className="text-xs min-h-[60px]"
                               value={Array.isArray(item.description) ? item.description.join("\n") : item.description || ""}
-                              onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: e.target.value.split("\n").filter(Boolean) }; setCustomSections([...n]); }}
+                              onChange={e => { const n = [...customSections]; n[si].items[ii] = { ...n[si].items[ii], description: toLines(e.target.value) }; setCustomSections([...n]); }}
                               placeholder="Description (One bullet per line)"
                             />
                           </div>

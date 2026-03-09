@@ -100,6 +100,18 @@ export interface CVBuildOptions {
   density?: "compact" | "standard" | "expanded"
   sectionOrder?: string[]
 }
+// supabase/functions/generate-academic-cv-pdf/cvTemplateBuilder.ts
+// @ts-nocheck
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE RESPONSIBILITY — this file only turns clean data into clean HTML.
+// No HTML parsing. No rendering tricks. No font sentinels.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Safety helper — escape only, zero logic
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function escapeHtml(v: string | null | undefined): string {
   if (v == null) return "";
   return String(v)
@@ -126,15 +138,39 @@ export function toLines(value: unknown): string[] {
 
   let text = String(value);
 
-  // C — strip HTML attribute blobs first (CSS vars inside style="" contain `>`)
+  // C — strip HTML
+  // Step 1: decode &quot; and &#34; BEFORE stripping attributes,
+  //         otherwise style="...&quot;..." looks like mismatched quotes
+  //         and the attribute stripper stops too early.
+  text = text
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*34;/g, '"')
+    .replace(/&#x0*22;/gi, '"');
+
+  // Step 2: strip style="..." and class="..." blobs aggressively.
+  //         Tailwind CSS stores huge --tw-* variable strings in style attrs.
+  //         Use a tolerant regex that handles nested parens (rgb(), url()).
+  text = text
+    .replace(/\s+style\s*=\s*"[^"]*"/gi, "")
+    .replace(/\s+style\s*=\s*'[^']*'/gi, "")
+    .replace(/\s+class\s*=\s*"[^"]*"/gi, "")
+    .replace(/\s+class\s*=\s*'[^']*'/gi, "");
+
+  // Step 3: strip all remaining attributes (data-*, aria-*, etc.)
   text = text
     .replace(/\s+[\w:-]+\s*=\s*"[^"]*"/g, "")
-    .replace(/\s+[\w:-]+\s*=\s*'[^']*'/g, "")
+    .replace(/\s+[\w:-]+\s*=\s*'[^']*'/g, "");
+
+  // Step 4: convert block-level closing tags to newlines, then strip all tags
+  text = text
     .replace(/<\/(?:p|div|li|h[1-6]|br)[^>]*>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, "");
+
+  // Step 5: decode remaining HTML entities
+  text = text
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ").replace(/&#039;/g, "'").replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ").replace(/&#039;/g, "'")
     .replace(/&ndash;/g, "–").replace(/&mdash;/g, "—");
 
   // B — split on newlines, strip leading bullet chars
@@ -627,6 +663,18 @@ a { color: #0b4a8b; text-decoration: underline; pointer-events: auto; }
     box-shadow: 0 8px 32px rgba(0,0,0,0.14);
     border-radius: 6px; margin: 24px auto;
   }
+}
+
+/* ── Print overrides ──
+   PDFShift uses use_print:true so @media print applies.
+   margin-top:-1px on body kills the 0.75pt white gap Chrome adds at the top
+   of the page in print mode (a 1px body layout offset baked into the CTM).
+   box-shadow:none removes the shadow that extended past the page → blank page 2.
+   margin:0 on cv-wrap removes the 24px screen margin that breaks the JS spacer.
+*/
+@media print {
+  body { margin-top: -1px !important; }
+  .cv-wrap { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
 }
 </style>`;
 }
