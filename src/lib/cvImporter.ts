@@ -17,40 +17,71 @@ export interface ImportedCVData {
   buildOptions?: CVBuildOptions;
 }
 
-// Section header patterns
-const SECTION_PATTERNS: Record<string, RegExp> = {
-  education: /\b(education|academic|qualification|degree|training|university|college)\b/i,
-  work: /\b(work\s*experience|professional\s*experience|employment|career|internship|position|job)\b/i,
-  languages: /\b(language|linguistic|mother\s*tongue)\b/i,
-  certifications: /\b(certif|license|course|training|award|achievement)\b/i,
-  personal: /\b(personal|contact|about\s*me|profile|summary|objective)\b/i,
-  publications: /\b(publication|research|paper|journal)\b/i,
-  skills: /\b(skill|competenc|technical|software|tool)\b/i,
-  references: /\b(reference|referee|recommendation)\b/i,
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Marker constants
+//
+// Two formats are supported:
+//
+// FORMAT A — URI annotation (current, reliable):
+//   The metadata is embedded as an <a href="...PGCVMETA-{payload}-ENDPGCVMETA">
+//   link in the HTML. PDFShift/Chrome converts this to a PDF URI annotation,
+//   which is stored as a literal ASCII string in the PDF object structure.
+//   A raw latin1 byte scan will find it directly.
+//   Uses '-' as separator because ':' is octal-escaped by PDF as '\072'.
+//
+// FORMAT B — text layer (legacy):
+//   PGCVMETA:{payload}:ENDPGCVMETA
+//   Embedded as visible-but-tiny text. Only works if the PDF renderer stores
+//   text as ASCII (not CIDFont glyph IDs). PDFShift/Chrome does NOT do this,
+//   so this format only works for browser print-to-PDF fallbacks.
+// ─────────────────────────────────────────────────────────────────────────────
+const URI_PREFIX  = "PGCVMETA-";
+const URI_SUFFIX  = "-ENDPGCVMETA";
+const TEXT_PREFIX = "PGCVMETA:";
+const TEXT_SUFFIX = ":ENDPGCVMETA";
 
-// Regex patterns for personal info extraction
-const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.]+/;
-const PHONE_RE = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/;
-const LINKEDIN_RE = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i;
-const DATE_RE = /\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})\b/;
-const YEAR_RANGE_RE = /(\d{4})\s*[-–—to]+\s*(\d{4}|present|current|ongoing)/i;
-const YEAR_RE = /\b(19|20)\d{2}\b/;
+function normalizeRawBytes(text: string): string {
+  // PDF literal strings encode some chars as octal escapes (\072 = ':').
+  // Decode those first so the text-layer format still works for browser-print PDFs.
+  let decoded = text.replace(/\\([0-7]{3})/g, (_, oct) =>
+    String.fromCharCode(parseInt(oct, 8))
+  );
 
-const CEFR_RE = /\b([A-C][12])\b/;
+  // Strip whitespace, null bytes, zero-width chars, and other control chars
+  // that PDF extractors and print-to-PDF pipelines inject into long tokens.
+  decoded = decoded.replace(
+    /[\s\u0000-\u001F\u007F-\u009F\u00A0\u200B\u200C\u200D\u2060\uFEFF]+/g,
+    ""
+  );
 
-const COMMON_LANGUAGES = [
-  "English", "German", "French", "Spanish", "Hindi", "Arabic", "Chinese",
-  "Mandarin", "Japanese", "Korean", "Portuguese", "Russian", "Italian",
-  "Turkish", "Dutch", "Bengali", "Tamil", "Telugu", "Urdu", "Marathi",
-  "Gujarati", "Kannada", "Malayalam", "Punjabi", "Odia",
-];
+  return decoded;
+}
 
-const EMBEDDED_META_PREFIX = "PGCVMETA:";
+function extractPayload(text: string, prefix: string, suffix: string): string | null {
+  const start = text.indexOf(prefix);
+  if (start === -1) return null;
+
+  const searchStart = start + prefix.length;
+  const searchEnd = Math.min(text.length, searchStart + 8000);
+
+  const end = text.indexOf(suffix, searchStart);
+
+  if (end === -1 || end > searchEnd) return null;
+
+  return text
+    .slice(searchStart, end)
+    .replace(/[^A-Za-z0-9+/=_-]/g, "");
+}
+
+function base64UrlToBase64(input: string): string {
+  const normalized = input.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  const pad = normalized.length % 4;
+  return pad === 0 ? normalized : normalized + "=".repeat(4 - pad);
+}
 
 function decodeEmbeddedPayload(encoded: string): ImportedCVData | null {
   try {
-    const normalized = encoded.replace(/\s+/g, "");
+    const normalized = base64UrlToBase64(encoded);
     const json = decodeURIComponent(escape(atob(normalized)));
     const parsed = JSON.parse(json);
     if (parsed?.generator !== "publicgermany-cv" || !parsed?.data) return null;
@@ -62,336 +93,61 @@ function decodeEmbeddedPayload(encoded: string): ImportedCVData | null {
 
 export function extractEmbeddedCVDataFromText(text: string): ImportedCVData | null {
   if (!text) return null;
-  const compact = text.replace(/\s+/g, "");
-  const match = compact.match(new RegExp(`${EMBEDDED_META_PREFIX}([A-Za-z0-9+/=_-]+)`));
-  if (!match) return null;
-  return decodeEmbeddedPayload(match[1]);
+
+  const normalized = normalizeRawBytes(text);
+
+  // ── Strategy 1: URI annotation format (PGCVMETA-...-ENDPGCVMETA) ──────────
+  // This is the primary format for PDFShift-generated PDFs.
+  // The href URL appears as literal ASCII in the PDF URI annotation object.
+  // After normalizeRawBytes, the URL looks like:
+  //   https://cvpgmapp/?d=PGCVMETA-{encoded}-ENDPGCVMETA
+  // (dots and ? stripped, but PGCVMETA- prefix and -ENDPGCVMETA suffix intact)
+  const uriPayload = extractPayload(normalized, URI_PREFIX, URI_SUFFIX);
+  if (uriPayload) {
+    const decoded = decodeEmbeddedPayload(uriPayload);
+    if (decoded) return decoded;
+  }
+
+  // ── Strategy 2: Text layer format (PGCVMETA:...:ENDPGCVMETA) ─────────────
+  // Fallback for browser print-to-PDF and any future pdfjs-based extraction.
+  // After octal decode, ':' characters are restored correctly.
+  const textPayload = extractPayload(normalized, TEXT_PREFIX, TEXT_SUFFIX);
+  if (textPayload) {
+    const decoded = decodeEmbeddedPayload(textPayload);
+    if (decoded) return decoded;
+  }
+
+  // ── Strategy 3: Loose scan (no end marker) — backward compat ─────────────
+  // For very old PDFs that only had a start marker with no end marker.
+  const looseStart = normalized.indexOf(TEXT_PREFIX);
+  if (looseStart === -1) return null;
+
+  const after = normalized.slice(looseStart + TEXT_PREFIX.length);
+  let payload = "";
+  let invalidRun = 0;
+  for (let i = 0; i < after.length; i++) {
+    const ch = after[i];
+    if (/[A-Za-z0-9+/=_-]/.test(ch)) {
+      payload += ch;
+      invalidRun = 0;
+    } else {
+      if (++invalidRun >= 25) break;
+    }
+  }
+
+  return payload ? decodeEmbeddedPayload(payload) : null;
 }
 
 export async function extractEmbeddedCVDataFromPDF(file: File): Promise<ImportedCVData | null> {
   const arrayBuffer = await file.arrayBuffer();
 
-  // Strategy 1: raw PDF byte scan (works for image-heavy PDFs exported by this app).
+  // ── Raw PDF byte scan ─────────────────────────────────────────────────────
+  // PDFShift preserves <a href> links as PDF URI annotations stored as
+  // literal ASCII strings — findable by raw latin1 scan.
+  // Also handles browser print-to-PDF which sometimes embeds readable text.
   const rawPdfText = new TextDecoder("latin1").decode(new Uint8Array(arrayBuffer));
   const fromRawScan = extractEmbeddedCVDataFromText(rawPdfText);
   if (fromRawScan) return fromRawScan;
 
-  // Strategy 2: fallback through text extraction for PDFs where metadata appears in text layer.
-  try {
-    const text = await extractTextFromPDF(file, arrayBuffer);
-    return extractEmbeddedCVDataFromText(text);
-  } catch {
-    return null;
-  }
-}
-
-function splitIntoSections(text: string): Record<string, string[]> {
-  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-  const sections: Record<string, string[]> = { unknown: [] };
-  let currentSection = "unknown";
-
-  for (const line of lines) {
-    // Check if this line is a section header
-    let foundSection = false;
-    for (const [sectionKey, pattern] of Object.entries(SECTION_PATTERNS)) {
-      // Section headers are typically short lines (< 60 chars) matching a pattern
-      if (line.length < 60 && pattern.test(line)) {
-        currentSection = sectionKey;
-        if (!sections[currentSection]) sections[currentSection] = [];
-        foundSection = true;
-        break;
-      }
-    }
-    if (!foundSection) {
-      if (!sections[currentSection]) sections[currentSection] = [];
-      sections[currentSection].push(line);
-    }
-  }
-
-  return sections;
-}
-
-function extractPersonalInfo(text: string, sections: Record<string, string[]>): Partial<CVPersonalInfo> {
-  const personal: Partial<CVPersonalInfo> = {};
-
-  // Email
-  const emailMatch = text.match(EMAIL_RE);
-  if (emailMatch) personal.email = emailMatch[0];
-
-  // Phone
-  const phoneMatch = text.match(PHONE_RE);
-  if (phoneMatch) personal.phone = phoneMatch[0];
-
-  // LinkedIn
-  const linkedinMatch = text.match(LINKEDIN_RE);
-  if (linkedinMatch) personal.linkedin_url = linkedinMatch[0];
-
-  // Passport number
-  const passportMatch = text.match(/passport(?:\s*number)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i);
-  if (passportMatch) personal.passport_number = passportMatch[1].toUpperCase();
-
-  // Gender
-  const genderMatch = text.match(/gender\s*[:\-]?\s*(male|female|other|non[-\s]?binary)/i);
-  if (genderMatch) personal.gender = genderMatch[1].replace(/\b\w/g, c => c.toUpperCase());
-
-  // Place of Birth
-  const pobMatch = text.match(/place\s*of\s*birth\s*[:\-]?\s*([^\n|]+)/i);
-  if (pobMatch) personal.place_of_birth = pobMatch[1].trim();
-
-  // Name: usually the first non-empty line in the document
-  const allLines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-  if (allLines.length > 0) {
-    const firstLine = allLines[0];
-    // If first line looks like a name (2-5 words, no special chars, no email/phone)
-    if (
-      firstLine.length < 60 &&
-      !EMAIL_RE.test(firstLine) &&
-      !PHONE_RE.test(firstLine) &&
-      /^[A-Za-zÀ-ÿ\s.'-]+$/.test(firstLine) &&
-      firstLine.split(/\s+/).length >= 2
-    ) {
-      personal.full_name = firstLine;
-    }
-  }
-
-  // Try to find address in personal/unknown sections
-  const personalLines = [...(sections.personal || []), ...(sections.unknown || [])];
-  for (const line of personalLines) {
-    // Address patterns - lines with postal codes or "Street", "Road", etc.
-    if (/\b\d{5,6}\b/.test(line) && line.length > 15 && !PHONE_RE.test(line)) {
-      personal.address = line;
-      break;
-    }
-  }
-
-  return personal;
-}
-
-function extractEducation(lines: string[]): CVEducation[] {
-  if (!lines || lines.length === 0) return [];
-
-  const educations: CVEducation[] = [];
-  let current: Partial<CVEducation> = {};
-  const currentYear = new Date().getFullYear();
-
-  for (const line of lines) {
-    const yearRangeMatch = line.match(YEAR_RANGE_RE);
-
-    if (yearRangeMatch) {
-      // If we already have data, push it
-      if (current.institution || current.degree_title) {
-        educations.push(fillEducation(current));
-        current = {};
-      }
-      current.start_year = parseInt(yearRangeMatch[1]);
-      const endStr = yearRangeMatch[2].toLowerCase();
-      current.end_year = /present|current|ongoing/.test(endStr)
-        ? currentYear
-        : parseInt(yearRangeMatch[2]);
-
-      // The rest of the line might contain degree/institution
-      const rest = line.replace(YEAR_RANGE_RE, "").trim().replace(/^[-–—|,\s]+|[-–—|,\s]+$/g, "");
-      if (rest) {
-        if (!current.degree_title) current.degree_title = rest;
-        else if (!current.institution) current.institution = rest;
-      }
-    } else if (
-      /\b(bachelor|master|b\.?sc|m\.?sc|b\.?a|m\.?a|b\.?tech|m\.?tech|ph\.?d|diploma|b\.?e|m\.?e|b\.?com|m\.?com|mba|llb|bba)\b/i.test(line)
-    ) {
-      if (current.institution || current.degree_title) {
-        educations.push(fillEducation(current));
-        current = {};
-      }
-      current.degree_title = line;
-    } else if (
-      /\b(university|college|institute|school|academy|iit|nit|iisc)\b/i.test(line)
-    ) {
-      current.institution = line;
-    } else if (/\b(india|germany|usa|uk|canada|australia|china|japan|france)\b/i.test(line)) {
-      current.country = line;
-    } else if (!current.field_of_study && current.degree_title && line.length < 80) {
-      current.field_of_study = line;
-    }
-  }
-
-  if (current.institution || current.degree_title) {
-    educations.push(fillEducation(current));
-  }
-
-  return educations;
-}
-
-function fillEducation(partial: Partial<CVEducation>): CVEducation {
-  const currentYear = new Date().getFullYear();
-  return {
-    degree_title: partial.degree_title || "",
-    field_of_study: partial.field_of_study || "",
-    institution: partial.institution || "",
-    country: partial.country || "India",
-    start_year: partial.start_year || currentYear - 4,
-    end_year: partial.end_year || currentYear,
-    key_subjects: partial.key_subjects || "",
-    final_grade: partial.final_grade || "",
-    max_scale: 10,
-    total_credits: 0,
-    credit_system: "Indian Scale",
-  };
-}
-
-function extractWorkExperience(lines: string[]): CVWorkExperience[] {
-  if (!lines || lines.length === 0) return [];
-
-  const experiences: CVWorkExperience[] = [];
-  let current: Partial<CVWorkExperience> = {};
-  let descLines: string[] = [];
-
-  const pushCurrent = () => {
-    if (current.job_title || current.organisation) {
-      current.description = descLines.join(". ").trim();
-      experiences.push({
-        job_title: current.job_title || "",
-        organisation: current.organisation || "",
-        city_country: current.city_country || "",
-        start_date: current.start_date || "",
-        end_date: current.end_date || "",
-        is_current: current.is_current || false,
-        description: current.description || "",
-      });
-    }
-  };
-
-  for (const line of lines) {
-    const yearRangeMatch = line.match(YEAR_RANGE_RE);
-
-    if (yearRangeMatch) {
-      pushCurrent();
-      current = {};
-      descLines = [];
-
-      current.start_date = `${yearRangeMatch[1]}-01-01`;
-      const endStr = yearRangeMatch[2].toLowerCase();
-      if (/present|current|ongoing/.test(endStr)) {
-        current.is_current = true;
-        current.end_date = "";
-      } else {
-        current.end_date = `${yearRangeMatch[2]}-12-31`;
-      }
-
-      const rest = line.replace(YEAR_RANGE_RE, "").trim().replace(/^[-–—|,\s]+|[-–—|,\s]+$/g, "");
-      if (rest) current.job_title = rest;
-    } else if (
-      /\b(manager|engineer|developer|analyst|intern|assistant|consultant|designer|lead|director|coordinator|officer|specialist|researcher|professor|lecturer|teacher)\b/i.test(line) &&
-      !current.job_title
-    ) {
-      pushCurrent();
-      current = {};
-      descLines = [];
-      current.job_title = line;
-    } else if (
-      /\b(pvt|ltd|inc|corp|llc|gmbh|company|group|solutions|technologies|services|consulting)\b/i.test(line) &&
-      !current.organisation
-    ) {
-      current.organisation = line;
-    } else {
-      descLines.push(line);
-    }
-  }
-
-  pushCurrent();
-  return experiences;
-}
-
-function extractLanguages(lines: string[], fullText: string): CVLanguage[] {
-  const languages: CVLanguage[] = [];
-  const found = new Set<string>();
-
-  // Search in language section lines + full text for common language names
-  const searchText = [...(lines || []), fullText].join(" ");
-
-  for (const lang of COMMON_LANGUAGES) {
-    const re = new RegExp(`\\b${lang}\\b`, "i");
-    if (re.test(searchText) && !found.has(lang.toLowerCase())) {
-      found.add(lang.toLowerCase());
-
-      // Check if it's marked as mother tongue / native
-      const motherRe = new RegExp(`${lang}[^.]*\\b(mother|native|first)\\b`, "i");
-      const isMother = motherRe.test(searchText);
-
-      // Try to find CEFR level near the language name
-      const levelRe = new RegExp(`${lang}[^.]{0,30}([A-C][12])`, "i");
-      const levelMatch = searchText.match(levelRe);
-      const level = levelMatch ? levelMatch[1].toUpperCase() : "";
-
-      languages.push({
-        language_name: lang,
-        mother_tongue: isMother,
-        listening: isMother ? "" : level,
-        reading: isMother ? "" : level,
-        writing: isMother ? "" : level,
-        speaking: isMother ? "" : level,
-      });
-    }
-  }
-
-  return languages.length > 0 ? languages : [{ language_name: "", mother_tongue: false, listening: "", reading: "", writing: "", speaking: "" }];
-}
-
-function extractCertifications(lines: string[]): CVCertification[] {
-  if (!lines || lines.length === 0) return [];
-
-  return lines
-    .filter(l => l.length > 5 && l.length < 150)
-    .slice(0, 10)
-    .map(line => {
-      const yearMatch = line.match(YEAR_RE);
-      return {
-        title: line.replace(YEAR_RE, "").replace(/^[-•●◦▪\s]+/, "").trim(),
-        institution: "",
-        date: yearMatch ? `${yearMatch[0]}-01-01` : "",
-      };
-    })
-    .filter(c => c.title.length > 3);
-}
-
-export function parseExtractedText(text: string): ImportedCVData {
-  const sections = splitIntoSections(text);
-
-  const personal = extractPersonalInfo(text, sections);
-  const educations = extractEducation(sections.education);
-  const workExperiences = extractWorkExperience(sections.work);
-  const languages = extractLanguages(sections.languages || [], text);
-  const certifications = extractCertifications(sections.certifications);
-
-  return { personal, educations, workExperiences, languages, certifications };
-}
-
-export async function extractTextFromPDF(file: File, preloadedBuffer?: ArrayBuffer): Promise<string> {
-  const pdfjsLib = await import("pdfjs-dist");
-
-  // Use locally bundled worker to avoid CDN dependency failures.
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-  }
-
-  const arrayBuffer = preloadedBuffer ?? await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-  const textParts: string[] = [];
-  for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item: any) => item.str)
-      .join(" ");
-    textParts.push(pageText);
-  }
-
-  return textParts.join("\n");
-}
-
-export async function extractTextFromDOCX(file: File): Promise<string> {
-  const mammoth = await import("mammoth");
-  const arrayBuffer = await file.arrayBuffer();
-  const result = await mammoth.extractRawText({ arrayBuffer });
-  return result.value;
+  return null;
 }

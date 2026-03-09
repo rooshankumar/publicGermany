@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { parseExtractedText, extractTextFromPDF, extractTextFromDOCX, extractEmbeddedCVDataFromPDF, ImportedCVData } from "@/lib/cvImporter";
+import { extractEmbeddedCVDataFromPDF, ImportedCVData } from "@/lib/cvImporter";
 
 interface CVImportUploadProps {
   onImport: (data: ImportedCVData) => void;
@@ -20,8 +20,8 @@ export default function CVImportUpload({ onImport }: CVImportUploadProps) {
     if (!file) return;
 
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["pdf", "doc", "docx"].includes(ext || "")) {
-      toast({ title: "Unsupported file", description: "Please upload a PDF or DOCX file.", variant: "destructive" });
+    if (ext !== "pdf") {
+      toast({ title: "Unsupported file", description: "Please upload a PDF exported from PublicGermany.", variant: "destructive" });
       return;
     }
 
@@ -34,41 +34,25 @@ export default function CVImportUpload({ onImport }: CVImportUploadProps) {
     setImported(false);
 
     try {
-      let text: string;
-      if (ext === "pdf") {
-        const embeddedData = await extractEmbeddedCVDataFromPDF(file);
-        if (embeddedData) {
-          onImport(embeddedData);
-          setImported(true);
-          toast({
-            title: "CV Imported for Editing",
-            description: "Detected PublicGermany metadata and restored your editable CV data.",
-          });
-          setIsParsing(false);
-          if (inputRef.current) inputRef.current.value = "";
-          return;
-        }
-        text = await extractTextFromPDF(file);
-      } else {
-        text = await extractTextFromDOCX(file);
-      }
-
-      if (!text || text.trim().length < 20) {
-        toast({ title: "Could not extract text", description: "The file appears to be empty or image-only. Try a text-based PDF or DOCX.", variant: "destructive" });
-        setIsParsing(false);
+      const embeddedData = await extractEmbeddedCVDataFromPDF(file);
+      if (!embeddedData) {
+        toast({
+          title: "No embedded CV data found",
+          description: "This PDF does not contain PublicGermany editable CV metadata. Please export your CV as PDF from this tool and try again.",
+          variant: "destructive",
+        });
         return;
       }
 
-      const data = parseExtractedText(text);
-      onImport(data);
+      onImport(embeddedData);
       setImported(true);
       toast({
-        title: "CV Imported Successfully",
-        description: "We imported your CV. Please review and update any details.",
+        title: "CV Imported for Editing",
+        description: "Restored your editable CV from embedded PDF metadata.",
       });
     } catch (err) {
       console.error("CV import error:", err);
-      toast({ title: "Import Failed", description: "Could not parse the file. Please try a different format.", variant: "destructive" });
+      toast({ title: "Import Failed", description: "Could not read embedded CV data from this PDF.", variant: "destructive" });
     } finally {
       setIsParsing(false);
       // Reset input so same file can be re-uploaded
@@ -85,7 +69,7 @@ export default function CVImportUpload({ onImport }: CVImportUploadProps) {
             <div>
               <p className="text-sm font-medium">Import Existing CV</p>
               <p className="text-xs text-muted-foreground">
-                Upload your old CV (PDF or DOCX) and we'll fill the form automatically.
+                Upload a PublicGermany-exported PDF to restore your editable CV.
               </p>
             </div>
           </div>
@@ -98,7 +82,7 @@ export default function CVImportUpload({ onImport }: CVImportUploadProps) {
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf"
               onChange={handleFile}
               className="hidden"
               id="cv-import-input"
