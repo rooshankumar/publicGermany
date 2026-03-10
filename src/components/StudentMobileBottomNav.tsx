@@ -82,6 +82,7 @@ const StudentMobileBottomNav = () => {
 
   const more = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/payments', label: 'Contracts', icon: FileText },
     { href: '/reviews', label: 'Reviews', icon: Star },

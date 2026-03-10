@@ -113,6 +113,29 @@ export interface CVBuildOptions {
 // 1. Safety helper — escape only, zero logic
 // ─────────────────────────────────────────────────────────────────────────────
 
+// supabase/functions/generate-academic-cv-pdf/cvTemplateBuilder.ts
+// @ts-nocheck
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE RESPONSIBILITY — this file only turns clean data into clean HTML.
+// No HTML parsing. No rendering tricks. No font sentinels.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Safety helper — escape only, zero logic
+// ─────────────────────────────────────────────────────────────────────────────
+// supabase/functions/generate-academic-cv-pdf/cvTemplateBuilder.ts
+// @ts-nocheck
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE RESPONSIBILITY — this file only turns clean data into clean HTML.
+// No HTML parsing. No rendering tricks. No font sentinels.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Safety helper — escape only, zero logic
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function escapeHtml(v: string | null | undefined): string {
   if (v == null) return "";
   return String(v)
@@ -139,39 +162,36 @@ export function toLines(value: unknown): string[] {
 
   let text = String(value);
 
-  // C — strip HTML
-  // Step 1: decode &quot; and &#34; BEFORE stripping attributes,
-  //         otherwise style="...&quot;..." looks like mismatched quotes
-  //         and the attribute stripper stops too early.
-  text = text
-    .replace(/&quot;/g, '"')
-    .replace(/&#0*34;/g, '"')
-    .replace(/&#x0*22;/gi, '"');
+  // C — strip HTML (order is critical)
+  //
+  // IMPORTANT: Strip attributes BEFORE decoding &quot; entities.
+  // Tailwind stores style="...font-family: customFont, &quot;customFont Fallback&quot;..."
+  // If we decode &quot;→" first, the [^"]* regex terminates at the internal quote
+  // and leaves the rest of the style blob intact as raw text.
+  // Stripping attrs while &quot; is still encoded means " always marks attr boundaries.
 
-  // Step 2: strip style="..." and class="..." blobs aggressively.
-  //         Tailwind CSS stores huge --tw-* variable strings in style attrs.
-  //         Use a tolerant regex that handles nested parens (rgb(), url()).
+  // Step 1: strip style="" and class="" by name (contain Tailwind --tw-* blobs)
   text = text
     .replace(/\s+style\s*=\s*"[^"]*"/gi, "")
     .replace(/\s+style\s*=\s*'[^']*'/gi, "")
     .replace(/\s+class\s*=\s*"[^"]*"/gi, "")
     .replace(/\s+class\s*=\s*'[^']*'/gi, "");
 
-  // Step 3: strip all remaining attributes (data-*, aria-*, etc.)
+  // Step 2: strip all remaining attributes (data-*, aria-*, id=, etc.)
   text = text
     .replace(/\s+[\w:-]+\s*=\s*"[^"]*"/g, "")
     .replace(/\s+[\w:-]+\s*=\s*'[^']*'/g, "");
 
-  // Step 4: convert block-level closing tags to newlines, then strip all tags
+  // Step 3: convert block-level closing tags to newlines, then strip all remaining tags
   text = text
     .replace(/<\/(?:p|div|li|h[1-6]|br)[^>]*>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]*>/g, "");
 
-  // Step 5: decode remaining HTML entities
+  // Step 4: decode HTML entities (safe to do now — all attr blobs are gone)
   text = text
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ").replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&#039;/g, "'")
     .replace(/&ndash;/g, "–").replace(/&mdash;/g, "—");
 
   // B — split on newlines, strip leading bullet chars
@@ -283,35 +303,48 @@ function buildEducation(educations: any[]): string {
   return `
 <div class="section">
   <div class="sec-title">Education and Training</div>
-  ${educations.map((edu, index) => {
+  ${educations.map((edu, idx) => {
     const title   = escapeHtml((edu.degree_title ?? "").trim()).toUpperCase();
     const field   = edu.field_of_study ? ` &ndash; ${escapeHtml((edu.field_of_study ?? "").trim()).toUpperCase()}` : "";
     const start   = fmtDate(edu.start_date) || escapeHtml(String(edu.start_year ?? ""));
     const end     = fmtDate(edu.end_date)   || escapeHtml(String(edu.end_year   ?? ""));
-    const subj    = toLines(edu.key_subjects);
-    const grade   = fmtGrade(edu.final_grade, edu.max_scale, edu.credit_system);
-    const credit  = edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : "";
-    const credits = edu.total_credits  ? ` &nbsp;|&nbsp; Credits: ${edu.total_credits}` : "";
-    const meta    = (grade || credit || credits) ? `<p class="meta">${grade}${credit}${credits}</p>` : "";
+    const creditSys = edu.credit_system ? escapeHtml(edu.credit_system) : "";
+    const totalCred = edu.total_credits  ? escapeHtml(String(edu.total_credits)) : "";
+    const websiteUrl = edu.website_url   ? escapeHtml(edu.website_url.trim()) : "";
     const thesis  = edu.thesis_title ? `<p class="meta"><b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i></p>` : "";
-    const subjHtml = subj.length
-      ? `<p class="coursework-lbl">Core Coursework</p>${bullets(subj, "blist coursework-list")}` : "";
-    
-    // Support rich text descriptions
-    const desc = (edu as any).description ? `<div class="rich-text-desc">${(edu as any).description}</div>` : "";
 
-    const isLast = index === educations.length - 1;
-    const divider = !isLast ? `<div class="entry-divider"></div>` : "";
+    // Grade string: "Grade: 8.42 / 10 (Indian Scale)"
+    const gradeVal = fmtGrade(edu.final_grade, edu.max_scale, edu.credit_system);
+    const gradeStr = gradeVal
+      ? `${gradeVal}${creditSys && !gradeVal.includes(creditSys) ? ` (${creditSys})` : ""}`
+      : "";
+    const credStr  = totalCred ? `Credits: ${totalCred}` : "";
 
-    return `
+    // Single bottom meta row: Website | Grade (Scale) | Credits
+    // All items share one line separated by pipes — compact and easy to scan.
+    const metaParts: string[] = [];
+    if (websiteUrl) metaParts.push(`<b>Website</b> <a href="${websiteUrl}" target="_blank" style="color:#0b4a8b">${websiteUrl}</a>`);
+    if (gradeStr)   metaParts.push(gradeStr);
+    if (credStr)    metaParts.push(credStr);
+    const metaRow = metaParts.length
+      ? `<p class="meta edu-meta-row">${metaParts.join(" &nbsp;|&nbsp; ")}</p>` : "";
+
+    // description: free-form HTML written by user (rich text editor output)
+    const descHtml = edu.description
+      ? `<div class="edu-desc">${typeof edu.description === "string" ? edu.description : toLines(edu.description).join("<br>")}</div>`
+      : "";
+
+    // Divider between entries — not before the first one
+    const divider = idx > 0 ? `<hr class="edu-divider">` : "";
+
+    return `${divider}
 <div class="entry">
   <table class="row-table"><tr>
     <td class="row-title">${title}${field}</td>
     <td class="row-date">${start} &ndash; ${end}</td>
   </tr></table>
   <p class="sub-info">${escapeHtml(edu.institution)}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}</p>
-  ${subjHtml}${thesis}${meta}${desc}
-  ${divider}
+  ${descHtml}${thesis}${metaRow}
 </div>`;
   }).join("")}
 </div>`;
@@ -325,17 +358,16 @@ function buildWork(works: any[]): string {
   ${works.map(w => {
     const title = [w.job_title, w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
     const end   = w.is_current ? "Present" : fmtDate(w.end_date);
-    
-    // Support rich text descriptions
-    const desc = w.description ? `<div class="rich-text-desc">${w.description}</div>` : "";
-
+    const descHtml = w.description
+      ? `<div class="entry-desc">${typeof w.description === "string" ? w.description : bullets(toLines(w.description), "blist work-list")}</div>`
+      : "";
     return `
 <div class="entry">
   <table class="row-table"><tr>
     <td class="row-title">${title}</td>
     <td class="row-date">${fmtDate(w.start_date)} &ndash; ${end}</td>
   </tr></table>
-  ${desc}
+  ${descHtml}
 </div>`;
   }).join("")}
 </div>`;
@@ -412,29 +444,64 @@ function buildCertifications(certs: any[]): string {
 }
 
 function buildCustomSections(sections: any[]): string {
-  return sections.filter(s => s.items?.length).map(section => {
-    const isTech = /technical\s+skills/i.test(section.title);
-    const items  = section.items.map((item: any) => {
-      if (isTech) {
-        const vals   = toLines(item.description).flatMap(v => v.split(",")).map(v => v.trim()).filter(Boolean);
-        const unique = [...new Set(vals)];
-        return `<p class="skills-row"><b>${escapeHtml(item.label ?? "Skills")}:</b> ${unique.map(escapeHtml).join(", ") || "&mdash;"}</p>`;
-      }
-      
-      // Support rich text descriptions
-      const desc = item.description ? `<div class="rich-text-desc">${item.description}</div>` : "";
+  return sections
+    .filter(s => s.items?.length)
+    .map(section => {
 
-      return `<div class="entry"><p class="item-lbl"><b>${escapeHtml(item.label)}</b></p>${desc}</div>`;
-    }).join("\n");
+      const isTech = /technical\s+skills/i.test(section.title);
 
-    return `
+      const items = section.items
+        .map((item: any) => {
+
+          if (isTech) {
+            // Tech skills: comma-separated key: value pairs
+            const rawDesc = toLines(item.description);
+
+            const vals = rawDesc
+              .flatMap(v => v.split(","))
+              .map(v => v.trim())
+              .filter(Boolean);
+
+            const unique = [...new Set(vals)];
+
+            return `<p class="skills-row"><b>${escapeHtml(item.label ?? "Skills")}:</b> ${unique.map(escapeHtml).join(", ") || "&mdash;"}</p>`;
+          }
+
+          // Free-form HTML description
+          const descHtml = item.description
+            ? (typeof item.description === "string"
+                ? item.description
+                : bullets(toLines(item.description), "blist"))
+            : "";
+
+          if (item.label && descHtml) {
+            return `<div class="entry">
+  <p class="item-lbl"><b>${escapeHtml(item.label)}</b></p>
+  <div class="entry-desc">${descHtml}</div>
+</div>`;
+          }
+
+          if (item.label) {
+            return `<div class="entry"><b>${escapeHtml(item.label)}</b></div>`;
+          }
+
+          if (descHtml) {
+            return `<div class="entry"><div class="entry-desc">${descHtml}</div></div>`;
+          }
+
+          return "";
+        })
+        .filter(Boolean)
+        .join("\n");
+
+      return `
 <div class="section">
   <div class="sec-title">${escapeHtml(section.title)}</div>
   ${items}
 </div>`;
-  }).join("\n");
+    })
+    .join("\n");
 }
-
 function buildRecommendations(recs: any[]): string {
   if (!recs.length) return "";
   return `
@@ -448,7 +515,7 @@ function buildRecommendations(recs: any[]): string {
   <p class="rec-contact">
     ${r.email    ? `<b>Email:</b> <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ""}
     ${r.lor_link ? `&nbsp;&nbsp;<b>LOR:</b> <a href="${escapeHtml(r.lor_link)}" target="_blank">Download Certificate</a>` : ""}
-    ${r.contact  ? `&nbsp;&nbsp;${escapeHtml(r.contact)}` : ""}
+    ${r.contact  ? `&nbsp;&nbsp;<b>Contact No:</b> ${escapeHtml(r.contact)}` : ""}
   </p>
 </div>`).join("")}
 </div>`;
@@ -572,19 +639,8 @@ html, body {
 /* ── Body — padding-bottom reserves space so content never overlaps the absolute-positioned footer ── */
 .cv-body { padding: 8px 28px 70px 28px; }
 
-/* ── Page Break Padding ──
-   Add 0.5cm top padding to content that starts at the top of a new page.
-*/
-@media print {
-  .section, .entry {
-    break-before: auto;
-    margin-top: 0;
-  }
-}
-
 /* ── Section ── */
-.section { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; padding-top: 0.5cm; }
-.section:first-child { padding-top: 0; }
+.section { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
 .sec-title {
   font-size: 11px; font-weight: 800;
   color: #0b4a8b; text-transform: uppercase; letter-spacing: 0.6px;
@@ -605,6 +661,7 @@ html, body {
 .row-title {
   font-weight: 700; font-size: 11px; color: #111827;
   word-break: break-word; text-align: left;
+  word-spacing: 1px; /* prevents Inter font kerning word-merges (e.g. "BACHELOROF") in Chromium PDF */
 }
 .row-date {
   font-weight: 600; font-size: 10px; color: #374151;
@@ -612,11 +669,40 @@ html, body {
 }
 .sub-info { font-style: italic; font-size: 10.2px; color: #374151; margin: 2px 0 1px; }
 .meta     { font-size: 10px; color: #111; margin: 2px 0; line-height: 1.5; }
-.rich-text-desc { font-size: 10.3px; line-height: 1.45; color: #374151; margin-top: 4px; }
-.rich-text-desc p { margin-bottom: 2px; }
-.rich-text-desc ul, .rich-text-desc ol { padding-left: 18px; margin: 4px 0; }
-.rich-text-desc li { margin-bottom: 2px; }
-.entry-divider { border-bottom: 1px solid #c5d0df; margin: 12px 0; opacity: 0.6; }
+.edu-meta-row { font-size: 10px; color: #111; margin: 4px 0 1px; }
+
+/* Divider between education entries — not shown before the first entry */
+.edu-divider {
+  border: none;
+  border-top: 1.5px solid #c5d0de;
+  margin: 11px 0 12px;
+}
+
+/* Free-form rich text description — renders HTML as-is */
+.edu-desc, .entry-desc {
+  font-size: 10.5px; line-height: 1.5;
+  margin: 4px 0 2px;
+}
+.edu-desc p, .entry-desc p { margin: 2px 0; }
+/* Rich editor creates standard <ul>/<ol> — must explicitly set list-style
+   because Chromium's print mode inherits global reset on some elements */
+.edu-desc ul, .entry-desc ul {
+  list-style: disc;
+  margin: 3px 0 3px 0;
+  padding-left: 18px;
+}
+.edu-desc ol, .entry-desc ol {
+  list-style: decimal;
+  margin: 3px 0 3px 0;
+  padding-left: 18px;
+}
+.edu-desc li, .entry-desc li { margin: 1px 0; display: list-item; }
+.edu-desc b, .entry-desc b { font-weight: 700; }
+.edu-desc i, .entry-desc i { font-style: italic; }
+.edu-desc u, .entry-desc u { text-decoration: underline; }
+/* Nested lists */
+.edu-desc ul ul, .entry-desc ul ul { list-style: circle; margin-top: 1px; margin-bottom: 1px; }
+.edu-desc ol ol, .entry-desc ol ol { list-style: lower-alpha; margin-top: 1px; margin-bottom: 1px; }
 .item-lbl { margin-bottom: 2px; }
 .coursework-lbl { font-weight: 700; font-size: 10.3px; margin: 5px 0 2px; }
 
@@ -696,15 +782,41 @@ a { color: #0b4a8b; text-decoration: underline; pointer-events: auto; }
 
 /* ── Print overrides ──
    PDFShift uses use_print:true so @media print applies.
-   margin-top:-1px on body kills the 0.75pt white gap Chrome adds at the top
-   of the page in print mode (a 1px body layout offset baked into the CTM).
-   box-shadow:none removes the shadow that extended past the page → blank page 2.
-   margin:0 on cv-wrap removes the 24px screen margin that breaks the JS spacer.
+
+   WHITE LINE FIX: Chrome's print renderer starts the page clip box 1 CSS px (0.75pt)
+   below the physical top — baked into the inner CTM as "0 3.125" device offset.
+   margin-top:-1px on .hdr bleeds the header's background colour UP past that clip.
+
+   PAGE MARGIN APPROACH:
+   - Page 1 stays flush via @page :first { margin: 0 }.
+   - Pages 2+ get an 8mm top gap via @page { margin-top: 8mm }.
+   - No fixed/repeated header element needed — simpler and more stable.
+   - JS SPACER: PAGE_MARGIN_PX measures 8mm to correctly account for the gap
+     when computing the footer position on pages 2+.
 */
 @media print {
-  body { margin-top: -1px !important; }
-  .cv-wrap { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+  @page :first {
+    margin: 0;
+  }
+  @page {
+    margin-top: 8mm;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .hdr {
+    margin-top: -1px !important;
+    position: relative;
+    z-index: 1;
+  }
+  .cv-wrap {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
 }
+
+
 </style>`;
 }
 
@@ -761,14 +873,15 @@ ${buildCSS(headerBgColor)}
 // by a few pixels → blank page 2. We measure 297mm directly in CSS px.
 (function() {
   var BOTTOM_MARGIN_PX = 14;
-  var SAFETY_PX = 4; // subtract 4px safety buffer to prevent 1px overflow → page 2
+  // SAFETY_PX: small extra buffer for sub-pixel rounding in PDFShift's CTM.
+  var SAFETY_PX = 6;
 
-  function getPageHeightPx() {
-    var ruler = document.createElement('div');
-    ruler.style.cssText = 'position:absolute;visibility:hidden;height:297mm;width:1px;top:0;left:0;pointer-events:none;';
-    document.body.appendChild(ruler);
-    var h = ruler.offsetHeight;
-    document.body.removeChild(ruler);
+  function measureCss(cssHeight) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:absolute;visibility:hidden;height:' + cssHeight + ';width:1px;top:0;left:0;pointer-events:none;';
+    document.body.appendChild(d);
+    var h = d.offsetHeight;
+    document.body.removeChild(d);
     return h;
   }
 
@@ -779,18 +892,37 @@ ${buildCSS(headerBgColor)}
 
     spacer.style.height = '0px';
 
-    var PAGE_H_PX = getPageHeightPx();
+    // PAGE_H_PX: full page height (297mm), measured in real CSS pixels.
+    var PAGE_H_PX = measureCss('297mm');
+
+    // PAGE_MARGIN_PX: the @page margin-top applied on pages 2+ (8mm).
+    // In screen context this is just 8mm in CSS px — same value PDFShift
+    // applies in print context, so the measurement is accurate.
+    // Page 1 has @page :first { margin: 0 } so margin only affects pages 2+.
+    var PAGE_MARGIN_PX = measureCss('8mm');
+
     var footerTop    = footer.getBoundingClientRect().top + window.scrollY;
     var footerHeight = footer.offsetHeight;
 
-    // Which page boundary comes after the footer?
-    var pageBottom = Math.ceil((footerTop + footerHeight + 1) / PAGE_H_PX) * PAGE_H_PX;
-    // Place footer bottom at (pageBottom - margin - safety)
-    var targetBottom = pageBottom - BOTTOM_MARGIN_PX - SAFETY_PX;
+    // Which physical page does the footer bottom land on?
+    var pageIndex = Math.ceil((footerTop + footerHeight + 1) / PAGE_H_PX);
+
+    // Compute available content bottom in continuous-doc coordinates.
+    // Page 1: full PAGE_H_PX. Pages 2+: each loses PAGE_MARGIN_PX from the top.
+    // Total available bottom = PAGE_H_PX + (pageIndex-1) * (PAGE_H_PX - PAGE_MARGIN_PX)
+    //   = pageIndex * PAGE_H_PX - (pageIndex-1) * PAGE_MARGIN_PX
+    var adjustedPageBottom = pageIndex * PAGE_H_PX - Math.max(0, pageIndex - 1) * PAGE_MARGIN_PX;
+
+    // Target: place footer bottom at (adjustedPageBottom - bottomMargin - safety).
+    var targetBottom = adjustedPageBottom - BOTTOM_MARGIN_PX - SAFETY_PX;
     var targetTop    = targetBottom - footerHeight;
     var needed       = targetTop - footerTop;
 
-    if (needed > 0) spacer.style.height = needed + 'px';
+    // CAP: never push footer onto the next page.
+    // Max usable height per non-first page = PAGE_H_PX - PAGE_MARGIN_PX.
+    var pageContentH = (pageIndex === 1 ? PAGE_H_PX : PAGE_H_PX - PAGE_MARGIN_PX);
+    var maxSpacer = pageContentH - footerHeight - BOTTOM_MARGIN_PX * 2 - SAFETY_PX;
+    if (needed > 0 && needed <= maxSpacer) spacer.style.height = needed + 'px';
   }
 
   if (document.readyState === 'loading') {

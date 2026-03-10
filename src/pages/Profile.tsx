@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { User, GraduationCap, Globe, Award, Briefcase, Upload, Save, FileText, Image as ImageIcon, AlertTriangle, BookOpen, Languages, Users, Briefcase as WorkIcon, Plus, Edit2, Trash2 } from 'lucide-react';
+import { User, Upload, Save, FileText, Image as ImageIcon, AlertTriangle, BookOpen, Languages, Users, Briefcase, Plus, Edit2, Trash2, GraduationCap } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,20 +16,6 @@ import EligibilityEvaluation from '@/components/EligibilityEvaluation';
 import { useEducations } from '@/hooks/useEducations';
 import { useWorkExperiences } from '@/hooks/useWorkExperiences';
 import { useLanguageSkills } from '@/hooks/useLanguageSkills';
-import { useCertifications } from '@/hooks/useCertifications';
-import { usePublications } from '@/hooks/usePublications';
-import { useRecommendations } from '@/hooks/useRecommendations';
-import { useAdditionalSections } from '@/hooks/useAdditionalSections';
-import { useGenerateEuropassCV } from '@/hooks/useGenerateEuropassCV';
-import { ArrayEntryList } from '@/components/ArrayEntryList';
-import { CVGenerationCard } from '@/components/CVGenerationCard';
-import { InlineEducationForm } from '@/components/InlineEducationForm';
-import { InlineWorkExperienceForm } from '@/components/InlineWorkExperienceForm';
-import { InlineLanguageSkillForm } from '@/components/InlineLanguageSkillForm';
-import { InlineCertificationForm } from '@/components/InlineCertificationForm';
-import { InlinePublicationForm } from '@/components/InlinePublicationForm';
-import { InlineRecommendationForm } from '@/components/InlineRecommendationForm';
-import { InlineAdditionalSectionForm } from '@/components/InlineAdditionalSectionForm';
 
 // Small helper to handle avatar click-to-upload
 function AvatarUpload({ avatarUrl, fullName, onUpload }: { avatarUrl?: string; fullName?: string; onUpload: (file: File) => void }) {
@@ -85,16 +71,6 @@ const Profile = () => {
   const educations = useEducations(profile?.user_id || '');
   const workExperiences = useWorkExperiences(profile?.user_id || '');
   const languageSkills = useLanguageSkills(profile?.user_id || '');
-  const certifications = useCertifications(profile?.user_id || '');
-  const publications = usePublications(profile?.user_id || '');
-  const recommendations = useRecommendations(profile?.user_id || '');
-  const additionalSections = useAdditionalSections(profile?.user_id || '');
-  const { generateCV, isGenerating } = useGenerateEuropassCV();
-
-  // Inline editing states
-  const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
-  const [inlineAddingType, setInlineAddingType] = useState<'education' | 'work' | 'language' | 'certification' | 'publication' | 'recommendation' | 'section' | null>(null);
-  const [sectionEdit, setSectionEdit] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -254,10 +230,6 @@ const Profile = () => {
       educations.fetchEducations();
       workExperiences.fetchWorkExperiences();
       languageSkills.fetchLanguageSkills();
-      certifications.fetchCertifications();
-      publications.fetchPublications();
-      recommendations.fetchRecommendations();
-      additionalSections.fetchAdditionalSections();
     }
   }, [profile?.user_id]);
 
@@ -474,229 +446,6 @@ const Profile = () => {
     </>
   );
 
-  // Education handlers (inline editing)
-  const handleAddEducation = async () => {
-    setInlineAddingType('education');
-  };
-
-  const handleEditEducation = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveEducation = async (entry: any) => {
-    try {
-      const editingEntry = educations.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await educations.updateEducation(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: educations.entries.length };
-        await educations.addEducation(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Education saved', description: 'Your education entry has been saved.' });
-    } catch (err) {
-      console.error('Error saving education:', err);
-      toast({ title: 'Error', description: 'Failed to save education', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelEducation = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Work Experience handlers (inline editing)
-  const handleAddWorkExperience = async () => {
-    setInlineAddingType('work');
-  };
-
-  const handleEditWorkExperience = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveWorkExperience = async (entry: any) => {
-    try {
-      const editingEntry = workExperiences.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await workExperiences.updateWorkExperience(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: workExperiences.entries.length };
-        await workExperiences.addWorkExperience(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Work experience saved', description: 'Your work experience has been saved.' });
-    } catch (err) {
-      console.error('Error saving work experience:', err);
-      toast({ title: 'Error', description: 'Failed to save work experience', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelWorkExperience = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Language Skill handlers (inline editing)
-  const handleAddLanguageSkill = async () => {
-    setInlineAddingType('language');
-  };
-
-  const handleEditLanguageSkill = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveLanguageSkill = async (entry: any) => {
-    try {
-      const editingEntry = languageSkills.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await languageSkills.updateLanguageSkill(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: languageSkills.entries.length };
-        await languageSkills.addLanguageSkill(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Language skill saved', description: 'Your language skill has been saved.' });
-    } catch (err) {
-      console.error('Error saving language skill:', err);
-      toast({ title: 'Error', description: 'Failed to save language skill', variant: 'destructive' });
-    }
-  };
-  const handleCancelLanguageSkill = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Certification handlers (inline editing)
-  const handleAddCertification = async () => {
-    setInlineAddingType('certification');
-  };
-
-  const handleEditCertification = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveCertification = async (entry: any) => {
-    try {
-      const editingEntry = certifications.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await certifications.updateCertification(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: certifications.entries.length };
-        await certifications.addCertification(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Certification saved', description: 'Your certification has been saved.' });
-    } catch (err) {
-      console.error('Error saving certification:', err);
-      toast({ title: 'Error', description: 'Failed to save certification', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelCertification = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Publication handlers (inline editing)
-  const handleAddPublication = async () => {
-    setInlineAddingType('publication');
-  };
-
-  const handleEditPublication = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSavePublication = async (entry: any) => {
-    try {
-      const editingEntry = publications.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await publications.updatePublication(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: publications.entries.length };
-        await publications.addPublication(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Publication saved', description: 'Your publication has been saved.' });
-    } catch (err) {
-      console.error('Error saving publication:', err);
-      toast({ title: 'Error', description: 'Failed to save publication', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelPublication = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Recommendation handlers (inline editing)
-  const handleAddRecommendation = async () => {
-    setInlineAddingType('recommendation');
-  };
-
-  const handleEditRecommendation = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveRecommendation = async (entry: any) => {
-    try {
-      const editingEntry = recommendations.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await recommendations.updateRecommendation(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: recommendations.entries.length };
-        await recommendations.addRecommendation(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Recommender saved', description: 'Your recommender has been saved.' });
-    } catch (err) {
-      console.error('Error saving recommendation:', err);
-      toast({ title: 'Error', description: 'Failed to save recommender', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelRecommendation = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
-  // Additional Section handlers (inline editing)
-  const handleAddSection = async () => {
-    setInlineAddingType('section');
-  };
-
-  const handleEditSection = (entry: any) => {
-    setInlineEditingId(entry.id);
-  };
-
-  const handleSaveSection = async (entry: any) => {
-    try {
-      const editingEntry = additionalSections.entries.find((e) => e.id === inlineEditingId);
-      if (editingEntry?.id) {
-        await additionalSections.updateAdditionalSection(editingEntry.id, entry);
-      } else {
-        const withOrder = { ...entry, order_index: additionalSections.entries.length };
-        await additionalSections.addAdditionalSection(withOrder);
-        setInlineAddingType(null);
-      }
-      setInlineEditingId(null);
-      toast({ title: 'Section saved', description: 'Your section has been saved.' });
-    } catch (err) {
-      console.error('Error saving section:', err);
-      toast({ title: 'Error', description: 'Failed to save section', variant: 'destructive' });
-    }
-  };
-
-  const handleCancelSection = () => {
-    setInlineEditingId(null);
-    setInlineAddingType(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -873,829 +622,174 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Academic History */}
+          {/* Unified Academic & Professional Background */}
           <Card>
             <SectionHeader 
-              title="Academic Background (for Eligibility)" 
-              description="Used for eligibility screening only — your CV uses the Education & Training entries below"
+              title="Academic & Professional Background" 
+              description="Complete your educational and work details for eligibility screening"
               sectionName="academic"
             />
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="class_10_marks">Class 10 Marks (%)</Label>
-                  <Input
-                    id="class_10_marks"
-                    value={formData.class_10_marks}
-                    onChange={(e) => handleInputChange('class_10_marks', e.target.value)}
-                    placeholder="e.g., 85%"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="class_12_marks">Class 12 Marks (%)</Label>
-                  <Input
-                    id="class_12_marks"
-                    value={formData.class_12_marks}
-                    onChange={(e) => handleInputChange('class_12_marks', e.target.value)}
-                    placeholder="e.g., 90%"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="class_12_stream">Class 12 Stream</Label>
-                <Select value={formData.class_12_stream} onValueChange={(value) => handleInputChange('class_12_stream', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your stream" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="science">Science</SelectItem>
-                    <SelectItem value="commerce">Commerce</SelectItem>
-                    <SelectItem value="arts">Arts/Humanities</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_degree_name">Bachelor's Degree</Label>
-                  <Input
-                    id="bachelor_degree_name"
-                    value={formData.bachelor_degree_name}
-                    onChange={(e) => handleInputChange('bachelor_degree_name', e.target.value)}
-                    placeholder="e.g., B.Tech, B.Sc, B.Com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_field">Field of Study</Label>
-                  <Input
-                    id="bachelor_field"
-                    value={formData.bachelor_field}
-                    onChange={(e) => handleInputChange('bachelor_field', e.target.value)}
-                    placeholder="e.g., Computer Science, Mechanical Engineering"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_university">Bachelor University</Label>
-                  <Input
-                    id="bachelor_university"
-                    value={formData.bachelor_university}
-                    onChange={(e) => handleInputChange('bachelor_university', e.target.value)}
-                    placeholder="e.g., University of Delhi"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="intended_master_course">Intended Master Course</Label>
-                  <Input
-                    id="intended_master_course"
-                    value={formData.intended_master_course}
-                    onChange={(e) => handleInputChange('intended_master_course', e.target.value)}
-                    placeholder="e.g., MSc Computer Science"
-                  />
+            <CardContent className="space-y-6">
+              {/* Schooling */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2 border-b pb-2">
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  Schooling & Secondary Education
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="class_10_marks">Class 10 Marks (%)</Label>
+                    <Input id="class_10_marks" value={formData.class_10_marks} onChange={(e) => handleInputChange('class_10_marks', e.target.value)} placeholder="e.g., 85%" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="class_12_marks">Class 12 Marks (%)</Label>
+                    <Input id="class_12_marks" value={formData.class_12_marks} onChange={(e) => handleInputChange('class_12_marks', e.target.value)} placeholder="e.g., 90%" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="class_12_stream">Class 12 Stream</Label>
+                    <Select value={formData.class_12_stream} onValueChange={(value) => handleInputChange('class_12_stream', value)}>
+                      <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="science">Science</SelectItem>
+                        <SelectItem value="commerce">Commerce</SelectItem>
+                        <SelectItem value="arts">Arts/Humanities</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="intake">Intake</Label>
-                  <Input
-                    id="intake"
-                    value={formData.intake}
-                    onChange={(e) => handleInputChange('intake', e.target.value)}
-                    placeholder="e.g., Winter 2026"
-                  />
+              {/* Bachelor's Degree */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2 border-b pb-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  Bachelor's Degree Details
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bachelor_degree_name">Degree Title</Label>
+                    <Input id="bachelor_degree_name" value={formData.bachelor_degree_name} onChange={(e) => handleInputChange('bachelor_degree_name', e.target.value)} placeholder="e.g., Bachelor of Arts (Honours)" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bachelor_field">Field of Study</Label>
+                    <Input id="bachelor_field" value={formData.bachelor_field} onChange={(e) => handleInputChange('bachelor_field', e.target.value)} placeholder="e.g., Applied Psychology" />
+                  </div>
+                  <div className="lg:col-span-2 space-y-2">
+                    <Label htmlFor="bachelor_university">University</Label>
+                    <Input id="bachelor_university" value={formData.bachelor_university} onChange={(e) => handleInputChange('bachelor_university', e.target.value)} placeholder="e.g., Amity University Rajasthan" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contract_reference">Contract Reference</Label>
-                  <Input
-                    id="contract_reference"
-                    value={formData.contract_reference}
-                    onChange={(e) => handleInputChange('contract_reference', e.target.value)}
-                    placeholder="e.g., REF-12345"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_cgpa_percentage">CGPA/Percentage</Label>
-                  <Input
-                    id="bachelor_cgpa_percentage"
-                    value={formData.bachelor_cgpa_percentage}
-                    onChange={(e) => handleInputChange('bachelor_cgpa_percentage', e.target.value)}
-                    placeholder="e.g., 8.5 CGPA or 85%"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_credits_ects">Credits/ECTS</Label>
-                  <Input
-                    id="bachelor_credits_ects"
-                    type="number"
-                    value={formData.bachelor_credits_ects}
-                    onChange={(e) => handleInputChange('bachelor_credits_ects', e.target.value)}
-                    placeholder="e.g., 180"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bachelor_duration_years">Duration (Years)</Label>
-                  <Input
-                    id="bachelor_duration_years"
-                    type="number"
-                    value={formData.bachelor_duration_years}
-                    onChange={(e) => handleInputChange('bachelor_duration_years', e.target.value)}
-                    placeholder="e.g., 4"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bachelor_cgpa_percentage">CGPA/Percentage</Label>
+                    <Input id="bachelor_cgpa_percentage" value={formData.bachelor_cgpa_percentage} onChange={(e) => handleInputChange('bachelor_cgpa_percentage', e.target.value)} placeholder="e.g., 8.64" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bachelor_credits_ects">Credits/ECTS</Label>
+                    <Input id="bachelor_credits_ects" type="number" value={formData.bachelor_credits_ects} onChange={(e) => handleInputChange('bachelor_credits_ects', e.target.value)} placeholder="e.g., 161" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bachelor_duration_years">Duration (Years)</Label>
+                    <Input id="bachelor_duration_years" type="number" value={formData.bachelor_duration_years} onChange={(e) => handleInputChange('bachelor_duration_years', e.target.value)} placeholder="e.g., 3" />
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Language Proficiency */}
-          <Card>
-            <SectionHeader 
-              title="Language Proficiency (Legacy)" 
-              description="Your language test scores - syncs with Language Skills section"
-              sectionName="language"
-            />
-            <CardContent className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ielts_toefl_score">IELTS/TOEFL Score</Label>
-                  <Input
-                    id="ielts_toefl_score"
-                    value={formData.ielts_toefl_score}
-                    onChange={(e) => handleInputChange('ielts_toefl_score', e.target.value)}
-                    placeholder="e.g., IELTS 7.5 or TOEFL 100"
-                  />
+              {/* Masters & Intent */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2 border-b pb-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  Intended Master's & Contract
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="lg:col-span-1 space-y-2">
+                    <Label htmlFor="intended_master_course">Intended Master Course</Label>
+                    <Input id="intended_master_course" value={formData.intended_master_course} onChange={(e) => handleInputChange('intended_master_course', e.target.value)} placeholder="e.g., MSc Computer Science" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="intake">Intake</Label>
+                    <Input id="intake" value={formData.intake} onChange={(e) => handleInputChange('intake', e.target.value)} placeholder="e.g., Winter 2026" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contract_reference">Contract Reference</Label>
+                    <Input id="contract_reference" value={formData.contract_reference} onChange={(e) => handleInputChange('contract_reference', e.target.value)} placeholder="e.g., REF-12345" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Language Proficiency */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2 border-b pb-2">
+                  <Languages className="h-4 w-4 text-primary" />
+                  Language Proficiency
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ielts_toefl_score">IELTS/TOEFL Score</Label>
+                    <Input id="ielts_toefl_score" value={formData.ielts_toefl_score} onChange={(e) => handleInputChange('ielts_toefl_score', e.target.value)} placeholder="e.g., IELTS 9" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="german_level">German Level</Label>
+                    <Select value={formData.german_level} onValueChange={(ドイツ語) => handleInputChange('german_level', ドイツ語)}>
+                      <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="a1">A1</SelectItem><SelectItem value="a2">A2</SelectItem>
+                        <SelectItem value="b1">B1</SelectItem><SelectItem value="b2">B2</SelectItem>
+                        <SelectItem value="c1">C1</SelectItem><SelectItem value="c2">C2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="german_level">German Level</Label>
-                  <Select value={formData.german_level} onValueChange={(value) => handleInputChange('german_level', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select German level" />
-                    </SelectTrigger>
+                  <Label>APS Certificate</Label>
+                  <Select value={formData.has_aps_certificate} onValueChange={(v) => handleInputChange('has_aps_certificate', v)}>
+                    <SelectTrigger><SelectValue placeholder="APS certificate?" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="a1">A1 - Beginner</SelectItem>
-                      <SelectItem value="a2">A2 - Elementary</SelectItem>
-                      <SelectItem value="b1">B1 - Intermediate</SelectItem>
-                      <SelectItem value="b2">B2 - Upper Intermediate</SelectItem>
-                      <SelectItem value="c1">C1 - Advanced</SelectItem>
-                      <SelectItem value="c2">C2 - Proficient</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              {/* APS Certificate Toggle */}
-              <div className="space-y-2">
-                <Label>APS Certificate</Label>
-                <Select value={formData.has_aps_certificate} onValueChange={(value) => handleInputChange('has_aps_certificate', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Do you have APS certificate?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Yes</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formData.has_aps_certificate === 'no' && (
-                  <div className="mt-3 p-3 sm:p-4 rounded-md border border-amber-300 bg-amber-50 text-amber-800">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Need to apply immediately</p>
-                        <p className="text-xs mb-3">APS certificate is mandatory for most applications. Please apply as soon as possible.</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Link to="/aps">
-                            <Button size="sm" variant="default">Go to APS Guidance</Button>
-                          </Link>
-                          <Link to="/services">
-                            <Button size="sm" variant="outline">Request APS Help</Button>
-                          </Link>
-                        </div>
+                  {formData.has_aps_certificate === 'no' && (
+                    <div className="mt-2 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-800 flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium">APS certificate is mandatory. Please apply as soon as possible.</p>
                       </div>
                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Work Experience */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2 border-b pb-2">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  Work Experience
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="work_experience_years">Years of Experience</Label>
+                    <Input id="work_experience_years" type="number" value={formData.work_experience_years} onChange={(e) => handleInputChange('work_experience_years', e.target.value)} placeholder="e.g., 1" />
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Work Experience */}
-          <Card>
-            <SectionHeader 
-              title="Work Experience (Legacy)" 
-              description="Your professional background - syncs with Work Experience section"
-              sectionName="work"
-            />
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="work_experience_years">Years of Experience</Label>
-                  <Input
-                    id="work_experience_years"
-                    type="number"
-                    value={formData.work_experience_years}
-                    onChange={(e) => handleInputChange('work_experience_years', e.target.value)}
-                    placeholder="e.g., 2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="work_experience_field">Field of Work</Label>
-                  <Input
-                    id="work_experience_field"
-                    value={formData.work_experience_field}
-                    onChange={(e) => handleInputChange('work_experience_field', e.target.value)}
-                    placeholder="e.g., Software Development, Marketing"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* EUROPASS CV SECTIONS */}
-
-          {/* Education & Training - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <CardTitle>Education & Training</CardTitle>
-                  <span className="text-sm text-muted-foreground">({educations.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddEducation}
-                  disabled={educations.loading}
-                  className={inlineAddingType === 'education' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'education' && (
-                <InlineEducationForm
-                  entry={null}
-                  onSave={handleSaveEducation}
-                  onCancel={handleCancelEducation}
-                  isLoading={educations.loading}
-                />
-              )}
-              {educations.entries.length === 0 && inlineAddingType !== 'education' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                educations.entries.map((entry, idx) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineEducationForm
-                        entry={entry}
-                        onSave={handleSaveEducation}
-                        onCancel={handleCancelEducation}
-                        isLoading={educations.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.degree_title} in {entry.field_of_study}</p>
-                            <p className="text-sm text-muted-foreground">{entry.institution}, {entry.country}</p>
-                            <p className="text-xs text-muted-foreground">{entry.start_year} - {entry.end_year}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditEducation(entry)}
-                            disabled={educations.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => educations.deleteEducation(entry.id)}
-                            disabled={educations.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <Label htmlFor="work_experience_field">Field of Work</Label>
+                    <Input id="work_experience_field" value={formData.work_experience_field} onChange={(e) => handleInputChange('work_experience_field', e.target.value)} placeholder="e.g., Psychotherapist" />
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Work Experience - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <WorkIcon className="h-5 w-5 text-primary" />
-                  <CardTitle>Work Experience</CardTitle>
-                  <span className="text-sm text-muted-foreground">({workExperiences.entries.length})</span>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddWorkExperience}
-                  disabled={workExperiences.loading}
-                  className={inlineAddingType === 'work' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'work' && (
-                <InlineWorkExperienceForm
-                  entry={null}
-                  onSave={handleSaveWorkExperience}
-                  onCancel={handleCancelWorkExperience}
-                  isLoading={workExperiences.loading}
-                />
-              )}
-              {workExperiences.entries.length === 0 && inlineAddingType !== 'work' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                workExperiences.entries.map((entry, idx) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineWorkExperienceForm
-                        entry={entry}
-                        onSave={handleSaveWorkExperience}
-                        onCancel={handleCancelWorkExperience}
-                        isLoading={workExperiences.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.job_title} at {entry.organisation}</p>
-                            <p className="text-sm text-muted-foreground">{entry.city_country}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {entry.start_date} {entry.is_current ? '- Present' : `- ${entry.end_date}`}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditWorkExperience(entry)}
-                            disabled={workExperiences.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => workExperiences.deleteWorkExperience(entry.id)}
-                            disabled={workExperiences.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
             </CardContent>
           </Card>
 
-          {/* Language Skills - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Languages className="h-5 w-5 text-primary" />
-                  <CardTitle>Language Skills</CardTitle>
-                  <span className="text-sm text-muted-foreground">({languageSkills.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddLanguageSkill}
-                  disabled={languageSkills.loading}
-                  className={inlineAddingType === 'language' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'language' && (
-                <InlineLanguageSkillForm
-                  entry={null}
-                  onSave={handleSaveLanguageSkill}
-                  onCancel={handleCancelLanguageSkill}
-                  isLoading={languageSkills.loading}
-                />
-              )}
-              {languageSkills.entries.length === 0 && inlineAddingType !== 'language' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                languageSkills.entries.map((entry, idx) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineLanguageSkillForm
-                        entry={entry}
-                        onSave={handleSaveLanguageSkill}
-                        onCancel={handleCancelLanguageSkill}
-                        isLoading={languageSkills.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">
-                              {entry.language_name} {entry.mother_tongue && '(Mother Tongue)'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {[
-                                entry.listening && `L: ${entry.listening}`,
-                                entry.reading && `R: ${entry.reading}`,
-                                entry.writing && `W: ${entry.writing}`,
-                                entry.speaking && `S: ${entry.speaking}`,
-                              ]
-                                .filter(Boolean)
-                                .join(' • ')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditLanguageSkill(entry)}
-                            disabled={languageSkills.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => languageSkills.deleteLanguageSkill(entry.id)}
-                            disabled={languageSkills.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Certifications - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  <CardTitle>Certifications</CardTitle>
-                  <span className="text-sm text-muted-foreground">({certifications.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddCertification}
-                  disabled={certifications.loading}
-                  className={inlineAddingType === 'certification' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'certification' && (
-                <InlineCertificationForm
-                  entry={null}
-                  onSave={handleSaveCertification}
-                  onCancel={handleCancelCertification}
-                  isLoading={certifications.loading}
-                />
-              )}
-              {certifications.entries.length === 0 && inlineAddingType !== 'certification' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                certifications.entries.map((entry) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineCertificationForm
-                        entry={entry}
-                        onSave={handleSaveCertification}
-                        onCancel={handleCancelCertification}
-                        isLoading={certifications.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.title}</p>
-                            <p className="text-sm text-muted-foreground">{entry.institution}</p>
-                            <p className="text-xs text-muted-foreground">{entry.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditCertification(entry)}
-                            disabled={certifications.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => certifications.deleteCertification(entry.id)}
-                            disabled={certifications.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Publications - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <CardTitle>Publications</CardTitle>
-                  <span className="text-sm text-muted-foreground">({publications.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddPublication}
-                  disabled={publications.loading}
-                  className={inlineAddingType === 'publication' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'publication' && (
-                <InlinePublicationForm
-                  entry={null}
-                  onSave={handleSavePublication}
-                  onCancel={handleCancelPublication}
-                  isLoading={publications.loading}
-                />
-              )}
-              {publications.entries.length === 0 && inlineAddingType !== 'publication' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                publications.entries.map((entry) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlinePublicationForm
-                        entry={entry}
-                        onSave={handleSavePublication}
-                        onCancel={handleCancelPublication}
-                        isLoading={publications.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.title}</p>
-                            <p className="text-sm text-muted-foreground">{entry.journal} ({entry.year})</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditPublication(entry)}
-                            disabled={publications.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => publications.deletePublication(entry.id)}
-                            disabled={publications.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recommendations - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <CardTitle>Recommendations / Referees</CardTitle>
-                  <span className="text-sm text-muted-foreground">({recommendations.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddRecommendation}
-                  disabled={recommendations.loading}
-                  className={inlineAddingType === 'recommendation' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'recommendation' && (
-                <InlineRecommendationForm
-                  entry={null}
-                  onSave={handleSaveRecommendation}
-                  onCancel={handleCancelRecommendation}
-                  isLoading={recommendations.loading}
-                />
-              )}
-              {recommendations.entries.length === 0 && inlineAddingType !== 'recommendation' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                recommendations.entries.map((entry) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineRecommendationForm
-                        entry={entry}
-                        onSave={handleSaveRecommendation}
-                        onCancel={handleCancelRecommendation}
-                        isLoading={recommendations.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {entry.designation} {entry.institution && `at ${entry.institution}`}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{entry.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditRecommendation(entry)}
-                            disabled={recommendations.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => recommendations.deleteRecommendation(entry.id)}
-                            disabled={recommendations.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Additional Sections - with inline editing */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <CardTitle>Additional Sections</CardTitle>
-                  <span className="text-sm text-muted-foreground">({additionalSections.entries.length})</span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddSection}
-                  disabled={additionalSections.loading}
-                  className={inlineAddingType === 'section' ? 'opacity-50' : ''}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inlineAddingType === 'section' && (
-                <InlineAdditionalSectionForm
-                  entry={null}
-                  onSave={handleSaveSection}
-                  onCancel={handleCancelSection}
-                  isLoading={additionalSections.loading}
-                />
-              )}
-              {additionalSections.entries.length === 0 && inlineAddingType !== 'section' ? (
-                <p className="text-sm text-muted-foreground py-4">No entries yet. Click "Add" to create one.</p>
-              ) : (
-                additionalSections.entries.map((entry) => (
-                  <div key={entry.id}>
-                    {inlineEditingId === entry.id ? (
-                      <InlineAdditionalSectionForm
-                        entry={entry}
-                        onSave={handleSaveSection}
-                        onCancel={handleCancelSection}
-                        isLoading={additionalSections.loading}
-                      />
-                    ) : (
-                      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition flex justify-between items-start group">
-                        <div className="flex-1">
-                          <div>
-                            <p className="font-medium">{entry.section_title}</p>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{entry.section_content}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditSection(entry)}
-                            disabled={additionalSections.loading}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => additionalSections.deleteAdditionalSection(entry.id)}
-                            disabled={additionalSections.loading}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* APS Pathway section removed, now on APS page */}
-
-          {/* CV GENERATION CARD - At the end of profile page */}
-          <CVGenerationCard
-            profile={profile}
-            educations={educations.entries}
-            languages={languageSkills.entries}
-            userEmail={userEmail}
-            isGenerating={isGenerating}
-            onGenerate={() => {
-              if (profile?.full_name && profile?.user_id) {
-                generateCV(profile.user_id, profile.full_name);
-              }
-            }}
-            isLoading={educations.loading || languageSkills.loading}
-          />
-
-          <div className="flex flex-col sm:flex-row justify-end items-center gap-3 sm:gap-4">
-            <Button type="submit" disabled={loading} className="min-w-32 w-full sm:w-auto">
-              {loading ? 'Saving...' : 'Save Changes Now'}
+          {/* Main Save Button (for desktop) */}
+          <div className="hidden lg:flex justify-end pt-4 pb-10">
+            <Button 
+              type="submit" 
+              size="lg" 
+              disabled={loading}
+              className="px-8 shadow-lg"
+            >
+              {loading ? 'Saving...' : 'Save All Profile Changes'}
             </Button>
           </div>
         </form>

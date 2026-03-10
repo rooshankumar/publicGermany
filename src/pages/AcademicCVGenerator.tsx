@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout, CheckCircle2, Settings } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout as LayoutIcon, CheckCircle2, Settings, Bell, LogOut } from "lucide-react";
 import { buildCVHtml, toLines, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -21,6 +21,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { ImportedCVData } from "@/lib/cvImporter";
 import { extractEmbeddedCVDataFromText } from "@/lib/cvImporter";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import logos from "@/assets/logos.png";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -436,6 +440,8 @@ function ReorderButtons({ index, length, onMove }: { index: number; length: numb
 export default function AcademicCVGenerator() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -1275,15 +1281,26 @@ export default function AcademicCVGenerator() {
   );
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
-      <nav className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground shrink-0"><ArrowLeft className="w-4 h-4" /> publicgermany</Link>
-          </div>
+    <div className="h-screen bg-background overflow-hidden flex flex-col">
+      <nav className="border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 sticky top-0 z-50 py-1.5 px-3 md:px-5">
+        <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-3">
+          {/* Left: Brand */}
+          <Link to={profile ? "/dashboard" : "/"} className="flex items-center gap-2 shrink-0" aria-label="Home">
+            <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
+              <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+            </div>
+            <div className="hidden xl:flex flex-col leading-tight">
+              <span className="font-bold text-base text-foreground tracking-tight">publicgermany</span>
+              {profile && <span className="text-[10px] text-muted-foreground capitalize">{profile.role}</span>}
+            </div>
+          </Link>
+
+          {/* Center: Title */}
           <div className="flex-1 flex justify-center">
             <p className="text-sm font-bold uppercase tracking-wider text-primary">Europass CV</p>
           </div>
+
+          {/* Right: Actions */}
           <div className="flex items-center gap-2 shrink-0">
             {isMobile && (
               <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
@@ -1292,14 +1309,45 @@ export default function AcademicCVGenerator() {
               </Button>
             )}
             <ThemeToggle variant="icon" />
-            <Button variant="outline" size="sm" asChild><Link to="/auth">Sign In</Link></Button>
+            
+            {profile ? (
+              <div className="flex items-center gap-2 ml-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/60">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={(profile as any)?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {profile?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        await signOut();
+                        navigate('/');
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </div>
         </div>
       </nav>
 
       <div className="german-stripe" />
 
-      <main className="max-w-7xl mx-auto px-4 py-3 h-[calc(100vh-64px)] overflow-hidden">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-3 overflow-hidden">
         {isMobile ? (
           showPreview ? (
             <div ref={previewContainerRef} className="border rounded-lg overflow-auto bg-white h-full">
