@@ -368,88 +368,89 @@ export default function StudentPayments() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/admin/payments')}
-            className="gap-2"
+            className="gap-2 text-xs h-8"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Students
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{studentInfo?.name || 'Student'} - Payments</h1>
-            <p className="text-muted-foreground">{studentInfo?.email}</p>
-          </div>
+        <div className="bg-muted/30 p-4 rounded-lg">
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground truncate">{studentInfo?.name || 'Student'}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{studentInfo?.email}</p>
         </div>
 
-        {/* Student Summary Cards */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Payment Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Amount</p>
-                <p className="text-xl font-semibold">INR {studentTotals.total.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Amount Received</p>
-                <p className="text-xl font-semibold text-green-600 dark:text-green-400">
-                  INR {studentTotals.received.toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Amount Pending</p>
-                <p className="text-xl font-semibold text-orange-600 dark:text-orange-400">
-                  INR {studentTotals.pending.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Student Summary Cards - 2 column grid on mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Total</p>
+              <p className="text-sm sm:text-xl font-bold">₹{studentTotals.total.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Received</p>
+              <p className="text-sm sm:text-xl font-bold text-green-600 dark:text-green-400">
+                ₹{studentTotals.received.toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm col-span-2 md:col-span-1">
+            <CardContent className="p-3 sm:p-6">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Pending</p>
+              <p className="text-sm sm:text-xl font-bold text-orange-600 dark:text-orange-400">
+                ₹{studentTotals.pending.toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Records ({payments.length})</CardTitle>
+        <Card className="overflow-hidden border-none sm:border shadow-sm">
+          <CardHeader className="px-4 py-3 bg-muted/30">
+            <CardTitle className="text-sm sm:text-base font-bold">Payment Records ({payments.length})</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-0">
             {loading ? (
-              <InlineLoader label="Loading payments" />
+              <div className="py-12"><InlineLoader label="Loading payments" /></div>
             ) : payments.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No payments found for this student</p>
+              <div className="text-center py-12">
+                <p className="text-sm text-muted-foreground">No payments found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Service</th>
-                      <th className="text-left p-3 font-medium">Amount / Totals</th>
-                      <th className="text-left p-3 font-medium">Proof</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Admin Note</th>
-                      <th className="text-left p-3 font-medium">Created</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[120px]">Service</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[180px]">Details</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {payments.map((row) => {
                       const payment = (row.service_payments || [])[0];
                       return (
-                      <tr key={row.id} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').split('_').join(' ')}</td>
-                        <td className="p-3 align-top">
-                          <div className="space-y-2 text-xs">
+                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2 sm:px-4 sm:py-3">
+                          <p className="font-semibold text-foreground line-clamp-1">{(row.service_type || '').split('_').join(' ')}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</p>
+                          {payment?.proof_url && (
+                            <a href={payment.proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[10px] flex items-center gap-0.5 mt-1">
+                              View Proof <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 sm:px-4 sm:py-3">
+                          <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground whitespace-nowrap">Amount Received (this update)</span>
+                              <span className="text-[10px] text-muted-foreground w-10">Recv:</span>
                               <Input
                                 type="number"
                                 defaultValue={payment?.amount ?? row.service_price}
@@ -457,37 +458,26 @@ export default function StudentPayments() {
                                   ...s,
                                   [row.id]: { ...s[row.id], amount: Number(e.target.value) }
                                 }))}
-                                className="h-8 w-24"
+                                className="h-7 w-20 text-[11px] px-1.5"
                               />
-                              <span className="ml-auto text-muted-foreground">
-                                {payment?.currency || row.target_currency || row.service_currency || ''}
-                              </span>
+                              <span className="text-[10px] text-muted-foreground">{row.target_currency || row.service_currency || 'INR'}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground whitespace-nowrap">Total Amount</span>
-                              <Input
-                                type="number"
-                                defaultValue={row.target_total_amount ?? row.service_price ?? ''}
-                                onChange={(e) => setEditState((s) => ({
-                                  ...s,
-                                  [row.id]: { ...s[row.id], target_total_amount: e.target.value === '' ? null : Number(e.target.value) }
-                                }))}
-                                className="h-8 w-24"
-                              />
+                              <span className="text-[10px] text-muted-foreground w-10">Status:</span>
                               <Select
-                                defaultValue={(row.target_currency || row.service_currency || 'INR')}
-                                onValueChange={(val) => setEditState((s) => ({
+                                defaultValue={payment?.status || 'pending'}
+                                onValueChange={(v) => setEditState((s) => ({
                                   ...s,
-                                  [row.id]: { ...s[row.id], target_currency: val }
+                                  [row.id]: { ...s[row.id], status: v }
                                 }))}
                               >
-                                <SelectTrigger className="h-8 w-24">
+                                <SelectTrigger className="h-7 w-28 text-[11px] px-1.5">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="INR">INR</SelectItem>
-                                  <SelectItem value="EUR">EUR</SelectItem>
-                                  <SelectItem value="USD">USD</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="received">Received</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -500,102 +490,51 @@ export default function StudentPayments() {
                               const curr = row.target_currency || row.service_currency || '';
                               const remaining = Math.max(0, targetTotal - receivedSum);
                               return (
-                                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-border/60 mt-1">
-                                  <span><strong>Total:</strong> {curr} {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}</span>
-                                  <span><strong>Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
-                                  <span><strong>Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
+                                <div className="text-[9px] text-muted-foreground flex gap-2 pt-1 border-t border-border/40">
+                                  <span>Total: {curr}{targetTotal.toLocaleString()}</span>
+                                  <span className={remaining > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
+                                    Due: {curr}{remaining.toLocaleString()}
+                                  </span>
                                 </div>
                               );
                             })()}
                           </div>
                         </td>
-                        <td className="p-3">
-                          {payment?.proof_url ? (
-                            <a href={payment.proof_url} className="underline" target="_blank" rel="noreferrer">View</a>
-                          ) : (
-                            <span className="text-muted-foreground">No proof</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getStatusColor(payment?.status || 'pending')}>
-                              {payment?.status || 'pending'}
-                            </Badge>
-                            <Select
-                              defaultValue={payment?.status || 'pending'}
-                              onValueChange={(v) => setEditState((s) => ({
-                                ...s,
-                                [row.id]: { ...s[row.id], status: v }
-                              }))}
+                        <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                          <div className="flex flex-col items-end gap-1.5">
+                            <Button
+                              size="sm"
+                              className="h-7 px-3 text-[10px] w-20"
+                              onClick={() => savePayment(
+                                row.id,
+                                row.user_id,
+                                payment?.id,
+                                row.service_price,
+                                row.service_currency,
+                                studentInfo?.name || null,
+                                row.service_type || null
+                              )}
                             >
-                              <SelectTrigger className="w-36">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="received">Received</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              {payment ? 'Save' : 'Create'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-3 text-[10px] w-20"
+                              disabled={sendingBillId === row.id}
+                              onClick={async () => {
+                                setSendingBillId(row.id);
+                                try {
+                                  await savePayment(row.id, row.user_id, payment?.id, row.service_price, row.service_currency, studentInfo?.name || null, row.service_type);
+                                  await sendPaymentBill(row, payment);
+                                } finally {
+                                  setSendingBillId(null);
+                                }
+                              }}
+                            >
+                              {sendingBillId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Bill'}
+                            </Button>
                           </div>
-                        </td>
-                        <td className="p-3">
-                          <Input
-                            placeholder="Admin note"
-                            defaultValue={payment?.admin_note || ''}
-                            onChange={(e) => setEditState((s) => ({
-                              ...s,
-                              [row.id]: { ...s[row.id], admin_note: e.target.value }
-                            }))}
-                          />
-                        </td>
-                        <td className="p-3">{new Date(row.created_at).toLocaleDateString()}</td>
-                        <td className="p-3 space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => savePayment(
-                              row.id,
-                              row.user_id,
-                              payment?.id,
-                              row.service_price,
-                              row.service_currency,
-                              studentInfo?.name || null,
-                              row.service_type || null
-                            )}
-                          >
-                            {payment ? 'Save' : 'Create'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={sendingBillId === row.id}
-                            onClick={async () => {
-                              setSendingBillId(row.id);
-                              try {
-                                await savePayment(
-                                  row.id,
-                                  row.user_id,
-                                  payment?.id,
-                                  row.service_price,
-                                  row.service_currency,
-                                  studentInfo?.name || null,
-                                  row.service_type || null
-                                );
-                                await sendPaymentBill(row, payment);
-                              } finally {
-                                setSendingBillId(null);
-                              }
-                            }}
-                          >
-                            {sendingBillId === row.id ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Sending...
-                              </>
-                            ) : (
-                              'Send Bill'
-                            )}
-                          </Button>
                         </td>
                       </tr>
                       );

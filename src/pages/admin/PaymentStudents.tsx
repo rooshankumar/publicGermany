@@ -32,7 +32,6 @@ export default function PaymentStudents() {
   useEffect(() => {
     fetchStudentSummaries();
     
-    // Real-time subscription
     const channel = supabase
       .channel('payment-students-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
@@ -51,7 +50,6 @@ export default function PaymentStudents() {
   const fetchStudentSummaries = async () => {
     setLoading(true);
     try {
-      // Fetch all service requests with profiles and payments
       const { data, error } = await supabase
         .from('service_requests' as any)
         .select(`
@@ -73,14 +71,12 @@ export default function PaymentStudents() {
 
       if (error) throw error;
 
-      // Group by user_id and calculate summaries
       const studentMap = new Map<string, StudentPaymentSummary>();
 
       for (const request of (data || []) as any[]) {
         const userId = request.user_id;
         const payments = request.service_payments || [];
         
-        // Get email for this user
         let email = '';
         try {
           const { data: emailData } = await (supabase as any).rpc('get_user_email', { p_user_id: userId });
@@ -104,7 +100,6 @@ export default function PaymentStudents() {
         const student = studentMap.get(userId)!;
         student.request_count++;
 
-        // Calculate amounts using service-level target total and received sums
         const paymentsArr = (payments || []) as any[];
         const receivedSum = paymentsArr
           .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
@@ -117,7 +112,6 @@ export default function PaymentStudents() {
         student.received_amount += receivedSum;
         student.pending_amount += remaining;
 
-        // Update last_updated to most recent
         if (new Date(request.updated_at) > new Date(student.last_updated)) {
           student.last_updated = request.updated_at;
         }
@@ -143,7 +137,6 @@ export default function PaymentStudents() {
       student.user_id.toLowerCase().includes(q);
   });
 
-  // Calculate overall totals
   const overallTotals = filteredStudents.reduce(
     (acc, student) => ({
       total: acc.total + student.total_amount,
@@ -155,126 +148,88 @@ export default function PaymentStudents() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/admin')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-lg font-bold">Payments</h1>
+          </div>
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-8 text-xs w-32 sm:w-48"
+          />
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Payment Management</h1>
-            <p className="text-muted-foreground">View payment status by student</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-muted/30 border rounded-md p-1.5 sm:p-3 text-center">
+            <p className="text-[8px] sm:text-xs text-muted-foreground uppercase tracking-tight leading-none mb-1">Total</p>
+            <p className="text-[10px] sm:text-lg font-bold truncate">₹{(overallTotals.total / 1000).toFixed(1)}k</p>
+          </div>
+          <div className="bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-md p-1.5 sm:p-3 text-center">
+            <p className="text-[8px] sm:text-xs text-green-600 dark:text-green-400 uppercase tracking-tight leading-none mb-1">Recv.</p>
+            <p className="text-[10px] sm:text-lg font-bold text-green-600 dark:text-green-400 truncate">₹{(overallTotals.received / 1000).toFixed(1)}k</p>
+          </div>
+          <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-md p-1.5 sm:p-3 text-center">
+            <p className="text-[8px] sm:text-xs text-orange-600 dark:text-orange-400 uppercase tracking-tight leading-none mb-1">Pend.</p>
+            <p className="text-[10px] sm:text-lg font-bold text-orange-600 dark:text-orange-400 truncate">₹{(overallTotals.pending / 1000).toFixed(1)}k</p>
           </div>
         </div>
 
-        {/* Overall Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Amount</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">INR {overallTotals.total.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Amount Received</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                INR {overallTotals.received.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Amount Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                INR {overallTotals.pending.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Students</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <Input
-              placeholder="Search by student name, email, or user ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Student List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Students ({filteredStudents.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
+        <Card className="shadow-none border-none sm:border overflow-hidden">
+          <CardContent className="p-0">
             {loading ? (
-              <InlineLoader label="Loading students" />
+              <div className="py-10"><InlineLoader label="Loading..." /></div>
             ) : filteredStudents.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No students found</p>
+              <div className="text-center py-10">
+                <p className="text-xs text-muted-foreground">No students</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredStudents.map((student) => (
-                  <div
-                    key={student.user_id}
-                    onClick={() => navigate(`/admin/payments/${student.user_id}`)}
-                    className="p-4 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg truncate">{student.full_name}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {student.request_count} {student.request_count === 1 ? 'request' : 'requests'}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px] sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr>
+                      <th className="px-3 py-2">Student</th>
+                      <th className="px-3 py-2 text-center">Summary</th>
+                      <th className="px-3 py-2 text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredStudents.map((student) => (
+                      <tr 
+                        key={student.user_id} 
+                        className="hover:bg-muted/20 transition-colors cursor-pointer group"
+                        onClick={() => navigate(`/admin/payments/${student.user_id}`)}
+                      >
+                        <td className="px-3 py-2 min-w-[120px]">
+                          <p className="font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{student.full_name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-none">{student.email}</p>
+                          <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 mt-0.5 font-normal">
+                            {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
                           </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate mb-3">{student.email}</p>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Total: </span>
-                            <span className="font-medium">{student.currency} {student.total_amount.toLocaleString()}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="space-y-0.5 text-[10px] text-right sm:text-center">
+                            <p><span className="text-muted-foreground">T:</span> ₹{student.total_amount.toLocaleString()}</p>
+                            <p className="text-green-600 font-medium"><span className="text-muted-foreground">R:</span> ₹{student.received_amount.toLocaleString()}</p>
+                            <p className="text-orange-600 font-medium"><span className="text-muted-foreground">P:</span> ₹{student.pending_amount.toLocaleString()}</p>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Received: </span>
-                            <span className="font-medium text-green-600 dark:text-green-400">
-                              {student.currency} {student.received_amount.toLocaleString()}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Pending: </span>
-                            <span className="font-medium text-orange-600 dark:text-orange-400">
-                              {student.currency} {student.pending_amount.toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-1" />
-                    </div>
-                  </div>
-                ))}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

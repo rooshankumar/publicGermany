@@ -40,6 +40,7 @@ import { ExcelUpload } from '@/components/ExcelUpload';
 import { Upload, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
@@ -533,116 +534,111 @@ export default function StudentProfile() {
         </div>
 
         {/* Student Header with Quick Actions */}
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold text-foreground truncate">
                 {student.full_name || 'Unknown Student'}
               </h1>
-              <div className="flex flex-wrap items-center gap-3 mt-2 text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span className="text-sm">
-                    {email || `${student.user_id?.slice(0, 8)}… (email unavailable)`}
+                  <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm truncate max-w-[200px]">
+                    {email || `${student.user_id?.slice(0, 8)}…`}
                   </span>
-                  <Button variant="ghost" size="sm" className="h-7 px-2" onClick={resolveEmail} title="Retry fetching email">
-                    <RefreshCw className="h-3.5 w-3.5" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={resolveEmail} title="Retry">
+                    <RefreshCw className="h-3 w-3" />
                   </Button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm">Joined {new Date(student.created_at).toLocaleDateString()}</span>
+                  <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">Joined {new Date(student.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                <Badge variant={student.aps_pathway ? 'default' : 'secondary'}>
-                  {student.aps_pathway || 'No APS Pathway'}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Badge variant={student.aps_pathway ? 'default' : 'secondary'} className="text-[10px] sm:text-xs">
+                  {student.aps_pathway || 'No APS'}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-[10px] sm:text-xs">
                   German: {student.german_level || 'None'}
                 </Badge>
               </div>
             </div>
 
             {/* Quick Action Buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate(`/admin/payments/${studentId}`)}
-                className="gap-2"
+                className="flex-1 sm:flex-none gap-2 text-xs"
               >
-                <DollarSign className="h-4 w-4" />
-                View Payments
+                <DollarSign className="h-3.5 w-3.5" />
+                Payments
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate(`/admin/requests/${studentId}`)}
-                className="gap-2"
+                className="flex-1 sm:flex-none gap-2 text-xs"
               >
-                <Briefcase className="h-4 w-4" />
-                View Requests
+                <Briefcase className="h-3.5 w-3.5" />
+                Requests
               </Button>
             </div>
           </div>
         </div>
 
         {/* Summary Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Applications</p>
-                  <p className="text-2xl font-bold">{student.applications?.length || 0}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Apps</p>
+                  <p className="text-lg sm:text-2xl font-bold">{student.applications?.length || 0}</p>
                 </div>
-                <BookOpen className="h-8 w-8 text-muted-foreground" />
+                <BookOpen className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Documents</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Docs</p>
+                  <p className="text-lg sm:text-2xl font-bold">
                     {(student.documents || []).filter((d: any) => d.status === 'approved').length}/{DOCUMENTS.length}
                   </p>
                 </div>
-                <FileCheck className="h-8 w-8 text-muted-foreground" />
+                <FileCheck className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Services</p>
-                  <p className="text-2xl font-bold">{student.service_requests?.length || 0}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Services</p>
+                  <p className="text-lg sm:text-2xl font-bold">{student.service_requests?.length || 0}</p>
                 </div>
-                <Briefcase className="h-8 w-8 text-muted-foreground" />
+                <Briefcase className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="shadow-sm">
+            <CardContent className="p-3 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Payments</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    ₹{paymentSummary.received.toLocaleString()}
+                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Payments</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
+                    ₹{paymentSummary.received >= 1000 ? `${(paymentSummary.received / 1000).toFixed(1)}k` : paymentSummary.received}
                   </p>
-                  {paymentSummary.pending > 0 && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
-                      ₹{paymentSummary.pending.toLocaleString()} pending
-                    </p>
-                  )}
                 </div>
-                <DollarSign className="h-8 w-8 text-muted-foreground" />
+                <DollarSign className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
               </div>
             </CardContent>
           </Card>
@@ -650,77 +646,87 @@ export default function StudentProfile() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto gap-1">
-            <TabsTrigger value="overview" className="text-xs px-2 py-1.5">
-              <User className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="applications" className="text-xs px-2 py-1.5">
-              <BookOpen className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Applications
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="text-xs px-2 py-1.5">
-              <FileText className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Documents
-            </TabsTrigger>
-            <TabsTrigger value="services" className="text-xs px-2 py-1.5">
-              <Briefcase className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Services
-            </TabsTrigger>
-            <TabsTrigger value="contracts" className="text-xs px-2 py-1.5">
-              <ScrollText className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Contracts
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs px-2 py-1.5">
-              <StickyNote className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Notes
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="text-xs px-2 py-1.5">
-              <ClipboardList className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-              Profile
-            </TabsTrigger>
-          </TabsList>
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 -mx-4 px-4 py-2 mb-4 border-b overflow-x-auto no-scrollbar">
+            <TabsList className="flex w-max h-9 items-center justify-start bg-transparent p-0 gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <User className="h-3.5 w-3.5" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="applications" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <BookOpen className="h-3.5 w-3.5" />
+                Apps
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <FileText className="h-3.5 w-3.5" />
+                Docs
+              </TabsTrigger>
+              <TabsTrigger value="services" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <Briefcase className="h-3.5 w-3.5" />
+                Services
+              </TabsTrigger>
+              <TabsTrigger value="contracts" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <ScrollText className="h-3.5 w-3.5" />
+                Contracts
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <StickyNote className="h-3.5 w-3.5" />
+                Notes
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <ClipboardList className="h-3.5 w-3.5" />
+                Profile
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab - Personal & Academic Info + Application Dates */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            {/* Application Dates Summary */}
+          <TabsContent value="overview" className="space-y-6 mt-2">
+            {/* Application Dates Summary - Excel like table on mobile */}
             {student.applications && student.applications.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
+              <Card className="overflow-hidden border-none sm:border shadow-sm">
+                <CardHeader className="px-4 py-3 sm:px-6 sm:py-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                     Application Timeline
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {sortApplications(student.applications).map((app: any) => {
-                      const isSubmitted = ['submitted', 'Applied'].includes(app.status);
-                      return (
-                        <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {isSubmitted && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{app.university_name}</p>
-                              <p className="text-xs text-muted-foreground">{app.program_name}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-shrink-0">
-                            <div className="text-right">
-                              <p className="font-medium text-foreground">Opens</p>
-                              <p>{app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-medium text-foreground">Closes</p>
-                              <p>{app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</p>
-                            </div>
-                            <Badge variant={isSubmitted ? 'default' : 'outline'} className="capitalize text-[11px]">
-                              {app.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+                <CardContent className="p-0 sm:p-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs sm:text-sm">
+                      <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                        <tr>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[120px]">University</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Deadline</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {sortApplications(student.applications).map((app: any) => {
+                          const isSubmitted = ['submitted', 'Applied'].includes(app.status);
+                          return (
+                            <tr key={app.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-3 py-2 sm:px-4 sm:py-3">
+                                <p className="font-semibold text-foreground line-clamp-1">{app.university_name}</p>
+                                <p className="text-[10px] text-muted-foreground line-clamp-1">{app.program_name}</p>
+                              </td>
+                              <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
+                                <p className="font-medium text-foreground">
+                                  {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+                                </p>
+                              </td>
+                              <td className="px-3 py-2 sm:px-4 sm:py-3">
+                                <Badge 
+                                  variant={isSubmitted ? 'default' : 'outline'} 
+                                  className={`text-[9px] px-1.5 py-0 capitalize ${isSubmitted ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : ''}`}
+                                >
+                                  {app.status}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
@@ -806,403 +812,354 @@ export default function StudentProfile() {
           </TabsContent>
 
           {/* Applications Tab */}
-          <TabsContent value="applications" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    University Applications ({student.applications?.length || 0})
-                  </CardTitle>
-                  <div className="flex gap-2 flex-wrap">
-                    <ExcelUpload onUpload={async (data) => {
-                      if (!studentId) return;
-                      try {
-                        const rows = data.map((row: any) => ({
-                          user_id: studentId,
-                          university_name: row.university_name,
-                          program_name: row.program_name,
-                          ielts_requirement: row.ielts_requirement,
-                          german_requirement: row.german_requirement,
-                          fees_eur: row.fees_eur ? String(row.fees_eur) : null,
-                          application_start_date: row.application_start_date || row.start_date || null,
-                          application_end_date: row.application_end_date || row.end_date || null,
-                          application_method: row.application_method,
-                          required_tests: row.required_tests,
-                          portal_link: row.portal_link,
-                          notes: row.notes,
-                          status: row.status || 'draft',
-                        }));
-                        const { error } = await supabase.from('applications').insert(rows);
-                        if (error) throw error;
-                        toast({ title: 'Success', description: `${rows.length} applications imported` });
-                        studentQuery.refetch();
-                      } catch (err: any) {
-                        toast({ title: 'Error', description: err.message || 'Failed to import', variant: 'destructive' });
-                      }
-                    }} />
-                    <Dialog open={showAddAppDialog} onOpenChange={setShowAddAppDialog}>
-                      <DialogTrigger asChild>
-                        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add</Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Add Application for {student?.full_name}</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={async (e) => {
-                          e.preventDefault();
-                          if (!studentId) return;
-                          const fd = new FormData(e.target as HTMLFormElement);
-                          const payload = {
-                            user_id: studentId,
-                            university_name: fd.get('university_name') as string,
-                            program_name: fd.get('program_name') as string,
-                            ielts_requirement: (fd.get('ielts_requirement') as string) || null,
-                            german_requirement: (fd.get('german_requirement') as string) || null,
-                            fees_eur: fd.get('fees_eur') ? String(fd.get('fees_eur')) : null,
-                            application_start_date: (fd.get('application_start_date') as string) || null,
-                            application_end_date: (fd.get('application_end_date') as string) || null,
-                            application_method: (fd.get('application_method') as string) || null,
-                            required_tests: (fd.get('required_tests') as string) || null,
-                            portal_link: (fd.get('portal_link') as string) || null,
-                            notes: (fd.get('notes') as string) || null,
-                            status: 'draft' as const,
-                          };
-                          const { error } = await supabase.from('applications').insert([payload]);
-                          if (error) {
-                            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                          } else {
-                            toast({ title: 'Success', description: 'Application added' });
-                            setShowAddAppDialog(false);
-                            studentQuery.refetch();
-                          }
-                        }} className="space-y-4 pt-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>University Name *</Label>
-                              <Input name="university_name" required />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Program Name *</Label>
-                              <Input name="program_name" required />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>IELTS</Label>
-                              <Input name="ielts_requirement" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>German</Label>
-                              <Input name="german_requirement" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Fees (EUR)</Label>
-                              <Input name="fees_eur" type="number" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Application Method</Label>
-                              <Input name="application_method" placeholder="Uni-assist, Direct, etc." />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Start Date</Label>
-                              <Input name="application_start_date" type="date" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>End Date</Label>
-                              <Input name="application_end_date" type="date" />
-                            </div>
-                            <div className="col-span-2 space-y-2">
-                              <Label>Portal Link</Label>
-                              <Input name="portal_link" type="url" />
-                            </div>
-                            <div className="col-span-2 space-y-2">
-                              <Label>Notes</Label>
-                              <Input name="notes" />
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button type="button" variant="outline" onClick={() => setShowAddAppDialog(false)}>Cancel</Button>
-                            <Button type="submit">Add Application</Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-                    <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh
-                    </Button>
-                  </div>
+          <TabsContent value="applications" className="mt-2">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-bold">University Applications ({student.applications?.length || 0})</h2>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Click on an application to expand and edit. Use Excel upload or Add button to add applications.
-                </p>
-              </CardHeader>
-              <CardContent>
-              {student.applications && student.applications.length > 0 ? (
-                  <div className="space-y-3">
-                    {sortApplications(student.applications).map((app: any) => {
-                      const isSubmitted = ['submitted', 'Applied'].includes(app.status);
-                      return (
-                        <div key={app.id} className="relative">
-                          <div className="flex items-start gap-2">
-                            {isSubmitted && (
-                              <CheckCircle className="h-5 w-5 text-green-500 mt-3 flex-shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <ApplicationCredentialsCard 
-                                application={app}
-                                onUpdate={() => studentQuery.refetch()}
-                              />
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="mt-2 flex-shrink-0 text-destructive hover:text-destructive"
-                              onClick={async () => {
-                                if (!confirm(`Delete application for ${app.university_name}?`)) return;
-                                const { error } = await supabase.from('applications').delete().eq('id', app.id);
-                                if (error) {
-                                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                                } else {
-                                  toast({ title: 'Deleted', description: 'Application removed' });
-                                  studentQuery.refetch();
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <ExcelUpload onUpload={async (data) => {
+                    if (!studentId) return;
+                    try {
+                      const rows = data.map((row: any) => ({
+                        user_id: studentId,
+                        university_name: row.university_name,
+                        program_name: row.program_name,
+                        ielts_requirement: row.ielts_requirement,
+                        german_requirement: row.german_requirement,
+                        fees_eur: row.fees_eur ? String(row.fees_eur) : null,
+                        application_start_date: row.application_start_date || row.start_date || null,
+                        application_end_date: row.application_end_date || row.end_date || null,
+                        application_method: row.application_method,
+                        required_tests: row.required_tests,
+                        portal_link: row.portal_link,
+                        notes: row.notes,
+                        status: row.status || 'draft',
+                      }));
+                      const { error } = await supabase.from('applications').insert(rows);
+                      if (error) throw error;
+                      toast({ title: 'Success', description: `${rows.length} applications imported` });
+                      studentQuery.refetch();
+                    } catch (err: any) {
+                      toast({ title: 'Error', description: err.message || 'Failed to import', variant: 'destructive' });
+                    }
+                  }} />
+                  <Dialog open={showAddAppDialog} onOpenChange={setShowAddAppDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex-1 sm:flex-none h-8 px-3 text-xs"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+                    </DialogTrigger>
+                    <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-xl">
+                      <DialogHeader>
+                        <DialogTitle>Add Application</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!studentId) return;
+                        const fd = new FormData(e.target as HTMLFormElement);
+                        const payload = {
+                          user_id: studentId,
+                          university_name: fd.get('university_name') as string,
+                          program_name: fd.get('program_name') as string,
+                          ielts_requirement: (fd.get('ielts_requirement') as string) || null,
+                          german_requirement: (fd.get('german_requirement') as string) || null,
+                          fees_eur: fd.get('fees_eur') ? String(fd.get('fees_eur')) : null,
+                          application_start_date: (fd.get('application_start_date') as string) || null,
+                          application_end_date: (fd.get('application_end_date') as string) || null,
+                          application_method: (fd.get('application_method') as string) || null,
+                          required_tests: (fd.get('required_tests') as string) || null,
+                          portal_link: (fd.get('portal_link') as string) || null,
+                          notes: (fd.get('notes') as string) || null,
+                          status: 'draft' as const,
+                        };
+                        const { error } = await supabase.from('applications').insert([payload]);
+                        if (error) {
+                          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                        } else {
+                          toast({ title: 'Success', description: 'Application added' });
+                          setShowAddAppDialog(false);
+                          studentQuery.refetch();
+                        }
+                      }} className="space-y-4 pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs">University Name *</Label>
+                            <Input name="university_name" required className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Program Name *</Label>
+                            <Input name="program_name" required className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">IELTS</Label>
+                            <Input name="ielts_requirement" className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">German</Label>
+                            <Input name="german_requirement" className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Fees (EUR)</Label>
+                            <Input name="fees_eur" type="number" className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Method</Label>
+                            <Input name="application_method" placeholder="Uni-assist, Direct..." className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Start Date</Label>
+                            <Input name="application_start_date" type="date" className="h-9 text-sm" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">End Date</Label>
+                            <Input name="application_end_date" type="date" className="h-9 text-sm" />
+                          </div>
+                          <div className="sm:col-span-2 space-y-2">
+                            <Label className="text-xs">Portal Link</Label>
+                            <Input name="portal_link" type="url" className="h-9 text-sm" />
+                          </div>
+                          <div className="sm:col-span-2 space-y-2">
+                            <Label className="text-xs">Notes</Label>
+                            <Textarea name="notes" className="min-h-[80px] text-sm" />
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No applications found</p>
-                )}
-              </CardContent>
-            </Card>
+                        <div className="flex flex-row gap-2 pt-4">
+                          <Button type="button" variant="outline" onClick={() => setShowAddAppDialog(false)} className="flex-1 h-9 text-sm">Cancel</Button>
+                          <Button type="submit" className="flex-1 h-9 text-sm">Add</Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  <Button size="sm" variant="outline" onClick={() => studentQuery.refetch()} className="w-9 h-8 p-0">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {student.applications && student.applications.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {sortApplications(student.applications).map((app: any) => (
+                    <div key={app.id} className="relative group">
+                      <div className="absolute right-2 top-2 z-10 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(`Delete application for ${app.university_name}?`)) return;
+                            const { error } = await supabase.from('applications').delete().eq('id', app.id);
+                            if (error) {
+                              toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                            } else {
+                              toast({ title: 'Deleted', description: 'Application removed' });
+                              studentQuery.refetch();
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <ApplicationCredentialsCard 
+                        application={app}
+                        onUpdate={() => studentQuery.refetch()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <BookOpen className="h-10 w-10 mb-3 opacity-20" />
+                    <p className="text-sm">No applications found</p>
+                    <p className="text-xs mt-1">Add them using the button above or Excel upload</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           {/* Documents Tab */}
-          <TabsContent value="documents" className="space-y-6 mt-6">
+          <TabsContent value="documents" className="space-y-6 mt-2">
 
-        {/* Required Documents (mirrors student view categories) */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Required Documents (by category)
-              </CardTitle>
-              <Button size="sm" variant="outline" onClick={fetchStudentProfile}>
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Desktop / Tablet list */}
-            <div className="hidden md:block space-y-2">
-              {DOCUMENTS.map((d) => {
-                const doc = (student.documents || []).find((x) => x.category === d.key);
-                return (
-                  <div key={d.key} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm break-words whitespace-normal">{d.label.replace('📄 ', '')}</p>
-                      <p className="text-xs text-muted-foreground break-words whitespace-normal">
-                        {doc ? doc.file_name : 'Not uploaded'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {doc ? (
-                        <>
-                          <Badge variant={(doc as any).status === 'approved' ? 'secondary' : (doc as any).status === 'rejected' ? 'destructive' : 'outline'} className="capitalize">
-                            {(doc as any).status || 'pending'}
-                          </Badge>
-                          <Button size="sm" variant="ghost" onClick={() => viewDocument(doc as any)} className="px-2" title="View">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2" title="Download">
-                            <Download className="h-3 w-3" />
-                          </Button>
-                          <Select value={(doc as any).status || 'pending'} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
-                            <SelectTrigger className="w-32 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="approved">Approve</SelectItem>
-                              <SelectItem value="rejected">Reject</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </>
-                      ) : (
-                        <Badge variant="outline">Missing</Badge>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Mobile: Accordion list */}
-            <div className="md:hidden">
-              <Accordion type="single" collapsible className="w-full">
-                {DOCUMENTS.map((d) => {
-                  const doc = (student.documents || []).find((x) => x.category === d.key);
-                  const status = (doc as any)?.status || 'pending';
-                  return (
-                    <AccordionItem key={d.key} value={d.key}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <span className="font-medium break-words whitespace-normal">{d.label.replace('📄 ', '')}</span>
-                          {doc ? (
-                            <Badge variant={status === 'approved' ? 'secondary' : status === 'rejected' ? 'destructive' : 'outline'} className="capitalize ml-2">
+          {/* Required Documents (Excel-style table for mobile) */}
+          <Card className="overflow-hidden border-none sm:border shadow-sm">
+            <CardHeader className="px-4 py-3 sm:px-6 sm:py-6 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Required Documents
+                </CardTitle>
+                <Button size="sm" variant="ghost" onClick={fetchStudentProfile} className="h-8 px-2 text-xs">
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[140px]">Document Name</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 text-center">Status</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {DOCUMENTS.map((d) => {
+                      const doc = (student.documents || []).find((x) => x.category === d.key);
+                      const status = (doc as any)?.status || 'missing';
+                      return (
+                        <tr key={d.key} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-3 py-2 sm:px-4 sm:py-3">
+                            <p className="font-medium text-foreground line-clamp-1">{d.label.replace('📄 ', '')}</p>
+                            {doc && <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{doc.file_name}</p>}
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
+                            <Badge 
+                              variant={status === 'approved' ? 'secondary' : status === 'rejected' ? 'destructive' : status === 'missing' ? 'outline' : 'default'}
+                              className={`text-[9px] px-1.5 py-0 capitalize ${status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : ''}`}
+                            >
                               {status}
                             </Badge>
-                          ) : (
-                            <Badge variant="outline">Missing</Badge>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        {doc ? (
-                          <div className="space-y-3 pt-2">
-                            <div className="text-xs text-muted-foreground break-words whitespace-normal">{doc.file_name}</div>
-                            <div className="flex items-center gap-2 flex-wrap w-full">
-                              <Button size="sm" variant="outline" onClick={() => viewDocument(doc as any)} className="px-2 w-full sm:w-auto">View</Button>
-                              <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="px-2 w-full sm:w-auto">Download</Button>
-                            </div>
-                            <div className="pt-1">
-                              <Select value={status} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
-                                <SelectTrigger className="h-9 text-xs w-full">
-                                  <SelectValue />
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                            {doc ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <Button size="sm" variant="ghost" onClick={() => viewDocument(doc as any)} className="h-7 w-7 p-0">
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Select value={(doc as any).status || 'pending'} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
+                                  <SelectTrigger className="w-[30px] h-7 p-0 border-none bg-transparent focus:ring-0">
+                                    <SelectValue>
+                                      <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent align="end">
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="approved">Approve</SelectItem>
+                                    <SelectItem value="rejected">Reject</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Documents (Excel-style table) */}
+          <Card className="overflow-hidden border-none sm:border shadow-sm">
+            <CardHeader className="px-4 py-3 sm:px-6 sm:py-6 bg-muted/30">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                Additional Documents ({student.documents?.filter((d: any) => d.module === 'additional_documents').length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[140px]">Document Name</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 text-center">Status</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {student.documents && student.documents.filter((d: any) => d.module === 'additional_documents').length > 0 ? (
+                      student.documents.filter((d: any) => d.module === 'additional_documents').map((doc: any) => (
+                        <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-3 py-2 sm:px-4 sm:py-3">
+                            <p className="font-medium text-foreground line-clamp-1">{doc.file_name}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
+                            <Badge 
+                              variant={doc.status === 'approved' ? 'secondary' : doc.status === 'rejected' ? 'destructive' : 'outline'}
+                              className={`text-[9px] px-1.5 py-0 capitalize ${doc.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : ''}`}
+                            >
+                              {doc.status || 'pending'}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={async () => {
+                                  const { data } = await supabase.storage
+                                    .from('documents')
+                                    .createSignedUrl(doc.upload_path, 300);
+                                  if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                                }}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              <Select 
+                                value={doc.status || 'pending'} 
+                                onValueChange={async (value: 'pending' | 'approved' | 'rejected') => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('documents')
+                                      .update({ status: value } as any)
+                                      .eq('id', doc.id);
+                                    if (error) throw error;
+                                    toast({ title: 'Status Updated', description: `Document ${value}` });
+                                    await studentQuery.refetch();
+                                  } catch (error: any) {
+                                    toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-[30px] h-7 p-0 border-none bg-transparent focus:ring-0">
+                                  <SelectValue>
+                                    <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                                  </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent align="end">
                                   <SelectItem value="pending">Pending</SelectItem>
                                   <SelectItem value="approved">Approve</SelectItem>
                                   <SelectItem value="rejected">Reject</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">Not uploaded</div>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Additional Documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Additional Documents ({student.documents?.filter((d: any) => d.module === 'additional_documents').length || 0})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {student.documents && student.documents.filter((d: any) => d.module === 'additional_documents').length > 0 ? (
-              <div className="space-y-2">
-                {student.documents.filter((d: any) => d.module === 'additional_documents').map((doc: any) => (
-                  <div key={doc.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{doc.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Uploaded {new Date(doc.created_at).toLocaleDateString()}
-                        </p>
-                        {doc.admin_notes && (
-                          <p className="text-xs text-destructive mt-1">Note: {doc.admin_notes}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={(doc.status === 'approved' ? 'secondary' : doc.status === 'rejected' ? 'destructive' : 'outline')} className="capitalize">
-                        {doc.status || 'pending'}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={async () => {
-                          const { data } = await supabase.storage
-                            .from('documents')
-                            .createSignedUrl(doc.upload_path, 300);
-                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-                        }}
-                        title="View"
-                        className="px-2"
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => downloadDocument(doc)}
-                        title="Download"
-                        className="px-2"
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                      <Select 
-                        value={doc.status || 'pending'} 
-                        onValueChange={async (value: 'pending' | 'approved' | 'rejected') => {
-                          try {
-                            const { error } = await supabase
-                              .from('documents')
-                              .update({ status: value } as any)
-                              .eq('id', doc.id);
-                            
-                            if (error) throw error;
-                            
-                            toast({ 
-                              title: 'Status Updated', 
-                              description: `Document ${value}` 
-                            });
-                            
-                            await studentQuery.refetch();
-                          } catch (error: any) {
-                            toast({ 
-                              title: 'Error', 
-                              description: error.message, 
-                              variant: 'destructive' 
-                            });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-32 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="approved">Approve</SelectItem>
-                          <SelectItem value="rejected">Reject</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ))}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground text-xs">
+                          No additional documents uploaded
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No additional documents uploaded</p>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
           </TabsContent>
 
           {/* Notes Tab */}
-          <TabsContent value="notes" className="mt-6">
+          <TabsContent value="notes" className="mt-2">
             {studentId && (
               <StudentNotes studentId={studentId} readOnly />
             )}
           </TabsContent>
 
           {/* Profile Tab - Full Details */}
-          <TabsContent value="profile" className="mt-6">
+          <TabsContent value="profile" className="mt-2">
             <Card>
               <CardHeader>
                 <CardTitle>Full Profile Details</CardTitle>
@@ -1215,238 +1172,161 @@ export default function StudentProfile() {
             </Card>
           </TabsContent>
 
-          {/* Services Tab */}
-          <TabsContent value="services" className="mt-6">
-        {/* Service Requests */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              Service Requests ({student.service_requests?.length || 0})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {student.service_requests && student.service_requests.length > 0 ? (
-              <div className="space-y-3">
-                {student.service_requests.map((req) => (
-                  <div key={req.id} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{req.service_type}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {req.service_price} {req.service_currency}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Requested: {new Date(req.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge variant={
-                        req.status === 'in_review' ? 'secondary' :
-                        req.status === 'payment_pending' ? 'default' :
-                        req.status === 'new' ? 'outline' : 'secondary'
-                      }>
-                        {req.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No service requests found</p>
-            )}
-          </CardContent>
-        </Card>
+          {/* Services Tab (Excel-style table) */}
+          <TabsContent value="services" className="mt-2">
+            <Card className="overflow-hidden border-none sm:border shadow-sm">
+              <CardHeader className="px-4 py-3 sm:px-6 sm:py-6 bg-muted/30">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                  <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Service Requests ({student.service_requests?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                      <tr>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[140px]">Service</th>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 text-center">Price</th>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {student.service_requests && student.service_requests.length > 0 ? (
+                        student.service_requests.map((req) => (
+                          <tr key={req.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2 sm:px-4 sm:py-3">
+                              <p className="font-medium text-foreground line-clamp-1">{req.service_type}</p>
+                              <p className="text-[10px] text-muted-foreground">{new Date(req.created_at).toLocaleDateString()}</p>
+                            </td>
+                            <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
+                              <p className="font-medium whitespace-nowrap">{req.service_price} {req.service_currency}</p>
+                            </td>
+                            <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                              <Badge variant={
+                                req.status === 'in_review' ? 'secondary' :
+                                req.status === 'payment_pending' ? 'default' :
+                                req.status === 'new' ? 'outline' : 'secondary'
+                              } className="text-[9px] px-1.5 py-0 capitalize">
+                                {req.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground text-xs">
+                            No service requests found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Contracts Tab */}
-          <TabsContent value="contracts" className="mt-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Service Contracts ({contracts.length})
-              </CardTitle>
-              <Button size="sm" variant="outline" onClick={fetchContracts}>
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="all">
-              <TabsList>
-                <TabsTrigger value="all">All Contracts</TabsTrigger>
-                <TabsTrigger value="signed">Signed Contracts</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="all">
-                {contracts.length > 0 ? (
-                  <div className="space-y-3">
-                    {contracts.map((contract) => (
-                      <div 
-                        key={contract.id}
-                        className={`border-l-4 rounded-lg p-4 ${
-                          contract.status === 'draft' ? 'border-l-amber-500 bg-amber-50/30' :
-                          contract.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
-                          contract.status === 'signed' ? 'border-l-orange-500 bg-orange-50/30' :
-                          'border-l-green-500 bg-green-50/30'
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold">{contract.contract_reference}</h4>
-                              <Badge variant={
-                                contract.status === 'draft' ? 'secondary' :
-                                contract.status === 'sent' ? 'outline' :
-                                contract.status === 'signed' ? 'default' : 'default'
-                              }>
-                                {contract.status === 'draft' ? 'Draft' :
-                                contract.status === 'sent' ? 'Sent to Student' :
-                                contract.status === 'signed' ? 'Awaiting Approval' :
-                                'Approved'}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <p>Package: {contract.service_package || 'N/A'} | Fee: ₹{contract.service_fee || 0}</p>
-                              <p>Sent: {contract.sent_at ? new Date(contract.sent_at).toLocaleDateString() : 'Not sent'}</p>
-                              {contract.signed_at && (
-                                <p>Signed: {new Date(contract.signed_at).toLocaleDateString()}</p>
-                              )}
+          {/* Contracts Tab (Excel-style table) */}
+          <TabsContent value="contracts" className="mt-2">
+            <Card className="overflow-hidden border-none sm:border shadow-sm">
+              <CardHeader className="px-4 py-3 sm:px-6 sm:py-6 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                    <ScrollText className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Service Contracts ({contracts.length})
+                  </CardTitle>
+                  <Button size="sm" variant="ghost" onClick={fetchContracts} className="h-8 px-2 text-xs">
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                      <tr>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[140px]">Contract Ref</th>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 text-center">Fee</th>
+                        <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {contracts.length > 0 ? (
+                        contracts.map((contract) => (
+                          <tr key={contract.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2 sm:px-4 sm:py-3">
+                              <p className="font-medium text-foreground line-clamp-1">{contract.contract_reference}</p>
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">{contract.service_package || 'No Package'}</p>
                               {contract.signed_document_url && (
-                                <p>
-                                  <button 
-                                    onClick={() => {
-                                      const firstName = student?.full_name?.split(' ')[0] || 'Student';
-                                      const link = document.createElement('a');
-                                      link.href = contract.signed_document_url!;
-                                      link.download = `${firstName}_SignedContract.pdf`;
-                                      link.target = '_blank';
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    }}
-                                    className="text-primary hover:underline text-xs flex items-center gap-1"
-                                  >
-                                    Download Signed Contract
-                                    <Download className="h-3 w-3" />
-                                  </button>
-                                </p>
+                                <button 
+                                  onClick={() => {
+                                    const firstName = student?.full_name?.split(' ')[0] || 'Student';
+                                    const link = document.createElement('a');
+                                    link.href = contract.signed_document_url!;
+                                    link.download = `${firstName}_SignedContract.pdf`;
+                                    link.target = '_blank';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                  className="text-primary hover:underline text-[9px] flex items-center gap-1 mt-1"
+                                >
+                                  Download <Download className="h-2.5 w-2.5" />
+                                </button>
                               )}
-                            </div>
-                          </div>
-
-                          {/* Action Buttons (same as before) */}
-                          {contract.status === 'signed' && (
-                            <div className="flex gap-2 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={updatingContractId === contract.id}
-                                onClick={() => updateContractStatus(contract.id, 'completed')}
-                                className="gap-2"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                {updatingContractId === contract.id ? 'Approving...' : 'Approve'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                disabled={updatingContractId === contract.id}
-                                onClick={() => updateContractStatus(contract.id, 'rejected')}
-                                className="gap-2"
-                              >
-                                <X className="h-4 w-4" />
-                                {updatingContractId === contract.id ? 'Rejecting...' : 'Reject'}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No contracts found</p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="signed">
-                {/* List only contracts with signed document URL or signed status */}
-                {(() => {
-                  const signedContracts = contracts.filter(c => c.signed_document_url || c.status === 'signed');
-                  console.log('Signed contracts filter result:', { total: contracts.length, signed: signedContracts.length, contracts });
-                  return signedContracts.length > 0;
-                })() ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      {contracts.filter(c => c.signed_document_url || c.status === 'signed').map((contract) => (
-                        <div key={contract.id} className="border rounded-lg p-3 flex items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-semibold text-sm">{contract.contract_reference}</h4>
-                                <p className="text-xs text-muted-foreground">Signed: {contract.signed_at ? new Date(contract.signed_at).toLocaleDateString() : '—'}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {contract.signed_document_url && (
-                                  <Button size="sm" variant="ghost" onClick={() => setPreviewContract(contract)} className="px-2">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
+                            </td>
+                            <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
+                              <p className="font-medium whitespace-nowrap">₹{contract.service_fee || 0}</p>
+                            </td>
+                            <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                              <div className="flex flex-col items-end gap-1">
+                                <Badge variant={
+                                  contract.status === 'draft' ? 'secondary' :
+                                  contract.status === 'sent' ? 'outline' :
+                                  contract.status === 'signed' ? 'default' : 'default'
+                                } className="text-[9px] px-1.5 py-0 capitalize whitespace-nowrap">
+                                  {contract.status === 'signed' ? 'Awaiting Appr.' : contract.status}
+                                </Badge>
+                                {contract.status === 'signed' && (
+                                  <div className="flex gap-1 mt-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => updateContractStatus(contract.id, 'completed')}
+                                      className="h-6 w-6 p-0 text-green-600"
+                                      title="Approve"
+                                    >
+                                      <CheckCircle className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => updateContractStatus(contract.id, 'rejected')}
+                                      className="h-6 w-6 p-0 text-destructive"
+                                      title="Reject"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 )}
-                                <Button size="sm" variant="outline" onClick={() => updateContractStatus(contract.id, 'completed')} className="px-2">
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => updateContractStatus(contract.id, 'rejected')} className="px-2">
-                                  <X className="h-4 w-4" />
-                                </Button>
                               </div>
-                            </div>
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              Package: {contract.service_package || 'N/A'} | Fee: ₹{contract.service_fee || 0}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Preview pane */}
-                    <div>
-                      {previewContract ? (
-                        <div className="border rounded-lg overflow-hidden">
-                          <div className="p-3 border-b bg-surface/50 flex items-center justify-between">
-                            <div className="font-medium">Preview: {previewContract.contract_reference}</div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => {
-                                const firstName = student?.full_name?.split(' ')[0] || 'Student';
-                                const link = document.createElement('a');
-                                link.href = previewContract.signed_document_url!;
-                                link.download = `${firstName}_SignedContract.pdf`;
-                                link.target = '_blank';
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}>Download</Button>
-                              <Button size="sm" variant="outline" onClick={() => setPreviewContract(null)}>Close</Button>
-                            </div>
-                          </div>
-                          {previewContract.signed_document_url ? (
-                            <iframe src={previewContract.signed_document_url} title="Signed Contract Preview" className="w-full h-[600px]" />
-                          ) : (
-                            <div className="p-6 text-sm text-muted-foreground">No signed document URL available for preview.</div>
-                          )}
-                        </div>
+                            </td>
+                          </tr>
+                        ))
                       ) : (
-                        <div className="border rounded-lg p-6 text-sm text-muted-foreground">Select a signed contract to preview it here.</div>
+                        <tr>
+                          <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground text-xs">
+                            No contracts found
+                          </td>
+                        </tr>
                       )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">No signed contracts uploaded yet</p>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
         </Tabs>

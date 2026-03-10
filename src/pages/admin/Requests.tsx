@@ -10,7 +10,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Search, 
   Filter, 
   Clock, 
   CheckCircle, 
@@ -18,18 +17,20 @@ import {
   AlertCircle,
   User,
   MessageSquare,
-  Calendar
+  RefreshCw,
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { MultiFileUpload } from '@/components/MultiFileUpload';
 import { Database } from '@/integrations/supabase/types';
 import { sendEmail } from '@/lib/sendEmail';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type ServiceRequest = Database['public']['Tables']['service_requests']['Row'] & {
   profiles?: any;
   deliverable_url?: string | null;
 };
 
-// Simple debounce hook
 function useDebouncedValue<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -49,7 +50,6 @@ export default function Requests() {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [adminResponse, setAdminResponse] = useState('');
   const [deliverableUploading, setDeliverableUploading] = useState(false);
-  const [deliverableUrl, setDeliverableUrl] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<string>('');
   const [pendingDeliverableFiles, setPendingDeliverableFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<Array<{ name: string; url: string }>>([]);
@@ -59,15 +59,12 @@ export default function Requests() {
 
   useEffect(() => {
     fetchRequests();
-    
-    // Real-time subscription
     const channel = supabase
       .channel('service-requests-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
         fetchRequests();
       })
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -105,11 +102,7 @@ export default function Requests() {
       }));
       setRequests(withEmails as any);
     } catch (error: any) {
-      toast({
-        title: "Error fetching requests",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error fetching requests", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -117,7 +110,6 @@ export default function Requests() {
 
   const filterRequests = () => {
     let filtered = requests;
-
     const q = (debouncedSearch || '').toLowerCase().trim();
     if (q) {
       filtered = filtered.filter(req => 
@@ -127,25 +119,16 @@ export default function Requests() {
         (req.request_details || '').toLowerCase().includes(q)
       );
     }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(req => req.status === statusFilter);
-    }
-
-    if (serviceFilter !== 'all') {
-      filtered = filtered.filter(req => req.service_type === serviceFilter);
-    }
-
+    if (statusFilter !== 'all') filtered = filtered.filter(req => req.status === statusFilter);
+    if (serviceFilter !== 'all') filtered = filtered.filter(req => req.service_type === serviceFilter);
     setFilteredRequests(filtered);
   };
 
   const saveRequestChanges = async (requestId: string, status: string, response?: string) => {
     try {
-      // Upload multiple files if selected
       let uploadedUrls: string[] = [];
       if (pendingDeliverableFiles.length > 0 && selectedRequest) {
         setDeliverableUploading(true);
-        
         for (const file of pendingDeliverableFiles) {
           const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           const path = `service_requests/${selectedRequest.id}/${safeName}`;
@@ -153,7 +136,6 @@ export default function Requests() {
             .from('documents')
             .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
           if (uploadErr) throw uploadErr;
-          
           const { data: publicData } = supabase.storage.from('documents').getPublicUrl(path);
           uploadedUrls.push(publicData.publicUrl);
         }
@@ -161,15 +143,12 @@ export default function Requests() {
 
       const updates: any = { status };
       if (response) updates.admin_response = response;
-      
-      // Get all existing files from storage to save complete list
       let allFileUrls: string[] = [...uploadedUrls];
       if (selectedRequest) {
         try {
           const { data: storageFiles } = await supabase.storage
             .from('documents')
             .list(`service_requests/${selectedRequest.id}`, { limit: 20 });
-          
           if (storageFiles && storageFiles.length > 0) {
             const existingUrls = storageFiles.map(file => {
               const { data: publicUrl } = supabase.storage
@@ -177,41 +156,25 @@ export default function Requests() {
                 .getPublicUrl(`service_requests/${selectedRequest.id}/${file.name}`);
               return publicUrl.publicUrl;
             });
-            // Combine new uploads with existing files, remove duplicates
             allFileUrls = [...new Set([...uploadedUrls, ...existingUrls])];
           }
-        } catch (e) {
-          console.error('Error fetching files for database update:', e);
-        }
+        } catch (e) { console.error(e); }
       }
-      
-      // Store ALL deliverable URLs in the database
       if (allFileUrls.length > 0) {
-        updates.deliverable_urls = allFileUrls; // Store all URLs as array
-        updates.deliverable_url = allFileUrls[0]; // Keep first one for backward compatibility
+        updates.deliverable_urls = allFileUrls;
+        updates.deliverable_url = allFileUrls[0];
       }
 
-      console.log('💾 Updating service request with:', updates);
-      const { error } = await supabase
-        .from('service_requests')
-        .update(updates)
-        .eq('id', requestId);
-
-      if (error) {
-        console.error('❌ Database update error:', error);
-        throw error;
-      }
-      console.log('✅ Database updated successfully');
+      const { error } = await supabase.from('service_requests').update(updates).eq('id', requestId);
+      if (error) throw error;
 
       toast({ title: "Request updated", description: "Changes saved successfully" });
-      
       setSelectedRequest(null);
       setAdminResponse('');
-      setDeliverableUrl(null);
       setPendingDeliverableFiles([]);
       setExistingFiles([]);
       fetchRequests();
-      // Add in-app notification for the student (bell)
+
       try {
         const req = requests.find(r => r.id === requestId);
         const userId = req?.profiles?.user_id;
@@ -221,92 +184,30 @@ export default function Requests() {
         }
       } catch {}
 
-      // Fire-and-forget: email the student about the status/response update
       try {
         const req = requests.find(r => r.id === requestId);
         const userId = req?.profiles?.user_id;
-        console.log('📧 Email check - userId:', userId);
         const to = userId ? await resolveEmail(userId) : null;
-        console.log('📧 Email check - recipient email:', to);
         if (to) {
-          // Get all existing files from storage to include in email
-          let allDeliverableUrls = [...uploadedUrls];
-          if (selectedRequest) {
-            try {
-              const { data: storageFiles } = await supabase.storage
-                .from('documents')
-                .list(`service_requests/${selectedRequest.id}`, { limit: 20 });
-              
-              if (storageFiles && storageFiles.length > 0) {
-                const existingUrls = storageFiles.map(file => {
-                  const { data: publicUrl } = supabase.storage
-                    .from('documents')
-                    .getPublicUrl(`service_requests/${selectedRequest.id}/${file.name}`);
-                  return publicUrl.publicUrl;
-                });
-                // Combine new uploads with existing files, remove duplicates
-                allDeliverableUrls = [...new Set([...uploadedUrls, ...existingUrls])];
-              }
-            } catch (e) {
-              console.error('Error fetching existing files for email:', e);
-            }
-          }
-
           const prettyStatus = (status || '').replace(/_/g, ' ');
           const studentName = (req as any)?.profiles?.full_name || '';
           const serviceType = (req?.service_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          
-          // Build email content
-          const contentParts: string[] = [];
-          contentParts.push(`Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.`);
-          
+          const contentParts = [`Your service request <strong>${serviceType}</strong> status is now <strong>${prettyStatus}</strong>.`];
           if (response) {
-            // Remove any Supabase storage URLs from the admin response
-            const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').replace(/\n\s*\n/g, '\n').trim();
-            if (cleanResponse) {
-              contentParts.push(`<br/><br/><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}`);
-            }
+            const cleanResponse = response.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/.*?(?=\s|$)/g, '').trim();
+            if (cleanResponse) contentParts.push(`<br/><br/><strong>Admin response:</strong><br/>${cleanResponse.replace(/\n/g, '<br/>')}`);
           }
-
-          console.log('📧 Email check - status:', status, 'files count:', allDeliverableUrls.length);
-          
-          // Send document links if status is completed AND there are any deliverable files (new or existing)
-          if (status === 'completed' && allDeliverableUrls.length > 0) {
-            const baseUrl = 'https://publicgermany.vercel.app';
-            contentParts.push(`<br/><br/><strong>Your documents are ready!</strong><br/>Visit your <a href="${baseUrl}/services" style="color: #0066cc;">Services page</a> to download them.`);
+          if (status === 'completed' && allFileUrls.length > 0) {
+            contentParts.push(`<br/><br/><strong>Your documents are ready!</strong><br/>Visit your <a href="https://publicgermany.vercel.app/services" style="color: #0066cc;">Services page</a> to download them.`);
           }
-          
           const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
-          const emailHtml = wrapInEmailTemplate(contentParts.join(''), {
-            customGreeting: getPersonalizedGreeting(studentName),
-            signOff: signOffs.team
-          });
-          
-          console.log('📧 Sending email to:', to);
+          const emailHtml = wrapInEmailTemplate(contentParts.join(''), { customGreeting: getPersonalizedGreeting(studentName), signOff: signOffs.team });
           await sendEmail(to, 'Service request update', emailHtml);
-          console.log('✅ Email sent successfully');
-        } else {
-          console.log('⚠️ Email not sent - no recipient email found');
         }
-      } catch (emailError: any) {
-        console.error('❌ Email sending failed:', emailError);
-        console.error('Error details:', emailError.message, emailError.stack);
-        // Show toast to admin so they know email failed
-        toast({
-          title: "Email notification failed",
-          description: `Could not send email: ${emailError.message || 'Unknown error'}`,
-          variant: "destructive",
-        });
-      }
+      } catch (emailError) { console.error(emailError); }
     } catch (error: any) {
-      toast({
-        title: "Error updating request",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setDeliverableUploading(false);
-    }
+      toast({ title: "Error updating request", description: error.message, variant: "destructive" });
+    } finally { setDeliverableUploading(false); }
   };
 
   const getStatusColor = (status: string) => {
@@ -319,210 +220,88 @@ export default function Requests() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'new': return <Clock className="h-4 w-4" />;
-      case 'in_progress': return <AlertCircle className="h-4 w-4" />;
-      case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'cancelled': return <XCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getPriorityColor = (timeline: string) => {
-    if (timeline?.includes('urgent') || timeline?.includes('ASAP')) {
-      return 'text-destructive';
-    }
-    if (timeline?.includes('week')) {
-      return 'text-warning';
-    }
-    return 'text-muted-foreground';
-  };
-
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Service Requests Management</h1>
-            <p className="text-muted-foreground">Track and manage all student service requests with live updates</p>
-          </div>
+      <div className="space-y-4 sm:space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground">Service Requests</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Track and manage student service requests</p>
         </div>
 
-        {/* Search and Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Search & Filter Requests
+        <Card className="shadow-sm">
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Filter className="h-4 w-4" /> Search & Filter
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by student name, service type, or details..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
+          <CardContent className="space-y-4 p-4 pt-0">
+            <div className="flex flex-col gap-3">
+              <Input placeholder="Search name, service..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-9 text-sm w-full" />
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Service" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Services</SelectItem>
+                    <SelectItem value="cv_review">CV Review</SelectItem>
+                    <SelectItem value="sop_writing">SOP Writing</SelectItem>
+                    <SelectItem value="uni_selection">Uni Selection</SelectItem>
+                    <SelectItem value="visa_guidance">Visa Guidance</SelectItem>
+                    <SelectItem value="aps_help">APS Help</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={serviceFilter} onValueChange={setServiceFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Service Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
-                  <SelectItem value="cv_review">CV Review</SelectItem>
-                  <SelectItem value="sop_writing">SOP Writing</SelectItem>
-                  <SelectItem value="uni_selection">University Selection</SelectItem>
-                  <SelectItem value="visa_guidance">Visa Guidance</SelectItem>
-                  <SelectItem value="aps_help">APS Help</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredRequests.length} of {requests.length} requests
-              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Requests List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Requests ({filteredRequests.length})</CardTitle>
+        <Card className="overflow-hidden border-none sm:border shadow-sm">
+          <CardHeader className="px-4 py-3 bg-muted/30">
+            <CardTitle className="text-sm sm:text-base font-bold flex items-center justify-between">
+              <span>Requests ({filteredRequests.length})</span>
+              <Button size="sm" variant="ghost" onClick={fetchRequests} className="h-8 w-8 p-0"><RefreshCw className="h-4 w-4" /></Button>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-0">
             {loading ? (
-              <InlineLoader label="Loading requests" />
+              <div className="py-12 text-center text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-sm">Loading requests...</p></div>
             ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No requests found matching your criteria</p>
-              </div>
+              <div className="text-center py-12"><MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><p className="text-muted-foreground">No requests found</p></div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Student</th>
-                      <th className="text-left p-3 font-medium">Service Type</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Timeline</th>
-                      <th className="text-left p-3 font-medium">Price</th>
-                      <th className="text-left p-3 font-medium">Created</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
-                    </tr>
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr><th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[140px]">Student / Service</th><th className="px-3 py-2 sm:px-4 sm:py-3 text-center">Status</th><th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Action</th></tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {filteredRequests.map((request) => (
-                      <tr key={request.id} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              {(() => {
-                                const email: string | undefined = (request as any).profiles?.email;
-                                const inferred = email ? email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()) : '';
-                                const name = (request as any).profiles?.full_name || inferred || 'Unknown Student';
-                                return (
-                                  <>
-                                    <p className="font-medium truncate max-w-[180px] md:max-w-[240px]">{name}</p>
-                                    <p className="text-sm text-muted-foreground truncate max-w-[220px]">
-                                      {email || 'No email'}
-                                    </p>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="outline">
-                            {request.service_type?.replace('_', ' ').toUpperCase() || 'N/A'}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <Badge className={`${getStatusColor(request.status)} flex items-center gap-1`}>
-                            {getStatusIcon(request.status)}
-                            {request.status?.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className={`text-sm ${getPriorityColor(request.preferred_timeline)}`}>
-                            {request.preferred_timeline || 'No timeline set'}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm font-medium">
-                            {request.service_price ? 
-                              `${request.service_currency || 'INR'} ${request.service_price}` : 
-                              'Not set'
-                            }
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {new Date(request.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-3">
+                      <tr key={request.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2 sm:px-4 sm:py-3">
                           <div className="flex items-center gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={async () => {
-                                setSelectedRequest(request);
-                                setAdminResponse(request.admin_response || '');
-                                setPendingStatus(request.status);
-                                setDeliverableUrl(request.deliverable_url || null);
-                                
-                                // Load existing files for this request
-                                try {
-                                  const { data, error } = await supabase.storage
-                                    .from('documents')
-                                    .list(`service_requests/${request.id}`, { limit: 10 });
-                                  
-                                  if (!error && data) {
-                                    const files = data.map(file => {
-                                      const { data: publicUrl } = supabase.storage
-                                        .from('documents')
-                                        .getPublicUrl(`service_requests/${request.id}/${file.name}`);
-                                      return {
-                                        name: file.name,
-                                        url: publicUrl.publicUrl
-                                      };
-                                    });
-                                    setExistingFiles(files);
-                                  }
-                                } catch (e) {
-                                  console.error('Error loading existing files:', e);
-                                }
-                              }}
-                            >
-                              Manage
-                            </Button>
+                            <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0"><User className="h-3.5 w-3.5 text-primary" /></div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground line-clamp-1">{request.profiles?.full_name || 'Unknown'}</p>
+                              <p className="text-[10px] text-muted-foreground line-clamp-1 capitalize">{(request.service_type || '').split('_').join(' ')}</p>
+                            </div>
                           </div>
+                        </td>
+                        <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
+                          <Badge className={`${getStatusColor(request.status)} text-[9px] px-1.5 py-0 border-none capitalize whitespace-nowrap`}>{request.status?.split('_').join(' ')}</Badge>
+                        </td>
+                        <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                            setSelectedRequest(request); setAdminResponse(request.admin_response || ''); setPendingStatus(request.status); setExistingFiles(request.deliverable_files || []);
+                          }}><Eye className="h-4 w-4" /></Button>
                         </td>
                       </tr>
                     ))}
@@ -533,111 +312,41 @@ export default function Requests() {
           </CardContent>
         </Card>
 
-        {/* Request Management Modal/Panel */}
         {selectedRequest && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Request - {selectedRequest.service_type?.replace('_', ' ')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Request Details</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Student:</strong> {selectedRequest.profiles?.full_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Service:</strong> {selectedRequest.service_type}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Timeline:</strong> {selectedRequest.preferred_timeline}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Details:</strong> {selectedRequest.request_details}
-                  </p>
+          <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
+            <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-xl">
+              <DialogHeader><DialogTitle className="text-base sm:text-lg">Respond to Request</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1"><Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Student</Label><p className="text-sm font-medium">{selectedRequest.profiles?.full_name}</p><p className="text-xs text-muted-foreground">{selectedRequest.profiles?.email}</p></div>
+                  <div className="space-y-1"><Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Service</Label><p className="text-sm font-medium capitalize">{(selectedRequest.service_type || '').split('_').join(' ')}</p><p className="text-xs text-muted-foreground">{selectedRequest.service_price} {selectedRequest.service_currency}</p></div>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-2">Update Status</h4>
-                  <div className="space-y-3">
-                    <Select 
-                      value={pendingStatus}
-                      onValueChange={setPendingStatus}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Textarea
-                      placeholder="Add admin response or notes..."
-                      value={adminResponse}
-                      onChange={(e) => setAdminResponse(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Deliverable Files</label>
-                      <MultiFileUpload
-                        onFilesSelected={setPendingDeliverableFiles}
-                        maxFiles={5}
-                        existingFiles={existingFiles}
-                        onRemoveExisting={async (url) => {
-                          try {
-                            // Extract file path from URL to delete from storage
-                            // URL format: https://.../storage/v1/object/public/documents/service_requests/{id}/{filename}
-                            const urlParts = url.split('/documents/');
-                            if (urlParts.length < 2) {
-                              throw new Error('Invalid URL format');
-                            }
-                            const filePath = urlParts[1]; // This gives us: service_requests/{id}/{filename}
-                            
-                            const { error } = await supabase.storage.from('documents').remove([filePath]);
-                            if (error) throw error;
-                            
-                            setExistingFiles(files => files.filter(f => f.url !== url));
-                            toast({ title: 'File removed', description: 'File deleted successfully' });
-                          } catch (e: any) {
-                            console.error('Delete error:', e);
-                            toast({ title: 'Error', description: e.message || 'Failed to remove file', variant: 'destructive' });
-                          }
-                        }}
-                      />
-                      {deliverableUploading && (
-                        <p className="text-xs text-muted-foreground">Uploading files...</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Upload final documents that the student can access after completion
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => saveRequestChanges(selectedRequest.id, pendingStatus || selectedRequest.status, adminResponse)}
-                      >
-                        Save Response
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSelectedRequest(null);
-                          setAdminResponse('');
-                          setPendingStatus('');
-                          setDeliverableUrl(null);
-                          setPendingDeliverableFiles([]);
-                          setExistingFiles([]);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
+                <div className="space-y-2"><Label className="text-xs font-semibold">Update Status</Label>
+                  <Select value={pendingStatus || selectedRequest.status} onValueChange={setPendingStatus}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="new">New</SelectItem><SelectItem value="in_progress">In Progress</SelectItem><SelectItem value="payment_pending">Payment Pending</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent>
+                  </Select>
                 </div>
+                <div className="space-y-2"><Label className="text-xs font-semibold">Admin Response</Label><Textarea value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} placeholder="Write your response to the student..." className="min-h-[100px] text-sm" /></div>
+                <div className="space-y-2"><Label className="text-xs font-semibold">Deliverable Files</Label>
+                  <MultiFileUpload onFilesSelected={setPendingDeliverableFiles} maxFiles={5} existingFiles={existingFiles} onRemoveExisting={async (url) => {
+                    try {
+                      const urlParts = url.split('/documents/');
+                      if (urlParts.length < 2) throw new Error('Invalid URL format');
+                      const filePath = urlParts[1];
+                      const { error } = await supabase.storage.from('documents').remove([filePath]);
+                      if (error) throw error;
+                      setExistingFiles(files => files.filter(f => f.url !== url));
+                      toast({ title: 'File removed', description: 'File deleted successfully' });
+                    } catch (e: any) { toast({ title: 'Error', description: e.message || 'Failed to remove file', variant: 'destructive' }); }
+                  }} />
+                  {deliverableUploading && <p className="text-xs text-muted-foreground">Uploading files...</p>}
+                  <p className="text-[10px] text-muted-foreground">Upload final documents that the student can access after completion.</p>
+                </div>
+                <div className="flex gap-2 pt-4"><Button variant="outline" className="flex-1 h-9 text-sm" onClick={() => setSelectedRequest(null)}>Cancel</Button><Button className="flex-1 h-9 text-sm" onClick={() => saveRequestChanges(selectedRequest.id, pendingStatus || selectedRequest.status, adminResponse)}>Save Response</Button></div>
               </div>
-            </CardContent>
-          </Card>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </Layout>

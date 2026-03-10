@@ -159,33 +159,41 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
         className="p-3 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex justify-between items-start gap-2">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-4">
+          <div className="min-w-0 flex-1 w-full">
             <div className="flex items-center gap-2">
               {isSubmitted && (
-                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
               )}
-              <h4 className="font-medium truncate">{application.university_name}</h4>
+              <h4 className="font-semibold text-sm sm:text-base truncate">{application.university_name}</h4>
             </div>
-            <p className="text-sm text-muted-foreground truncate">{application.program_name}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Applied: {new Date(application.created_at).toLocaleDateString()}
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{application.program_name}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[10px] sm:text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(application.created_at).toLocaleDateString()}
+              </span>
               {application.application_end_date && (
-                <span className="ml-2">• Deadline: {new Date(application.application_end_date).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1 text-orange-600 font-medium">
+                  <Calendar className="h-3 w-3" />
+                  Due: {new Date(application.application_end_date).toLocaleDateString()}
+                </span>
               )}
-            </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {hasCredentials && (
-              <Badge variant="secondary" className="text-xs">
-                <Key className="h-3 w-3 mr-1" />
-                Credentials
+          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-end mt-2 sm:mt-0">
+            <div className="flex gap-2">
+              {hasCredentials && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
+                  <Key className="h-2.5 w-2.5 mr-1" />
+                  Creds
+                </Badge>
+              )}
+              <Badge variant={getStatusVariant(application.status)} className="text-[10px] px-1.5 h-5 capitalize">
+                {application.status}
               </Badge>
-            )}
-            <Badge variant={getStatusVariant(application.status)}>
-              {application.status}
-            </Badge>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+            {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </div>
         </div>
       </div>
@@ -200,41 +208,41 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
               Application Details
             </h5>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* University Name */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Building className="h-3 w-3" />
-                  University Name
+                  University
                 </Label>
                 <Input
                   value={universityName}
                   onChange={(e) => setUniversityName(e.target.value)}
                   placeholder="University name"
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2"
                 />
               </div>
 
               {/* Program Name */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <FileText className="h-3 w-3" />
-                  Program Name
+                  Program
                 </Label>
                 <Input
                   value={programName}
                   onChange={(e) => setProgramName(e.target.value)}
                   placeholder="M.Sc. Computer Science"
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2"
                 />
               </div>
 
               {/* Status */}
-              <div className="space-y-1.5">
-                <Label className="text-xs">Status</Label>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select status" />
+                  <SelectTrigger className="h-8 text-sm px-2">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map((opt) => (
@@ -247,74 +255,74 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
               </div>
 
               {/* Application Method */}
-              <div className="space-y-1.5">
-                <Label className="text-xs">Application Method</Label>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Method</Label>
                 <Input
                   value={applicationMethod}
                   onChange={(e) => setApplicationMethod(e.target.value)}
                   placeholder="uni-assist, direct, etc."
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2"
                 />
               </div>
 
               {/* Start Date */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  Application Start Date
+                  Opens
                 </Label>
                 <Input
                   type="date"
                   value={applicationStartDate}
                   onChange={(e) => setApplicationStartDate(e.target.value)}
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2"
                 />
               </div>
 
               {/* End Date / Deadline */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  Application Deadline
+                  Deadline
                 </Label>
                 <Input
                   type="date"
                   value={applicationEndDate}
                   onChange={(e) => setApplicationEndDate(e.target.value)}
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2 font-medium text-orange-600"
                 />
               </div>
 
-              {/* German Requirement */}
-              <div className="space-y-1.5">
-                <Label className="text-xs">German Requirement</Label>
-                <Input
-                  value={germanRequirement}
-                  onChange={(e) => setGermanRequirement(e.target.value)}
-                  placeholder="B1, B2, C1, etc."
-                  className="text-sm h-9"
-                />
-              </div>
-
-              {/* IELTS Requirement */}
-              <div className="space-y-1.5">
-                <Label className="text-xs">IELTS/TOEFL Requirement</Label>
-                <Input
-                  value={ieltsRequirement}
-                  onChange={(e) => setIeltsRequirement(e.target.value)}
-                  placeholder="6.5, 7.0, etc."
-                  className="text-sm h-9"
-                />
+              {/* Requirements Grid (Row) */}
+              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">German</Label>
+                  <Input
+                    value={germanRequirement}
+                    onChange={(e) => setGermanRequirement(e.target.value)}
+                    placeholder="B2/C1"
+                    className="text-sm h-8 px-2"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">English</Label>
+                  <Input
+                    value={ieltsRequirement}
+                    onChange={(e) => setIeltsRequirement(e.target.value)}
+                    placeholder="6.5/7.0"
+                    className="text-sm h-8 px-2"
+                  />
+                </div>
               </div>
 
               {/* Fees */}
-              <div className="space-y-1.5 md:col-span-2">
-                <Label className="text-xs">Fees (EUR)</Label>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fees (EUR)</Label>
                 <Input
                   value={feesEur}
                   onChange={(e) => setFeesEur(e.target.value)}
                   placeholder="0 or amount"
-                  className="text-sm h-9"
+                  className="text-sm h-8 px-2"
                 />
               </div>
             </div>
@@ -331,146 +339,124 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-t pt-4">
-            <h5 className="text-sm font-medium flex items-center gap-2 mb-3">
-              <Key className="h-4 w-4" />
-              Portal Credentials
+          <div className="border-t pt-4 space-y-4">
+            <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Key className="h-3.5 w-3.5" />
+              Credentials
             </h5>
 
-            {/* Portal Link */}
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Portal Link */}
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <LinkIcon className="h-3 w-3" />
                   Portal Link
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Input
                     value={portalLink}
                     onChange={(e) => setPortalLink(e.target.value)}
-                    placeholder="https://uni-assist.de/portal..."
-                    className="text-sm h-9"
+                    placeholder="https://..."
+                    className="text-sm h-8 px-2 flex-1"
                   />
                   {portalLink && (
-                    <>
+                    <div className="flex gap-1 flex-shrink-0">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-9 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(portalLink, '_blank');
-                        }}
-                        title="Open link"
+                        className="h-8 w-8 p-0"
+                        onClick={() => window.open(portalLink, '_blank')}
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-9 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyToClipboard(portalLink, 'Portal link');
-                        }}
-                        title="Copy link"
+                        className="h-8 w-8 p-0"
+                        onClick={() => copyToClipboard(portalLink, 'Link')}
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3.5 w-3.5" />
                       </Button>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Login ID */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <User className="h-3 w-3" />
                   Login ID
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Input
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
-                    placeholder="student@email.com or username"
-                    className="text-sm h-9"
+                    placeholder="ID/Email"
+                    className="text-sm h-8 px-2 flex-1"
                   />
                   {loginId && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-9 px-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(loginId, 'Login ID');
-                      }}
-                      title="Copy login ID"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => copyToClipboard(loginId, 'ID')}
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
-                <Label className="text-xs flex items-center gap-1">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Key className="h-3 w-3" />
                   Password
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <div className="relative flex-1">
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="text-sm h-9 pr-10"
+                      className="text-sm h-8 px-2 pr-8"
                     />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="absolute right-0 top-0 h-9 px-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowPassword(!showPassword);
-                      }}
-                      title={showPassword ? 'Hide password' : 'Show password'}
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                   {password && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-9 px-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(password, 'Password');
-                      }}
-                      title="Copy password"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => copyToClipboard(password, 'Password')}
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Show to Student Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t">
-                <div className="space-y-0.5">
-                  <Label className="text-sm">Show to Student</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Allow student to see these credentials
-                  </p>
-                </div>
-                <Switch
-                  checked={showToStudent}
-                  onCheckedChange={setShowToStudent}
-                />
+            {/* Visibility Toggle */}
+            <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg border border-dashed">
+              <div className="space-y-0.5">
+                <Label className="text-xs font-semibold">Show to Student</Label>
+                <p className="text-[10px] text-muted-foreground leading-none">
+                  Students can see these credentials
+                </p>
               </div>
+              <Switch
+                checked={showToStudent}
+                onCheckedChange={setShowToStudent}
+                className="scale-75 origin-right"
+              />
             </div>
           </div>
 

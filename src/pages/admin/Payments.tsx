@@ -414,32 +414,32 @@ export default function Payments() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Payments Management</h1>
-            <p className="text-muted-foreground">Monitor and manage all payment transactions</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Payments</h1>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Manage student transactions</p>
           </div>
+          <Button size="sm" variant="outline" onClick={fetchPayments} className="h-8 w-8 p-0 sm:hidden">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6 glass-subtle">
-            <div className="flex flex-col sm:flex-row gap-4">
+        <Card className="shadow-sm border-none sm:border">
+          <CardContent className="p-3">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                placeholder="Search by student name, service type, or user ID..."
+                placeholder="Search name or service..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
+                className="flex-1 h-8 text-xs"
               />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue />
+                <SelectTrigger className="w-full sm:w-32 h-8 text-xs">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="received">Received</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -449,211 +449,120 @@ export default function Payments() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Records ({filteredPayments.length})</CardTitle>
+        <Card className="overflow-hidden border-none sm:border shadow-sm">
+          <CardHeader className="px-3 py-2 bg-muted/30 hidden sm:flex">
+            <CardTitle className="text-sm font-bold flex items-center justify-between w-full">
+              <span>Records ({filteredPayments.length})</span>
+              <Button size="sm" variant="ghost" onClick={fetchPayments} className="h-7 w-7 p-0">
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-0">
             {loading ? (
-              <InlineLoader label="Loading payments" />
+              <div className="py-10"><InlineLoader label="Loading..." /></div>
             ) : filteredPayments.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No payments found</p>
+              <div className="text-center py-10">
+                <p className="text-xs text-muted-foreground">No records</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Request ID</th>
-                      <th className="text-left p-3 font-medium">Student</th>
-                      <th className="text-left p-3 font-medium">Service</th>
-                      <th className="text-left p-3 font-medium">Amount / Totals</th>
-                      <th className="text-left p-3 font-medium">Proof</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Admin Note</th>
-                      <th className="text-left p-3 font-medium">Created</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                <table className="w-full text-left text-[11px] sm:text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <tr>
+                      <th className="px-2 py-1.5 sm:px-4 sm:py-2">Student / Service</th>
+                      <th className="px-2 py-1.5 sm:px-4 sm:py-2">Payment</th>
+                      <th className="px-2 py-1.5 sm:px-4 sm:py-2 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {filteredPayments.map((row) => {
                       const payment = (row.service_payments || [])[0];
+                      const status = payment?.status || 'pending';
+                      const studentName = row.profiles?.full_name || 'Student';
+                      
                       return (
-                      <tr key={row.id} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-3 font-mono text-sm truncate max-w-[160px] md:max-w-[220px]">{row.id}</td>
-                        <td className="p-3 truncate max-w-[260px]">
-                          <div className="flex flex-col">
-                            {(() => {
-                              const email: string | undefined = row.profiles?.email;
-                              const inferred = email ? email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()) : '';
-                              const name = row.profiles?.full_name || inferred || 'Unknown Student';
-                              return (
-                                <>
-                                  <span className="font-medium truncate">{name}</span>
-                                  <span className="text-xs text-muted-foreground truncate">{email || row.user_id}</span>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </td>
-                        <td className="p-3 capitalize truncate max-w-[200px]">{(row.service_type || '').split('_').join(' ')}</td>
-                        <td className="p-3 whitespace-nowrap align-top">
-                          <div className="rounded-md border p-2 bg-muted/40">
-                            <div className="flex items-center gap-2 mb-2">
-                              <label className="text-xs text-muted-foreground">Amount Received (this update)</label>
-                              <div className="ml-auto text-xs text-muted-foreground">{payment?.currency || row.target_currency || row.service_currency || ''}</div>
+                        <tr key={row.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 max-w-[120px] sm:max-w-none">
+                            <p className="font-semibold text-foreground truncate">{studentName}</p>
+                            <p className="text-[10px] text-muted-foreground truncate capitalize">
+                              {(row.service_type || '').split('_').join(' ')}
+                            </p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Badge className={`${getStatusColor(status)} text-[8px] px-1 py-0 border-none h-3.5`}>
+                                {status}
+                              </Badge>
+                              {payment?.proof_url && (
+                                <a href={payment.proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Input
-                                type="number"
-                                defaultValue={payment?.amount ?? row.service_price}
-                                onChange={(e) => setEditState((s) => ({
-                                  ...s,
-                                  [row.id]: { ...s[row.id], amount: Number(e.target.value) }
-                                }))}
-                                className="w-32"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <label className="text-xs text-muted-foreground">Total Amount</label>
-                              <Input
-                                type="number"
-                                defaultValue={row.target_total_amount ?? row.service_price ?? ''}
-                                onChange={(e) => setEditState((s) => ({
-                                  ...s,
-                                  [row.id]: { ...s[row.id], target_total_amount: e.target.value === '' ? null : Number(e.target.value) }
-                                }))}
-                                className="w-32"
-                              />
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  defaultValue={payment?.amount ?? row.service_price}
+                                  onChange={(e) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], amount: Number(e.target.value) }
+                                  }))}
+                                  className="h-6 w-14 sm:w-20 text-[10px] px-1"
+                                />
+                                <span className="text-[9px] text-muted-foreground uppercase">
+                                  {row.target_currency || row.service_currency}
+                                </span>
+                              </div>
                               <Select
-                                defaultValue={(row.target_currency || row.service_currency || 'INR')}
-                                onValueChange={(val) => setEditState((s) => ({
+                                defaultValue={payment?.status || 'pending'}
+                                onValueChange={(v) => setEditState((s) => ({
                                   ...s,
-                                  [row.id]: { ...s[row.id], target_currency: val }
+                                  [row.id]: { ...s[row.id], status: v }
                                 }))}
                               >
-                                <SelectTrigger className="w-28 h-9">
+                                <SelectTrigger className="h-6 w-20 sm:w-28 text-[10px] px-1">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="INR">INR</SelectItem>
-                                  <SelectItem value="EUR">EUR</SelectItem>
-                                  <SelectItem value="USD">USD</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="received">Received</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
-                            {(() => {
-                              const paymentsArr = (row.service_payments || []) as any[];
-                              const receivedSum = paymentsArr
-                                .filter((p) => (p?.status || '').toLowerCase() === 'received')
-                                .reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
-                              const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
-                              const curr = row.target_currency || row.service_currency || '';
-                              const remaining = Math.max(0, targetTotal - receivedSum);
-                              return (
-                                <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                                  <span><strong>Total Amount:</strong> {curr} {isNaN(targetTotal) ? '-' : targetTotal.toLocaleString()}</span>
-                                  <span><strong>Amount Received:</strong> {curr} {receivedSum.toLocaleString()}</span>
-                                  <span><strong>Amount Remaining:</strong> {curr} {remaining.toLocaleString()}</span>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          {payment?.proof_url ? (
-                            <a href={payment.proof_url} className="underline" target="_blank" rel="noreferrer">View</a>
-                          ) : (
-                            <span className="text-muted-foreground">No proof</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getStatusColor(payment?.status || 'pending')}>
-                              {payment?.status || 'pending'}
-                            </Badge>
-                            <Select
-                              defaultValue={payment?.status || 'pending'}
-                              onValueChange={(v) => setEditState((s) => ({
-                                ...s,
-                                [row.id]: { ...s[row.id], status: v }
-                              }))}
-                            >
-                              <SelectTrigger className="w-36">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="received">Received</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Input
-                            placeholder="Admin note"
-                            defaultValue={payment?.admin_note || ''}
-                            onChange={(e) => setEditState((s) => ({
-                              ...s,
-                              [row.id]: { ...s[row.id], admin_note: e.target.value }
-                            }))}
-                          />
-                        </td>
-                        <td className="p-3">{new Date(row.created_at).toLocaleDateString()}</td>
-                        <td className="p-3 space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              savePayment(
-                                row.id,
-                                row.user_id,
-                                payment?.id,
-                                row.service_price,
-                                row.service_currency,
-                                row.profiles?.full_name || null,
-                                row.service_type || null
-                              );
-                            }}
-                          >
-                            {payment ? 'Save' : 'Create'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={sendingBillId === row.id}
-                            onClick={async () => {
-                              setSendingBillId(row.id);
-                              try {
-                                // Save payment first, then send bill
-                                await savePayment(
-                                  row.id,
-                                  row.user_id,
-                                  payment?.id,
-                                  row.service_price,
-                                  row.service_currency,
-                                  row.profiles?.full_name || null,
-                                  row.service_type || null
-                                );
-                                // Automatically send bill after saving
-                                await sendPaymentBill(row, payment);
-                              } finally {
-                                setSendingBillId(null);
-                              }
-                            }}
-                          >
-                            {sendingBillId === row.id ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Sending...
-                              </>
-                            ) : (
-                              'Send Bill'
-                            )}
-                          </Button>
-                        </td>
-                      </tr>
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right">
+                            <div className="flex flex-col items-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="h-6 px-2 text-[9px] w-14 sm:w-16"
+                                onClick={() => savePayment(row.id, row.user_id, payment?.id, row.service_price, row.service_currency, studentName, row.service_type)}
+                              >
+                                {payment ? 'Save' : 'Create'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-[9px] w-14 sm:w-16"
+                                disabled={sendingBillId === row.id}
+                                onClick={async () => {
+                                  setSendingBillId(row.id);
+                                  try {
+                                    await savePayment(row.id, row.user_id, payment?.id, row.service_price, row.service_currency, studentName, row.service_type);
+                                    await sendPaymentBill(row, payment);
+                                  } finally {
+                                    setSendingBillId(null);
+                                  }
+                                }}
+                              >
+                                {sendingBillId === row.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : 'Bill'}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
