@@ -12,7 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout as LayoutIcon, CheckCircle2, Settings, Bell, LogOut } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout as LayoutIcon, CheckCircle2, Settings, Bell, LogOut, Home, FileText, Users, FileBarChart, Star, Shield, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { buildCVHtml, toLines, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -442,6 +443,33 @@ export default function AcademicCVGenerator() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const studentNavItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/services', label: 'Services', icon: Briefcase },
+    { href: '/applications', label: 'Applications', icon: GraduationCap },
+    { href: '/documents', label: 'Documents', icon: FileText },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/payments', label: 'Contract', icon: FileText },
+    { href: '/reviews', label: 'Write a Review', icon: Star },
+    { href: '/profile', label: 'Profile', icon: User },
+  ];
+
+  const adminNavItems = [
+    { href: '/admin', label: 'Dashboard', icon: Home },
+    { href: '/admin/students', label: 'Students', icon: Users },
+    { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
+    { href: '/admin/payments', label: 'Payments', icon: FileText },
+    { href: '/admin/contracts', label: 'Contracts', icon: FileText },
+    { href: '/admin/blog', label: 'Blog Management', icon: FileText },
+    { href: '/admin/exports', label: 'Exports', icon: Settings },
+    { href: '/admin/reviews', label: 'Reviews', icon: Star },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : studentNavItems;
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -1218,7 +1246,7 @@ export default function AcademicCVGenerator() {
                       <button key={option.value} type="button" onClick={() => setDensity(option.value)}
                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${density === option.value ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-muted bg-muted/20 hover:border-muted-foreground/30"}`}>
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background border shadow-sm">
-                          <Layout className={`w-4 h-4 ${density === option.value ? "text-primary" : "text-muted-foreground"}`} />
+                          <LayoutIcon className={`w-4 h-4 ${density === option.value ? "text-primary" : "text-muted-foreground"}`} />
                         </div>
                         <div className="text-[11px] font-bold uppercase tracking-tight">{option.label}</div>
                         <div className="text-[9px] text-muted-foreground leading-tight text-center px-1">{option.hint}</div>
@@ -1285,33 +1313,62 @@ export default function AcademicCVGenerator() {
       <nav className="border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 sticky top-0 z-50 py-1.5 px-3 md:px-5">
         <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-3">
           {/* Left: Brand */}
-          <Link to={profile ? "/dashboard" : "/"} className="flex items-center gap-2 shrink-0" aria-label="Home">
-            <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
-              <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
-            </div>
-            <div className="hidden xl:flex flex-col leading-tight">
-              <span className="font-bold text-base text-foreground tracking-tight">publicgermany</span>
-              {profile && <span className="text-[10px] text-muted-foreground capitalize">{profile.role}</span>}
-            </div>
-          </Link>
-
-          {/* Center: Title */}
-          <div className="flex-1 flex justify-center">
-            <p className="text-sm font-bold uppercase tracking-wider text-primary">Europass CV</p>
+          <div className="flex items-center gap-4 pr-2 md:pr-4 min-w-0">
+            <Link to={profile ? "/dashboard" : "/"} className="flex items-center gap-2 shrink-0" aria-label="Home">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-md overflow-hidden shrink-0">
+                <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+              </div>
+              <div className="flex flex-col justify-center leading-tight">
+                <Badge className="trust-badge inline-flex self-start mb-0.5 text-[10px] md:text-[11px] px-2 py-0 h-5">
+                  <Shield className="w-3 h-3" />
+                  Trusted
+                </Badge>
+                <span className="font-bold text-base text-foreground tracking-tight whitespace-nowrap">publicgermany</span>
+              </div>
+            </Link>
           </div>
+
+          {/* Center: Horizontal Nav */}
+          {profile ? (
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center overflow-hidden mx-4">
+              {navItems.map((item) => {
+                const active = item.href === '/europass-cv';
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "relative pb-0.5 px-1.5 xl:px-2 text-xs xl:text-sm font-medium whitespace-nowrap transition-colors after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
+                      active ? "text-primary after:opacity-100" : "text-foreground/90 hover:text-primary hover:after:opacity-60"
+                    )}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <span className="relative inline-flex items-center">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : (
+            <div className="hidden lg:flex items-center gap-3 xl:gap-4 flex-1 justify-center overflow-hidden mx-4">
+              <Link to="/#features" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</Link>
+              <Link to="/#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</Link>
+              <Link to="/services" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
+              <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
+              <Link to="/blog" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Blog</Link>
+              <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
+              <Link to="/europass-cv" className="text-sm font-medium text-primary transition-colors whitespace-nowrap underline underline-offset-4">CV Generator</Link>
+              <Link to="/#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</Link>
+              <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
+            </div>
+          )}
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {isMobile && (
-              <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
-                {showPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-                {showPreview ? "Form" : "Preview"}
-              </Button>
-            )}
-            <ThemeToggle variant="icon" />
-            
-            {profile ? (
-              <div className="flex items-center gap-2 ml-2">
+            <div className="hidden lg:flex items-center gap-2">
+              <ThemeToggle variant="icon" />
+              {profile ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/60">
@@ -1335,14 +1392,93 @@ export default function AcademicCVGenerator() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-            ) : (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
-            )}
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" asChild className="text-xs px-3 py-1.5">
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                  <Button asChild className="btn-cta text-xs px-3 py-1.5 shadow-sm">
+                    <Link to="/auth">Get Started Free</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="lg:hidden flex items-center gap-1">
+              {isMobile && !profile && (
+                <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
+                  {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              )}
+              <ThemeToggle variant="icon" />
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-foreground hover:text-primary transition-colors"
+                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {isMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg animate-in fade-in slide-in-from-top-2">
+            <div className="px-4 py-3 space-y-3">
+              {!profile ? (
+                <>
+                  <Link to="/#features" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Features</Link>
+                  <Link to="/#testimonials" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Success Stories</Link>
+                  <Link to="/services" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Services</Link>
+                  <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Resources</Link>
+                  <Link to="/blog" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Blog</Link>
+                  <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Grade Converter</Link>
+                  <Link to="/europass-cv" className="block text-base font-medium text-primary transition-colors">CV Generator</Link>
+                  <Link to="/#faq" className="block text-base font-medium text-foreground hover:text-primary transition-colors">FAQ</Link>
+                  <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary transition-colors">Contact</Link>
+                  <div className="flex flex-col gap-2 pt-4">
+                    <Button variant="outline" asChild className="w-full">
+                      <Link to="/auth">Sign In</Link>
+                    </Button>
+                    <Button asChild className="w-full btn-cta">
+                      <Link to="/auth">Get Started Free</Link>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={cn(
+                        "block text-base font-medium transition-colors",
+                        item.href === '/europass-cv' ? "text-primary" : "text-foreground hover:text-primary"
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div className="pt-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={async () => {
+                        await signOut();
+                        navigate('/');
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       <div className="german-stripe" />
