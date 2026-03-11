@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, ExternalLink } from 'lucide-react';
 
 export default function StudentPayments() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -56,36 +56,36 @@ export default function StudentPayments() {
     }
 
     const paymentsArr = (row.service_payments || []) as any[];
-      const receivedSum = paymentsArr
-        .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
-        .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
+    const receivedSum = paymentsArr
+      .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+      .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
 
-      const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
-      const currency = row.target_currency || row.service_currency || 'INR';
-      const remaining = Math.max(0, targetTotal - receivedSum);
+    const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
+    const currency = row.target_currency || row.service_currency || 'INR';
+    const remaining = Math.max(0, targetTotal - receivedSum);
 
-      const paymentStatus =
-        remaining <= 0 ? 'received' :
-        receivedSum > 0 ? 'partial' :
-        'pending';
+    const paymentStatus =
+      remaining <= 0 ? 'received' :
+      receivedSum > 0 ? 'partial' :
+      'pending';
 
     await sendPaymentBillEmail({
-        serviceId: row.id,
-        userId: row.user_id,
-        studentName: studentInfo?.name || 'Student',
-        studentEmail: email,
-        studentPhone: 'N/A',
-        serviceType: row.service_type,
-        serviceName: (row.service_type || '').split('_').join(' '),
-        serviceDescription: 'Study abroad service',
-        serviceAmount: row.service_price || 0,
-        totalAmount: targetTotal,
-        amountReceived: receivedSum,
-        amountPending: remaining,
-        paymentStatus: paymentStatus as any,
-        currency,
-        includeAdmin: true,
-      });
+      serviceId: row.id,
+      userId: row.user_id,
+      studentName: studentInfo?.name || 'Student',
+      studentEmail: email,
+      studentPhone: 'N/A',
+      serviceType: row.service_type,
+      serviceName: (row.service_type || '').split('_').join(' '),
+      serviceDescription: 'Study abroad service',
+      serviceAmount: row.service_price || 0,
+      totalAmount: targetTotal,
+      amountReceived: receivedSum,
+      amountPending: remaining,
+      paymentStatus: paymentStatus as any,
+      currency,
+      includeAdmin: true,
+    });
 
     try {
       await supabase.from('notifications').insert({
@@ -117,7 +117,6 @@ export default function StudentPayments() {
     if (studentId) {
       fetchPayments();
       
-      // Set up real-time subscription
       const channel = supabase
         .channel('student-payments-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => {
@@ -167,7 +166,6 @@ export default function StudentPayments() {
         variant: "destructive",
       });
     } else {
-      // Get email for this student
       const email = await resolveEmail(studentId);
       const typedData = (data || []) as any[];
       const name = typedData[0]?.profiles?.full_name || 'Unknown Student';
@@ -188,151 +186,76 @@ export default function StudentPayments() {
   ) => {
     const payload = editState[requestId] || {};
     let error = null as any;
-    if (existingPaymentId) {
-      const res = await supabase
-        .from('service_payments' as any)
-        .update(payload)
-        .eq('id', existingPaymentId);
-      error = res.error;
-    } else {
-      const resolvedAmount = (payload.amount ?? defaultAmount);
-      if (resolvedAmount == null || Number.isNaN(Number(resolvedAmount))) {
-        toast({ title: 'Amount required', description: 'Please enter an amount before creating a payment.', variant: 'destructive' });
-        return;
+
+    // First handle payment update/insert if anything relevant changed
+    if (payload.amount !== undefined || payload.status !== undefined || payload.admin_note !== undefined) {
+      if (existingPaymentId) {
+        const updatePayload: any = {};
+        if (payload.amount !== undefined) updatePayload.amount = payload.amount;
+        if (payload.status !== undefined) updatePayload.status = payload.status;
+        if (payload.admin_note !== undefined) updatePayload.admin_note = payload.admin_note;
+
+        const res = await supabase
+          .from('service_payments' as any)
+          .update(updatePayload)
+          .eq('id', existingPaymentId);
+        error = res.error;
+      } else {
+        const resolvedAmount = (payload.amount ?? defaultAmount);
+        if (resolvedAmount == null || Number.isNaN(Number(resolvedAmount))) {
+          toast({ title: 'Amount required', description: 'Please enter an amount before creating a payment.', variant: 'destructive' });
+          return;
+        }
+        const insertPayload: any = {
+          service_id: requestId,
+          user_id: userId,
+          amount: Number(resolvedAmount),
+          status: payload.status || 'pending',
+          currency: defaultCurrency || 'INR',
+          proof_url: payload.proof_url || null,
+          admin_note: payload.admin_note || null,
+        };
+        const res = await supabase
+          .from('service_payments' as any)
+          .insert(insertPayload);
+        error = res.error;
       }
-      const insertPayload: any = {
-        service_id: requestId,
-        user_id: userId,
-        amount: Number(resolvedAmount),
-        status: payload.status || 'pending',
-        currency: defaultCurrency || 'INR',
-        proof_url: payload.proof_url || null,
-        admin_note: payload.admin_note || null,
-      };
-      const res = await supabase
-        .from('service_payments' as any)
-        .insert(insertPayload);
-      error = res.error;
     }
 
-    if (!error && (typeof payload.target_total_amount === 'number' || typeof payload.target_currency === 'string')) {
+    // Then handle target amount/currency update on service_requests
+    if (!error && (payload.target_total_amount !== undefined || payload.target_currency !== undefined)) {
       const updateFields: any = {};
-      if (typeof payload.target_total_amount === 'number') updateFields.target_total_amount = payload.target_total_amount;
-      if (typeof payload.target_currency === 'string') updateFields.target_currency = payload.target_currency;
-      if (Object.keys(updateFields).length > 0) {
-        const { error: totalErr } = await supabase
-          .from('service_requests' as any)
-          .update(updateFields)
-          .eq('id', requestId);
-        if (totalErr) {
-          toast({ title: 'Totals not saved', description: totalErr.message, variant: 'destructive' });
-        }
+      if (payload.target_total_amount !== undefined) updateFields.target_total_amount = payload.target_total_amount;
+      if (payload.target_currency !== undefined) updateFields.target_currency = payload.target_currency;
+      
+      const { error: totalErr } = await supabase
+        .from('service_requests' as any)
+        .update(updateFields)
+        .eq('id', requestId);
+      
+      if (totalErr) {
+        error = totalErr;
+        toast({ title: 'Totals not saved', description: totalErr.message, variant: 'destructive' });
       }
     }
 
     if (error) {
       toast({
-        title: "Error updating payment",
+        title: "Error updating",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Payment updated",
-        description: "Payment details updated successfully",
+        title: "Updated successfully",
+        description: "Details have been saved",
       });
       fetchPayments();
-
-      // Email notifications
-      try {
-        const userEmail = await resolveEmail(userId);
-        let currentAmount: number | null | undefined = undefined;
-        let currentCurrency: string | null | undefined = undefined;
-        let currentStatus: string | null | undefined = undefined;
-        if (existingPaymentId) {
-          try {
-            const { data: cur } = await supabase
-              .from('service_payments' as any)
-              .select('amount, currency, status')
-              .eq('id', existingPaymentId)
-              .single();
-            currentAmount = (cur as any)?.amount ?? undefined;
-            currentCurrency = (cur as any)?.currency ?? undefined;
-            currentStatus = (cur as any)?.status ?? undefined;
-          } catch {}
-        }
-
-        const statusText = (payload.status ?? currentStatus ?? 'pending') as string;
-        const resolvedAmount = (payload.amount ?? currentAmount ?? defaultAmount);
-        const resolvedCurrency = (currentCurrency ?? defaultCurrency ?? 'INR');
-        const amountText = resolvedAmount != null ? `${resolvedCurrency} ${Number(resolvedAmount).toLocaleString()}` : '—';
-
-        let receivedSum = 0;
-        try {
-          const { data: rows } = await supabase
-            .from('service_payments' as any)
-            .select('amount, status')
-            .eq('service_id', requestId);
-          receivedSum = (rows || [])
-            .filter((r: any) => (r.status || '').toLowerCase() === 'received')
-            .reduce((acc: number, r: any) => acc + (Number(r.amount) || 0), 0);
-        } catch {}
-        
-        let targetTotal: number | null = null;
-        let targetCurr: string = resolvedCurrency;
-        try {
-          const { data: parent } = await supabase
-            .from('service_requests' as any)
-            .select('target_total_amount, target_currency, service_price, service_currency')
-            .eq('id', requestId)
-            .single();
-          targetTotal = (parent as any)?.target_total_amount ?? (parent as any)?.service_price ?? null;
-          targetCurr = (parent as any)?.target_currency ?? (parent as any)?.service_currency ?? resolvedCurrency;
-        } catch {}
-        const remaining = targetTotal != null ? Math.max(0, Number(targetTotal) - Number(receivedSum)) : null;
-        const loginUrl = 'https://publicgermany.vercel.app/';
-        const safeName = studentName || 'Student';
-        const safeService = (serviceType || '').split('_').join(' ') || 'Service';
-        const adminNote = (payload.admin_note || '').toString();
-        const buttonHtml = `<a href="${loginUrl}" style="display:inline-block;padding:10px 16px;background:#D00000;color:#ffffff;text-decoration:none;border-radius:6px;">Open My Account</a>`;
-
-        if (userEmail) {
-          await sendEmail(
-            userEmail,
-            `Payment ${statusText} for ${safeService}`,
-            `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;font-size:14px;">
-               <p>Hi ${safeName},</p>
-               <p>Your payment for <strong>${safeService}</strong> has been <strong>${statusText}</strong>.</p>
-               <p>Amount this update: <strong>${amountText}</strong>.</p>
-               <p style="margin-top:8px;">Summary:</p>
-               <ul style="margin:4px 0 0 16px;padding:0;">
-                 ${targetTotal != null ? `<li>Total amount: <strong>${targetCurr} ${Number(targetTotal).toLocaleString()}</strong></li>` : ''}
-                 <li>Total received so far: <strong>${targetCurr} ${receivedSum.toLocaleString()}</strong></li>
-                 ${targetTotal != null ? `<li>Pending amount: <strong>${targetCurr} ${remaining!.toLocaleString()}</strong></li>` : ''}
-               </ul>
-               <p style="margin-top:12px;">You can download your detailed bill anytime from your account:</p>
-               <p><a href="${loginUrl}" style="color:#1D4ED8;text-decoration:underline;">Open Payments &amp; Download Bill</a></p>
-             </div>`
-          );
-        }
-
-        const nowText = new Date().toLocaleString();
-        await sendEmail(
-          'publicgermany@outlook.com',
-          `Admin notice: payment ${existingPaymentId ? 'updated' : 'created'} (${statusText})`,
-          `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
-             <p>A payment was <strong>${existingPaymentId ? 'updated' : 'created'}</strong>.</p>
-             <p><strong>Name:</strong> ${safeName}</p>
-             <p><strong>Service:</strong> ${safeService}</p>
-             <p><strong>Amount:</strong> ${amountText}</p>
-             <p><strong>Date:</strong> ${nowText}</p>
-             <hr style="margin:12px 0;border:none;border-top:1px solid #eee;"/>
-             <p style="color:#666"><strong>Request ID:</strong> ${requestId}<br/>
-             <strong>User ID:</strong> ${userId}<br/>
-             <strong>Status:</strong> ${statusText}</p>
-           </div>`
-        );
-      } catch {}
+      setEditState(prev => {
+        const newState = { ...prev };
+        delete newState[requestId];
+        return newState;
+      });
     }
   };
 
@@ -345,22 +268,17 @@ export default function StudentPayments() {
     }
   };
 
-  // Calculate totals using service-level target total and received amounts
   const studentTotals = payments.reduce(
     (acc, row) => {
       const paymentsArr = (row.service_payments || []) as any[];
-
       const receivedSum = paymentsArr
         .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
         .reduce((total: number, p: any) => total + (Number(p?.amount) || 0), 0);
-
       const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0) || 0;
       const remaining = Math.max(0, targetTotal - receivedSum);
-
       acc.total += targetTotal;
       acc.received += receivedSum;
       acc.pending += remaining;
-
       return acc;
     },
     { total: 0, received: 0, pending: 0 }
@@ -386,7 +304,6 @@ export default function StudentPayments() {
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{studentInfo?.email}</p>
         </div>
 
-        {/* Student Summary Cards - 2 column grid on mobile */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <Card className="shadow-sm">
             <CardContent className="p-3 sm:p-6">
@@ -429,114 +346,146 @@ export default function StudentPayments() {
                   <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
                     <tr>
                       <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[120px]">Service</th>
-                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[180px]">Details</th>
+                      <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[200px]">Details</th>
                       <th className="px-3 py-2 sm:px-4 sm:py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {payments.map((row) => {
                       const payment = (row.service_payments || [])[0];
+                      const receivedSum = (row.service_payments || [])
+                        .filter((p: any) => (p?.status || '').toLowerCase() === 'received')
+                        .reduce((acc: number, p: any) => acc + (Number(p?.amount) || 0), 0);
+                      const targetTotal = row.target_total_amount ?? row.service_price ?? 0;
+                      const remaining = Math.max(0, targetTotal - receivedSum);
+                      const curr = row.target_currency || row.service_currency || 'INR';
+
                       return (
-                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-3 py-2 sm:px-4 sm:py-3">
-                          <p className="font-semibold text-foreground line-clamp-1">{(row.service_type || '').split('_').join(' ')}</p>
-                          <p className="text-[10px] text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</p>
-                          {payment?.proof_url && (
-                            <a href={payment.proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[10px] flex items-center gap-0.5 mt-1">
-                              View Proof <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 sm:px-4 sm:py-3">
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-10">Recv:</span>
+                        <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-3 py-2 sm:px-4 sm:py-3">
+                            <p className="font-semibold text-foreground line-clamp-1">{(row.service_type || '').split('_').join(' ')}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</p>
+                            {payment?.proof_url && (
+                              <a href={payment.proof_url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[10px] flex items-center gap-0.5 mt-1">
+                                Proof <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground w-10">Recv:</span>
+                                <Input
+                                  type="number"
+                                  defaultValue={payment?.amount ?? row.service_price}
+                                  onChange={(e) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], amount: Number(e.target.value) }
+                                  }))}
+                                  className="h-7 w-20 text-[11px] px-1.5"
+                                />
+                                <span className="text-[10px] text-muted-foreground">{curr}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground w-10 text-primary font-medium">Total:</span>
+                                <Input
+                                  type="number"
+                                  defaultValue={targetTotal}
+                                  onChange={(e) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], target_total_amount: Number(e.target.value) }
+                                  }))}
+                                  className="h-7 w-20 text-[11px] px-1.5 border-primary/50"
+                                />
+                                <Select
+                                  defaultValue={curr}
+                                  onValueChange={(v) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], target_currency: v }
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-7 w-16 text-[10px] px-1.5 border-none bg-transparent">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="INR">INR</SelectItem>
+                                    <SelectItem value="EUR">EUR</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                               <Input
-                                type="number"
-                                defaultValue={payment?.amount ?? row.service_price}
+                                placeholder="Admin note..."
+                                defaultValue={payment?.admin_note || ''}
                                 onChange={(e) => setEditState((s) => ({
                                   ...s,
-                                  [row.id]: { ...s[row.id], amount: Number(e.target.value) }
+                                  [row.id]: { ...s[row.id], admin_note: e.target.value }
                                 }))}
-                                className="h-7 w-20 text-[11px] px-1.5"
+                                className="h-7 text-[11px] px-1.5"
                               />
-                              <span className="text-[10px] text-muted-foreground">{row.target_currency || row.service_currency || 'INR'}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground w-10">Status:</span>
+                                <Select
+                                  defaultValue={payment?.status || 'pending'}
+                                  onValueChange={(v) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], status: v }
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-7 w-28 text-[11px] px-1.5">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="received">Received</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="text-[9px] text-muted-foreground flex gap-2 pt-1 border-t border-border/40">
+                                <span className={remaining > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
+                                  Due: {curr}{remaining.toLocaleString()}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-10">Status:</span>
-                              <Select
-                                defaultValue={payment?.status || 'pending'}
-                                onValueChange={(v) => setEditState((s) => ({
-                                  ...s,
-                                  [row.id]: { ...s[row.id], status: v }
-                                }))}
+                          </td>
+                          <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                            <div className="flex flex-col items-end gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-7 px-3 text-[10px] w-20"
+                                onClick={() => savePayment(
+                                  row.id,
+                                  row.user_id,
+                                  payment?.id,
+                                  row.service_price,
+                                  row.service_currency,
+                                  studentInfo?.name || null,
+                                  row.service_type || null
+                                )}
                               >
-                                <SelectTrigger className="h-7 w-28 text-[11px] px-1.5">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                  <SelectItem value="received">Received</SelectItem>
-                                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                                </SelectContent>
-                              </Select>
+                                {payment ? 'Save' : 'Create'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-3 text-[10px] w-20"
+                                disabled={sendingBillId === row.id}
+                                onClick={async () => {
+                                  setSendingBillId(row.id);
+                                  try {
+                                    await savePayment(row.id, row.user_id, payment?.id, row.service_price, row.service_currency, studentInfo?.name || null, row.service_type);
+                                    await sendPaymentBill(row, payment);
+                                  } finally {
+                                    setSendingBillId(null);
+                                  }
+                                }}
+                              >
+                                {sendingBillId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Bill'}
+                              </Button>
                             </div>
-                            {(() => {
-                              const paymentsArr = (row.service_payments || []) as any[];
-                              const receivedSum = paymentsArr
-                                .filter((p) => (p?.status || '').toLowerCase() === 'received')
-                                .reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
-                              const targetTotal = Number(row.target_total_amount ?? row.service_price ?? 0);
-                              const curr = row.target_currency || row.service_currency || '';
-                              const remaining = Math.max(0, targetTotal - receivedSum);
-                              return (
-                                <div className="text-[9px] text-muted-foreground flex gap-2 pt-1 border-t border-border/40">
-                                  <span>Total: {curr}{targetTotal.toLocaleString()}</span>
-                                  <span className={remaining > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
-                                    Due: {curr}{remaining.toLocaleString()}
-                                  </span>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
-                          <div className="flex flex-col items-end gap-1.5">
-                            <Button
-                              size="sm"
-                              className="h-7 px-3 text-[10px] w-20"
-                              onClick={() => savePayment(
-                                row.id,
-                                row.user_id,
-                                payment?.id,
-                                row.service_price,
-                                row.service_currency,
-                                studentInfo?.name || null,
-                                row.service_type || null
-                              )}
-                            >
-                              {payment ? 'Save' : 'Create'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-3 text-[10px] w-20"
-                              disabled={sendingBillId === row.id}
-                              onClick={async () => {
-                                setSendingBillId(row.id);
-                                try {
-                                  await savePayment(row.id, row.user_id, payment?.id, row.service_price, row.service_currency, studentInfo?.name || null, row.service_type);
-                                  await sendPaymentBill(row, payment);
-                                } finally {
-                                  setSendingBillId(null);
-                                }
-                              }}
-                            >
-                              {sendingBillId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Bill'}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>

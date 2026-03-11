@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw, ExternalLink } from 'lucide-react';
 
 export default function Payments() {
   const [payments, setPayments] = useState<any[]>([]); // now holds service_requests with joined profiles and service_payments
@@ -502,6 +502,7 @@ export default function Payments() {
                           <td className="px-2 py-2 sm:px-4 sm:py-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-1">
+                                <span className="text-[9px] text-muted-foreground w-8">Recv:</span>
                                 <Input
                                   type="number"
                                   defaultValue={payment?.amount ?? row.service_price}
@@ -512,9 +513,46 @@ export default function Payments() {
                                   className="h-6 w-14 sm:w-20 text-[10px] px-1"
                                 />
                                 <span className="text-[9px] text-muted-foreground uppercase">
-                                  {row.target_currency || row.service_currency}
+                                  {payment?.currency || row.target_currency || row.service_currency}
                                 </span>
                               </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[9px] text-muted-foreground w-8">Total:</span>
+                                <Input
+                                  type="number"
+                                  defaultValue={row.target_total_amount ?? row.service_price}
+                                  onChange={(e) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], target_total_amount: Number(e.target.value) }
+                                  }))}
+                                  className="h-6 w-14 sm:w-20 text-[10px] px-1 font-semibold"
+                                />
+                                <Select
+                                  defaultValue={row.target_currency || row.service_currency || 'INR'}
+                                  onValueChange={(v) => setEditState((s) => ({
+                                    ...s,
+                                    [row.id]: { ...s[row.id], target_currency: v }
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-6 w-12 text-[9px] px-1 border-none bg-transparent">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="INR">INR</SelectItem>
+                                    <SelectItem value="EUR">EUR</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Input
+                                placeholder="Admin note..."
+                                defaultValue={payment?.admin_note || ''}
+                                onChange={(e) => setEditState((s) => ({
+                                  ...s,
+                                  [row.id]: { ...s[row.id], admin_note: e.target.value }
+                                }))}
+                                className="h-6 text-[10px] px-1"
+                              />
                               <Select
                                 defaultValue={payment?.status || 'pending'}
                                 onValueChange={(v) => setEditState((s) => ({
