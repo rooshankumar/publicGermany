@@ -150,13 +150,32 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
     }
   };
 
+  const getStatusStyles = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'offer':
+        return 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800/50';
+      case 'applied':
+      case 'submitted':
+        return 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50';
+      case 'interview':
+        return 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50';
+      case 'rejected':
+        return 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50';
+      case 'draft':
+        return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
+      default:
+        return '';
+    }
+  };
+
   const isSubmitted = ['submitted', 'Applied'].includes(status);
+  const isOffer = status.toLowerCase() === 'offer';
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className={`border rounded-lg overflow-hidden transition-all duration-200 ${isOffer ? 'border-orange-300 shadow-sm ring-1 ring-orange-200/50' : 'border-border'}`}>
       {/* Header - Always visible */}
       <div 
-        className="p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+        className={`p-3 cursor-pointer transition-colors ${isOffer ? 'bg-orange-50/50 hover:bg-orange-100/50 dark:bg-orange-950/10' : 'hover:bg-muted/30'}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-4">
@@ -165,14 +184,19 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
               {isSubmitted && (
                 <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
               )}
-              <h4 className="font-semibold text-sm sm:text-base truncate">{application.university_name}</h4>
+              {isOffer && (
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 flex-shrink-0 animate-bounce-slow" />
+              )}
+              <h4 className={`font-semibold text-sm sm:text-base truncate ${isOffer ? 'text-orange-900 dark:text-orange-100' : 'text-foreground'}`}>{application.university_name}</h4>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">{application.program_name}</p>
+            <p className={`text-xs sm:text-sm truncate ${isOffer ? 'text-orange-700/80 dark:text-orange-300/80' : 'text-muted-foreground'}`}>{application.program_name}</p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[10px] sm:text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {new Date(application.created_at).toLocaleDateString()}
-              </span>
+              {application.application_start_date && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Opens: {new Date(application.application_start_date).toLocaleDateString()}
+                </span>
+              )}
               {application.application_end_date && (
                 <span className="flex items-center gap-1 text-orange-600 font-medium">
                   <Calendar className="h-3 w-3" />
@@ -189,7 +213,10 @@ export default function ApplicationCredentialsCard({ application, onUpdate }: Ap
                   Creds
                 </Badge>
               )}
-              <Badge variant={getStatusVariant(application.status)} className="text-[10px] px-1.5 h-5 capitalize">
+              <Badge 
+                variant={getStatusVariant(application.status)} 
+                className={`text-[10px] px-1.5 h-5 capitalize border ${getStatusStyles(application.status)}`}
+              >
                 {application.status}
               </Badge>
             </div>

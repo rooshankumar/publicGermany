@@ -710,6 +710,7 @@ export default function StudentProfile() {
                       <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
                         <tr>
                           <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[120px]">University</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Starts</th>
                           <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Deadline</th>
                           <th className="px-3 py-2 sm:px-4 sm:py-3">Status</th>
                         </tr>
@@ -717,21 +718,30 @@ export default function StudentProfile() {
                       <tbody className="divide-y">
                         {sortApplications(student.applications).map((app: any) => {
                           const isSubmitted = ['submitted', 'Applied'].includes(app.status);
+                          const isOffer = app.status?.toLowerCase() === 'offer';
                           return (
-                            <tr key={app.id} className="hover:bg-muted/30 transition-colors">
+                            <tr key={app.id} className={`hover:bg-muted/30 transition-colors ${isOffer ? 'bg-orange-50/30' : ''}`}>
                               <td className="px-3 py-2 sm:px-4 sm:py-3">
-                                <p className="font-semibold text-foreground line-clamp-1">{app.university_name}</p>
+                                <p className={`font-semibold text-foreground line-clamp-1 ${isOffer ? 'text-orange-900' : ''}`}>{app.university_name}</p>
                                 <p className="text-[10px] text-muted-foreground line-clamp-1">{app.program_name}</p>
                               </td>
                               <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
-                                <p className="font-medium text-foreground">
+                                <p className="text-foreground">
+                                  {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+                                </p>
+                              </td>
+                              <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
+                                <p className={`font-medium ${isOffer ? 'text-orange-700' : 'text-foreground'}`}>
                                   {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
                                 </p>
                               </td>
                               <td className="px-3 py-2 sm:px-4 sm:py-3">
                                 <Badge 
-                                  variant={isSubmitted ? 'default' : 'outline'} 
-                                  className={`text-[9px] px-1.5 py-0 capitalize ${isSubmitted ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : ''}`}
+                                  variant={isSubmitted ? 'default' : isOffer ? 'default' : 'outline'} 
+                                  className={`text-[9px] px-1.5 py-0 capitalize ${
+                                    isSubmitted ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : 
+                                    isOffer ? 'bg-orange-100 text-orange-700 hover:bg-orange-100 border-none' : ''
+                                  }`}
                                 >
                                   {app.status}
                                 </Badge>
@@ -1042,8 +1052,11 @@ export default function StudentProfile() {
                           <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
                             {doc ? (
                               <div className="flex items-center justify-end gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => viewDocument(doc as any)} className="h-7 w-7 p-0">
+                                <Button size="sm" variant="ghost" onClick={() => viewDocument(doc as any)} className="h-7 w-7 p-0" title="View">
                                   <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => downloadDocument(doc as any)} className="h-7 w-7 p-0" title="Download">
+                                  <Download className="h-3.5 w-3.5" />
                                 </Button>
                                 <Select value={(doc as any).status || 'pending'} onValueChange={(v: any) => updateDocumentStatus((doc as any).id, v)}>
                                   <SelectTrigger className="w-[30px] h-7 p-0 border-none bg-transparent focus:ring-0">
@@ -1117,8 +1130,18 @@ export default function StudentProfile() {
                                   if (data?.signedUrl) window.open(data.signedUrl, '_blank');
                                 }}
                                 className="h-7 w-7 p-0"
+                                title="View"
                               >
                                 <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => downloadDocument(doc)}
+                                className="h-7 w-7 p-0"
+                                title="Download"
+                              >
+                                <Download className="h-3.5 w-3.5" />
                               </Button>
                               <Select 
                                 value={doc.status || 'pending'} 
