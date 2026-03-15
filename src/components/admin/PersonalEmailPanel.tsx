@@ -138,7 +138,7 @@ const PersonalEmailPanel = ({ studentId, studentName, studentEmail }: PersonalEm
               onClick={() => setContent(prev => prev + ' {name}')}
               className="text-[10px] bg-primary/10 text-primary hover:bg-primary/20 px-1.5 py-0.5 rounded transition-colors"
             >
-              Insert {name}
+              Insert {"{name}"}
             </button>
           </div>
         </div>
