@@ -4,4 +4,5 @@
     <string name="title_activity_main">publicGermany</string>
     <string name="package_name">com.publicgermany.app</string>
     <string name="custom_url_scheme">com.publicgermany.app</string>
+    <string name="google_client_id">111666993175-9e66nmdnddrt8g739p189689nlt7805i.apps.googleusercontent.com</string>
 </resources>

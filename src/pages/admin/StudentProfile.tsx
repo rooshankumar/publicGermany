@@ -36,6 +36,7 @@ import { DOCUMENTS } from '@/components/APSRequiredDocuments';
 import { sendEmail } from '@/lib/sendEmail';
 import StudentNotes from '@/components/StudentNotes';
 import ApplicationCredentialsCard from '@/components/admin/ApplicationCredentialsCard';
+import PersonalEmailPanel from '@/components/admin/PersonalEmailPanel';
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { Upload, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -76,24 +77,30 @@ export default function StudentProfile() {
 
   const fetchStudentProfile = async () => {
     if (!studentId) return null;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        applications(*),
-        service_requests(*)
-      `)
-      .eq('user_id', studentId)
-      .single();
-    if (error) throw error;
+    
+    // Fetch everything in a single parallel call
+    const [profileRes, docsRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select(`
+          *,
+          applications(*),
+          service_requests(*)
+        `)
+        .eq('user_id', studentId)
+        .single(),
+      supabase
+        .from('documents' as any)
+        .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,module,status,reviewed_by,reviewed_at,admin_notes')
+        .eq('user_id', studentId)
+    ]);
 
-    // Fetch all documents (includes both APS required and additional docs)
-    const { data: docsData } = await supabase
-      .from('documents' as any)
-      .select('id,user_id,category,file_name,file_url,created_at,updated_at,upload_path,module,status,reviewed_by,reviewed_at,admin_notes')
-      .eq('user_id', studentId);
+    if (profileRes.error) throw profileRes.error;
 
-    return { ...(data as any), documents: docsData || [] } as StudentProfile;
+    return { 
+      ...(profileRes.data as any), 
+      documents: docsRes.data || [] 
+    } as StudentProfile;
   };
 
   // Resolve the student's email using the Postgres RPC at send time (no CORS)
@@ -320,9 +327,12 @@ export default function StudentProfile() {
   useEffect(() => {
     if (studentQuery.data) {
       setStudent(studentQuery.data);
-      resolveEmail();
-      fetchPaymentSummary();
-      fetchContracts();
+      // Run these in parallel after profile is loaded
+      Promise.all([
+        resolveEmail(),
+        fetchPaymentSummary(),
+        fetchContracts()
+      ]);
       setLoading(false);
     }
     if (studentQuery.isError) {
@@ -675,6 +685,10 @@ export default function StudentProfile() {
               <TabsTrigger value="profile" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
                 <ClipboardList className="h-3.5 w-3.5" />
                 Profile
+              </TabsTrigger>
+              <TabsTrigger value="email" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-muted/50">
+                <Mail className="h-3.5 w-3.5" />
+                Email
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1170,6 +1184,15 @@ export default function StudentProfile() {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Email Tab - Personal Email Panel */}
+          <TabsContent value="email" className="mt-2">
+            <PersonalEmailPanel 
+              studentId={studentId || ''} 
+              studentName={student.full_name || 'Student'} 
+              studentEmail={email} 
+            />
           </TabsContent>
 
           {/* Services Tab (Excel-style table) */}

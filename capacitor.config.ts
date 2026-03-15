@@ -10,8 +10,11 @@ const config: CapacitorConfig = {
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],
-      serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      serverClientId: '111666993175-9e66nmdnddrt8g739p189689nlt7805i.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
+    },
+    App: {
+      redirectUrl: 'com.publicgermany.app://'
     },
     SplashScreen: {
       launchShowDuration: 2000,

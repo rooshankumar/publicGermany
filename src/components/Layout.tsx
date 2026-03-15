@@ -115,14 +115,66 @@ const Layout = ({ children }: LayoutProps) => {
         .select('id, title, created_at, seen, type, ref_id')
         .eq('user_id', profile.user_id)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(20); // Reduced from 100 to 20 for faster loading
       if (!error) {
         setNotifications((data || []).map((n: any) => ({ id: n.id, title: n.title, time: new Date(n.created_at).toLocaleString(), type: n.type, ref_id: n.ref_id })));
         setUnseen((data || []).filter((n: any) => !n.seen).length);
       }
     };
 
-    fetchNotifs();
+    const fetchAdminCounts = async () => {
+      if ((profile as any)?.role !== 'admin') return;
+      try {
+        const [reviewsRes, requestsRes] = await Promise.all([
+          (supabase as any)
+            .from('reviews')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_approved', false),
+          (supabase as any)
+            .from('service_requests')
+            .select('*', { count: 'exact', head: true })
+            .in('status', ['new', 'in_review', 'payment_pending', 'in_progress'])
+        ]);
+        setPendingReviews(reviewsRes.count || 0);
+        setOpenRequests(requestsRes.count || 0);
+      } catch (e) {
+        // ignore silently
+      }
+    };
+
+    const fetchStudentCounts = async () => {
+      if ((profile as any)?.role !== 'student') return;
+      try {
+        const [docsRes, appsRes, svcRes] = await Promise.all([
+          (supabase as any)
+            .from('documents')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', profile.user_id)
+            .in('status', ['pending', 'rejected']),
+          (supabase as any)
+            .from('applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', profile.user_id)
+            .in('status', ['submitted', 'interview']),
+          (supabase as any)
+            .from('service_requests')
+            .select('updated_at, status')
+            .eq('user_id', profile.user_id)
+            .eq('status', 'completed')
+            .gt('updated_at', new Date(seenSvcsAt || 0).toISOString())
+        ]);
+        
+        setDocCount(docsRes.count || 0);
+        setAppCount(appsRes.count || 0);
+        setSvcCount(svcRes.data?.length || 0);
+      } catch {}
+    };
+
+    // Initial fetch of all counts in parallel
+    Promise.all([
+      fetchNotifs(),
+      isAdmin ? fetchAdminCounts() : fetchStudentCounts()
+    ]);
 
     const channel = supabase
       .channel(`notifs-${profile.user_id}`)
@@ -130,26 +182,6 @@ const Layout = ({ children }: LayoutProps) => {
         fetchNotifs();
       })
       .subscribe();
-
-    // Admin-only counts
-    const fetchAdminCounts = async () => {
-      if ((profile as any)?.role !== 'admin') return;
-      try {
-        const { count: reviewsCount } = await (supabase as any)
-          .from('reviews')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_approved', false);
-        setPendingReviews(reviewsCount || 0);
-
-        const { count: requestsCount } = await (supabase as any)
-          .from('service_requests')
-          .select('*', { count: 'exact', head: true })
-          .in('status', ['new', 'in_review', 'payment_pending', 'in_progress']);
-        setOpenRequests(requestsCount || 0);
-      } catch (e) {
-        // ignore silently
-      }
-    };
 
     const reviewsChannel = supabase
       .channel('reviews-counts')
@@ -163,73 +195,6 @@ const Layout = ({ children }: LayoutProps) => {
       })
       .subscribe();
 
-    // Student-only counts
-    const fetchStudentCounts = async () => {
-      if ((profile as any)?.role !== 'student') return;
-      try {
-        // Documents: pending or rejected
-        const { count: dCount } = await (supabase as any)
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.user_id)
-          .in('status', ['pending', 'rejected']);
-        setDocCount(dCount || 0);
-
-        // Applications: submitted or interview
-        const { count: aCount } = await (supabase as any)
-          .from('applications')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.user_id)
-          .in('status', ['submitted', 'interview']);
-        setAppCount(aCount || 0);
-
-        // Services: Show badge for completed requests updated after last view
-        const { data: svcData } = await (supabase as any)
-          .from('service_requests')
-          .select('updated_at, status')
-          .eq('user_id', profile.user_id)
-          .eq('status', 'completed')
-          .gt('updated_at', new Date(seenSvcsAt || 0).toISOString());
-        setSvcCount(svcData?.length || 0);
-      } catch {}
-    };
-
-    const docsCh = supabase
-      .channel(`docs-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
-        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
-        if (ts > seenDocsAt) {
-          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:docs`); } catch {}
-          setSuppressDocs(false);
-          fetchStudentCounts();
-        }
-      })
-      .subscribe();
-    const appsCh = supabase
-      .channel(`apps-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
-        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
-        if (ts > seenAppsAt) {
-          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:apps`); } catch {}
-          setSuppressApps(false);
-          fetchStudentCounts();
-        }
-      })
-      .subscribe();
-    const svcCh = supabase
-      .channel(`svc-count-${profile.user_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
-        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
-        if (ts > seenSvcsAt) {
-          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:svcs`); } catch {}
-          setSuppressSvcs(false);
-          fetchStudentCounts();
-        }
-      })
-      .subscribe();
-
-    fetchStudentCounts();
-
     const requestsChannel = supabase
       .channel('service-requests-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, (payload: any) => {
@@ -242,7 +207,41 @@ const Layout = ({ children }: LayoutProps) => {
       })
       .subscribe();
 
-    fetchAdminCounts();
+    const docsCh = supabase
+      .channel(`docs-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenDocsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:docs`); } catch {}
+          setSuppressDocs(false);
+          fetchStudentCounts();
+        }
+      })
+      .subscribe();
+
+    const appsCh = supabase
+      .channel(`apps-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenAppsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:apps`); } catch {}
+          setSuppressApps(false);
+          fetchStudentCounts();
+        }
+      })
+      .subscribe();
+
+    const svcCh = supabase
+      .channel(`svc-count-${profile.user_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${profile.user_id}` }, (payload: any) => {
+        const ts = Date.parse(payload?.commit_timestamp || '') || Date.now();
+        if (ts > seenSvcsAt) {
+          try { localStorage.removeItem(`badge_suppress:${profile.user_id}:svcs`); } catch {}
+          setSuppressSvcs(false);
+          fetchStudentCounts();
+        }
+      })
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

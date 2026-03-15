@@ -83,7 +83,12 @@ export default function Students() {
       const { data, error } = await supabase
         .from('profiles')
         .select(`
-          *,
+          user_id,
+          full_name,
+          created_at,
+          aps_pathway,
+          german_level,
+          role,
           applications(id, status, university_name),
           service_requests(id, status, service_type)
         `)
@@ -92,14 +97,17 @@ export default function Students() {
 
       if (error) throw error;
 
-      // Fetch all documents in bulk by user_id (includes both APS required and additional docs)
+      // Fetch all documents in bulk by user_id
       const userIds = (data || []).map((s: any) => s.user_id).filter(Boolean);
       let docsByUser: Record<string, any[]> = {};
+      
       if (userIds.length > 0) {
+        // Fetch only necessary columns for documents
         const { data: docsData } = await supabase
           .from('documents' as any)
-          .select('id,user_id,category,file_name,file_url,upload_path,module,status,created_at')
+          .select('id,user_id,category,file_name,upload_path,module,status')
           .in('user_id', userIds);
+        
         (docsData || []).forEach((d: any) => {
           if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
           docsByUser[d.user_id].push(d);

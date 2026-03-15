@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sendEmail } from '@/lib/sendEmail';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export interface Document {
   id: string;
@@ -253,28 +255,59 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Web OAuth flow for browser with account selection prompt
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account', // Force Google account selection
+      if (Capacitor.isNativePlatform()) {
+        console.log('Native platform detected, starting GoogleAuth.signIn()');
+        let googleUser;
+        try {
+          googleUser = await GoogleAuth.signIn();
+          console.log('GoogleAuth.signIn() success', googleUser);
+        } catch (signInError: any) {
+          console.error('GoogleAuth.signIn() failed', signInError);
+          throw new Error(`Native Google Sign-In failed: ${signInError.message || JSON.stringify(signInError)}`);
+        }
+
+        if (!googleUser?.authentication?.idToken) {
+          console.error('No ID token received from Google', googleUser);
+          throw new Error('No ID token received from Google');
+        }
+
+        console.log('Exchanging ID token with Supabase');
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: googleUser.authentication.idToken,
+        });
+
+        if (error) {
+          console.error('Supabase signInWithIdToken failed', error);
+          throw error;
+        }
+
+        console.log('Supabase session created successfully');
+        return { error: null };
+      } else {
+        // Web OAuth flow for browser with account selection prompt
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'select_account', // Force Google account selection
+            },
           },
-        },
-      });
-      
-      if (error) {
-        setLoading(false);
-        return { error: error.message };
+        });
+        
+        if (error) {
+          setLoading(false);
+          return { error: error.message };
+        }
+        
+        return { error: null };
       }
-      
-      // Don't set loading to false here - auth state change will handle it
-      return { error: null };
     } catch (error: any) {
+      console.error('Critical error in signInWithGoogle:', error);
       setLoading(false);
-      return { error: error.message };
+      return { error: error.message || 'An unexpected error occurred during Google Sign-In' };
     }
   };
 

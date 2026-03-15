@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.publicgermany.app"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = "com.publicgermany.app"
+    compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.publicgermany.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -13,25 +13,15 @@ android {
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
-        }
-    }
-    signingConfigs {
-        release {
-            storeFile file("D:/Roshan/my-germany-path/publicgermany.keystore")
-            storePassword "@Riddle123"
-            keyAlias "publicgermany"
-            keyPassword "@Riddle123"
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    setProperty("archivesBaseName", "publicgermany")
 }
 
 repositories {

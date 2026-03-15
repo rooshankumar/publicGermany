@@ -675,7 +675,7 @@ function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
   );
 }
 
-function Footer() {
+function Footer({ studentCount }: { studentCount: number | null }) {
   return (
     <footer className="bg-card border-t py-12">
       <div className="max-w-6xl mx-auto px-6">
@@ -694,7 +694,7 @@ function Footer() {
             <div className="flex items-center gap-2">
               <Badge className="trust-badge">
                 <Shield className="w-3 h-3" />
-                Trusted by 50+ Students
+                Trusted by {studentCount ? `${studentCount}+` : '50+'} Students
               </Badge>
             </div>
           </div>
@@ -795,9 +795,9 @@ const Index = () => {
         <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading FAQs…</div>}>
           <LandingFAQ />
         </React.Suspense>
-        <CTASection onGetStarted={handleGetStarted} />
+        <CTASection onGetStarted={() => navigate('/auth')} />
       </main>
-      <Footer />
+      <Footer studentCount={studentCount || null} />
     </div>
   );
 };

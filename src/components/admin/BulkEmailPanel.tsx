@@ -47,24 +47,32 @@ const BulkEmailPanel = () => {
 
         if (error) throw error;
 
-        // Fetch emails for all users
-        const usersWithEmails: UserProfile[] = [];
-        for (const profile of profiles || []) {
+        // Fetch emails for all users in parallel to be faster
+        const usersWithEmails = await Promise.all((profiles || []).map(async (profile) => {
           try {
             const { data, error: emailError } = await supabase.functions.invoke('get-user-email', {
               body: { user_id: profile.user_id }
             });
             if (!emailError && data?.email) {
-              usersWithEmails.push({
+              return {
                 ...profile,
                 email: data.email
-              });
+              };
             }
           } catch (e) {
-            console.error('Error fetching email:', e);
+            console.error('Error fetching email for user:', profile.user_id, e);
           }
+          return null;
+        }));
+
+        const filteredUsers = usersWithEmails.filter((u): u is UserProfile => u !== null);
+        setUsers(filteredUsers);
+        
+        // If there's only one user or we're in "send to all" mode, 
+        // ensure we have the emails ready
+        if (filteredUsers.length > 0) {
+          console.log(`Loaded ${filteredUsers.length} users with emails`);
         }
-        setUsers(usersWithEmails);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {

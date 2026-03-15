@@ -66,39 +66,48 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   const { user, loading, profile } = useAuth();
 
-  // Preload most-used routes after auth state is known to avoid cold-start delays
+      // Preload most-used routes after auth state is known to avoid cold-start delays
   useEffect(() => {
     if (loading) return;
-    // Public routes
-    import('./pages/Index');
-    import('./pages/Contact');
-    import('./pages/Help');
+    
+    const preloadPublic = () => {
+      import('./pages/Index');
+      import('./pages/Contact');
+      import('./pages/Help');
+    };
 
-    if (user) {
-      // Student side preloads
-      if (profile?.role !== 'admin') {
-        import('./pages/Dashboard');
-        import('./pages/Applications');
-        import('./pages/ServicesNew');
-        import('./pages/Resources');
-        import('./pages/Documents');
-        import('./pages/Reviews');
-        import('./pages/Profile');
-        import('./pages/Notifications');
-      }
-      // Admin side preloads
-      if (profile?.role === 'admin') {
-        import('./pages/admin/AdminDashboard');
-        import('./pages/admin/RequestStudents');
-        import('./pages/admin/PaymentStudents');
-        import('./pages/admin/StudentsList');
-        import('./pages/admin/StudentProfile');
-        import('./pages/admin/Exports');
-        import('./pages/admin/Universities');
-        import('./pages/admin/Reviews');
-        import('./pages/admin/Resources');
-        import('./pages/admin/Blog');
-      }
+    const preloadStudent = () => {
+      import('./pages/Dashboard');
+      import('./pages/Applications');
+      import('./pages/ServicesNew');
+      import('./pages/Documents');
+      import('./pages/Profile');
+    };
+
+    const preloadAdmin = () => {
+      import('./pages/admin/AdminDashboard');
+      import('./pages/admin/StudentsList');
+      import('./pages/admin/StudentProfile');
+      import('./pages/admin/RequestStudents');
+    };
+
+    // Use requestIdleCallback to preload without blocking the main thread
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => {
+        preloadPublic();
+        if (user) {
+          if (profile?.role === 'admin') preloadAdmin();
+          else preloadStudent();
+        }
+      });
+    } else {
+      setTimeout(() => {
+        preloadPublic();
+        if (user) {
+          if (profile?.role === 'admin') preloadAdmin();
+          else preloadStudent();
+        }
+      }, 2000);
     }
   }, [loading, user, profile?.role]);
 

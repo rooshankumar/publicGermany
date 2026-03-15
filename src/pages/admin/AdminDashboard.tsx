@@ -107,7 +107,7 @@ const AdminDashboard = () => {
         supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'received'),
         supabase.from('service_payments' as any).select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(5),
-        supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(10),
+        supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(5),
         supabase.from('documents' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('id, full_name, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
       ]);

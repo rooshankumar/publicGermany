@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import FullScreenLoader from '@/components/FullScreenLoader';
@@ -22,6 +22,19 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Live student count query
+  const { data: studentCount } = useQuery({
+    queryKey: ['student-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'student');
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,7 +450,7 @@ const Auth = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Trusted by <span className="font-semibold text-primary">50+</span> students worldwide
+                Trusted by <span className="font-semibold text-primary">{studentCount ? `${studentCount}+` : '50+'}</span> students worldwide
               </p>
             </div>
             <div className="mt-4 text-center text-xs text-muted-foreground">
