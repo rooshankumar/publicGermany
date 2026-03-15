@@ -28,8 +28,10 @@ const PersonalEmailPanel = ({ studentId, studentName, studentEmail }: PersonalEm
   const [signOffOption, setSignOffOption] = useState<'admin' | 'team' | 'none'>('admin');
 
   const generateEmailHTML = (emailContent: string) => {
+    const firstName = studentName.split(' ')[0];
     return wrapInEmailTemplate(emailContent, {
       skipGreeting,
+      customGreeting: `Hello ${firstName},`,
       signOff: signOffOption
     });
   };
@@ -58,7 +60,10 @@ const PersonalEmailPanel = ({ studentId, studentName, studentEmail }: PersonalEm
     setSending(true);
 
     try {
-      const htmlContent = generateEmailHTML(content);
+      // Replace {name} placeholder with actual student name
+      const processedContent = content.replace(/{name}/g, studentName);
+      
+      const htmlContent = generateEmailHTML(processedContent);
       await sendEmail(studentEmail, subject, htmlContent);
 
       toast({
@@ -124,9 +129,18 @@ const PersonalEmailPanel = ({ studentId, studentName, studentEmail }: PersonalEm
             disabled={sending}
             className="min-h-[200px] resize-y text-sm"
           />
-          <p className="text-xs text-muted-foreground">
-            Each new line becomes a paragraph.
-          </p>
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">
+              Each new line becomes a paragraph.
+            </p>
+            <button 
+              type="button"
+              onClick={() => setContent(prev => prev + ' {name}')}
+              className="text-[10px] bg-primary/10 text-primary hover:bg-primary/20 px-1.5 py-0.5 rounded transition-colors"
+            >
+              Insert {name}
+            </button>
+          </div>
         </div>
 
         {/* Email Options */}
