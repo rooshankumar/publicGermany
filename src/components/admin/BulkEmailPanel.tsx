@@ -42,8 +42,8 @@ const BulkEmailPanel = () => {
       try {
         const { data: profiles, error } = await supabase
           .from('profiles')
-          .select('user_id, full_name')
-          .order('full_name');
+          .select('user_id, full_name, created_at')
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
 
