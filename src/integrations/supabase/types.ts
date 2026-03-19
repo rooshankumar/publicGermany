@@ -543,6 +543,74 @@ export type Database = {
           },
         ]
       }
+      german_course_access: {
+        Row: {
+          created_at: string
+          has_access: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          has_access?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          has_access?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "german_course_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          }
+        ]
+      }
+      german_course_videos: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_id: string | null
+          video_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_id?: string | null
+          video_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_id?: string | null
+          video_url?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       emails_log: {
         Row: {
           created_at: string

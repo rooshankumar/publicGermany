@@ -38,6 +38,8 @@ const AdminResources = lazy(() => import("./pages/admin/Resources"));
 const AdminContracts = lazy(() => import("./pages/admin/Contracts"));
 const AdminBlog = lazy(() => import("./pages/admin/Blog"));
 const AdminContractHistory = lazy(() => import("./pages/admin/ContractHistory"));
+const GermanCourseAdmin = lazy(() => import("./pages/admin/GermanCourse"));
+const GermanCourse = lazy(() => import("./pages/GermanCourse"));
 const StudentPaymentsPage = lazy(() => import("./pages/StudentPayments"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -242,6 +244,11 @@ const AppRoutes = () => {
             <AdminBlog />
           </ProtectedRoute>
         } />
+        <Route path="/admin/german-course" element={
+          <ProtectedRoute requiredRole="admin">
+            <GermanCourseAdmin />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/contracts" element={
           <ProtectedRoute requiredRole="admin">
             <AdminContracts />
@@ -255,6 +262,11 @@ const AppRoutes = () => {
         <Route path="/documents" element={
           <ProtectedRoute disallowRole="admin">
             <Documents />
+          </ProtectedRoute>
+        } />
+        <Route path="/german-course" element={
+          <ProtectedRoute disallowRole="admin">
+            <GermanCourse />
           </ProtectedRoute>
         } />
         <Route path="/payments" element={

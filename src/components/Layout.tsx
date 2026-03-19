@@ -16,7 +16,8 @@ import {
   FileBarChart,
   LogOut,
   Bell,
-  Star
+  Star,
+  Youtube
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +73,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/services', label: 'Services', icon: Briefcase },
     { href: '/applications', label: 'Applications', icon: GraduationCap },
     { href: '/documents', label: 'Documents', icon: FileText },
+    { href: '/german-course', label: 'German Course', icon: Youtube },
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/payments', label: 'Contract', icon: FileText },
     { href: '/reviews', label: 'Write a Review', icon: Star },
@@ -81,6 +83,7 @@ const Layout = ({ children }: LayoutProps) => {
   const adminNavItems = [
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
+    { href: '/admin/german-course', label: 'German Course', icon: Youtube },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
     { href: '/admin/contracts', label: 'Contracts', icon: FileText },

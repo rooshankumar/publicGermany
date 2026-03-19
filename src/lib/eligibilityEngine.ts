@@ -5,20 +5,39 @@
 
 export interface ProfileInput {
   full_name?: string | null;
-  country_of_education?: string | null;
-  class_12_marks?: string | null;
+  email?: string | null;
+  citizenship?: string | null;
+  residence_country?: string | null;
+  
+  // Academic Background
   bachelor_degree_name?: string | null;
   bachelor_field?: string | null;
-  bachelor_cgpa_percentage?: string | null;
-  bachelor_credits_ects?: number | string | null;
+  university_name?: string | null;
+  country_of_education?: string | null;
   bachelor_duration_years?: number | string | null;
+  bachelor_credits_ects?: number | string | null;
+  bachelor_cgpa_percentage?: string | null;
+  min_passing_grade?: string | null;
+  max_grade?: string | null;
+
+  // Language
   ielts_toefl_score?: string | null;
+  english_test_type?: 'IELTS' | 'TOEFL' | 'None' | null;
+  english_test_status?: 'Completed' | 'Planned' | null;
   german_level?: string | null;
-  has_aps_certificate?: boolean | string | null;
-  work_experience_years?: number | string | null;
-  work_experience_field?: string | null;
+
+  // Intended Program
   intended_master_course?: string | null;
   intake?: string | null;
+
+  // Experience
+  work_experience_years?: number | string | null;
+  internship_experience?: string | null;
+  relevant_projects?: string | null;
+
+  // Status
+  has_aps_certificate?: 'Not Applied' | 'Applied' | 'Verified' | boolean | string | null;
+  previous_germany_applications?: boolean | string | null;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -84,26 +103,15 @@ function resolveBoolean(val: boolean | string | null | undefined): boolean | nul
 
 // ─── German Grade Conversion ─────────────────────────────────────────────
 
-export function convertToGermanGrade(cgpaStr: string | null | undefined): GradeConversion | null {
-  if (!cgpaStr) return null;
-  const cgpa = parseFloat(cgpaStr);
-  if (isNaN(cgpa) || cgpa <= 0) return null;
+export function convertToGermanGrade(p: ProfileInput): GradeConversion | null {
+  if (!p.bachelor_cgpa_percentage) return null;
+  const studentGrade = parseFloat(p.bachelor_cgpa_percentage);
+  if (isNaN(studentGrade) || studentGrade <= 0) return null;
 
-  let germanGrade: number;
-  let maxGrade: number;
-  let passGrade: number;
+  let maxGrade = p.max_grade ? parseFloat(p.max_grade) : (studentGrade <= 10 ? 10 : 100);
+  let passGrade = p.min_passing_grade ? parseFloat(p.min_passing_grade) : (studentGrade <= 10 ? 4 : 40);
 
-  if (cgpa <= 10) {
-    // CGPA on 10-point scale
-    maxGrade = 10;
-    passGrade = 4;
-  } else {
-    // Percentage scale
-    maxGrade = 100;
-    passGrade = 40;
-  }
-
-  germanGrade = 1 + 3 * ((maxGrade - cgpa) / (maxGrade - passGrade));
+  let germanGrade = 1 + 3 * ((maxGrade - studentGrade) / (maxGrade - passGrade));
   germanGrade = Math.round(germanGrade * 100) / 100;
 
   // Clamp
@@ -123,12 +131,12 @@ export function convertToGermanGrade(cgpaStr: string | null | undefined): GradeC
     classification = 'Risk Zone';
     classificationColor = '#ea580c';
   } else {
-    classification = 'Low Chance';
+    classification = 'Low Probability';
     classificationColor = '#dc2626';
   }
 
   return {
-    originalValue: cgpaStr,
+    originalValue: `${studentGrade} (Scale: ${passGrade}-${maxGrade})`,
     germanGrade,
     classification,
     classificationColor,
@@ -142,109 +150,96 @@ function evaluateHardChecks(p: ProfileInput): { checks: HardCheck[]; grade: Grad
 
   // 1. Degree Recognition
   const duration = parseNum(p.bachelor_duration_years);
-  const ects = parseNum(p.bachelor_credits_ects);
-
+  
   if (p.bachelor_degree_name) {
     if (duration >= 4) {
       checks.push({ label: 'Degree Recognition', status: 'pass', detail: `${duration}-year degree — Meets standard requirement`, value: `${duration} years` });
     } else if (duration === 3) {
-      checks.push({ label: 'Degree Recognition', status: 'warn', detail: '3-year degree — Some universities may require additional qualifications (e.g., APS STK pathway)', value: '3 years' });
+      checks.push({ label: 'Degree Recognition', status: 'pass', detail: '3-year degree — Meets minimum duration requirement', value: '3 years' });
     } else if (duration > 0) {
-      checks.push({ label: 'Degree Recognition', status: 'fail', detail: `${duration}-year degree — Below minimum requirement`, value: `${duration} years` });
+      checks.push({ label: 'Degree Recognition', status: 'fail', detail: `${duration}-year degree — Below minimum 3-year requirement`, value: `${duration} years` });
     } else {
-      checks.push({ label: 'Degree Recognition', status: 'warn', detail: 'Degree duration not specified — Please update your profile', value: 'Not provided' });
+      checks.push({ label: 'Degree Recognition', status: 'warn', detail: 'Degree duration not specified', value: 'Not provided' });
     }
   } else {
-    checks.push({ label: 'Degree Recognition', status: 'fail', detail: 'Bachelor degree not provided — Required for Master applications', value: 'Missing' });
+    checks.push({ label: 'Degree Recognition', status: 'fail', detail: 'Bachelor degree not provided', value: 'Missing' });
   }
 
   // 2. ECTS Evaluation
+  const ects = parseNum(p.bachelor_credits_ects);
   if (ects > 0) {
     if (ects >= 180) {
       checks.push({ label: 'ECTS Credits', status: 'pass', detail: `${ects} ECTS — Meets 180 ECTS standard`, value: `${ects} ECTS` });
     } else if (ects >= 150) {
-      checks.push({ label: 'ECTS Credits', status: 'warn', detail: `${ects} ECTS — Below 180 standard; some universities may accept`, value: `${ects} ECTS` });
+      checks.push({ label: 'ECTS Credits', status: 'warn', detail: `${ects} ECTS — Below 180 standard; some programs may accept`, value: `${ects} ECTS` });
     } else {
       checks.push({ label: 'ECTS Credits', status: 'fail', detail: `${ects} ECTS — Significantly below 180 ECTS requirement`, value: `${ects} ECTS` });
     }
   } else if (duration >= 4) {
-    checks.push({ label: 'ECTS Credits', status: 'info', detail: '4-year degree typically equivalent to 240 ECTS', value: '~240 (estimated)' });
+    checks.push({ label: 'ECTS Credits', status: 'pass', detail: '4-year degree typically equivalent to 240 ECTS', value: '~240 (estimated)' });
   } else if (duration === 3) {
-    checks.push({ label: 'ECTS Credits', status: 'info', detail: '3-year degree typically equivalent to 180 ECTS', value: '~180 (estimated)' });
+    checks.push({ label: 'ECTS Credits', status: 'pass', detail: '3-year degree typically equivalent to 180 ECTS', value: '~180 (estimated)' });
   } else {
-    checks.push({ label: 'ECTS Credits', status: 'warn', detail: 'ECTS not provided — Please specify your credits or degree duration', value: 'Not provided' });
+    checks.push({ label: 'ECTS Credits', status: 'warn', detail: 'ECTS not provided', value: 'Not provided' });
   }
 
-  // 3. Grade Conversion
-  const grade = convertToGermanGrade(p.bachelor_cgpa_percentage);
+  // 3. Grade Evaluation
+  const grade = convertToGermanGrade(p);
   if (grade) {
     const statusMap: Record<string, CheckStatus> = {
       'Competitive': 'pass',
       'Acceptable': 'warn',
       'Risk Zone': 'warn',
-      'Low Chance': 'fail',
+      'Low Probability': 'fail',
     };
     checks.push({
-      label: 'Grade Evaluation',
+      label: 'German Grade',
       status: statusMap[grade.classification] || 'warn',
-      detail: `CGPA ${grade.originalValue} → German Grade ${grade.germanGrade.toFixed(2)} — ${grade.classification}`,
+      detail: `German Grade ${grade.germanGrade.toFixed(2)} — ${grade.classification}`,
       value: grade.germanGrade.toFixed(2),
     });
   } else {
-    checks.push({ label: 'Grade Evaluation', status: 'warn', detail: 'CGPA/Percentage not provided', value: 'Not provided' });
+    checks.push({ label: 'German Grade', status: 'warn', detail: 'CGPA details not provided', value: 'Not provided' });
   }
 
-  // 4. Language Compliance
+  // 4. English Proficiency
   if (p.ielts_toefl_score) {
     const score = parseFloat(p.ielts_toefl_score);
+    const isIELTS = p.english_test_type === 'IELTS' || score <= 9;
     if (!isNaN(score)) {
-      if (score >= 7.0 || score >= 100) {
-        checks.push({ label: 'English Proficiency', status: 'pass', detail: `Score: ${p.ielts_toefl_score} — Meets top-tier university requirements`, value: p.ielts_toefl_score });
-      } else if (score >= 6.5 || score >= 90) {
-        checks.push({ label: 'English Proficiency', status: 'pass', detail: `Score: ${p.ielts_toefl_score} — Meets most public university requirements`, value: p.ielts_toefl_score });
-      } else if (score >= 6.0 || score >= 80) {
-        checks.push({ label: 'English Proficiency', status: 'warn', detail: `Score: ${p.ielts_toefl_score} — May not meet top-tier requirements; consider retaking`, value: p.ielts_toefl_score });
-      } else {
-        checks.push({ label: 'English Proficiency', status: 'fail', detail: `Score: ${p.ielts_toefl_score} — Below typical minimum (IELTS 6.0 / TOEFL 80)`, value: p.ielts_toefl_score });
+      if (isIELTS) {
+        if (score >= 6.5) {
+          checks.push({ label: 'English Proficiency', status: 'pass', detail: `IELTS ${score} — Meets standard requirements`, value: `IELTS ${score}` });
+        } else if (score >= 6.0) {
+          checks.push({ label: 'English Proficiency', status: 'warn', detail: `IELTS ${score} — Below 6.5; some universities may accept`, value: `IELTS ${score}` });
+        } else {
+          checks.push({ label: 'English Proficiency', status: 'fail', detail: `IELTS ${score} — Below minimum requirement (6.0)`, value: `IELTS ${score}` });
+        }
+      } else { // TOEFL
+        if (score >= 90) {
+          checks.push({ label: 'English Proficiency', status: 'pass', detail: `TOEFL ${score} — Meets standard requirements`, value: `TOEFL ${score}` });
+        } else if (score >= 80) {
+          checks.push({ label: 'English Proficiency', status: 'warn', detail: `TOEFL ${score} — Below 90; some universities may accept`, value: `TOEFL ${score}` });
+        } else {
+          checks.push({ label: 'English Proficiency', status: 'fail', detail: `TOEFL ${score} — Below minimum requirement (80)`, value: `TOEFL ${score}` });
+        }
       }
-    } else {
-      checks.push({ label: 'English Proficiency', status: 'pass', detail: `Score: ${p.ielts_toefl_score}`, value: p.ielts_toefl_score });
     }
   } else {
-    checks.push({ label: 'English Proficiency', status: 'warn', detail: 'Not provided — IELTS 6.5+ or TOEFL 90+ typically required', value: 'Not provided' });
+    checks.push({ label: 'English Proficiency', status: 'warn', detail: 'Test score not provided', value: 'Not provided' });
   }
 
-  // 5. German Language
-  const germanOk = p.german_level && !['none', ''].includes(p.german_level);
-  if (germanOk) {
-    const level = p.german_level!.toUpperCase();
-    const isAdvanced = ['B2', 'C1', 'C2'].includes(level);
-    checks.push({
-      label: 'German Language',
-      status: isAdvanced ? 'pass' : 'info',
-      detail: isAdvanced
-        ? `Level: ${level} — Qualifies for German-taught programs`
-        : `Level: ${level} — Sufficient for daily life; most English programs don't require German`,
-      value: level,
-    });
-  } else {
-    checks.push({ label: 'German Language', status: 'info', detail: 'None — Not required for many English-taught programs but helpful for daily life', value: 'None' });
-  }
-
-  // 6. APS Certificate (Fixed Logic)
-  const hasAps = resolveBoolean(p.has_aps_certificate);
-  const india = isIndian(p.country_of_education);
-
+  // 5. APS Certificate
+  const india = isIndian(p.country_of_education) || isIndian(p.citizenship);
   if (india) {
-    if (hasAps === true) {
-      checks.push({ label: 'APS Certificate', status: 'pass', detail: 'APS certificate verified — Mandatory requirement for Indian students fulfilled', value: 'Verified' });
+    const aps = p.has_aps_certificate;
+    if (aps === 'Verified' || aps === true) {
+      checks.push({ label: 'APS Certificate', status: 'pass', detail: 'APS verified — Mandatory requirement fulfilled', value: 'Verified' });
+    } else if (aps === 'Applied') {
+      checks.push({ label: 'APS Certificate', status: 'warn', detail: 'APS applied — Pending verification', value: 'Applied' });
     } else {
-      checks.push({ label: 'APS Certificate', status: 'fail', detail: 'APS certificate required but not obtained — Mandatory for Indian students applying to German universities', value: 'Required — Not obtained' });
+      checks.push({ label: 'APS Certificate', status: 'fail', detail: 'APS certificate missing — Mandatory for Indian students', value: 'Missing' });
     }
-  } else if (p.country_of_education) {
-    checks.push({ label: 'APS Certificate', status: 'info', detail: `Not applicable for students from ${p.country_of_education}`, value: 'Not required' });
-  } else {
-    checks.push({ label: 'APS Certificate', status: 'info', detail: 'Country not specified — APS is mandatory for students from India, China, Vietnam, and select countries', value: 'Unknown' });
   }
 
   return { checks, grade };
@@ -265,100 +260,87 @@ function evaluateProfileStrength(p: ProfileInput, grade: GradeConversion | null)
     else if (grade.germanGrade <= 3.5) cgpaScore = 4;
     else cgpaScore = 2;
   }
-  params.push({ label: 'CGPA Strength', weight: 0.25, score: cgpaScore, detail: grade ? `German Grade ${grade.germanGrade.toFixed(2)}` : 'Not provided' });
+  params.push({ label: 'Academic Grade Strength', weight: 0.25, score: cgpaScore, detail: grade ? `German Grade ${grade.germanGrade.toFixed(2)}` : 'Not provided' });
 
   // 2. Subject Relevance (25%)
-  let subjectScore = 5; // default moderate
+  let subjectScore = 5; 
   if (p.bachelor_field && p.intended_master_course) {
     const field = p.bachelor_field.toLowerCase();
     const course = p.intended_master_course.toLowerCase();
-    // Simple keyword matching for relevance
-    const fieldTokens = field.split(/[\s,]+/);
-    const courseTokens = course.split(/[\s,]+/);
-    const commonKeywords = ['computer', 'science', 'engineering', 'data', 'information', 'technology', 'mechanical', 'electrical', 'electronics', 'civil', 'business', 'management', 'economics', 'mathematics', 'physics', 'chemistry', 'biology'];
-    const fieldKeys = fieldTokens.filter(t => commonKeywords.includes(t));
-    const courseKeys = courseTokens.filter(t => commonKeywords.includes(t));
-    const overlap = fieldKeys.filter(k => courseKeys.includes(k)).length;
-    if (overlap >= 2) subjectScore = 9;
-    else if (overlap >= 1) subjectScore = 7;
-    else subjectScore = 4;
-  } else {
-    subjectScore = 0;
+    const commonKeywords = ['computer', 'science', 'engineering', 'data', 'information', 'technology', 'mechanical', 'electrical', 'electronics', 'civil', 'business', 'management', 'economics', 'mathematics', 'physics', 'chemistry', 'biology', 'ai', 'robotics', 'automotive'];
+    
+    const fieldTokens = field.split(/[\s,/-]+/);
+    const courseTokens = course.split(/[\s,/-]+/);
+    
+    const overlap = fieldTokens.filter(t => courseTokens.includes(t) && commonKeywords.includes(t)).length;
+    
+    if (overlap >= 2) subjectScore = 10;
+    else if (overlap >= 1) subjectScore = 8;
+    else subjectScore = 5;
   }
-  params.push({
-    label: 'Subject Relevance',
-    weight: 0.25,
-    score: subjectScore,
-    detail: p.bachelor_field && p.intended_master_course
-      ? `${p.bachelor_field} → ${p.intended_master_course}`
-      : 'Incomplete — Please specify both fields',
-  });
+  params.push({ label: 'Subject Relevance', weight: 0.25, score: subjectScore, detail: p.bachelor_field ? `${p.bachelor_field}` : 'Not provided' });
 
   // 3. English Proficiency (15%)
-  let ieltsScore = 0;
+  let englishScore = 0;
   if (p.ielts_toefl_score) {
     const s = parseFloat(p.ielts_toefl_score);
+    const isIELTS = p.english_test_type === 'IELTS' || s <= 9;
     if (!isNaN(s)) {
-      if (s <= 9) { // IELTS scale
-        if (s >= 8.0) ieltsScore = 10;
-        else if (s >= 7.5) ieltsScore = 9;
-        else if (s >= 7.0) ieltsScore = 8;
-        else if (s >= 6.5) ieltsScore = 7;
-        else if (s >= 6.0) ieltsScore = 5;
-        else ieltsScore = 3;
-      } else { // TOEFL scale
-        if (s >= 110) ieltsScore = 10;
-        else if (s >= 100) ieltsScore = 9;
-        else if (s >= 90) ieltsScore = 7;
-        else if (s >= 80) ieltsScore = 5;
-        else ieltsScore = 3;
+      if (isIELTS) {
+        if (s >= 7.5) englishScore = 10;
+        else if (s >= 7.0) englishScore = 9;
+        else if (s >= 6.5) englishScore = 8;
+        else if (s >= 6.0) englishScore = 6;
+        else englishScore = 3;
+      } else { // TOEFL
+        if (s >= 105) englishScore = 10;
+        else if (s >= 100) englishScore = 9;
+        else if (s >= 90) englishScore = 8;
+        else if (s >= 80) englishScore = 6;
+        else englishScore = 3;
       }
     }
   }
-  params.push({ label: 'English Proficiency', weight: 0.15, score: ieltsScore, detail: p.ielts_toefl_score ? `Score: ${p.ielts_toefl_score}` : 'Not provided' });
+  params.push({ label: 'English Language Score', weight: 0.15, score: englishScore, detail: p.ielts_toefl_score ? `Score: ${p.ielts_toefl_score}` : 'Not provided' });
 
   // 4. Work Experience (10%)
   const workYears = parseNum(p.work_experience_years);
   let workScore = 0;
-  if (workYears >= 5) workScore = 10;
-  else if (workYears >= 3) workScore = 8;
+  if (workYears >= 3) workScore = 10;
+  else if (workYears >= 2) workScore = 8;
   else if (workYears >= 1) workScore = 6;
   else if (workYears > 0) workScore = 4;
   params.push({ label: 'Work Experience', weight: 0.10, score: workScore, detail: workYears > 0 ? `${workYears} year(s)` : 'None' });
 
   // 5. Degree Duration/Credits (10%)
   const dur = parseNum(p.bachelor_duration_years);
-  const ects = parseNum(p.bachelor_credits_ects);
   let durScore = 0;
-  if (dur >= 4 || ects >= 240) durScore = 10;
-  else if (dur >= 3 || ects >= 180) durScore = 7;
-  else if (dur > 0) durScore = 3;
-  params.push({ label: 'Degree Duration / Credits', weight: 0.10, score: durScore, detail: dur > 0 ? `${dur} years${ects > 0 ? `, ${ects} ECTS` : ''}` : 'Not provided' });
+  if (dur >= 4) durScore = 10;
+  else if (dur >= 3) durScore = 7;
+  params.push({ label: 'Degree Duration / Credits', weight: 0.10, score: durScore, detail: dur > 0 ? `${dur} years` : 'Not provided' });
 
   // 6. German Language (10%)
-  let germanScore = 3; // none still gives minimal score
+  let germanScore = 0;
   if (p.german_level) {
     const lvl = p.german_level.toLowerCase();
-    if (lvl === 'c2') germanScore = 10;
-    else if (lvl === 'c1') germanScore = 9;
+    if (['c1', 'c2'].includes(lvl)) germanScore = 10;
     else if (lvl === 'b2') germanScore = 8;
     else if (lvl === 'b1') germanScore = 6;
     else if (lvl === 'a2') germanScore = 4;
-    else if (lvl === 'a1') germanScore = 3;
-    else germanScore = 2;
+    else if (lvl === 'a1') germanScore = 2;
   }
   params.push({ label: 'German Language', weight: 0.10, score: germanScore, detail: p.german_level && p.german_level !== 'none' ? `Level: ${p.german_level.toUpperCase()}` : 'None' });
 
   // 7. APS Status (5%)
-  const hasAps = resolveBoolean(p.has_aps_certificate);
-  const india = isIndian(p.country_of_education);
-  let apsScore = 5;
+  const india = isIndian(p.country_of_education) || isIndian(p.citizenship);
+  let apsScore = 10;
   if (india) {
-    apsScore = hasAps === true ? 10 : 0;
-  } else {
-    apsScore = 8; // not applicable, neutral-positive
+    const aps = p.has_aps_certificate;
+    if (aps === 'Verified' || aps === true) apsScore = 10;
+    else if (aps === 'Applied') apsScore = 7;
+    else apsScore = 0;
   }
-  params.push({ label: 'APS Status', weight: 0.05, score: apsScore, detail: india ? (hasAps ? 'Verified' : 'Required — Not obtained') : 'Not applicable' });
+  params.push({ label: 'APS Status', weight: 0.05, score: apsScore, detail: india ? (String(p.has_aps_certificate) || 'Missing') : 'Not required' });
 
   return params;
 }
