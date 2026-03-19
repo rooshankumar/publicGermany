@@ -115,31 +115,33 @@ const GermanCourse = () => {
 
   return (
     <Layout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold">German Course</h1>
-          <p className="text-sm text-muted-foreground">Select your level to start learning</p>
+      <div className="space-y-4 sm:space-y-8 -mt-2 sm:mt-0 px-1 sm:px-0 pb-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+          <div className="space-y-0.5">
+            <h1 className="text-xl sm:text-2xl font-bold">German Course</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-none">Select your level to start learning</p>
+          </div>
         </div>
 
         <Tabs defaultValue="A1" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-md h-9 sm:h-10">
             {levels.map(level => (
-              <TabsTrigger key={level} value={level} className="font-bold">
+              <TabsTrigger key={level} value={level} className="font-bold text-xs sm:text-sm">
                 German {level}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {levels.map(level => (
-            <TabsContent key={level} value={level} className="space-y-6 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <TabsContent key={level} value={level} className="space-y-4 sm:space-y-6 pt-4 sm:pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {videos.filter(v => v.level === level).length === 0 ? (
-                  <Card className="col-span-full py-12 text-center">
-                    <p className="text-muted-foreground italic">No lectures available for {level} yet.</p>
+                  <Card className="col-span-full py-8 sm:py-12 text-center border-none sm:border shadow-sm">
+                    <p className="text-xs sm:text-sm text-muted-foreground italic">No lectures available for {level} yet.</p>
                   </Card>
                 ) : (
                   videos.filter(v => v.level === level).map((video) => (
-                    <Card key={video.id} className="overflow-hidden">
+                    <Card key={video.id} className="overflow-hidden border-none sm:border shadow-sm">
                       <div className="aspect-video relative bg-black">
                         {video.youtube_url ? (
                           <iframe 
@@ -154,18 +156,18 @@ const GermanCourse = () => {
                             allowFullScreen 
                           />
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-full p-4 text-center space-y-4">
-                            <Cloud className="h-8 w-8 text-muted-foreground" />
-                            <p className="text-xs text-white">This video is hosted on an external cloud.</p>
-                            <Button size="sm" onClick={() => window.open(video.video_url!, '_blank')}>
+                          <div className="flex flex-col items-center justify-center h-full p-4 text-center space-y-2 sm:space-y-4">
+                            <Cloud className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                            <p className="text-[10px] sm:text-xs text-white">External cloud video.</p>
+                            <Button size="sm" className="h-7 sm:h-9 text-[10px] sm:text-xs" onClick={() => window.open(video.video_url!, '_blank')}>
                               Watch Video
                             </Button>
                           </div>
                         )}
                       </div>
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-base">{video.title}</CardTitle>
-                        <CardDescription>
+                      <CardHeader className="p-3 sm:p-4">
+                        <CardTitle className="text-sm sm:text-base line-clamp-1">{video.title}</CardTitle>
+                        <CardDescription className="text-[10px] sm:text-xs">
                           {new Date(video.created_at).toLocaleDateString()}
                         </CardDescription>
                       </CardHeader>

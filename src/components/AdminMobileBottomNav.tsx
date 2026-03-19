@@ -55,6 +55,7 @@ const AdminMobileBottomNav = () => {
 
   const more = [
     { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+    { href: '/admin/german-course', label: 'German Course', icon: BookOpen },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
     { href: '/admin/resources', label: 'Resources', icon: BookOpen },
@@ -117,8 +118,8 @@ const AdminMobileBottomNav = () => {
                         onClick={() => { setOpen(false); if (item.href === '/admin/reviews') setPendingReviews(0); }}
                         className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30 relative"
                       >
-                        <Icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{item.label}</span>
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium leading-tight break-words">{item.label}</span>
                         {item.href === '/admin/reviews' && pendingReviews > 0 && !(location.pathname === '/admin/reviews' || location.pathname.startsWith('/admin/reviews/')) && (
                           <span className="absolute top-2 right-2 inline-flex items-center justify-center min-w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] px-1">
                             {pendingReviews > 99 ? '99+' : pendingReviews}

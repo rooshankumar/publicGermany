@@ -282,17 +282,18 @@ const GermanCourseAdmin = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">German Course</h1>
-            <p className="text-sm text-muted-foreground">Manage lectures and student access</p>
+      <div className="space-y-4 sm:space-y-6 -mt-2 sm:mt-0 px-1 sm:px-0 pb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+          <div className="space-y-0.5">
+            <h1 className="text-xl sm:text-2xl font-bold">German Course</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-none">Manage lectures and student access</p>
           </div>
           
           {!showUploadForm && (
             <Button 
               onClick={() => setShowUploadForm(true)}
-              className="bg-primary text-primary-foreground"
+              size="sm"
+              className="bg-primary text-primary-foreground h-9"
             >
               <Plus className="mr-2 h-4 w-4" /> Add Lecture
             </Button>
@@ -300,36 +301,37 @@ const GermanCourseAdmin = () => {
         </div>
 
         <Tabs defaultValue="videos" className="w-full">
-          <TabsList>
-            <TabsTrigger value="videos">Lectures</TabsTrigger>
-            <TabsTrigger value="students">Student Access</TabsTrigger>
+          <TabsList className="w-full justify-start h-9 p-0 bg-transparent border-b rounded-none mb-4">
+            <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 h-9 font-bold text-xs sm:text-sm">Lectures</TabsTrigger>
+            <TabsTrigger value="students" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 h-9 font-bold text-xs sm:text-sm">Student Access</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="videos" className="space-y-6 pt-4">
+          <TabsContent value="videos" className="space-y-4 pt-0">
             {showUploadForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{editingVideo ? 'Edit Lecture' : 'Add New Lecture'}</CardTitle>
+              <Card className="border-none sm:border shadow-sm">
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-bold">{editingVideo ? 'Edit Lecture' : 'Add New Lecture'}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSaveVideo} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Title</Label>
+                <CardContent className="p-4 pt-0">
+                  <form onSubmit={handleSaveVideo} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="title" className="text-xs">Title</Label>
                         <Input 
                           id="title" 
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           required 
+                          className="h-9 text-sm"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="level">Level</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="level" className="text-xs">Level</Label>
                         <select 
                           id="level"
                           value={level}
                           onChange={(e) => setLevel(e.target.value)}
-                          className="w-full p-2 rounded-md border border-input bg-background"
+                          className="w-full h-9 p-2 rounded-md border border-input bg-background text-sm"
                         >
                           <option value="A1">German A1</option>
                           <option value="A2">German A2</option>
@@ -339,31 +341,33 @@ const GermanCourseAdmin = () => {
                     </div>
 
                     <Tabs value={videoType} onValueChange={(v) => setVideoType(v as any)}>
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="youtube">YouTube</TabsTrigger>
-                        <TabsTrigger value="direct">Direct Link</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 h-8">
+                        <TabsTrigger value="youtube" className="text-[10px] sm:text-xs">YouTube</TabsTrigger>
+                        <TabsTrigger value="direct" className="text-[10px] sm:text-xs">Direct Link</TabsTrigger>
                       </TabsList>
-                      <TabsContent value="youtube" className="pt-4">
+                      <TabsContent value="youtube" className="pt-2">
                         <Input 
                           placeholder="YouTube URL"
                           value={url}
                           onChange={(e) => setUrl(e.target.value)}
                           required={videoType === 'youtube'}
+                          className="h-9 text-sm"
                         />
                       </TabsContent>
-                      <TabsContent value="direct" className="pt-4">
+                      <TabsContent value="direct" className="pt-2">
                         <Input 
                           placeholder="Direct Video URL"
                           value={url}
                           onChange={(e) => setUrl(e.target.value)}
                           required={videoType === 'direct'}
+                          className="h-9 text-sm"
                         />
                       </TabsContent>
                     </Tabs>
 
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                      <Button type="submit" disabled={isSubmitting}>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button type="button" variant="outline" size="sm" onClick={resetForm} className="h-8 text-xs px-3">Cancel</Button>
+                      <Button type="submit" size="sm" disabled={isSubmitting} className="h-8 text-xs px-3">
                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingVideo ? 'Update' : 'Save')}
                       </Button>
                     </div>
@@ -373,11 +377,11 @@ const GermanCourseAdmin = () => {
             )}
 
             {loading ? (
-              <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {videos.map((video) => (
-                  <Card key={video.id} className="overflow-hidden">
+                  <Card key={video.id} className="overflow-hidden border-none sm:border shadow-sm">
                     <div className="aspect-video relative bg-muted">
                       {video.youtube_url ? (
                         <iframe 
@@ -387,19 +391,19 @@ const GermanCourseAdmin = () => {
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full">
-                          <Play className="h-12 w-12 text-muted-foreground" />
+                          <Play className="h-10 w-10 text-muted-foreground" />
                         </div>
                       )}
                     </div>
-                    <CardHeader className="p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="secondary">{video.level}</Badge>
+                    <CardHeader className="p-3">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">German {video.level}</Badge>
                       </div>
-                      <CardTitle className="text-base line-clamp-1">{video.title}</CardTitle>
+                      <CardTitle className="text-sm font-bold line-clamp-1">{video.title}</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => startEdit(video)}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteVideo(video.id)}>Delete</Button>
+                    <CardContent className="p-3 pt-0 flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => startEdit(video)} className="h-8 text-xs px-3">Edit</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteVideo(video.id)} className="h-8 text-xs px-3">Delete</Button>
                     </CardContent>
                   </Card>
                 ))}

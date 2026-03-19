@@ -82,6 +82,7 @@ const StudentMobileBottomNav = () => {
 
   const more = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/german-course', label: 'German Course', icon: BookOpen },
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/notifications', label: 'Notifications', icon: Bell },
     { href: '/payments', label: 'Contracts', icon: FileText },
@@ -156,8 +157,8 @@ const StudentMobileBottomNav = () => {
                         onClick={() => setOpen(false)}
                         className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30"
                       >
-                        <Icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{item.label}</span>
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium leading-tight break-words">{item.label}</span>
                       </Link>
                     );
                   })}
