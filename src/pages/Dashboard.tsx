@@ -23,7 +23,8 @@ import {
   Zap,
   Trophy,
   BarChart3,
-  Lightbulb
+  Lightbulb,
+  MessageCircle
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -287,6 +288,36 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Social Groups */}
+        <Card className="border-green-100 dark:border-green-900 bg-green-50/30 dark:bg-green-950/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-green-600" />
+              Join our Community
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center justify-start gap-2 h-9 border-green-200 hover:bg-green-50 text-green-700 font-semibold"
+                onClick={() => window.open('https://chat.whatsapp.com/IX9Z24dCKIk0nVn98L3rxd?mode=hqctcla', '_blank')}
+              >
+                <MessageCircle className="h-3.5 w-3.5 fill-green-600/20" /> WhatsApp Group
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center justify-start gap-2 h-9 border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold"
+                onClick={() => window.open('https://t.me/publicgermany', '_blank')}
+              >
+                <Send className="h-3.5 w-3.5 fill-blue-600/20" /> Telegram Channel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Helpful Tips Section */}
         <Card>

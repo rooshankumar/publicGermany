@@ -18,7 +18,10 @@ import {
   List,
   CheckCircle2,
   Circle,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare,
+  Send,
+  MessageCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,6 +30,9 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import logos from '@/assets/logos.png';
+
+import { useToast } from '@/hooks/use-toast';
 
 interface Video {
   id: string;
@@ -55,9 +61,10 @@ interface ProgressRecord {
 
 const GermanCourse = () => {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortOrder, setSortOrder] = useState<'index' | 'newest' | 'oldest' | 'az'>('index');
   const [progress, setProgress] = useState<ProgressRecord[]>([]);
   const [access, setAccess] = useState<AccessRecord>({
     status: 'none',
@@ -135,6 +142,21 @@ const GermanCourse = () => {
     }
   };
 
+  const getSortedVideos = (vids: Video[]) => {
+    return [...vids].sort((a, b) => {
+      switch (sortOrder) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'az':
+          return a.title.localeCompare(b.title);
+        case 'index':
+        default:
+          return (a.order_index || 0) - (b.order_index || 0);
+      }
+    });
+  };
   const checkAccess = async () => {
     try {
       setLoading(true);
@@ -187,10 +209,15 @@ const GermanCourse = () => {
   const handleRequestAccess = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error('No user found');
+        return;
+      }
 
       setIsSubmitting(true);
-      const { error } = await supabase
+      console.log('Submitting access request for user:', user.id, 'Message:', requestMsg);
+
+      const { error: upsertError } = await supabase
         .from('german_course_access')
         .upsert({
           user_id: user.id,
@@ -198,27 +225,58 @@ const GermanCourse = () => {
           request_message: requestMsg,
           has_access: false,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'user_id' });
 
-      if (error) throw error;
+      if (upsertError) {
+        console.error('Upsert error:', upsertError);
+        toast({
+          title: "Request Failed",
+          description: upsertError.message,
+          variant: "destructive",
+        });
+        throw upsertError;
+      }
       
-      const { data: adminProfiles } = await supabase
+      console.log('Access record upserted successfully');
+      toast({
+        title: "Request Sent",
+        description: "Your enrollment request has been submitted to the admin.",
+      });
+
+      // Create a notification for admin
+      const { data: adminProfiles, error: adminError } = await supabase
         .from('profiles')
         .select('user_id')
         .eq('role', 'admin')
         .limit(1);
 
-      const adminId = adminProfiles?.[0]?.user_id || 'admin';
+      if (adminError) {
+        console.error('Error fetching admin profile:', adminError);
+      }
 
-      await supabase.from('notifications').insert({
-        user_id: adminId,
-        title: `New German Course Request`,
-        body: `${profile?.full_name || 'A student'} has requested access to the German Course.`,
-        type: 'service_request',
-        seen: false
-      });
+      const adminId = adminProfiles?.[0]?.user_id;
+      console.log('Target Admin ID for notification:', adminId);
 
-      checkAccess();
+      if (adminId) {
+        const { error: notifError } = await supabase.from('notifications').insert({
+          user_id: adminId,
+          title: `New German Course Request`,
+          body: `${profile?.full_name || 'A student'} has requested access to the German Course.`,
+          type: 'service_request',
+          seen: false
+        });
+        if (notifError) {
+          console.error('Notification insertion error:', notifError);
+        } else {
+          console.log('Admin notification sent successfully');
+        }
+      } else {
+        console.warn('No admin user_id found to notify');
+      }
+
+      // Refresh access state
+      await checkAccess();
+      console.log('Access state refreshed');
     } catch (error) {
       console.error('Error requesting access:', error);
     } finally {
@@ -236,11 +294,11 @@ const GermanCourse = () => {
     );
   }
 
-  if (access.status !== 'approved' || !access.has_access) {
+  if (!access.has_access || access.status !== 'approved') {
     if (access.status === 'pending') {
       return (
         <Layout>
-          <div className="max-w-md mx-auto py-12 text-center space-y-6">
+          <div className="max-w-md mx-auto py-12 text-center space-y-6 px-4">
             <div className="h-16 w-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
               <Loader2 className="h-8 w-8 text-yellow-600 animate-spin" />
             </div>
@@ -250,6 +308,24 @@ const GermanCourse = () => {
                 Your request for German Course access is currently being reviewed by our administrators.
               </p>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 h-11 border-green-200 hover:bg-green-50 text-green-700 font-bold"
+                onClick={() => window.open('https://chat.whatsapp.com/IX9Z24dCKIk0nVn98L3rxd?mode=hqctcla', '_blank')}
+              >
+                <MessageCircle className="h-4 w-4 fill-green-600/20" /> Join WhatsApp
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 h-11 border-blue-200 hover:bg-blue-50 text-blue-700 font-bold"
+                onClick={() => window.open('https://t.me/publicgermany', '_blank')}
+              >
+                <Send className="h-4 w-4 fill-blue-600/20" /> Join Telegram
+              </Button>
+            </div>
+
             {access.request_message && (
               <Card className="bg-muted/50 border-none p-4">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1 text-left">Your Message:</p>
@@ -277,6 +353,23 @@ const GermanCourse = () => {
                 Unlock professional A1-B1 training videos to accelerate your career in Germany.
               </p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 h-11 border-green-200 hover:bg-green-50 text-green-700 font-bold"
+              onClick={() => window.open('https://chat.whatsapp.com/IX9Z24dCKIk0nVn98L3rxd?mode=hqctcla', '_blank')}
+            >
+              <MessageCircle className="h-4 w-4 fill-green-600/20" /> Join WhatsApp
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 h-11 border-blue-200 hover:bg-blue-50 text-blue-700 font-bold"
+              onClick={() => window.open('https://t.me/publicgermany', '_blank')}
+            >
+              <Send className="h-4 w-4 fill-blue-600/20" /> Join Telegram
+            </Button>
           </div>
 
           {access.status === 'rejected' && (
@@ -355,23 +448,17 @@ const GermanCourse = () => {
               Progress: {Math.round((progress.filter(p => p.is_completed).length / (videos.length || 1)) * 100)}%
             </p>
           </div>
-          <div className="flex bg-muted rounded-md p-0.5 h-7">
-            <Button 
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="h-6 w-8 p-0" 
-              onClick={() => setViewMode('grid')}
+          <div className="flex items-center gap-2">
+            <select 
+              value={sortOrder} 
+              onChange={(e) => setSortOrder(e.target.value as any)}
+              className="h-7 px-2 rounded-md border border-input bg-background text-[10px] font-medium focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </Button>
-            <Button 
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="h-6 w-8 p-0" 
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-3.5 w-3.5" />
-            </Button>
+              <option value="index">Order (1st, 2nd...)</option>
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="az">A-Z Title</option>
+            </select>
           </div>
         </div>
 
@@ -385,7 +472,7 @@ const GermanCourse = () => {
           </TabsList>
 
           {levels.map(level => {
-            const levelVideos = videos.filter(v => v.level === level);
+            const levelVideos = getSortedVideos(videos.filter(v => v.level === level));
             const completedInLevel = levelVideos.filter(v => progress.find(p => p.video_id === v.id)?.is_completed).length;
             
             return (
@@ -396,10 +483,7 @@ const GermanCourse = () => {
                   </p>
                 </div>
 
-                <div className={viewMode === 'grid' 
-                  ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2" 
-                  : "flex flex-col gap-1.5"
-                }>
+                <div className="flex flex-col gap-1.5">
                   {levelVideos.length === 0 ? (
                     <Card className="col-span-full py-6 text-center border shadow-none bg-muted/20">
                       <p className="text-[10px] text-muted-foreground italic">Empty</p>
@@ -408,55 +492,18 @@ const GermanCourse = () => {
                     levelVideos.map((video) => {
                       const isDone = progress.find(p => p.video_id === video.id)?.is_completed;
                       
-                      return viewMode === 'grid' ? (
-                        <Card key={video.id} className={`overflow-hidden border shadow-none hover:border-primary/30 transition-colors ${isDone ? 'bg-primary/5 border-primary/20' : ''}`}>
-                          <div className="aspect-video relative bg-black">
-                            <div className="absolute inset-0 cursor-pointer" onClick={() => {
-                              if (!isDone) toggleProgress(video.id, false);
-                            }}>
-                              {video.youtube_url ? (
-                                <iframe src={`https://www.youtube.com/embed/${video.video_id}`} className="w-full h-full pointer-events-auto" allowFullScreen />
-                              ) : video.video_url?.includes('drive.google.com') ? (
-                                <iframe src={video.video_url.replace('/view', '/preview')} className="w-full h-full border-0 pointer-events-auto" allowFullScreen />
-                              ) : (
-                                <div className="flex flex-col items-center justify-center h-full p-2 text-center space-y-1 pointer-events-auto">
-                                  <Cloud className="h-4 w-4 text-muted-foreground" />
-                                  <Button size="sm" className="h-6 text-[9px] px-2" onClick={() => window.open(video.video_url!, '_blank')}>Watch</Button>
-                                </div>
-                              )}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className={`absolute top-1 right-1 h-6 w-6 p-0 rounded-full bg-black/40 hover:bg-black/60 text-white z-10 ${isDone ? 'text-green-400' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleProgress(video.id, !!isDone);
-                              }}
-                            >
-                              {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                            </Button>
-                          </div>
-                          <CardHeader className="p-2 space-y-0">
-                            <CardTitle className="text-[10px] sm:text-[11px] font-bold line-clamp-1 leading-tight">{video.title}</CardTitle>
-                            <div className="flex items-center justify-between mt-0.5">
-                              <CardDescription className="text-[8px]">{new Date(video.created_at).toLocaleDateString()}</CardDescription>
-                              {isDone && <Badge variant="outline" className="text-[7px] h-3 px-1 border-green-200 bg-green-50 text-green-700">Done</Badge>}
-                            </div>
-                          </CardHeader>
-                        </Card>
-                      ) : (
+                      return (
                         <Card key={video.id} className={`flex items-center p-1.5 gap-2 border shadow-none hover:border-primary/30 transition-colors ${isDone ? 'bg-primary/5 border-primary/20' : ''}`}>
                           <div className="w-24 aspect-video bg-black rounded overflow-hidden shrink-0">
                             {video.youtube_url ? (
-                              <img src={`https://img.youtube.com/vi/${video.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" />
+                              <img src={`https://img.youtube.com/vi/${video.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" alt="" />
                             ) : <div className="w-full h-full flex items-center justify-center"><Play className="h-4 w-4 text-muted-foreground" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-[11px] font-bold truncate leading-tight">{video.title}</h3>
                             <p className="text-[9px] text-muted-foreground">{new Date(video.created_at).toLocaleDateString()}</p>
                           </div>
-                      <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <Dialog onOpenChange={(open) => {
                               if (open && !isDone) {
                                 toggleProgress(video.id, false);

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Youtube, Plus, Trash2, Edit2, Loader2, Play, Cloud, Globe, Users, ShieldCheck, ShieldAlert, Search, X, GripVertical } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ interface StudentAccess {
   expires_at: string | null;
   request_message: string | null;
   admin_message: string | null;
+  updated_at: string | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -50,6 +52,7 @@ const GermanCourseAdmin = () => {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'index' | 'newest' | 'oldest' | 'az'>('index');
   
   const [title, setTitle] = useState('');
   const [level, setLevel] = useState('A1');
@@ -57,7 +60,16 @@ const GermanCourseAdmin = () => {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [videoType, setVideoType] = useState<'youtube' | 'direct'>('youtube');
 
+  const [editingAccess, setEditingAccess] = useState<{
+    studentId: string;
+    expires_at: string | null;
+    status: string;
+    admin_message: string;
+  } | null>(null);
+
   const { toast } = useToast();
+
+  const [studentSortOrder, setStudentSortOrder] = useState<'status' | 'date' | 'name'>('status');
 
   useEffect(() => {
     fetchVideos();
@@ -91,6 +103,7 @@ const GermanCourseAdmin = () => {
   const fetchStudents = async () => {
     try {
       setLoadingStudents(true);
+      // First, fetch all student profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name, avatar_url')
@@ -98,12 +111,14 @@ const GermanCourseAdmin = () => {
 
       if (profilesError) throw profilesError;
 
+      // Second, fetch all access records
       const { data: accessRecords, error: accessError } = await supabase
         .from('german_course_access')
         .select('*');
 
       if (accessError) throw accessError;
 
+      // Merge profiles with their access records (if any)
       const mergedStudents: StudentAccess[] = (profiles || []).map(profile => {
         const access = (accessRecords || []).find(a => a.user_id === profile.user_id);
         return {
@@ -113,6 +128,7 @@ const GermanCourseAdmin = () => {
           expires_at: access?.expires_at ?? null,
           request_message: access?.request_message ?? null,
           admin_message: access?.admin_message ?? null,
+          updated_at: access?.updated_at ?? null,
           profiles: {
             full_name: profile.full_name,
             avatar_url: profile.avatar_url
@@ -120,7 +136,14 @@ const GermanCourseAdmin = () => {
         };
       });
 
-      setStudents(mergedStudents);
+      // Sort by status priority: pending first, then alphabetical name
+      const sorted = mergedStudents.sort((a, b) => {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        return (a.profiles?.full_name || '').localeCompare(b.profiles?.full_name || '');
+      });
+
+      setStudents(sorted);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast({
@@ -289,9 +312,37 @@ const GermanCourseAdmin = () => {
     setShowUploadForm(false);
   };
 
-  const filteredStudents = students.filter(s => 
-    s.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getSortedVideos = (vids: Video[]) => {
+    return [...vids].sort((a, b) => {
+      switch (sortOrder) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'az':
+          return a.title.localeCompare(b.title);
+        case 'index':
+        default:
+          return (a.order_index || 0) - (b.order_index || 0);
+      }
+    });
+  };
+
+  const filteredStudents = students
+    .filter(s => s.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (studentSortOrder === 'status') {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        if (a.status === 'approved' && b.status !== 'approved') return -1;
+        if (a.status !== 'approved' && b.status === 'approved') return 1;
+      } else if (studentSortOrder === 'date') {
+        const dateA = new Date(a.updated_at || 0).getTime();
+        const dateB = new Date(b.updated_at || 0).getTime();
+        return dateB - dateA;
+      }
+      return (a.profiles?.full_name || '').localeCompare(b.profiles?.full_name || '');
+    });
 
   return (
     <Layout>
@@ -301,24 +352,37 @@ const GermanCourseAdmin = () => {
             <h1 className="text-lg sm:text-xl font-bold tracking-tight">German Course</h1>
             <p className="text-[10px] sm:text-xs text-muted-foreground leading-none">Lectures & Access</p>
           </div>
-          {!showUploadForm && (
-            <Button 
-              onClick={() => setShowUploadForm(true)}
-              size="sm"
-              className="bg-primary text-primary-foreground h-8 text-xs px-3"
-            >
-              <Plus className="mr-1 h-3 w-3" /> Add
-            </Button>
-          )}
         </div>
 
         <Tabs defaultValue="videos" className="w-full">
-          <TabsList className="w-full justify-start h-8 p-0 bg-transparent border-b rounded-none mb-3">
-            <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 h-8 font-bold text-xs">Lectures</TabsTrigger>
-            <TabsTrigger value="students" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 h-8 font-bold text-xs">Access</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-8 p-0.5 bg-muted">
+            <TabsTrigger value="videos" className="font-bold text-[10px] uppercase h-7">Lectures</TabsTrigger>
+            <TabsTrigger value="access" className="font-bold text-[10px] uppercase h-7">Students</TabsTrigger>
           </TabsList>
 
           <TabsContent value="videos" className="space-y-2 pt-0">
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <Button 
+                size="sm" 
+                variant={showUploadForm ? "ghost" : "default"}
+                onClick={() => setShowUploadForm(!showUploadForm)} 
+                className="h-7 text-[10px] font-bold px-2"
+              >
+                {showUploadForm ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                {showUploadForm ? "Close Form" : "Add Lecture"}
+              </Button>
+              <select 
+                value={sortOrder} 
+                onChange={(e) => setSortOrder(e.target.value as any)}
+                className="h-7 px-2 rounded-md border border-input bg-background text-[10px] font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="index">Order (1st, 2nd...)</option>
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="az">A-Z Title</option>
+              </select>
+            </div>
+
             {showUploadForm && (
               <Card className="border shadow-none bg-muted/30">
                 <CardContent className="p-2">
@@ -364,38 +428,88 @@ const GermanCourseAdmin = () => {
             {loading ? (
               <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                {videos.map((video) => (
-                  <Card key={video.id} className="overflow-hidden border shadow-none hover:border-primary/30 transition-colors bg-card">
-                    <div className="aspect-video relative bg-black/5">
-                      {video.youtube_url ? (
-                        <iframe src={`https://www.youtube.com/embed/${video.video_id}`} className="w-full h-full" allowFullScreen />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <Play className="h-6 w-6 text-muted-foreground/50" />
-                        </div>
-                      )}
+              <div className="space-y-1.5 mt-2">
+              {['A1', 'A2', 'B1'].map(lvl => {
+                const levelVideos = getSortedVideos(videos.filter(v => v.level === lvl));
+                if (levelVideos.length === 0) return null;
+                return (
+                  <div key={lvl} className="space-y-1">
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="h-px flex-1 bg-border/50" />
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{lvl}</span>
+                      <div className="h-px flex-1 bg-border/50" />
                     </div>
-                    <CardHeader className="p-2 space-y-0.5">
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 w-fit">G-{video.level}</Badge>
-                      <CardTitle className="text-[11px] font-bold line-clamp-1 leading-tight">{video.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-2 pt-0 flex justify-between gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(video)} className="h-6 text-[10px] px-1.5 flex-1 bg-muted/50">Edit</Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteVideo(video.id)} className="h-6 text-[10px] px-1.5 flex-1 text-destructive hover:text-destructive hover:bg-destructive/10">Del</Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    <div className="flex flex-col gap-1">
+                      {levelVideos.map((video) => (
+                        <Card key={video.id} className="p-1.5 border shadow-none hover:border-primary/30 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 aspect-video bg-black rounded overflow-hidden shrink-0 relative group">
+                              {video.youtube_url ? (
+                                <img src={`https://img.youtube.com/vi/${video.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" alt="" />
+                              ) : <div className="w-full h-full flex items-center justify-center"><Play className="h-3.5 w-3.5 text-muted-foreground" /></div>}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-white"><Play className="h-3 w-3" /></Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-black aspect-video border-none">
+                                    {video.youtube_url ? (
+                                      <iframe src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1`} className="w-full h-full" allowFullScreen />
+                                    ) : (
+                                      <iframe src={video.video_url?.replace('/view', '/preview')} className="w-full h-full border-0" allowFullScreen />
+                                    )}
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-mono font-bold bg-muted px-1 rounded text-muted-foreground">#{video.order_index}</span>
+                                <h3 className="text-[10px] font-bold truncate leading-tight">{video.title}</h3>
+                              </div>
+                              <p className="text-[8px] text-muted-foreground">{new Date(video.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEdit(video)}>
+                                <Edit2 className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive" onClick={() => handleDeleteVideo(video.id)}>
+                                <Trash2 className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {videos.length === 0 && (
+                <div className="py-8 text-center border rounded-lg border-dashed bg-muted/20">
+                  <p className="text-[10px] text-muted-foreground italic">No lectures found.</p>
+                </div>
+              )}
+            </div>
             )}
           </TabsContent>
 
-          <TabsContent value="students" className="outline-none">
+          <TabsContent value="access" className="outline-none">
             <Card className="border shadow-none rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
               <CardHeader className="p-3 border-b border-zinc-100 dark:border-zinc-800">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-xs font-bold uppercase tracking-wider">Access</CardTitle>
-                  <div className="relative w-32 sm:w-48">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider">Access</CardTitle>
+                    <select 
+                      value={studentSortOrder} 
+                      onChange={(e) => setStudentSortOrder(e.target.value as any)}
+                      className="h-6 px-1 rounded border border-input bg-background text-[9px] font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="status">By Status</option>
+                      <option value="date">By Date</option>
+                      <option value="name">By Name</option>
+                    </select>
+                  </div>
+                  <div className="relative w-full sm:w-48">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <Input placeholder="Search..." className="pl-7 h-7 text-[10px]" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                   </div>
@@ -407,8 +521,8 @@ const GermanCourseAdmin = () => {
                     <thead>
                       <tr className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800">
                         <th className="text-left p-2 font-bold text-muted-foreground">User</th>
-                        <th className="text-left p-2 font-bold text-muted-foreground">Status</th>
-                        <th className="text-left p-2 font-bold text-muted-foreground hidden sm:table-cell">Expiry</th>
+                        <th className="text-left p-2 font-bold text-muted-foreground">Msg/Status</th>
+                        <th className="text-left p-2 font-bold text-muted-foreground hidden sm:table-cell">Expiry/Date</th>
                         <th className="text-right p-2 font-bold text-muted-foreground">Act</th>
                       </tr>
                     </thead>
@@ -419,7 +533,7 @@ const GermanCourseAdmin = () => {
                         <tr><td colSpan={4} className="text-center py-6 text-muted-foreground">None</td></tr>
                       ) : (
                         filteredStudents.map((s) => (
-                          <tr key={s.user_id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                          <tr key={s.user_id} className={cn("hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors", s.status === 'pending' && "bg-amber-50/50 dark:bg-amber-950/10")}>
                             <td className="p-2">
                               <div className="flex items-center gap-2">
                                 <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] text-primary font-bold overflow-hidden shrink-0">
@@ -429,53 +543,127 @@ const GermanCourseAdmin = () => {
                               </div>
                             </td>
                             <td className="p-2">
-                              <Badge variant={s.status === 'approved' ? 'default' : s.status === 'pending' ? 'secondary' : s.status === 'rejected' ? 'destructive' : 'outline'} className="text-[8px] px-1 py-0 h-4 leading-none">
-                                {s.status === 'none' ? 'NO' : s.status.substring(0, 3).toUpperCase()}
-                              </Badge>
+                              <div className="flex flex-col gap-1">
+                                <Badge variant={s.status === 'approved' ? 'default' : s.status === 'pending' ? 'secondary' : s.status === 'rejected' ? 'destructive' : 'outline'} className="text-[8px] px-1 py-0 h-4 w-fit leading-none">
+                                  {s.status === 'none' ? 'NO' : s.status.substring(0, 3).toUpperCase()}
+                                </Badge>
+                                {s.request_message && (
+                                  <p className="text-[9px] text-muted-foreground line-clamp-1 max-w-[120px] italic">
+                                    "{s.request_message}"
+                                  </p>
+                                )}
+                              </div>
                             </td>
-                            <td className="p-2 text-[10px] hidden sm:table-cell">{s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '∞'}</td>
+                            <td className="p-2 hidden sm:table-cell">
+                              <div className="flex flex-col text-[9px]">
+                                <span className="font-medium">{s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '∞ Life'}</span>
+                                {s.updated_at && (
+                                  <span className="text-muted-foreground opacity-70">
+                                    {new Date(s.updated_at).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className="p-2 text-right">
-                              <Dialog>
+                              <Dialog onOpenChange={(open) => {
+                                if (open) {
+                                  setEditingAccess({
+                                    studentId: s.user_id,
+                                    expires_at: s.expires_at,
+                                    status: s.status,
+                                    admin_message: s.admin_message || ''
+                                  });
+                                } else {
+                                  setEditingAccess(null);
+                                }
+                              }}>
                                 <DialogTrigger asChild>
                                   <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-muted"><Edit2 className="h-3 w-3" /></Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[320px] p-4">
-                                  <div className="space-y-3">
-                                    <div className="space-y-0.5">
-                                      <h2 className="text-sm font-bold tracking-tight">Access: {s.profiles?.full_name}</h2>
-                                      {s.expires_at && <p className="text-[10px] text-muted-foreground">Ends: {new Date(s.expires_at).toLocaleDateString()}</p>}
-                                    </div>
-                                    {s.request_message && <div className="bg-muted p-2 rounded text-[11px] italic leading-tight">"{s.request_message}"</div>}
+                                  {editingAccess && (
                                     <div className="space-y-3">
-                                      <div className="space-y-1.5">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Timeline</Label>
-                                        <div className="grid grid-cols-3 gap-1">
-                                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-1" onClick={() => {
-                                            const date = new Date();
-                                            date.setMonth(date.getMonth() + 3);
-                                            handleUpdateAccess(s.user_id, { expires_at: date.toISOString(), status: 'approved', has_access: true });
-                                          }}>3M</Button>
-                                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-1" onClick={() => {
-                                            const date = new Date();
-                                            date.setMonth(date.getMonth() + 6);
-                                            handleUpdateAccess(s.user_id, { expires_at: date.toISOString(), status: 'approved', has_access: true });
-                                          }}>6M</Button>
-                                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-1" onClick={() => {
-                                            handleUpdateAccess(s.user_id, { expires_at: null, status: 'approved', has_access: true });
-                                          }}>∞ Life</Button>
+                                      <div className="space-y-0.5">
+                                        <h2 className="text-sm font-bold tracking-tight">Access: {s.profiles?.full_name}</h2>
+                                        <p className="text-[10px] text-muted-foreground">
+                                          Current Status: <span className="font-bold uppercase">{editingAccess.status}</span>
+                                        </p>
+                                        {editingAccess.expires_at && (
+                                          <p className="text-[10px] text-muted-foreground">Ends: {new Date(editingAccess.expires_at).toLocaleDateString()}</p>
+                                        )}
+                                      </div>
+                                      
+                                      {s.request_message && (
+                                        <div className="bg-muted p-2 rounded text-[11px] italic leading-tight">"{s.request_message}"</div>
+                                      )}
+
+                                      <div className="space-y-3">
+                                        <div className="space-y-1.5">
+                                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Timeline</Label>
+                                          <div className="grid grid-cols-3 gap-1">
+                                            <Button 
+                                              size="sm" 
+                                              variant={editingAccess.expires_at?.includes('T') && (new Date(editingAccess.expires_at).getMonth() === (new Date().getMonth() + 3) % 12) ? 'default' : 'outline'} 
+                                              className="h-7 text-[10px] px-1" 
+                                              onClick={() => {
+                                                const date = new Date();
+                                                date.setMonth(date.getMonth() + 3);
+                                                setEditingAccess({ ...editingAccess, expires_at: date.toISOString() });
+                                              }}
+                                            >3M</Button>
+                                            <Button 
+                                              size="sm" 
+                                              variant={editingAccess.expires_at?.includes('T') && (new Date(editingAccess.expires_at).getMonth() === (new Date().getMonth() + 6) % 12) ? 'default' : 'outline'} 
+                                              className="h-7 text-[10px] px-1" 
+                                              onClick={() => {
+                                                const date = new Date();
+                                                date.setMonth(date.getMonth() + 6);
+                                                setEditingAccess({ ...editingAccess, expires_at: date.toISOString() });
+                                              }}
+                                            >6M</Button>
+                                            <Button 
+                                              size="sm" 
+                                              variant={editingAccess.expires_at === null ? 'default' : 'outline'} 
+                                              className="h-7 text-[10px] px-1" 
+                                              onClick={() => {
+                                                setEditingAccess({ ...editingAccess, expires_at: null });
+                                              }}
+                                            >∞ Life</Button>
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Note</Label>
+                                          <Input 
+                                            placeholder="Msg..." 
+                                            className="h-7 text-[11px]" 
+                                            value={editingAccess.admin_message} 
+                                            onChange={(e) => setEditingAccess({ ...editingAccess, admin_message: e.target.value })} 
+                                          />
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1 pt-2 border-t">
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="flex-1 h-7 text-[10px] text-destructive border-destructive/20 hover:bg-destructive/10" 
+                                            onClick={() => handleUpdateAccess(s.user_id, { status: 'none', has_access: false, expires_at: null, admin_message: editingAccess.admin_message || 'Access revoked' })}
+                                          >Revoke</Button>
+                                          <Button 
+                                            size="sm" 
+                                            variant="destructive" 
+                                            className="flex-1 h-7 text-[10px]" 
+                                            onClick={() => handleUpdateAccess(s.user_id, { status: 'rejected', has_access: false, admin_message: editingAccess.admin_message })}
+                                          >Reject</Button>
+                                          <Button 
+                                            size="sm" 
+                                            className="flex-1 h-7 text-[10px]" 
+                                            onClick={() => handleUpdateAccess(s.user_id, { status: 'approved', has_access: true, expires_at: editingAccess.expires_at, admin_message: editingAccess.admin_message })}
+                                          >Approve</Button>
                                         </div>
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Note</Label>
-                                        <Input placeholder="Msg..." className="h-7 text-[11px]" defaultValue={s.admin_message || ''} onBlur={(e) => handleUpdateAccess(s.user_id, { admin_message: e.target.value })} />
-                                      </div>
-                                      <div className="flex flex-wrap gap-1 pt-2 border-t">
-                                        <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] text-destructive border-destructive/20 hover:bg-destructive/10" onClick={() => handleUpdateAccess(s.user_id, { status: 'none', has_access: false, expires_at: null, admin_message: 'Access revoked by administrator' })}>Revoke All</Button>
-                                        <Button size="sm" variant="destructive" className="flex-1 h-7 text-[10px]" onClick={() => handleUpdateAccess(s.user_id, { status: 'rejected', has_access: false })}>Reject</Button>
-                                        <Button size="sm" className="flex-1 h-7 text-[10px]" onClick={() => handleUpdateAccess(s.user_id, { status: 'approved', has_access: true })}>Approve</Button>
-                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                 </DialogContent>
                               </Dialog>
                             </td>
