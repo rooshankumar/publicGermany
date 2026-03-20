@@ -545,25 +545,37 @@ export type Database = {
       }
       german_course_access: {
         Row: {
-          created_at: string
-          has_access: boolean
           id: string
-          updated_at: string
           user_id: string
+          has_access: boolean
+          status: string
+          expires_at: string | null
+          request_message: string | null
+          admin_message: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string
-          has_access?: boolean
           id?: string
-          updated_at?: string
           user_id: string
+          has_access?: boolean
+          status?: string
+          expires_at?: string | null
+          request_message?: string | null
+          admin_message?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string
-          has_access?: boolean
           id?: string
-          updated_at?: string
           user_id?: string
+          has_access?: boolean
+          status?: string
+          expires_at?: string | null
+          request_message?: string | null
+          admin_message?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -580,6 +592,7 @@ export type Database = {
           created_at: string
           id: string
           level: string
+          order_index: number
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -591,6 +604,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: string
+          order_index?: number
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -602,6 +616,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: string
+          order_index?: number
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -610,6 +625,51 @@ export type Database = {
           youtube_url?: string | null
         }
         Relationships: []
+      }
+      german_course_progress: {
+        Row: {
+          created_at: string
+          id: string
+          is_completed: boolean
+          last_watched_at: string
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          last_watched_at?: string
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          last_watched_at?: string
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "german_course_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "german_course_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "german_course_videos"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       emails_log: {
         Row: {
