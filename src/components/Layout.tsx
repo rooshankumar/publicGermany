@@ -17,7 +17,8 @@ import {
   LogOut,
   Bell,
   Star,
-  Youtube
+  Youtube,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -77,6 +78,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/payments', label: 'Contract', icon: FileText },
     { href: '/reviews', label: 'Write a Review', icon: Star },
+    { href: '/resources', label: 'Resources', icon: BookOpen },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -90,6 +92,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/admin/blog', label: 'Blog Management', icon: FileText },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
+    { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   ];
 
   const navItems = isAdmin ? adminNavItems : studentNavItems;
@@ -282,10 +285,10 @@ const Layout = ({ children }: LayoutProps) => {
       {isAdmin ? (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Admin Top Navbar (Desktop) */}
-          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-1.5 px-3 md:px-5">
-            <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
+          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-3 md:px-5">
+            <div className="mx-auto w-full max-w-6xl flex flex-wrap items-center justify-between gap-y-2">
               {/* Left: Brand */}
-              <Link to="/admin" className="flex items-center gap-3" aria-label="Admin home">
+              <Link to="/admin" className="flex items-center gap-3 shrink-0" aria-label="Admin home">
                  <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
                    <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                  </div>
@@ -296,7 +299,7 @@ const Layout = ({ children }: LayoutProps) => {
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-2 xl:gap-3">
+              <nav className="hidden lg:flex flex-wrap items-center justify-center gap-x-3 gap-y-1 flex-1 px-4">
                 {adminNavItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
@@ -338,7 +341,7 @@ const Layout = ({ children }: LayoutProps) => {
                 })}
               </nav>
               {/* Right: Theme, Notifications, Avatar, Sign out */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <ThemeToggle variant="icon" />
                 <div className="relative">
                   <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="relative">
@@ -428,8 +431,8 @@ const Layout = ({ children }: LayoutProps) => {
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
           {/* Student Top Navbar (Desktop) */}
-          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-1 px-2 md:px-3">
-            <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-3">
+          <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-2 md:px-3">
+            <div className="mx-auto w-full max-w-7xl flex flex-wrap items-center justify-between gap-y-2">
               {/* Left: Brand */}
               <Link to="/dashboard" className="flex items-center gap-2 shrink-0" aria-label="Student home">
                 <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
@@ -442,7 +445,7 @@ const Layout = ({ children }: LayoutProps) => {
               </Link>
 
               {/* Center: Horizontal Nav */}
-              <nav className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center overflow-hidden">
+              <nav className="hidden lg:flex flex-wrap items-center justify-center gap-x-2 gap-y-1 flex-1 px-4">
                 {studentNavItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (

@@ -1073,6 +1073,60 @@ export type Database = {
           },
         ]
       }
+      resources: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          download_url: string | null
+          exam: string | null
+          external_url: string | null
+          id: string
+          image_url: string | null
+          is_new: boolean | null
+          level: string | null
+          tags: string[] | null
+          title: string
+          type: string | null
+          updated_at: string
+          view_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          exam?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_new?: boolean | null
+          level?: string | null
+          tags?: string[] | null
+          title: string
+          type?: string | null
+          updated_at?: string
+          view_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          exam?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_new?: boolean | null
+          level?: string | null
+          tags?: string[] | null
+          title?: string
+          type?: string | null
+          updated_at?: string
+          view_url?: string | null
+        }
+        Relationships: []
+      }
       profile_publications: {
         Row: {
           created_at: string
