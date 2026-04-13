@@ -543,6 +543,42 @@ export type Database = {
           },
         ]
       }
+      editor_permissions: {
+        Row: {
+          can_view_applications: boolean
+          can_view_contracts: boolean
+          can_view_documents: boolean
+          can_view_payments: boolean
+          can_view_profile: boolean
+          created_at: string
+          editor_user_id: string
+          id: string
+          student_user_id: string
+        }
+        Insert: {
+          can_view_applications?: boolean
+          can_view_contracts?: boolean
+          can_view_documents?: boolean
+          can_view_payments?: boolean
+          can_view_profile?: boolean
+          created_at?: string
+          editor_user_id: string
+          id?: string
+          student_user_id: string
+        }
+        Update: {
+          can_view_applications?: boolean
+          can_view_contracts?: boolean
+          can_view_documents?: boolean
+          can_view_payments?: boolean
+          can_view_profile?: boolean
+          created_at?: string
+          editor_user_id?: string
+          id?: string
+          student_user_id?: string
+        }
+        Relationships: []
+      }
       emails_log: {
         Row: {
           created_at: string
@@ -1886,13 +1922,25 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      editor_has_permission: {
+        Args: {
+          p_editor_id: string
+          p_permission: string
+          p_student_id: string
+        }
+        Returns: boolean
+      }
       get_user_email: { Args: { p_user_id: string }; Returns: string }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_admin_new: { Args: { uid: string }; Returns: boolean }
+      is_editor_for_student: {
+        Args: { p_editor_id: string; p_student_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       admin_note_visibility: "admin_only" | "shared"
-      app_role: "student" | "admin"
+      app_role: "student" | "admin" | "editor"
       application_status:
         | "draft"
         | "submitted"
@@ -2047,7 +2095,7 @@ export const Constants = {
   public: {
     Enums: {
       admin_note_visibility: ["admin_only", "shared"],
-      app_role: ["student", "admin"],
+      app_role: ["student", "admin", "editor"],
       application_status: [
         "draft",
         "submitted",
