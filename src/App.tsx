@@ -39,6 +39,7 @@ const AdminContracts = lazy(() => import("./pages/admin/Contracts"));
 const AdminBlog = lazy(() => import("./pages/admin/Blog"));
 const AdminContractHistory = lazy(() => import("./pages/admin/ContractHistory"));
 const GermanCourseAdmin = lazy(() => import("./pages/admin/GermanCourse"));
+const AdminEditors = lazy(() => import("./pages/admin/Editors"));
 const GermanCourse = lazy(() => import("./pages/GermanCourse"));
 const StudentPaymentsPage = lazy(() => import("./pages/StudentPayments"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
@@ -50,6 +51,8 @@ const Terms = lazy(() => import("./pages/Terms"));
 const AcademicCVGenerator = lazy(() => import("./pages/AcademicCVGenerator"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const EditorDashboard = lazy(() => import("./pages/editor/EditorDashboard"));
+const EditorStudentProfile = lazy(() => import("./pages/editor/EditorStudentProfile"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
