@@ -1,136 +1,103 @@
 
 
-# CV Generator: Preview-PDF Parity + Professional Features
+## Plan: Editor Role System + Performance Optimization
 
-## Problem Analysis
-1. **Preview does not match downloaded PDF** -- html2pdf.js renders from an iframe but has margin, scale, and dimension differences from the live preview iframe
-2. **No profile photo cropping/centering** -- uploaded photos render as-is with no positioning control
-3. **No rich text editing** for Focus/Key Subjects (no bold, italic, alignment)
-4. **No info (i) helper tooltips** on sections
-5. **No header background color picker**
-6. **No page count in PDF footer**
-7. **Build error** -- `npm:openai@^4.52.5` resolution failure (from Supabase functions JS types, not our code)
+### Overview
+Add a new "editor" role with granular, per-student permissions controlled by you (the main admin). Also fix the existing build errors and improve app performance.
 
----
+### Part A: Fix Existing Build Errors (prerequisite)
 
-## Part 1: Fix Preview = PDF (No Exceptions)
+1. **`src/lib/cvImporter.ts` line 70** — `String.indexOf` called with 3 args (the 3rd `searchEnd` is invalid). Fix by using `.slice()` before `.indexOf()`.
 
-The root cause is that the preview `<iframe srcDoc={html}>` renders at whatever width the panel is, while html2pdf captures at `windowWidth: 794` with `margin: [12, 15, 12, 15]`. This creates layout differences.
+2. **`src/pages/admin/Requests.tsx`** — `Label` component not imported; `deliverable_files` should be `deliverable_urls`. Add the missing `Label` import and fix the property name.
 
-**Fix in `src/lib/cvTemplateBuilder.ts`**:
-- Set body width to `794px` (not `210mm`) so both preview and html2pdf use the exact same pixel width
-- Add explicit `box-sizing: border-box` to container
-- Remove `max-width: 800px` (use fixed `width: 794px` instead) so there's zero ambiguity
+3. **`src/components/admin/BulkEmailPanel.tsx` line 68** — Type predicate mismatch. Add `created_at` to the `UserProfile` interface.
 
-**Fix in `src/pages/AcademicCVGenerator.tsx` (generatePDF)**:
-- Use `margin: 0` in html2pdf (margins are already in the template CSS via `padding: 20px`)
-- Set `html2canvas.width: 794` and `html2canvas.windowWidth: 794` explicitly
-- Add `html2canvas.scrollY: 0` and `html2canvas.scrollX: 0` to prevent scroll offset issues
-- Set iframe width to exactly `794px` (matching body width)
-- The preview iframe should also be constrained to `794px` width inside its container, scaled down with CSS `transform: scale()` to fit the panel
+### Part B: Database Changes (migrations)
 
-**Fix preview iframe scaling**:
-- Wrap the preview iframe in a container that calculates `scale = containerWidth / 794`
-- Apply `transform: scale(${scale})` and `transform-origin: top left` so the preview is a perfect miniature of the PDF
-- This guarantees pixel-perfect match between what you see and what you download
+1. **Add `'editor'` to the `app_role` enum**:
+   ```sql
+   ALTER TYPE public.app_role ADD VALUE 'editor';
+   ```
 
-**Fix in `src/hooks/useGenerateEuropassCV.ts`** (authenticated version):
-- Same margin and dimension fixes as above
+2. **Create `editor_permissions` table** — controls which students an editor can see and what sections are visible:
+   ```sql
+   CREATE TABLE public.editor_permissions (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     editor_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+     student_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+     can_view_profile boolean DEFAULT true,
+     can_view_documents boolean DEFAULT true,
+     can_view_applications boolean DEFAULT true,
+     can_view_payments boolean DEFAULT false,  -- off by default
+     can_view_contracts boolean DEFAULT false,
+     created_at timestamptz DEFAULT now(),
+     UNIQUE(editor_user_id, student_user_id)
+   );
+   ALTER TABLE public.editor_permissions ENABLE ROW LEVEL SECURITY;
+   ```
 
----
+3. **RLS policies for `editor_permissions`**:
+   - Admins can manage all rows
+   - Editors can SELECT their own rows
 
-## Part 2: Profile Photo Positioning Controls
+4. **Update RLS on `profiles`, `documents`, `applications`** to allow editors to read students they have permission for (using a `SECURITY DEFINER` helper function).
 
-Add simple crop/position controls to the photo upload:
-- **Object Position selector**: dropdown with options "Center", "Top", "Bottom" (maps to CSS `object-position: center/top/bottom`)
-- **Zoom slider**: range input 100%-200% that sets the photo `transform: scale()` inside a circular overflow-hidden container
-- Store these as extra state fields (`photoPosition`, `photoZoom`)
-- Update `buildCVHtml` to apply `object-position` style on the `profile-pic-circle` img tag
-- The photo circle already has `object-fit: cover` and `border-radius: 50%` so this will properly center the face
+### Part C: Editor Dashboard & UI
 
----
+1. **New page: `src/pages/editor/EditorDashboard.tsx`** — A simplified admin dashboard showing only assigned students with their allowed details. No financial stats, no payment sections, no bulk email.
 
-## Part 3: Rich Text Mini-Toolbar for Key Subjects / Focus
+2. **New page: `src/pages/editor/EditorStudentProfile.tsx`** — Shows student profile/docs/applications based on permissions. Hides payments/contracts tabs if `can_view_payments`/`can_view_contracts` is false.
 
-Add a lightweight inline formatting toolbar (NOT a full WYSIWYG editor -- keep it simple and non-detectable):
-- Small toolbar above the "Key Subjects / Focus" textarea with buttons: **B** (bold), *I* (italic), alignment (left/center/right)
-- Use a `contenteditable` div instead of plain `<Input>` for these fields
-- On format button click, wrap selected text in `<strong>` or `<em>` tags
-- Store the value as simple HTML (the template already renders HTML via `innerHTML`)
-- Update `buildCVHtml` to NOT escape HTML in `key_subjects` field (use raw insertion with sanitization for dangerous tags only)
-- Keep it minimal -- no colors, no font sizes, just bold/italic/alignment
+3. **Admin "Manage Editors" page: `src/pages/admin/Editors.tsx`**:
+   - List all users with role `editor`
+   - Invite/create editor accounts
+   - Assign students to editors with toggle controls per permission (profile, docs, applications, payments, contracts)
 
-**Fields that get this toolbar**:
-- Key Subjects / Focus (in Education)
-- Description (in Work Experience)
-- Custom section item descriptions
+4. **Update `ProtectedRoute.tsx`** to handle `'editor'` role — editors get redirected to `/editor` dashboard, not `/dashboard` or `/admin`.
 
----
+5. **Update `MobileNavigation.tsx`** and `Layout.tsx`** to show editor-specific nav items.
 
-## Part 4: Info (i) Helper Tooltips
+6. **Update `useAuth.ts` Profile type** to include `'editor'` in the role union.
 
-Add a small `(i)` icon next to every section title that shows a tooltip on click/hover:
-- Use the existing `Tooltip` component from shadcn/ui
-- Helper text per section:
-  - **Personal Information**: "Include all details as they appear on your passport. This helps universities verify your identity."
-  - **Education & Training**: "List degrees in reverse chronological order. Include ECTS/credit equivalents and grading scale."
-  - **Research Publications**: "Include peer-reviewed papers, conference proceedings, and working papers. Use standard citation format."
-  - **Work Experience**: "Include relevant professional experience, internships, and research positions."
-  - **Language Skills**: "Use CEFR levels (A1-C2). Mother tongue languages are listed separately."
-  - **Certifications**: "Include relevant certificates, MOOCs, and professional development courses."
-  - **Custom Sections**: "Add sections like Research Experience, Technical Skills, or Academic Projects."
-  - **Recommendations**: "Include 2-3 academic referees who can vouch for your work."
-- Render as a small `Info` icon (from lucide-react) next to each CardTitle
+7. **New routes in `App.tsx`**:
+   - `/editor` → EditorDashboard
+   - `/editor/students/:studentId` → EditorStudentProfile
+   - `/admin/editors` → Manage Editors page
 
----
+### Part D: Performance Improvements
 
-## Part 5: Header Background Color Picker
+1. **React Query optimizations** — Reduce `staleTime` for admin pages, add `keepPreviousData` to list queries to prevent UI flicker on re-fetch.
 
-Add a color selector for the personal details header area:
-- Dropdown/swatches with 5-6 professional solid colors:
-  - White (default), Light Gray (#f5f5f5), Light Blue (#e8f0fe), Navy subtle (#f0f4f8), Cream (#faf8f5), Light Sage (#f0f5f0)
-- Store as `headerBgColor` state
-- Update `buildCVHtml` to accept an optional `headerBgColor` parameter
-- Apply as `background-color` on the `.header-table` element
-- Keep it subtle -- these are professional academic CVs
+2. **Memoize heavy components** — Wrap list items (student cards, request rows) with `React.memo`.
 
----
+3. **Virtualize long lists** — Add `@tanstack/react-virtual` for the Students list page to avoid rendering hundreds of DOM nodes.
 
-## Part 6: Page Count Footer
+4. **Debounce search inputs** — Already partially done; ensure all admin search/filter inputs use debounced values.
 
-Add automatic page numbering to the PDF:
-- In `buildCVHtml`, add a CSS `@page` footer rule (won't work in html2pdf)
-- Instead, use html2pdf's `displayHeaderFooter` equivalent -- since html2pdf doesn't support this natively, add a footer div at the bottom of the HTML:
-  ```html
-  <div class="page-footer">Page 1 of X</div>
-  ```
-- For single-page CVs, show "Page 1 of 1"
-- For multi-page: use CSS `counter-increment` with `@page` or add a JS-calculated page count after html2pdf renders
-- Simpler approach: Add `displayHeaderFooter: true` in jsPDF options with page numbers, or add a manual footer line in the HTML template
+5. **Lazy-load editor routes** — Add to the existing lazy-import pattern.
 
----
+6. **Optimize `useAuth` profile fetch** — Skip re-fetching profile if cached version matches `user_id` and is < 5 minutes old.
 
-## Part 7: Fix Build Error
+### Technical Details
 
-The `npm:openai@^4.52.5` error comes from `@supabase/functions-js` types resolution, not from our code. Fix by adding a `deno.json` or updating the edge function imports. Since we don't use OpenAI, this is a transient type resolution issue.
+**Role hierarchy**: `admin` > `editor` > `student`. The `is_admin()` function remains unchanged (only matches `admin`). A new `is_editor_for_student(editor_uid, student_uid)` SECURITY DEFINER function will check `editor_permissions`.
 
-**Fix**: Add `// @ts-nocheck` is already present in the edge function. The build error may be from the Supabase CLI type checking. We can add a `supabase/functions/deno.json` with `"nodeModulesDir": "auto"` or pin the `@supabase/functions-js` version.
+**RLS example for documents**:
+```sql
+CREATE POLICY "Editors can view permitted student documents"
+ON public.documents FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.editor_permissions ep
+    WHERE ep.editor_user_id = auth.uid()
+      AND ep.student_user_id = documents.user_id
+      AND ep.can_view_documents = true
+  )
+);
+```
 
----
-
-## Files to Create/Modify
-
-| File | Changes |
-|---|---|
-| `src/lib/cvTemplateBuilder.ts` | Fixed body width (794px), accept `headerBgColor` param, raw HTML for rich-text fields, photo `object-position`, page footer |
-| `src/pages/AcademicCVGenerator.tsx` | Scaled preview iframe, photo position/zoom controls, rich text toolbar, info tooltips, color picker, margin fixes in generatePDF |
-| `src/hooks/useGenerateEuropassCV.ts` | Same margin/dimension fixes for authenticated PDF generation |
-| `supabase/functions/deno.json` | Add `"nodeModulesDir": "auto"` to fix OpenAI type resolution |
-
-## What Does NOT Change
-- Edge function logic (`generate-europass-cv/index.ts`)
-- Template HTML file (`template_academic.html`) -- used only by edge function for authenticated users
-- Database tables, RLS policies
-- All other pages (Dashboard, Applications, etc.)
-- Routing, authentication
+**Files to create**: ~4 new pages, 1 new hook (`useEditorPermissions`).
+**Files to edit**: ~8 existing files (App.tsx, ProtectedRoute, useAuth, MobileNavigation, Layout, BulkEmailPanel, cvImporter, Requests).
+**Migration**: 1 migration with enum update + new table + RLS + helper function.
 
