@@ -24,24 +24,24 @@ const EditorStudentProfile = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      const promises: Promise<void>[] = [];
+      const promises: Promise<any>[] = [];
 
       if (permission.can_view_profile) {
         promises.push(
           supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle()
-            .then(({ data }) => { if (data) setProfile(data); })
+            .then(({ data }) => { if (data) setProfile(data); }) as Promise<any>
         );
       }
       if (permission.can_view_documents) {
         promises.push(
           supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
-            .then(({ data }) => setDocuments(data || []))
+            .then(({ data }) => setDocuments(data || [])) as Promise<any>
         );
       }
       if (permission.can_view_applications) {
         promises.push(
           supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
-            .then(({ data }) => setApplications(data || []))
+            .then(({ data }) => setApplications(data || [])) as Promise<any>
         );
       }
 
