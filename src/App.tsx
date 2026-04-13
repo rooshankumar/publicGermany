@@ -308,7 +308,7 @@ const AppRoutes = () => {
           <Navigate to="/documents" replace />
         } />
         <Route path="/" element={
-          user ? <Navigate to="/dashboard" replace /> : <Index />
+          user ? <Navigate to={profile?.role === 'admin' ? '/admin' : profile?.role === 'editor' ? '/editor' : '/dashboard'} replace /> : <Index />
         } />
         <Route path="*" element={<NotFound />} />
       </Routes>
