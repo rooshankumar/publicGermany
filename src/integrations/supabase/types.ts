@@ -543,133 +543,41 @@ export type Database = {
           },
         ]
       }
-      german_course_access: {
+      editor_permissions: {
         Row: {
-          id: string
-          user_id: string
-          has_access: boolean
-          status: string
-          expires_at: string | null
-          request_message: string | null
-          admin_message: string | null
+          can_view_applications: boolean
+          can_view_contracts: boolean
+          can_view_documents: boolean
+          can_view_payments: boolean
+          can_view_profile: boolean
           created_at: string
-          updated_at: string
+          editor_user_id: string
+          id: string
+          student_user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          has_access?: boolean
-          status?: string
-          expires_at?: string | null
-          request_message?: string | null
-          admin_message?: string | null
+          can_view_applications?: boolean
+          can_view_contracts?: boolean
+          can_view_documents?: boolean
+          can_view_payments?: boolean
+          can_view_profile?: boolean
           created_at?: string
-          updated_at?: string
+          editor_user_id: string
+          id?: string
+          student_user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          has_access?: boolean
-          status?: string
-          expires_at?: string | null
-          request_message?: string | null
-          admin_message?: string | null
+          can_view_applications?: boolean
+          can_view_contracts?: boolean
+          can_view_documents?: boolean
+          can_view_payments?: boolean
+          can_view_profile?: boolean
           created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "german_course_access_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          }
-        ]
-      }
-      german_course_videos: {
-        Row: {
-          created_at: string
-          id: string
-          level: string
-          order_index: number
-          thumbnail_url: string | null
-          title: string
-          updated_at: string
-          video_id: string | null
-          video_url: string | null
-          youtube_url: string | null
-        }
-        Insert: {
-          created_at?: string
+          editor_user_id?: string
           id?: string
-          level?: string
-          order_index?: number
-          thumbnail_url?: string | null
-          title: string
-          updated_at?: string
-          video_id?: string | null
-          video_url?: string | null
-          youtube_url?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          level?: string
-          order_index?: number
-          thumbnail_url?: string | null
-          title?: string
-          updated_at?: string
-          video_id?: string | null
-          video_url?: string | null
-          youtube_url?: string | null
+          student_user_id?: string
         }
         Relationships: []
-      }
-      german_course_progress: {
-        Row: {
-          created_at: string
-          id: string
-          is_completed: boolean
-          last_watched_at: string
-          updated_at: string
-          user_id: string
-          video_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_completed?: boolean
-          last_watched_at?: string
-          updated_at?: string
-          user_id: string
-          video_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_completed?: boolean
-          last_watched_at?: string
-          updated_at?: string
-          user_id?: string
-          video_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "german_course_progress_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "german_course_progress_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "german_course_videos"
-            referencedColumns: ["id"]
-          }
-        ]
       }
       emails_log: {
         Row: {
@@ -767,6 +675,84 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      german_course_access: {
+        Row: {
+          admin_message: string | null
+          created_at: string
+          expires_at: string | null
+          has_access: boolean
+          id: string
+          request_message: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_message?: string | null
+          created_at?: string
+          expires_at?: string | null
+          has_access?: boolean
+          id?: string
+          request_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_message?: string | null
+          created_at?: string
+          expires_at?: string | null
+          has_access?: boolean
+          id?: string
+          request_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      german_course_videos: {
+        Row: {
+          created_at: string
+          id: string
+          level: string | null
+          order_index: number | null
+          source_type: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_id: string | null
+          video_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          order_index?: number | null
+          source_type?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_id?: string | null
+          video_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          order_index?: number | null
+          source_type?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_id?: string | null
+          video_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -1072,60 +1058,6 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
-      }
-      resources: {
-        Row: {
-          category: string
-          created_at: string
-          description: string | null
-          download_url: string | null
-          exam: string | null
-          external_url: string | null
-          id: string
-          image_url: string | null
-          is_new: boolean | null
-          level: string | null
-          tags: string[] | null
-          title: string
-          type: string | null
-          updated_at: string
-          view_url: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          description?: string | null
-          download_url?: string | null
-          exam?: string | null
-          external_url?: string | null
-          id?: string
-          image_url?: string | null
-          is_new?: boolean | null
-          level?: string | null
-          tags?: string[] | null
-          title: string
-          type?: string | null
-          updated_at?: string
-          view_url?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          download_url?: string | null
-          exam?: string | null
-          external_url?: string | null
-          id?: string
-          image_url?: string | null
-          is_new?: boolean | null
-          level?: string | null
-          tags?: string[] | null
-          title?: string
-          type?: string | null
-          updated_at?: string
-          view_url?: string | null
-        }
-        Relationships: []
       }
       profile_publications: {
         Row: {
@@ -1483,6 +1415,60 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      resources: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          download_url: string | null
+          exam: string | null
+          external_url: string | null
+          id: string
+          image_url: string | null
+          is_new: boolean | null
+          level: string | null
+          tags: string[] | null
+          title: string
+          type: string | null
+          updated_at: string | null
+          view_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          download_url?: string | null
+          exam?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_new?: boolean | null
+          level?: string | null
+          tags?: string[] | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+          view_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          download_url?: string | null
+          exam?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_new?: boolean | null
+          level?: string | null
+          tags?: string[] | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+          view_url?: string | null
+        }
+        Relationships: []
       }
       reviews: {
         Row: {
@@ -1936,13 +1922,25 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      editor_has_permission: {
+        Args: {
+          p_editor_id: string
+          p_permission: string
+          p_student_id: string
+        }
+        Returns: boolean
+      }
       get_user_email: { Args: { p_user_id: string }; Returns: string }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_admin_new: { Args: { uid: string }; Returns: boolean }
+      is_editor_for_student: {
+        Args: { p_editor_id: string; p_student_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       admin_note_visibility: "admin_only" | "shared"
-      app_role: "student" | "admin"
+      app_role: "student" | "admin" | "editor"
       application_status:
         | "draft"
         | "submitted"
@@ -2097,7 +2095,7 @@ export const Constants = {
   public: {
     Enums: {
       admin_note_visibility: ["admin_only", "shared"],
-      app_role: ["student", "admin"],
+      app_role: ["student", "admin", "editor"],
       application_status: [
         "draft",
         "submitted",

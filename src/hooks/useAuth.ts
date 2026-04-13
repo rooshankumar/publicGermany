@@ -21,7 +21,7 @@ export interface Document {
 export interface Profile {
   id: string;
   user_id: string;
-  role: 'student' | 'admin';
+  role: 'student' | 'admin' | 'editor';
   full_name: string | null;
   date_of_birth: string | null;
   country_of_education: string | null;

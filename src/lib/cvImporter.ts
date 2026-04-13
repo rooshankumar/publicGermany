@@ -67,7 +67,7 @@ function extractPayload(text: string, prefix: string, suffix: string): string | 
   // Search up to 20000 chars ahead — rich HTML descriptions + 80px avatar thumbnail
   // can push the payload to ~14000-16000 chars when both are present.
   const searchEnd = Math.min(text.length, start + prefix.length + 20000);
-  const end = text.indexOf(suffix, start + prefix.length, searchEnd as any);
+  const end = text.slice(0, searchEnd).indexOf(suffix, start + prefix.length);
   if (end === -1) return null;
   // Keep only base64url-safe chars in the payload itself
   return text.slice(start + prefix.length, end).replace(/[^A-Za-z0-9+/=_-]/g, "");

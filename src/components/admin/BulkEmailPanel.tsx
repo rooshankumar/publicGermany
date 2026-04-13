@@ -18,6 +18,7 @@ interface UserProfile {
   user_id: string;
   full_name: string | null;
   email?: string;
+  created_at?: string;
 }
 
 const BulkEmailPanel = () => {
@@ -65,7 +66,7 @@ const BulkEmailPanel = () => {
           return null;
         }));
 
-        const filteredUsers = usersWithEmails.filter((u): u is UserProfile => u !== null);
+        const filteredUsers: UserProfile[] = usersWithEmails.filter((u): u is NonNullable<typeof u> => u !== null) as UserProfile[];
         setUsers(filteredUsers);
         
         // If there's only one user or we're in "send to all" mode, 
