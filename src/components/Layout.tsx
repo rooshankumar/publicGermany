@@ -68,6 +68,7 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const isAdmin = profile?.role === 'admin';
+  const isEditor = profile?.role === 'editor';
 
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -93,9 +94,14 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/admin/exports', label: 'Exports', icon: Settings },
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
     { href: '/admin/resources', label: 'Resources', icon: BookOpen },
+    { href: '/admin/editors', label: 'Editors', icon: Users },
   ];
 
-  const navItems = isAdmin ? adminNavItems : studentNavItems;
+  const editorNavItems = [
+    { href: '/editor', label: 'Dashboard', icon: Home },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
 
   useEffect(() => {
     if (!profile?.user_id) return;
