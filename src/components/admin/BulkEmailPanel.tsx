@@ -18,6 +18,7 @@ interface UserProfile {
   user_id: string;
   full_name: string | null;
   email?: string;
+  created_at?: string;
 }
 
 const BulkEmailPanel = () => {
