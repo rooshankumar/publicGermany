@@ -66,7 +66,7 @@ const BulkEmailPanel = () => {
           return null;
         }));
 
-        const filteredUsers = usersWithEmails.filter((u): u is UserProfile & { email: string } => u !== null && !!u.email);
+        const filteredUsers: UserProfile[] = usersWithEmails.filter((u): u is NonNullable<typeof u> => u !== null) as UserProfile[];
         setUsers(filteredUsers);
         
         // If there's only one user or we're in "send to all" mode, 
