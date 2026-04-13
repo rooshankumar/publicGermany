@@ -262,6 +262,22 @@ const AppRoutes = () => {
             <AdminContractHistory />
           </ProtectedRoute>
         } />
+        <Route path="/admin/editors" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminEditors />
+          </ProtectedRoute>
+        } />
+        {/* Editor routes */}
+        <Route path="/editor" element={
+          <ProtectedRoute requiredRole="editor">
+            <EditorDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/editor/students/:studentId" element={
+          <ProtectedRoute requiredRole="editor">
+            <EditorStudentProfile />
+          </ProtectedRoute>
+        } />
         <Route path="/documents" element={
           <ProtectedRoute disallowRole="admin">
             <Documents />
