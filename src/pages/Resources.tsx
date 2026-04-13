@@ -48,7 +48,7 @@ const Resources = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setResources(data || []);
+        setResources((data as unknown as Resource[]) || []);
       } catch (error) {
         console.error('Error fetching resources:', error);
       } finally {

@@ -101,7 +101,7 @@ const GermanCourse = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('german_course_progress')
         .select('video_id, is_completed')
         .eq('user_id', user.id);
@@ -115,7 +115,7 @@ const GermanCourse = () => {
         }
         throw error;
       }
-      setProgress(data || []);
+      setProgress((data as ProgressRecord[]) || []);
     } catch (error) {
       console.error('Error fetching progress:', error);
     }
@@ -126,7 +126,7 @@ const GermanCourse = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('german_course_progress')
         .upsert({
           user_id: user.id,

@@ -301,7 +301,7 @@ export default function Requests() {
                         </td>
                         <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
-                            setSelectedRequest(request); setAdminResponse(request.admin_response || ''); setPendingStatus(request.status); setExistingFiles(request.deliverable_urls || []);
+                            setSelectedRequest(request); setAdminResponse(request.admin_response || ''); setPendingStatus(request.status); setExistingFiles((request.deliverable_urls || []).map(u => ({ name: u.split('/').pop() || u, url: u })));
                           }}><Eye className="h-4 w-4" /></Button>
                         </td>
                       </tr>
