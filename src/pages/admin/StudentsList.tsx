@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight,
@@ -14,7 +15,8 @@ import {
   UserCheck,
   GraduationCap,
   FileText,
-  Calendar
+  Calendar,
+  Star
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
@@ -34,7 +36,12 @@ interface StudentSummary {
   service_requests_count: number;
   created_at: string;
   profile_completion: number;
+  is_favorite: boolean;
+  favorite_id: string | null;
+  category: 'paid' | 'regular';
 }
+
+type StudentCategory = StudentSummary['category'];
 
 // Simple debounce hook
 function useDebouncedValue<T>(value: T, delay = 300) {
@@ -51,17 +58,26 @@ export default function StudentsList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
   useEffect(() => {
+    if (!user?.id) return;
+
     fetchStudents();
     
     // Real-time subscription
     const channel = supabase
-      .channel('students-list-changes')
+      .channel(`students-list-changes-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStudents();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        fetchStudents();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_favorites', filter: `admin_id=eq.${user.id}` }, () => {
         fetchStudents();
       })
       .subscribe();
@@ -69,9 +85,11 @@ export default function StudentsList() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const fetchStudents = async () => {
+    if (!user?.id) return;
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -85,6 +103,21 @@ export default function StudentsList() {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
+
+      const favoriteStudentIds = (data || []).map((student: any) => student.user_id).filter(Boolean);
+      const { data: favoritesData } = favoriteStudentIds.length > 0
+        ? await supabase
+            .from('student_favorites')
+            .select('id, student_id')
+            .eq('admin_id', user.id)
+            .in('student_id', favoriteStudentIds)
+        : { data: [] as Array<{ id: string; student_id: string | null }> };
+
+      const favoritesMap = new Map(
+        (favoritesData || [])
+          .filter((favorite) => favorite.student_id)
+          .map((favorite) => [favorite.student_id as string, favorite.id])
+      );
 
       // Get emails for all students
       const studentsWithEmails = await Promise.all((data || []).map(async (student: any) => {
@@ -111,6 +144,9 @@ export default function StudentsList() {
           service_requests_count: student.service_requests?.length || 0,
           created_at: student.created_at,
           profile_completion: completion,
+          is_favorite: favoritesMap.has(student.user_id),
+          favorite_id: favoritesMap.get(student.user_id) || null,
+          category: ((student.service_requests?.length || 0) > 0 ? 'paid' : 'regular') as StudentCategory,
         };
       }));
 
@@ -126,9 +162,82 @@ export default function StudentsList() {
     }
   };
 
+  const toggleFavorite = async (student: StudentSummary) => {
+    if (!user?.id) return;
+
+    const previousFavoriteId = student.favorite_id;
+    const nextFavoriteState = !student.is_favorite;
+
+    setStudents((current) =>
+      current.map((entry) =>
+        entry.user_id === student.user_id
+          ? {
+              ...entry,
+              is_favorite: nextFavoriteState,
+              favorite_id: nextFavoriteState ? entry.favorite_id : null,
+            }
+          : entry
+      )
+    );
+
+    try {
+      if (student.is_favorite && student.favorite_id) {
+        const { error } = await supabase
+          .from('student_favorites')
+          .delete()
+          .eq('id', student.favorite_id);
+
+        if (error) throw error;
+
+        toast({ title: 'Removed from favorites' });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('student_favorites')
+        .insert({ admin_id: user.id, student_id: student.user_id })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      setStudents((current) =>
+        current.map((entry) =>
+          entry.user_id === student.user_id
+            ? { ...entry, favorite_id: data.id, is_favorite: true }
+            : entry
+        )
+      );
+
+      toast({ title: 'Added to favorites' });
+    } catch (error: any) {
+      setStudents((current) =>
+        current.map((entry) =>
+          entry.user_id === student.user_id
+            ? { ...entry, is_favorite: student.is_favorite, favorite_id: previousFavoriteId }
+            : entry
+        )
+      );
+
+      toast({
+        title: 'Could not update favorite',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredStudents = students.filter(student => {
     const q = debouncedSearch.toLowerCase().trim();
     return !q || student.full_name.toLowerCase().includes(q);
+  });
+
+  filteredStudents.sort((a, b) => {
+    if (a.is_favorite !== b.is_favorite) {
+      return a.is_favorite ? -1 : 1;
+    }
+
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const getAPSBadge = (pathway: string | null) => {
@@ -163,6 +272,17 @@ export default function StudentsList() {
       </Badge>
     );
   };
+
+  const getCategoryBadge = (category: StudentSummary['category']) => (
+    <Badge
+      variant="outline"
+      className={category === 'paid'
+        ? 'bg-primary/10 text-primary border-primary/20'
+        : 'bg-muted text-muted-foreground border-border'}
+    >
+      {category === 'paid' ? 'Paid' : 'Regular'}
+    </Badge>
+  );
 
   return (
     <Layout>
@@ -227,6 +347,12 @@ export default function StudentsList() {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-2 mb-3">
+                          {student.is_favorite && (
+                            <Badge variant="outline" className="bg-accent/40 text-foreground border-border">
+                              Favorite
+                            </Badge>
+                          )}
+                          {getCategoryBadge(student.category)}
                           {getAPSBadge(student.aps_pathway)}
                           {getGermanBadge(student.german_level)}
                           <Badge variant="outline" className="text-xs">
@@ -252,7 +378,22 @@ export default function StudentsList() {
                           </div>
                         </div>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-1" />
+                      <div className="flex items-center gap-1 shrink-0 mt-1">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label={student.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void toggleFavorite(student);
+                          }}
+                        >
+                          <Star className={`w-4 h-4 ${student.is_favorite ? 'fill-current text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      </div>
                     </div>
                   </div>
                 ))}

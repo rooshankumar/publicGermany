@@ -24,6 +24,9 @@ const EditorStudentProfile = () => {
 
     const fetchData = async () => {
       setLoading(true);
+      setProfile(null);
+      setDocuments([]);
+      setApplications([]);
       const promises: Promise<any>[] = [];
 
       if (permission.can_view_profile) {
@@ -50,7 +53,14 @@ const EditorStudentProfile = () => {
     };
 
     fetchData();
-  }, [studentId, permLoading, permission?.editor_user_id]);
+  }, [
+    studentId,
+    permLoading,
+    permission?.id,
+    permission?.can_view_profile,
+    permission?.can_view_documents,
+    permission?.can_view_applications,
+  ]);
 
   if (permLoading) return <Layout><InlineLoader /></Layout>;
   if (!permission) return <Navigate to="/editor" replace />;
