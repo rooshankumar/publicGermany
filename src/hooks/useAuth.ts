@@ -52,6 +52,22 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const getProfileCacheKey = (userId: string) => `pg_profile:${userId}`;
+
+  const hydrateCachedProfile = (userId: string) => {
+    try {
+      const cached = localStorage.getItem(getProfileCacheKey(userId));
+      if (!cached) return;
+
+      const parsed = JSON.parse(cached) as Profile;
+      if (parsed?.user_id === userId) {
+        setProfile(parsed);
+      }
+    } catch {
+      // ignore malformed cache
+    }
+  };
+
   const fetchProfile = async (userId: string) => {
     try {
       // Fetch complete profile with all fields
@@ -68,7 +84,7 @@ export const useAuth = () => {
         const nextProfile = (fullProfile as unknown) as Profile;
         setProfile(nextProfile);
         try {
-          localStorage.setItem('pg_profile', JSON.stringify(nextProfile));
+          localStorage.setItem(getProfileCacheKey(userId), JSON.stringify(nextProfile));
         } catch {}
 
         // Fetch documents in background
@@ -81,7 +97,7 @@ export const useAuth = () => {
               setProfile((prev) => {
                 if (!prev) return prev;
                 const merged = { ...prev, documents: documentsData || [] } as Profile;
-                try { localStorage.setItem('pg_profile', JSON.stringify(merged)); } catch {}
+                try { localStorage.setItem(getProfileCacheKey(userId), JSON.stringify(merged)); } catch {}
                 return merged;
               });
             }
@@ -114,7 +130,7 @@ export const useAuth = () => {
               if (createdProfile) {
                 const next = { ...(profile || ({} as Profile)), ...createdProfile } as Profile;
                 setProfile(next);
-                try { localStorage.setItem('pg_profile', JSON.stringify(next)); } catch {}
+                try { localStorage.setItem(getProfileCacheKey(user.id), JSON.stringify(next)); } catch {}
               }
             }
           } else {
@@ -128,19 +144,12 @@ export const useAuth = () => {
 
     } catch (error) {
       console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // 0) Hydrate cached profile to render app shell immediately
-    try {
-      const cached = localStorage.getItem('pg_profile');
-      if (cached) {
-        const parsed = JSON.parse(cached) as Profile;
-        setProfile(parsed);
-      }
-    } catch {}
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -153,15 +162,13 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetching to prevent deadlocks
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          setLoading(true);
+          hydrateCachedProfile(session.user.id);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -176,12 +183,13 @@ export const useAuth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
+        setLoading(true);
+        hydrateCachedProfile(session.user.id);
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -344,7 +352,9 @@ export const useAuth = () => {
       setSession(null);
       setProfile(null);
       try { 
-        localStorage.removeItem('pg_profile');
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith('pg_profile:'))
+          .forEach((key) => localStorage.removeItem(key));
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
       } catch {}

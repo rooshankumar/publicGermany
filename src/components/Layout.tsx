@@ -69,6 +69,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   const isAdmin = profile?.role === 'admin';
   const isEditor = profile?.role === 'editor';
+  const homePath = isAdmin ? '/admin' : isEditor ? '/editor' : '/dashboard';
+  const roleLabel = isAdmin ? 'Admin' : isEditor ? 'Editor' : 'Student';
 
   const studentNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -374,6 +376,8 @@ const Layout = ({ children }: LayoutProps) => {
                                 if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
                                 else if (n.type === 'service_request') navigate('/admin/requests');
                                 else navigate('/admin');
+                              } else if (isEditor) {
+                                navigate('/editor');
                               } else {
                                 if (n.type === 'application') navigate('/applications');
                                 else if (n.type === 'document') navigate('/documents');
@@ -440,19 +444,19 @@ const Layout = ({ children }: LayoutProps) => {
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-2 md:px-3">
             <div className="mx-auto w-full max-w-7xl flex flex-wrap items-center justify-between gap-y-2">
               {/* Left: Brand */}
-              <Link to="/dashboard" className="flex items-center gap-2 shrink-0" aria-label="Student home">
+              <Link to={homePath} className="flex items-center gap-2 shrink-0" aria-label={isEditor ? 'Editor home' : 'Student home'}>
                 <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                 </div>
                 <div className="hidden xl:flex flex-col leading-tight">
                   <span className="font-bold text-base text-foreground tracking-tight">publicgermany</span>
-                  <span className="text-[10px] text-muted-foreground">Student</span>
+                  <span className="text-[10px] text-muted-foreground">{roleLabel}</span>
                 </div>
               </Link>
 
               {/* Center: Horizontal Nav */}
               <nav className="hidden lg:flex flex-wrap items-center justify-center gap-x-2 gap-y-1 flex-1 px-4">
-                {studentNavItems.map((item) => {
+                {navItems.map((item) => {
                   const active = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
                   return (
                     <Link
@@ -465,9 +469,9 @@ const Layout = ({ children }: LayoutProps) => {
                       aria-current={active ? 'page' : undefined}
                       onClick={() => {
                         const now = Date.now();
-                        if (item.href === '/documents') { setDocCount(0); setSuppressDocs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:docs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:docs`, String(now)); } catch {} }
-                        if (item.href === '/applications') { setAppCount(0); setSuppressApps(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:apps`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:apps`, String(now)); } catch {} }
-                        if (item.href === '/services') { setSvcCount(0); setSuppressSvcs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:svcs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:svcs`, String(now)); } catch {} }
+                        if (!isEditor && item.href === '/documents') { setDocCount(0); setSuppressDocs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:docs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:docs`, String(now)); } catch {} }
+                        if (!isEditor && item.href === '/applications') { setAppCount(0); setSuppressApps(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:apps`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:apps`, String(now)); } catch {} }
+                        if (!isEditor && item.href === '/services') { setSvcCount(0); setSuppressSvcs(true); try { localStorage.setItem(`badge_suppress:${profile?.user_id}:svcs`, '1'); localStorage.setItem(`badge_seen_at:${profile?.user_id}:svcs`, String(now)); } catch {} }
                       }}
                     >
                       <span className="relative inline-flex items-center">
@@ -521,6 +525,8 @@ const Layout = ({ children }: LayoutProps) => {
                                 if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
                                 else if (n.type === 'service_request') navigate('/admin/requests');
                                 else navigate('/admin');
+                              } else if (isEditor) {
+                                navigate('/editor');
                               } else {
                                 if (n.type === 'application') navigate('/applications');
                                 else if (n.type === 'document') navigate('/documents');
@@ -676,7 +682,7 @@ const Layout = ({ children }: LayoutProps) => {
         <main className="p-3 sm:p-4 max-w-full pb-[calc(env(safe-area-inset-bottom)+4.5rem)] overflow-x-hidden">
           {children}
         </main>
-        {isAdmin ? <AdminMobileBottomNav /> : <StudentMobileBottomNav />}
+        {isAdmin ? <AdminMobileBottomNav /> : isEditor ? null : <StudentMobileBottomNav />}
       </div>
     </div>
   );
