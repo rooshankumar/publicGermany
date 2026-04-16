@@ -12,6 +12,7 @@ import { User, FileText, GraduationCap, ArrowLeft } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
+  const navigate = useNavigate();
   const { permissions, loading: permLoading } = useEditorPermissions();
   const [profile, setProfile] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
