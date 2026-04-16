@@ -87,6 +87,9 @@ const EditorStudentProfile = () => {
   return (
     <Layout>
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        <Button variant="ghost" size="sm" className="mb-2 -ml-1" onClick={() => navigate('/editor')}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+        </Button>
         {loading ? <InlineLoader /> : (
           <>
             <div>
