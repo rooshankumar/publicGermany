@@ -14,7 +14,8 @@ import {
   Users,
   FileBarChart,
   LogOut,
-  Star
+  Star,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -51,6 +52,9 @@ const MobileNavigation = () => {
 
   const editorNavItems = [
     { href: '/editor', label: 'Dashboard', icon: Home },
+    { href: '/resources', label: 'Resources', icon: BookOpen },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
   ];
 
   const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;

@@ -1,16 +1,18 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import InlineLoader from '@/components/InlineLoader';
-import { User, FileText, GraduationCap } from 'lucide-react';
+import { User, FileText, GraduationCap, ArrowLeft } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
+  const navigate = useNavigate();
   const { permissions, loading: permLoading } = useEditorPermissions();
   const [profile, setProfile] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
@@ -85,6 +87,9 @@ const EditorStudentProfile = () => {
   return (
     <Layout>
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        <Button variant="ghost" size="sm" className="mb-2 -ml-1" onClick={() => navigate('/editor')}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+        </Button>
         {loading ? <InlineLoader /> : (
           <>
             <div>
