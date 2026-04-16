@@ -51,6 +51,9 @@ const MobileNavigation = () => {
 
   const editorNavItems = [
     { href: '/editor', label: 'Dashboard', icon: Home },
+    { href: '/resources', label: 'Resources', icon: BookOpen },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
   ];
 
   const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
