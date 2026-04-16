@@ -173,9 +173,8 @@ export const useAuth = () => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (import.meta.env.MODE !== 'production') {
-        // Dev-only, avoid logging PII like email
         console.debug('Initial session check');
       }
       
