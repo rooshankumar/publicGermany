@@ -1,82 +1,98 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import InlineLoader from '@/components/InlineLoader';
-import { User, FileText, GraduationCap, CreditCard } from 'lucide-react';
+import { User, FileText, GraduationCap } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
-  const { getPermissionForStudent, loading: permLoading } = useEditorPermissions();
+  const { permissions, loading: permLoading } = useEditorPermissions();
   const [profile, setProfile] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const permission = studentId ? getPermissionForStudent(studentId) : null;
+  // Find permission for this student from loaded permissions
+  const permission = studentId
+    ? permissions.find(p => p.student_user_id === studentId) || null
+    : null;
 
   useEffect(() => {
-    if (permLoading || !studentId || !permission) return;
+    if (permLoading || !studentId) return;
+    if (!permission) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       setLoading(true);
       setProfile(null);
       setDocuments([]);
       setApplications([]);
-      const promises: Promise<any>[] = [];
 
-      if (permission.can_view_profile) {
-        promises.push(
-          supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle()
-            .then(({ data }) => { if (data) setProfile(data); }) as Promise<any>
-        );
-      }
-      if (permission.can_view_documents) {
-        promises.push(
-          supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
-            .then(({ data }) => setDocuments(data || [])) as Promise<any>
-        );
-      }
-      if (permission.can_view_applications) {
-        promises.push(
-          supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
-            .then(({ data }) => setApplications(data || [])) as Promise<any>
-        );
+      try {
+        if (permission.can_view_profile) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', studentId)
+            .maybeSingle();
+          if (error) console.error('Profile fetch error:', error);
+          if (data) setProfile(data);
+        }
+        if (permission.can_view_documents) {
+          const { data, error } = await supabase
+            .from('documents')
+            .select('*')
+            .eq('user_id', studentId)
+            .order('created_at', { ascending: false });
+          if (error) console.error('Documents fetch error:', error);
+          setDocuments(data || []);
+        }
+        if (permission.can_view_applications) {
+          const { data, error } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('user_id', studentId)
+            .order('created_at', { ascending: false });
+          if (error) console.error('Applications fetch error:', error);
+          setApplications(data || []);
+        }
+      } catch (e) {
+        console.error('Error fetching student data:', e);
       }
 
-      await Promise.all(promises);
       setLoading(false);
     };
 
     fetchData();
-  }, [
-    studentId,
-    permLoading,
-    permission?.id,
-    permission?.can_view_profile,
-    permission?.can_view_documents,
-    permission?.can_view_applications,
-  ]);
+  }, [studentId, permLoading, permission?.id]);
 
   if (permLoading) return <Layout><InlineLoader /></Layout>;
   if (!permission) return <Navigate to="/editor" replace />;
+
+  const defaultTab = permission.can_view_profile
+    ? 'profile'
+    : permission.can_view_documents
+      ? 'documents'
+      : 'applications';
 
   return (
     <Layout>
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         {loading ? <InlineLoader /> : (
           <>
-            {/* Header */}
             <div>
               <h1 className="text-xl font-bold text-foreground">{profile?.full_name || 'Student'}</h1>
               <p className="text-sm text-muted-foreground">{profile?.country_of_education || ''}</p>
             </div>
 
-            <Tabs defaultValue={permission.can_view_profile ? 'profile' : permission.can_view_documents ? 'documents' : 'applications'}>
+            <Tabs defaultValue={defaultTab}>
               <TabsList className="flex-wrap">
                 {permission.can_view_profile && <TabsTrigger value="profile"><User className="h-3.5 w-3.5 mr-1" />Profile</TabsTrigger>}
                 {permission.can_view_documents && <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1" />Documents</TabsTrigger>}
@@ -87,27 +103,31 @@ const EditorStudentProfile = () => {
                 <TabsContent value="profile">
                   <Card>
                     <CardContent className="pt-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        {[
-                          ['Full Name', profile?.full_name],
-                          ['Date of Birth', profile?.date_of_birth],
-                          ['Nationality', profile?.nationality],
-                          ['Country', profile?.country_of_education],
-                          ['Bachelor Degree', profile?.bachelor_degree_name],
-                          ['Bachelor Field', profile?.bachelor_field],
-                          ['Bachelor CGPA', profile?.bachelor_cgpa_percentage],
-                          ['Master Degree', profile?.master_degree_name],
-                          ['German Level', profile?.german_level],
-                          ['IELTS/TOEFL', profile?.ielts_toefl_score],
-                          ['Intended Course', profile?.intended_master_course],
-                          ['Intake', profile?.intake],
-                        ].map(([label, value]) => (
-                          <div key={label as string}>
-                            <p className="text-xs text-muted-foreground">{label}</p>
-                            <p className="font-medium">{(value as string) || '—'}</p>
-                          </div>
-                        ))}
-                      </div>
+                      {!profile ? (
+                        <p className="text-sm text-muted-foreground text-center py-6">Profile not available</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          {[
+                            ['Full Name', profile?.full_name],
+                            ['Date of Birth', profile?.date_of_birth],
+                            ['Nationality', profile?.nationality],
+                            ['Country', profile?.country_of_education],
+                            ['Bachelor Degree', profile?.bachelor_degree_name],
+                            ['Bachelor Field', profile?.bachelor_field],
+                            ['Bachelor CGPA', profile?.bachelor_cgpa_percentage],
+                            ['Master Degree', profile?.master_degree_name],
+                            ['German Level', profile?.german_level],
+                            ['IELTS/TOEFL', profile?.ielts_toefl_score],
+                            ['Intended Course', profile?.intended_master_course],
+                            ['Intake', profile?.intake],
+                          ].map(([label, value]) => (
+                            <div key={label as string}>
+                              <p className="text-xs text-muted-foreground">{label}</p>
+                              <p className="font-medium">{(value as string) || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
