@@ -88,8 +88,8 @@ const EditorStudentProfile = () => {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-secondary/40 via-background to-background">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+      <div className="min-h-[calc(100vh-4rem)] bg-background">
+        <div className="max-w-5xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-4">
           <Button
             variant="ghost"
             size="sm"
