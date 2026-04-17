@@ -38,21 +38,21 @@ const EditorStudentProfile = () => {
         const tasks: Promise<any>[] = [];
         if (permission.can_view_profile) {
           tasks.push(
-            supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle()
+            Promise.resolve(supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle())
               .then(({ data }) => { if (!cancelled && data) setProfile(data); }),
-            supabase.rpc('get_user_email' as any, { p_user_id: studentId } as any)
+            Promise.resolve(supabase.rpc('get_user_email' as any, { p_user_id: studentId } as any))
               .then(({ data }: any) => { if (!cancelled && data) setEmail(data as string); })
           );
         }
         if (permission.can_view_documents) {
           tasks.push(
-            supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
+            Promise.resolve(supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false }))
               .then(({ data }) => { if (!cancelled) setDocuments(data || []); })
           );
         }
         if (permission.can_view_applications) {
           tasks.push(
-            supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
+            Promise.resolve(supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false }))
               .then(({ data }) => { if (!cancelled) setApplications(data || []); })
           );
         }
