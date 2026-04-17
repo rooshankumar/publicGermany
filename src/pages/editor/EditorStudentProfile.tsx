@@ -9,16 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import InlineLoader from '@/components/InlineLoader';
-import { User, FileText, GraduationCap, ArrowLeft, MapPin, Mail, Phone } from 'lucide-react';
+import { User, FileText, GraduationCap, ArrowLeft, MapPin, Mail } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const { permissions, loading: permLoading } = useEditorPermissions();
   const [profile, setProfile] = useState<any>(null);
+  const [email, setEmail] = useState<string>('');
   const [documents, setDocuments] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const permission = studentId
     ? permissions.find(p => p.student_user_id === studentId) || null
@@ -27,50 +28,47 @@ const EditorStudentProfile = () => {
   useEffect(() => {
     if (permLoading || !studentId) return;
     if (!permission) {
-      setLoading(false);
+      setInitialLoading(false);
       return;
     }
 
+    let cancelled = false;
     const fetchData = async () => {
-      setLoading(true);
-      setProfile(null);
-      setDocuments([]);
-      setApplications([]);
-
       try {
+        const tasks: Promise<any>[] = [];
         if (permission.can_view_profile) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', studentId)
-            .maybeSingle();
-          if (data) setProfile(data);
+          tasks.push(
+            Promise.resolve(supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle())
+              .then(({ data }) => { if (!cancelled && data) setProfile(data); }),
+            Promise.resolve(supabase.rpc('get_user_email' as any, { p_user_id: studentId } as any))
+              .then(({ data }: any) => { if (!cancelled && data) setEmail(data as string); })
+          );
         }
         if (permission.can_view_documents) {
-          const { data } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('user_id', studentId)
-            .order('created_at', { ascending: false });
-          setDocuments(data || []);
+          tasks.push(
+            Promise.resolve(supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false }))
+              .then(({ data }) => { if (!cancelled) setDocuments(data || []); })
+          );
         }
         if (permission.can_view_applications) {
-          const { data } = await supabase
-            .from('applications')
-            .select('*')
-            .eq('user_id', studentId)
-            .order('created_at', { ascending: false });
-          setApplications(data || []);
+          tasks.push(
+            Promise.resolve(supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false }))
+              .then(({ data }) => { if (!cancelled) setApplications(data || []); })
+          );
         }
+        await Promise.all(tasks);
       } catch (e) {
         console.error('Error fetching student data:', e);
+      } finally {
+        if (!cancelled) setInitialLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchData();
+    return () => { cancelled = true; };
   }, [studentId, permLoading, permission?.id]);
+
+  const loading = initialLoading && !profile && documents.length === 0 && applications.length === 0;
 
   if (permLoading) return <Layout><div className="p-12"><InlineLoader /></div></Layout>;
   if (!permission) return <Navigate to="/editor" replace />;
@@ -90,8 +88,8 @@ const EditorStudentProfile = () => {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-secondary/40 via-background to-background">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+      <div className="min-h-[calc(100vh-4rem)] bg-background">
+        <div className="max-w-5xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-4">
           <Button
             variant="ghost"
             size="sm"
@@ -107,45 +105,29 @@ const EditorStudentProfile = () => {
             </div>
           ) : (
             <>
-              {/* Editorial profile header */}
-              <header className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                <div className="absolute top-0 left-0 right-0 h-1 flex">
-                  <div className="flex-1 bg-foreground" />
-                  <div className="flex-1 bg-destructive" />
-                  <div className="flex-1 bg-accent" />
-                </div>
-
-                <div className="p-6 md:p-8 pt-8 md:pt-10">
-                  <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
-                    <Avatar className="h-20 w-20 ring-4 ring-secondary shrink-0">
-                      <AvatarFallback className="bg-gradient-to-br from-primary/15 to-accent/20 text-primary font-serif font-bold text-2xl">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-2 min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-primary">
-                        Student Dossier
-                      </p>
-                      <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground truncate">
-                        {profile?.full_name || 'Student'}
-                      </h1>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {profile?.country_of_education && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> {profile.country_of_education}
-                          </span>
-                        )}
-                        {profile?.phone && (
-                          <span className="inline-flex items-center gap-1">
-                            <Phone className="h-3 w-3" /> {profile.phone}
-                          </span>
-                        )}
-                        {profile?.intended_master_course && (
-                          <span className="inline-flex items-center gap-1">
-                            <GraduationCap className="h-3 w-3" /> {profile.intended_master_course}
-                          </span>
-                        )}
-                      </div>
+              {/* Compact profile header */}
+              <header className="rounded-xl border border-border bg-card shadow-sm">
+                <div className="p-4 md:p-5 flex items-center gap-4">
+                  <Avatar className="h-12 w-12 md:h-14 md:w-14 shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
+                      {profile?.full_name || 'Student'}
+                    </h1>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                      {email && (
+                        <span className="inline-flex items-center gap-1 truncate max-w-full">
+                          <Mail className="h-3 w-3 shrink-0" /> <span className="truncate">{email}</span>
+                        </span>
+                      )}
+                      {profile?.country_of_education && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {profile.country_of_education}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
