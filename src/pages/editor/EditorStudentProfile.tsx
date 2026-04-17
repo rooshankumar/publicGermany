@@ -9,16 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import InlineLoader from '@/components/InlineLoader';
-import { User, FileText, GraduationCap, ArrowLeft, MapPin, Mail, Phone } from 'lucide-react';
+import { User, FileText, GraduationCap, ArrowLeft, MapPin, Mail } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const { permissions, loading: permLoading } = useEditorPermissions();
   const [profile, setProfile] = useState<any>(null);
+  const [email, setEmail] = useState<string>('');
   const [documents, setDocuments] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const permission = studentId
     ? permissions.find(p => p.student_user_id === studentId) || null
@@ -27,50 +28,47 @@ const EditorStudentProfile = () => {
   useEffect(() => {
     if (permLoading || !studentId) return;
     if (!permission) {
-      setLoading(false);
+      setInitialLoading(false);
       return;
     }
 
+    let cancelled = false;
     const fetchData = async () => {
-      setLoading(true);
-      setProfile(null);
-      setDocuments([]);
-      setApplications([]);
-
       try {
+        const tasks: Promise<any>[] = [];
         if (permission.can_view_profile) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', studentId)
-            .maybeSingle();
-          if (data) setProfile(data);
+          tasks.push(
+            supabase.from('profiles').select('*').eq('user_id', studentId).maybeSingle()
+              .then(({ data }) => { if (!cancelled && data) setProfile(data); }),
+            supabase.rpc('get_user_email' as any, { p_user_id: studentId } as any)
+              .then(({ data }: any) => { if (!cancelled && data) setEmail(data as string); })
+          );
         }
         if (permission.can_view_documents) {
-          const { data } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('user_id', studentId)
-            .order('created_at', { ascending: false });
-          setDocuments(data || []);
+          tasks.push(
+            supabase.from('documents').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
+              .then(({ data }) => { if (!cancelled) setDocuments(data || []); })
+          );
         }
         if (permission.can_view_applications) {
-          const { data } = await supabase
-            .from('applications')
-            .select('*')
-            .eq('user_id', studentId)
-            .order('created_at', { ascending: false });
-          setApplications(data || []);
+          tasks.push(
+            supabase.from('applications').select('*').eq('user_id', studentId).order('created_at', { ascending: false })
+              .then(({ data }) => { if (!cancelled) setApplications(data || []); })
+          );
         }
+        await Promise.all(tasks);
       } catch (e) {
         console.error('Error fetching student data:', e);
+      } finally {
+        if (!cancelled) setInitialLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchData();
+    return () => { cancelled = true; };
   }, [studentId, permLoading, permission?.id]);
+
+  const loading = initialLoading && !profile && documents.length === 0 && applications.length === 0;
 
   if (permLoading) return <Layout><div className="p-12"><InlineLoader /></div></Layout>;
   if (!permission) return <Navigate to="/editor" replace />;
