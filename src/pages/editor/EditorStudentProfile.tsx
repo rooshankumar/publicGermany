@@ -105,45 +105,29 @@ const EditorStudentProfile = () => {
             </div>
           ) : (
             <>
-              {/* Editorial profile header */}
-              <header className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                <div className="absolute top-0 left-0 right-0 h-1 flex">
-                  <div className="flex-1 bg-foreground" />
-                  <div className="flex-1 bg-destructive" />
-                  <div className="flex-1 bg-accent" />
-                </div>
-
-                <div className="p-6 md:p-8 pt-8 md:pt-10">
-                  <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
-                    <Avatar className="h-20 w-20 ring-4 ring-secondary shrink-0">
-                      <AvatarFallback className="bg-gradient-to-br from-primary/15 to-accent/20 text-primary font-serif font-bold text-2xl">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-2 min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-primary">
-                        Student Dossier
-                      </p>
-                      <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground truncate">
-                        {profile?.full_name || 'Student'}
-                      </h1>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {profile?.country_of_education && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> {profile.country_of_education}
-                          </span>
-                        )}
-                        {profile?.phone && (
-                          <span className="inline-flex items-center gap-1">
-                            <Phone className="h-3 w-3" /> {profile.phone}
-                          </span>
-                        )}
-                        {profile?.intended_master_course && (
-                          <span className="inline-flex items-center gap-1">
-                            <GraduationCap className="h-3 w-3" /> {profile.intended_master_course}
-                          </span>
-                        )}
-                      </div>
+              {/* Compact profile header */}
+              <header className="rounded-xl border border-border bg-card shadow-sm">
+                <div className="p-4 md:p-5 flex items-center gap-4">
+                  <Avatar className="h-12 w-12 md:h-14 md:w-14 shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
+                      {profile?.full_name || 'Student'}
+                    </h1>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                      {email && (
+                        <span className="inline-flex items-center gap-1 truncate max-w-full">
+                          <Mail className="h-3 w-3 shrink-0" /> <span className="truncate">{email}</span>
+                        </span>
+                      )}
+                      {profile?.country_of_education && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {profile.country_of_education}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
