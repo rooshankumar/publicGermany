@@ -150,21 +150,20 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener FIRST — keep callback synchronous to avoid deadlocks
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (import.meta.env.MODE !== 'production') {
-          // Dev-only, avoid logging PII like email
           console.debug('Auth state change:', event);
         }
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          setLoading(true);
           hydrateCachedProfile(session.user.id);
-          await fetchProfile(session.user.id);
+          // Fire-and-forget: never await inside onAuthStateChange
+          fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setLoading(false);
@@ -173,22 +172,24 @@ export const useAuth = () => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (import.meta.env.MODE !== 'production') {
         console.debug('Initial session check');
       }
-      
+
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        setLoading(true);
         hydrateCachedProfile(session.user.id);
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setProfile(null);
         setLoading(false);
       }
+    }).catch((e) => {
+      console.warn('getSession failed:', e);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
