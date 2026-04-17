@@ -4,11 +4,12 @@ import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import InlineLoader from '@/components/InlineLoader';
-import { User, FileText, GraduationCap, ArrowLeft } from 'lucide-react';
+import { User, FileText, GraduationCap, ArrowLeft, MapPin, Mail, Phone } from 'lucide-react';
 
 const EditorStudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
@@ -19,7 +20,6 @@ const EditorStudentProfile = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Find permission for this student from loaded permissions
   const permission = studentId
     ? permissions.find(p => p.student_user_id === studentId) || null
     : null;
@@ -39,30 +39,27 @@ const EditorStudentProfile = () => {
 
       try {
         if (permission.can_view_profile) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('profiles')
             .select('*')
             .eq('user_id', studentId)
             .maybeSingle();
-          if (error) console.error('Profile fetch error:', error);
           if (data) setProfile(data);
         }
         if (permission.can_view_documents) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('documents')
             .select('*')
             .eq('user_id', studentId)
             .order('created_at', { ascending: false });
-          if (error) console.error('Documents fetch error:', error);
           setDocuments(data || []);
         }
         if (permission.can_view_applications) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('applications')
             .select('*')
             .eq('user_id', studentId)
             .order('created_at', { ascending: false });
-          if (error) console.error('Applications fetch error:', error);
           setApplications(data || []);
         }
       } catch (e) {
@@ -75,7 +72,7 @@ const EditorStudentProfile = () => {
     fetchData();
   }, [studentId, permLoading, permission?.id]);
 
-  if (permLoading) return <Layout><InlineLoader /></Layout>;
+  if (permLoading) return <Layout><div className="p-12"><InlineLoader /></div></Layout>;
   if (!permission) return <Navigate to="/editor" replace />;
 
   const defaultTab = permission.can_view_profile
@@ -84,114 +81,201 @@ const EditorStudentProfile = () => {
       ? 'documents'
       : 'applications';
 
+  const initials = (profile?.full_name || '?')
+    .split(' ')
+    .map((s: string) => s[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <Layout>
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-1" onClick={() => navigate('/editor')}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
-        </Button>
-        {loading ? <InlineLoader /> : (
-          <>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">{profile?.full_name || 'Student'}</h1>
-              <p className="text-sm text-muted-foreground">{profile?.country_of_education || ''}</p>
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-secondary/40 via-background to-background">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 text-muted-foreground hover:text-primary"
+            onClick={() => navigate('/editor')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Roster
+          </Button>
+
+          {loading ? (
+            <div className="rounded-xl border border-border bg-card p-12">
+              <InlineLoader />
             </div>
+          ) : (
+            <>
+              {/* Editorial profile header */}
+              <header className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="absolute top-0 left-0 right-0 h-1 flex">
+                  <div className="flex-1 bg-foreground" />
+                  <div className="flex-1 bg-destructive" />
+                  <div className="flex-1 bg-accent" />
+                </div>
 
-            <Tabs defaultValue={defaultTab}>
-              <TabsList className="flex-wrap">
-                {permission.can_view_profile && <TabsTrigger value="profile"><User className="h-3.5 w-3.5 mr-1" />Profile</TabsTrigger>}
-                {permission.can_view_documents && <TabsTrigger value="documents"><FileText className="h-3.5 w-3.5 mr-1" />Documents</TabsTrigger>}
-                {permission.can_view_applications && <TabsTrigger value="applications"><GraduationCap className="h-3.5 w-3.5 mr-1" />Applications</TabsTrigger>}
-              </TabsList>
+                <div className="p-6 md:p-8 pt-8 md:pt-10">
+                  <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
+                    <Avatar className="h-20 w-20 ring-4 ring-secondary shrink-0">
+                      <AvatarFallback className="bg-gradient-to-br from-primary/15 to-accent/20 text-primary font-serif font-bold text-2xl">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-2 min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-primary">
+                        Student Dossier
+                      </p>
+                      <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground truncate">
+                        {profile?.full_name || 'Student'}
+                      </h1>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {profile?.country_of_education && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3 w-3" /> {profile.country_of_education}
+                          </span>
+                        )}
+                        {profile?.phone && (
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {profile.phone}
+                          </span>
+                        )}
+                        {profile?.intended_master_course && (
+                          <span className="inline-flex items-center gap-1">
+                            <GraduationCap className="h-3 w-3" /> {profile.intended_master_course}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </header>
 
-              {permission.can_view_profile && (
-                <TabsContent value="profile">
-                  <Card>
-                    <CardContent className="pt-6">
-                      {!profile ? (
-                        <p className="text-sm text-muted-foreground text-center py-6">Profile not available</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                          {[
-                            ['Full Name', profile?.full_name],
-                            ['Date of Birth', profile?.date_of_birth],
-                            ['Nationality', profile?.nationality],
-                            ['Country', profile?.country_of_education],
-                            ['Bachelor Degree', profile?.bachelor_degree_name],
-                            ['Bachelor Field', profile?.bachelor_field],
-                            ['Bachelor CGPA', profile?.bachelor_cgpa_percentage],
-                            ['Master Degree', profile?.master_degree_name],
-                            ['German Level', profile?.german_level],
-                            ['IELTS/TOEFL', profile?.ielts_toefl_score],
-                            ['Intended Course', profile?.intended_master_course],
-                            ['Intake', profile?.intake],
-                          ].map(([label, value]) => (
-                            <div key={label as string}>
-                              <p className="text-xs text-muted-foreground">{label}</p>
-                              <p className="font-medium">{(value as string) || '—'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+              <Tabs defaultValue={defaultTab} className="space-y-5">
+                <TabsList className="bg-card border border-border h-11 p-1 rounded-xl">
+                  {permission.can_view_profile && (
+                    <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                      <User className="h-3.5 w-3.5 mr-1.5" />Profile
+                    </TabsTrigger>
+                  )}
+                  {permission.can_view_documents && (
+                    <TabsTrigger value="documents" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                      <FileText className="h-3.5 w-3.5 mr-1.5" />Documents
+                      <span className="ml-1.5 text-[10px] opacity-70">{documents.length}</span>
+                    </TabsTrigger>
+                  )}
+                  {permission.can_view_applications && (
+                    <TabsTrigger value="applications" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                      <GraduationCap className="h-3.5 w-3.5 mr-1.5" />Applications
+                      <span className="ml-1.5 text-[10px] opacity-70">{applications.length}</span>
+                    </TabsTrigger>
+                  )}
+                </TabsList>
 
-              {permission.can_view_documents && (
-                <TabsContent value="documents">
-                  <Card>
-                    <CardContent className="pt-6">
-                      {documents.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-6">No documents uploaded</p>
-                      ) : (
-                        <div className="divide-y divide-border">
-                          {documents.map((doc: any) => (
-                            <div key={doc.id} className="flex items-center justify-between py-2.5">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                                <p className="text-xs text-muted-foreground">{doc.category} · {doc.module || 'General'}</p>
+                {permission.can_view_profile && (
+                  <TabsContent value="profile" className="mt-0">
+                    <Card className="border-border">
+                      <CardContent className="p-6 md:p-8">
+                        {!profile ? (
+                          <p className="text-sm text-muted-foreground text-center py-6">Profile not available</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
+                            {[
+                              ['Full Name', profile?.full_name],
+                              ['Date of Birth', profile?.date_of_birth],
+                              ['Nationality', profile?.nationality],
+                              ['Country of Education', profile?.country_of_education],
+                              ['Bachelor Degree', profile?.bachelor_degree_name],
+                              ['Bachelor Field', profile?.bachelor_field],
+                              ['Bachelor CGPA', profile?.bachelor_cgpa_percentage],
+                              ['Master Degree', profile?.master_degree_name],
+                              ['German Level', profile?.german_level],
+                              ['IELTS / TOEFL', profile?.ielts_toefl_score],
+                              ['Intended Course', profile?.intended_master_course],
+                              ['Intake', profile?.intake],
+                            ].map(([label, value]) => (
+                              <div key={label as string} className="border-l-2 border-border pl-3 py-0.5 hover:border-primary transition-colors">
+                                <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">{label}</p>
+                                <p className="text-sm font-medium text-foreground mt-0.5">{(value as string) || '—'}</p>
                               </div>
-                              <Badge variant={doc.status === 'approved' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
-                                {doc.status}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
 
-              {permission.can_view_applications && (
-                <TabsContent value="applications">
-                  <Card>
-                    <CardContent className="pt-6">
-                      {applications.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-6">No applications yet</p>
-                      ) : (
-                        <div className="divide-y divide-border">
-                          {applications.map((app: any) => (
-                            <div key={app.id} className="flex items-center justify-between py-2.5">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{app.university_name}</p>
-                                <p className="text-xs text-muted-foreground">{app.program_name}</p>
+                {permission.can_view_documents && (
+                  <TabsContent value="documents" className="mt-0">
+                    <Card className="border-border">
+                      <CardContent className="p-2 md:p-3">
+                        {documents.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-12">No documents uploaded</p>
+                        ) : (
+                          <div className="divide-y divide-border">
+                            {documents.map((doc: any) => (
+                              <div key={doc.id} className="flex items-center justify-between gap-3 p-3 hover:bg-secondary/40 rounded-md transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">{doc.file_name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {doc.category} · {doc.module || 'General'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={doc.status === 'approved' ? 'default' : 'secondary'}
+                                  className="text-[10px] shrink-0 capitalize"
+                                >
+                                  {doc.status}
+                                </Badge>
                               </div>
-                              <Badge variant="secondary" className="text-[10px] shrink-0 capitalize">
-                                {app.status}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
-            </Tabs>
-          </>
-        )}
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
+
+                {permission.can_view_applications && (
+                  <TabsContent value="applications" className="mt-0">
+                    <Card className="border-border">
+                      <CardContent className="p-2 md:p-3">
+                        {applications.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-12">No applications yet</p>
+                        ) : (
+                          <div className="divide-y divide-border">
+                            {applications.map((app: any) => (
+                              <div key={app.id} className="flex items-center justify-between gap-3 p-3 hover:bg-secondary/40 rounded-md transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-accent/15 flex items-center justify-center shrink-0">
+                                    <GraduationCap className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">{app.university_name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{app.program_name}</p>
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className="text-[10px] shrink-0 capitalize">
+                                  {app.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
+              </Tabs>
+            </>
+          )}
+        </div>
       </div>
     </Layout>
   );
