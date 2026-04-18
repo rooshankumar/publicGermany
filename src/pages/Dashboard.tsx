@@ -51,12 +51,14 @@ const Dashboard = () => {
           { data: apps },
           { data: ctrData },
           { data: events },
+          { data: requests },
         ] = await Promise.all([
           supabase.from('profiles').select('*').eq('user_id', user.id).single(),
           supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('applications').select('id, status, university_name, application_end_date').eq('user_id', user.id),
           supabase.from('contracts').select('*').eq('student_id', user.id).neq('status', 'draft').order('sent_at', { ascending: false }),
           supabase.from('events').select('action, entity_type, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+          supabase.from('service_requests').select('id, service_price, target_total_amount, target_currency, service_currency, service_payments(amount, status)').eq('user_id', user.id),
         ]);
 
         const prof = profResult.data;
