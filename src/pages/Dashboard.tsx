@@ -37,6 +37,8 @@ const Dashboard = () => {
   const [nearestDeadline, setNearestDeadline] = useState<{ name: string; date: string; days: number } | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
   const [recentEvents, setRecentEvents] = useState<{ action: string; entity_type: string; created_at: string }[]>([]);
+  const [pendingAmount, setPendingAmount] = useState(0);
+  const [pendingCurrency, setPendingCurrency] = useState('INR');
 
   useEffect(() => {
     if (!user) return;
@@ -49,12 +51,14 @@ const Dashboard = () => {
           { data: apps },
           { data: ctrData },
           { data: events },
+          { data: requests },
         ] = await Promise.all([
           supabase.from('profiles').select('*').eq('user_id', user.id).single(),
           supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('applications').select('id, status, university_name, application_end_date').eq('user_id', user.id),
           supabase.from('contracts').select('*').eq('student_id', user.id).neq('status', 'draft').order('sent_at', { ascending: false }),
           supabase.from('events').select('action, entity_type, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+          supabase.from('service_requests').select('id, service_price, target_total_amount, target_currency, service_currency, service_payments(amount, status)').eq('user_id', user.id),
         ]);
 
         const prof = profResult.data;
@@ -84,6 +88,20 @@ const Dashboard = () => {
 
         setContracts(ctrData || []);
         setRecentEvents(events || []);
+
+        // Compute pending payment across all service requests
+        let totalPending = 0;
+        let currency = 'INR';
+        (requests || []).forEach((r: any) => {
+          const target = Number(r.target_total_amount ?? r.service_price ?? 0) || 0;
+          const received = (r.service_payments || [])
+            .filter((p: any) => (p.status || '').toLowerCase() === 'received')
+            .reduce((acc: number, p: any) => acc + (Number(p.amount) || 0), 0);
+          totalPending += Math.max(0, target - received);
+          currency = r.target_currency || r.service_currency || currency;
+        });
+        setPendingAmount(totalPending);
+        setPendingCurrency(currency);
       } catch (e) {
         console.error('Dashboard load error:', e);
       } finally {
@@ -116,7 +134,7 @@ const Dashboard = () => {
           </div>
 
           {/* Quick Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <Link to="/profile" className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:border-blue-400 transition-colors">
               <User className="h-4 w-4 text-blue-600" />
               <div className="text-xs">
@@ -143,6 +161,15 @@ const Dashboard = () => {
               <div className="text-xs">
                 <div className="font-semibold text-foreground">Services</div>
                 <div className="text-muted-foreground">Get help</div>
+              </div>
+            </Link>
+            <Link to="/payments" className={`flex items-center gap-2 p-3 rounded-lg transition-colors col-span-2 md:col-span-1 ${pendingAmount > 0 ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 hover:border-red-400' : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'}`}>
+              <AlertCircle className={`h-4 w-4 ${pendingAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+              <div className="text-xs">
+                <div className="font-semibold text-foreground">Pending</div>
+                <div className={pendingAmount > 0 ? 'text-red-700 dark:text-red-300 font-semibold' : 'text-muted-foreground'}>
+                  {pendingAmount > 0 ? `${pendingCurrency === 'INR' ? '₹' : pendingCurrency + ' '}${pendingAmount.toLocaleString()}` : 'All clear'}
+                </div>
               </div>
             </Link>
           </div>
