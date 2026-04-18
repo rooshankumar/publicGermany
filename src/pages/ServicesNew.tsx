@@ -949,42 +949,6 @@ const ServicesNew = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Service / Package Details Dialog */}
-        <Dialog open={!!detailsService} onOpenChange={(open) => !open && setDetailsService(null)}>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between gap-3 pr-6">
-                <span>{detailsService?.name}</span>
-                {detailsService && (
-                  <Badge variant="secondary">
-                    {detailsService.kind === 'package' && detailsService.price_range_inr
-                      ? `₹${Number(detailsService.price_range_inr).toLocaleString()}`
-                      : `₹${detailsService.price_inr?.toLocaleString() || '—'}`}
-                  </Badge>
-                )}
-              </DialogTitle>
-              <DialogDescription className="sr-only">Service details</DialogDescription>
-            </DialogHeader>
-            <div className="text-sm whitespace-pre-line text-foreground/90 leading-relaxed">
-              {detailsService?.description || 'No description available.'}
-            </div>
-            {detailsService?.kind === 'package' && (
-              <Button
-                onClick={() => {
-                  if (detailsService) {
-                    setPackageRequestName(detailsService.name);
-                    setDetailsService(null);
-                    setShowRequestDialog(true);
-                  }
-                }}
-                className="w-full mt-2"
-              >
-                Request Package
-              </Button>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </Layout>
   );
