@@ -59,6 +59,7 @@ const ServicesNew = () => {
   const [timeline, setTimeline] = useState<string>('');
   const [requestDetails, setRequestDetails] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [detailsService, setDetailsService] = useState<Service | null>(null);
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
@@ -392,30 +393,41 @@ const ServicesNew = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {packages.map(pkg => (
-                      <Card key={pkg.id} className="border-primary/20">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                            {pkg.price_range_inr && (
-                              <Badge variant="secondary">₹{pkg.price_range_inr}</Badge>
-                            )}
-                          </div>
-                          <CardDescription>{pkg.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Button
-                            onClick={() => {
-                              setPackageRequestName(pkg.name);
-                              setShowRequestDialog(true);
-                            }}
-                            className="w-full"
-                          >
-                            Request Package
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {packages.map(pkg => {
+                      const shortDesc = (pkg.description || '').split('\n')[0];
+                      return (
+                        <Card key={pkg.id} className="border-primary/20 flex flex-col">
+                          <CardHeader>
+                            <div className="flex items-center justify-between gap-2">
+                              <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                              {pkg.price_range_inr && (
+                                <Badge variant="secondary">₹{Number(pkg.price_range_inr).toLocaleString()}</Badge>
+                              )}
+                            </div>
+                            <CardDescription className="line-clamp-2">{shortDesc}</CardDescription>
+                          </CardHeader>
+                          <CardContent className="mt-auto flex flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDetailsService(pkg)}
+                              className="w-full"
+                            >
+                              <Eye className="h-4 w-4 mr-1" /> View details
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setPackageRequestName(pkg.name);
+                                setShowRequestDialog(true);
+                              }}
+                              className="w-full"
+                            >
+                              Request Package
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -465,7 +477,16 @@ const ServicesNew = () => {
                                   ₹{service.price_inr?.toLocaleString() || '—'}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground">{service.description}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
+                              {(service.description?.length ?? 0) > 80 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setDetailsService(service); }}
+                                  className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                                >
+                                  <Eye className="h-3 w-3" /> View details
+                                </button>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -927,6 +948,42 @@ const ServicesNew = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Service / Package Details Dialog */}
+        <Dialog open={!!detailsService} onOpenChange={(open) => !open && setDetailsService(null)}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between gap-3 pr-6">
+                <span>{detailsService?.name}</span>
+                {detailsService && (
+                  <Badge variant="secondary">
+                    {detailsService.kind === 'package' && detailsService.price_range_inr
+                      ? `₹${Number(detailsService.price_range_inr).toLocaleString()}`
+                      : `₹${detailsService.price_inr?.toLocaleString() || '—'}`}
+                  </Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Service details</DialogDescription>
+            </DialogHeader>
+            <div className="text-sm whitespace-pre-line text-foreground/90 leading-relaxed">
+              {detailsService?.description || 'No description available.'}
+            </div>
+            {detailsService?.kind === 'package' && (
+              <Button
+                onClick={() => {
+                  if (detailsService) {
+                    setPackageRequestName(detailsService.name);
+                    setDetailsService(null);
+                    setShowRequestDialog(true);
+                  }
+                }}
+                className="w-full mt-2"
+              >
+                Request Package
+              </Button>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
