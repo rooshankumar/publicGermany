@@ -88,6 +88,20 @@ const Dashboard = () => {
 
         setContracts(ctrData || []);
         setRecentEvents(events || []);
+
+        // Compute pending payment across all service requests
+        let totalPending = 0;
+        let currency = 'INR';
+        (requests || []).forEach((r: any) => {
+          const target = Number(r.target_total_amount ?? r.service_price ?? 0) || 0;
+          const received = (r.service_payments || [])
+            .filter((p: any) => (p.status || '').toLowerCase() === 'received')
+            .reduce((acc: number, p: any) => acc + (Number(p.amount) || 0), 0);
+          totalPending += Math.max(0, target - received);
+          currency = r.target_currency || r.service_currency || currency;
+        });
+        setPendingAmount(totalPending);
+        setPendingCurrency(currency);
       } catch (e) {
         console.error('Dashboard load error:', e);
       } finally {
