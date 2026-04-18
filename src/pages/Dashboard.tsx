@@ -134,7 +134,7 @@ const Dashboard = () => {
           </div>
 
           {/* Quick Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <Link to="/profile" className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:border-blue-400 transition-colors">
               <User className="h-4 w-4 text-blue-600" />
               <div className="text-xs">
@@ -161,6 +161,15 @@ const Dashboard = () => {
               <div className="text-xs">
                 <div className="font-semibold text-foreground">Services</div>
                 <div className="text-muted-foreground">Get help</div>
+              </div>
+            </Link>
+            <Link to="/payments" className={`flex items-center gap-2 p-3 rounded-lg transition-colors col-span-2 md:col-span-1 ${pendingAmount > 0 ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 hover:border-red-400' : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'}`}>
+              <AlertCircle className={`h-4 w-4 ${pendingAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+              <div className="text-xs">
+                <div className="font-semibold text-foreground">Pending</div>
+                <div className={pendingAmount > 0 ? 'text-red-700 dark:text-red-300 font-semibold' : 'text-muted-foreground'}>
+                  {pendingAmount > 0 ? `${pendingCurrency === 'INR' ? '₹' : pendingCurrency + ' '}${pendingAmount.toLocaleString()}` : 'All clear'}
+                </div>
               </div>
             </Link>
           </div>
