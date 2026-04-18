@@ -499,7 +499,30 @@ const ServicesNew = () => {
                                   ₹{service.price_inr?.toLocaleString() || '—'}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground">{service.description}</p>
+                              {service.description && (() => {
+                                const isLong = service.description.length > 110;
+                                const isOpen = !!expandedServices[service.id];
+                                const text = !isLong || isOpen
+                                  ? service.description
+                                  : service.description.slice(0, 110).trimEnd() + '…';
+                                return (
+                                  <>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-line">{text}</p>
+                                    {isLong && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedServices(prev => ({ ...prev, [service.id]: !prev[service.id] }));
+                                        }}
+                                        className="text-xs font-medium text-primary hover:underline mt-1"
+                                      >
+                                        {isOpen ? 'Show less' : 'Read more'}
+                                      </button>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         </CardContent>
