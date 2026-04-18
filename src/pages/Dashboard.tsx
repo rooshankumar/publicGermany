@@ -37,6 +37,8 @@ const Dashboard = () => {
   const [nearestDeadline, setNearestDeadline] = useState<{ name: string; date: string; days: number } | null>(null);
   const [contracts, setContracts] = useState<any[]>([]);
   const [recentEvents, setRecentEvents] = useState<{ action: string; entity_type: string; created_at: string }[]>([]);
+  const [pendingAmount, setPendingAmount] = useState(0);
+  const [pendingCurrency, setPendingCurrency] = useState('INR');
 
   useEffect(() => {
     if (!user) return;
