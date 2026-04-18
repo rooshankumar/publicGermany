@@ -487,16 +487,7 @@ const ServicesNew = () => {
                                   ₹{service.price_inr?.toLocaleString() || '—'}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-                              {(service.description?.length ?? 0) > 80 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setDetailsService(service); }}
-                                  className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
-                                >
-                                  <Eye className="h-3 w-3" /> View details
-                                </button>
-                              )}
+                              <p className="text-sm text-muted-foreground">{service.description}</p>
                             </div>
                           </div>
                         </CardContent>
