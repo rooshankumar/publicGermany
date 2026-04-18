@@ -393,30 +393,41 @@ const ServicesNew = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {packages.map(pkg => (
-                      <Card key={pkg.id} className="border-primary/20">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                            {pkg.price_range_inr && (
-                              <Badge variant="secondary">₹{pkg.price_range_inr}</Badge>
-                            )}
-                          </div>
-                          <CardDescription>{pkg.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Button
-                            onClick={() => {
-                              setPackageRequestName(pkg.name);
-                              setShowRequestDialog(true);
-                            }}
-                            className="w-full"
-                          >
-                            Request Package
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {packages.map(pkg => {
+                      const shortDesc = (pkg.description || '').split('\n')[0];
+                      return (
+                        <Card key={pkg.id} className="border-primary/20 flex flex-col">
+                          <CardHeader>
+                            <div className="flex items-center justify-between gap-2">
+                              <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                              {pkg.price_range_inr && (
+                                <Badge variant="secondary">₹{Number(pkg.price_range_inr).toLocaleString()}</Badge>
+                              )}
+                            </div>
+                            <CardDescription className="line-clamp-2">{shortDesc}</CardDescription>
+                          </CardHeader>
+                          <CardContent className="mt-auto flex flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDetailsService(pkg)}
+                              className="w-full"
+                            >
+                              <Eye className="h-4 w-4 mr-1" /> View details
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setPackageRequestName(pkg.name);
+                                setShowRequestDialog(true);
+                              }}
+                              className="w-full"
+                            >
+                              Request Package
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
