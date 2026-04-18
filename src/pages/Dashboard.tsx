@@ -350,16 +350,28 @@ const Dashboard = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-yellow-500" />
+              <Lightbulb className="h-4 w-4 text-primary" />
               Helpful Tips
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>💡 A complete profile increases your chances of getting accurate university matches.</li>
-              <li>📄 Keep all your documents ready (10th, 12th, Bachelor transcripts, IELTS scores).</li>
-              <li>🎯 Start adding universities early to track application deadlines.</li>
-              <li>🚀 Our services include SOP writing, LOR collection, and visa guidance.</li>
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span>A complete profile improves the accuracy of university and program recommendations.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span>Keep academic transcripts (Class 10, 12, Bachelor) and language certificates ready in PDF format.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span>Shortlist universities early to stay ahead of intake deadlines and portal opening dates.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span>Use our SOP, LOR, and visa guidance services to strengthen each step of your application.</span>
+              </li>
             </ul>
           </CardContent>
         </Card>
