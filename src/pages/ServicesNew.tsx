@@ -59,6 +59,8 @@ const ServicesNew = () => {
   const [timeline, setTimeline] = useState<string>('');
   const [requestDetails, setRequestDetails] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedPackages, setExpandedPackages] = useState<Record<string, boolean>>({});
+  const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
