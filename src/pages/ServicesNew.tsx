@@ -59,6 +59,8 @@ const ServicesNew = () => {
   const [timeline, setTimeline] = useState<string>('');
   const [requestDetails, setRequestDetails] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedPackages, setExpandedPackages] = useState<Record<string, boolean>>({});
+  const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
@@ -410,16 +412,27 @@ const ServicesNew = () => {
                           </CardHeader>
                           <CardContent className="flex flex-col gap-3 flex-1">
                             {bullets.length > 0 && (
-                              <ul className="space-y-1.5 text-sm">
-                                {bullets.map((b, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                    <span className="text-foreground/90">{b}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                              <>
+                                <ul className="space-y-1.5 text-sm">
+                                  {(expandedPackages[pkg.id] ? bullets : bullets.slice(0, 2)).map((b, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                      <span className="text-foreground/90">{b}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                {bullets.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedPackages(prev => ({ ...prev, [pkg.id]: !prev[pkg.id] }))}
+                                    className="text-xs font-medium text-primary hover:underline self-start"
+                                  >
+                                    {expandedPackages[pkg.id] ? 'Show less' : `Read more (${bullets.length - 2} more)`}
+                                  </button>
+                                )}
+                              </>
                             )}
-                            {note && (
+                            {note && expandedPackages[pkg.id] && (
                               <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-2">
                                 {note}
                               </p>
@@ -486,7 +499,30 @@ const ServicesNew = () => {
                                   ₹{service.price_inr?.toLocaleString() || '—'}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground">{service.description}</p>
+                              {service.description && (() => {
+                                const isLong = service.description.length > 110;
+                                const isOpen = !!expandedServices[service.id];
+                                const text = !isLong || isOpen
+                                  ? service.description
+                                  : service.description.slice(0, 110).trimEnd() + '…';
+                                return (
+                                  <>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-line">{text}</p>
+                                    {isLong && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedServices(prev => ({ ...prev, [service.id]: !prev[service.id] }));
+                                        }}
+                                        className="text-xs font-medium text-primary hover:underline mt-1"
+                                      >
+                                        {isOpen ? 'Show less' : 'Read more'}
+                                      </button>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         </CardContent>
