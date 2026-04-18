@@ -59,7 +59,6 @@ const ServicesNew = () => {
   const [timeline, setTimeline] = useState<string>('');
   const [requestDetails, setRequestDetails] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [detailsService, setDetailsService] = useState<Service | null>(null);
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
