@@ -412,16 +412,27 @@ const ServicesNew = () => {
                           </CardHeader>
                           <CardContent className="flex flex-col gap-3 flex-1">
                             {bullets.length > 0 && (
-                              <ul className="space-y-1.5 text-sm">
-                                {bullets.map((b, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                    <span className="text-foreground/90">{b}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                              <>
+                                <ul className="space-y-1.5 text-sm">
+                                  {(expandedPackages[pkg.id] ? bullets : bullets.slice(0, 2)).map((b, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                      <span className="text-foreground/90">{b}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                {bullets.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedPackages(prev => ({ ...prev, [pkg.id]: !prev[pkg.id] }))}
+                                    className="text-xs font-medium text-primary hover:underline self-start"
+                                  >
+                                    {expandedPackages[pkg.id] ? 'Show less' : `Read more (${bullets.length - 2} more)`}
+                                  </button>
+                                )}
+                              </>
                             )}
-                            {note && (
+                            {note && expandedPackages[pkg.id] && (
                               <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-2">
                                 {note}
                               </p>
