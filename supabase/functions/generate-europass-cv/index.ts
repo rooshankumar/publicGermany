@@ -25,27 +25,45 @@ function escapeHtml(text: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
+// Format grade based on max scale (percentage vs GPA)
+function formatGrade(finalGrade: any, maxScale: any): string {
+  if (!finalGrade) return "";
+  const grade = String(finalGrade).replace("%", "").trim();
+  const scale = Number(maxScale);
+  if (scale === 100 || scale >= 90) {
+    return `${grade}%`;
+  }
+  if (scale && !isNaN(scale)) {
+    return `${grade} / ${scale}`;
+  }
+  return grade;
+}
+
 // Render education entries for academic template
 function renderEducations(educations: any[]): string {
   if (!educations || educations.length === 0) return "";
   
   return educations
     .map(
-      (edu) => `
+      (edu) => {
+        const locationLine = edu.country ? `<div class="sub-info" style="margin-bottom:1px;">${escapeHtml(edu.country)}</div>` : "";
+        return `
 <div class="entry">
     <table class="entry-table">
         <tr>
-            <td class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()} – ${escapeHtml(edu.field_of_study).toUpperCase()}</td>
-            <td class="entry-date">${edu.start_year} – ${edu.end_year}</td>
+            <td class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</td>
+            <td class="entry-date">${edu.start_year || ""} – ${edu.end_year || ""}</td>
         </tr>
     </table>
-    <div class="sub-info">${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}</div>
+    ${locationLine}
+    <div class="sub-info" style="font-weight:600;font-style:normal;">${escapeHtml(edu.institution)}</div>
     ${edu.key_subjects ? `<div class="academic-meta"><strong>Focus:</strong> ${escapeHtml(edu.key_subjects)}</div>` : ""}
     <div class="academic-meta">
-        Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""} | Credits: ${edu.total_credits}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
+        Grade: ${formatGrade(edu.final_grade, edu.max_scale)}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
     </div>
 </div>
-`
+`;
+      }
     )
     .join("");
 }
@@ -81,29 +99,43 @@ function renderLanguagesTable(languages: any[]): string {
   
   const rows = nonMotherTongues
     .map(
-      (lang) => `
+      (lang) => {
+        const sp = escapeHtml(lang.speaking) || "—";
+        return `
 <tr>
 <td>${escapeHtml(lang.language_name)}</td>
 <td>${escapeHtml(lang.listening) || "—"}</td>
 <td>${escapeHtml(lang.reading) || "—"}</td>
+<td>${sp}</td>
+<td>${sp}</td>
 <td>${escapeHtml(lang.writing) || "—"}</td>
-<td>${escapeHtml(lang.speaking) || "—"}</td>
 </tr>
-`
+`;
+      }
     )
     .join("");
   
   return `
 <table class="lang-table">
+<thead>
 <tr>
-<th>Language</th>
+<th rowspan="2">Language</th>
+<th colspan="2">UNDERSTANDING</th>
+<th colspan="2">SPEAKING</th>
+<th rowspan="2">WRITING</th>
+</tr>
+<tr>
 <th>Listening</th>
 <th>Reading</th>
-<th>Writing</th>
-<th>Speaking</th>
+<th>Spoken production</th>
+<th>Spoken interaction</th>
 </tr>
+</thead>
+<tbody>
 ${rows}
+</tbody>
 </table>
+<div class="lang-note">Levels: A1 and A2: Basic user; B1 and B2: Independent user; C1 and C2: Proficient user</div>
 `;
 }
 
@@ -117,7 +149,7 @@ function renderMotherTongues(languages: any[]): string {
     .join(", ");
   
   if (!motherTongues) return "";
-  return `Mother tongue(s): ${motherTongues}<br><br>`;
+  return `<strong>Mother tongue(s):</strong> ${motherTongues}`;
 }
 
 // Render certifications as bullet list
@@ -141,13 +173,17 @@ function renderPublications(pubs: any[]): string {
   if (!pubs || pubs.length === 0) return "";
   
   return pubs
+    .filter((p) => p && (p.title || p.journal))
     .map(
-      (pub) => `
+      (pub) => {
+        const meta = [pub.journal ? escapeHtml(pub.journal) : "", pub.year || ""].filter(Boolean).join(" ");
+        return `
 <div class="entry">
     <strong>${escapeHtml(pub.title)}</strong>
-    <div class="academic-meta">${escapeHtml(pub.journal)} (${pub.year})${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}</div>
+    ${meta ? `<div class="academic-meta">${meta}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}</div>` : ""}
 </div>
-`
+`;
+      }
     )
     .join("");
 }
@@ -158,17 +194,20 @@ function renderRecommendations(recs: any[]): string {
   
   return recs
     .map(
-      (rec) => `
-<div class="entry">
-    <strong>${escapeHtml(rec.name)}</strong> – ${escapeHtml(rec.designation)}
-    <div class="sub-info">${escapeHtml(rec.institution)}</div>
-    <div class="academic-meta">
-        ${rec.email ? `Email: <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a> | ` : ""}
-        ${rec.contact ? `Contact: ${escapeHtml(rec.contact)}` : ""}
-        ${rec.lor_link ? ` | <a href="${escapeHtml(rec.lor_link)}" target="_blank">Letter of Recommendation</a>` : ""}
-    </div>
+      (rec) => {
+        const titleLine = [rec.designation, rec.institution].filter(Boolean).map(escapeHtml).join(", ");
+        const contactBits = [];
+        if (rec.email) contactBits.push(`✉ <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a>`);
+        if (rec.contact) contactBits.push(`Mobile: ${escapeHtml(rec.contact)}`);
+        if (rec.lor_link) contactBits.push(`<a href="${escapeHtml(rec.lor_link)}" target="_blank">Letter of Recommendation</a>`);
+        return `
+<div class="entry" style="margin-bottom:5px;">
+    <strong>${escapeHtml(rec.name)}</strong>
+    ${titleLine ? `<div class="sub-info">${titleLine}</div>` : ""}
+    ${contactBits.length ? `<div class="academic-meta">${contactBits.join(" | ")}</div>` : ""}
 </div>
-`
+`;
+      }
     )
     .join("");
 }
@@ -189,23 +228,33 @@ function renderAdditionalSections(sections: any[]): string {
     .join("");
 }
 
-// Render digital & research skills
+// Render digital & research skills as 2-column layout
 function renderDigitalResearchSkills(skills: any): string {
   if (!skills) return "";
   
-  const technicalSkills = Array.isArray(skills.technical_skills)
-    ? skills.technical_skills.join(", ")
-    : skills.technical_skills || "";
-  const researchMethods = Array.isArray(skills.research_methods)
-    ? skills.research_methods.join(", ")
-    : skills.research_methods || "";
-  const tools = Array.isArray(skills.tools) ? skills.tools.join(", ") : skills.tools || "";
+  const toList = (v: any): string[] => {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.filter(Boolean);
+    return String(v).split(",").map((s) => s.trim()).filter(Boolean);
+  };
   
-  return `
-Technical Skills: ${escapeHtml(technicalSkills)}<br>
-Research Methods: ${escapeHtml(researchMethods)}<br>
-Tools: ${escapeHtml(tools)}
-`;
+  const technical = [...toList(skills.technical_skills), ...toList(skills.tools)];
+  const academic = toList(skills.research_methods);
+  
+  if (technical.length === 0 && academic.length === 0) return "";
+  
+  const col = (heading: string, items: string[]) => items.length === 0 ? "" : `
+    <div class="skills-col">
+      <div class="skills-heading">${heading}</div>
+      <ul class="skills-list">
+        ${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}
+      </ul>
+    </div>`;
+  
+  return `<div class="skills-grid">
+    ${col("Technical Tools", technical)}
+    ${col("Academic &amp; Professional Skills", academic)}
+  </div>`;
 }
 
 // Embedded fallback template (minimal Europass CV)
@@ -521,10 +570,11 @@ serve(async (req) => {
     // Replace array sections
     html = html.replace("{{EDUCATIONS}}", renderEducations(educations.data));
     
-    if (workExps.data && workExps.data.length > 0) {
+    const validWorkExps = (workExps.data || []).filter((w: any) => w && (w.job_title || w.organisation));
+    if (validWorkExps.length > 0) {
       html = html.replace("{{#WORK_EXPERIENCES_SECTION}}", "");
       html = html.replace("{{/WORK_EXPERIENCES_SECTION}}", "");
-      html = html.replace("{{WORK_EXPERIENCES}}", renderWorkExperiences(workExps.data));
+      html = html.replace("{{WORK_EXPERIENCES}}", renderWorkExperiences(validWorkExps));
     } else {
       html = html.replace(/{{#WORK_EXPERIENCES_SECTION}}[\s\S]*?{{\/WORK_EXPERIENCES_SECTION}}/g, "");
     }
@@ -532,34 +582,38 @@ serve(async (req) => {
     html = html.replace("{{MOTHER_TONGUES}}", renderMotherTongues(languages.data));
     html = html.replace("{{LANGUAGES_TABLE}}", renderLanguagesTable(languages.data));
 
-    if (profile.digital_research_skills) {
+    const skillsHtml = renderDigitalResearchSkills(profile.digital_research_skills);
+    if (skillsHtml) {
       html = html.replace("{{#DIGITAL_RESEARCH_SKILLS}}", "");
       html = html.replace("{{/DIGITAL_RESEARCH_SKILLS}}", "");
-      html = html.replace("{{DIGITAL_RESEARCH_SKILLS}}", renderDigitalResearchSkills(profile.digital_research_skills));
+      html = html.replace("{{DIGITAL_RESEARCH_SKILLS}}", skillsHtml);
     } else {
       html = html.replace(/{{#DIGITAL_RESEARCH_SKILLS}}[\s\S]*?{{\/DIGITAL_RESEARCH_SKILLS}}/g, "");
     }
 
-    if (certs.data && certs.data.length > 0) {
+    const validCerts = (certs.data || []).filter((c: any) => c && c.title);
+    if (validCerts.length > 0) {
       html = html.replace("{{#CERTIFICATIONS_SECTION}}", "");
       html = html.replace("{{/CERTIFICATIONS_SECTION}}", "");
-      html = html.replace("{{CERTIFICATIONS}}", renderCertifications(certs.data));
+      html = html.replace("{{CERTIFICATIONS}}", renderCertifications(validCerts));
     } else {
       html = html.replace(/{{#CERTIFICATIONS_SECTION}}[\s\S]*?{{\/CERTIFICATIONS_SECTION}}/g, "");
     }
 
-    if (pubs.data && pubs.data.length > 0) {
+    const validPubs = (pubs.data || []).filter((p: any) => p && (p.title || p.journal));
+    if (validPubs.length > 0) {
       html = html.replace("{{#PUBLICATIONS_SECTION}}", "");
       html = html.replace("{{/PUBLICATIONS_SECTION}}", "");
-      html = html.replace("{{PUBLICATIONS}}", renderPublications(pubs.data));
+      html = html.replace("{{PUBLICATIONS}}", renderPublications(validPubs));
     } else {
       html = html.replace(/{{#PUBLICATIONS_SECTION}}[\s\S]*?{{\/PUBLICATIONS_SECTION}}/g, "");
     }
 
-    if (recs.data && recs.data.length > 0) {
+    const validRecs = (recs.data || []).filter((r: any) => r && r.name);
+    if (validRecs.length > 0) {
       html = html.replace("{{#RECOMMENDATIONS_SECTION}}", "");
       html = html.replace("{{/RECOMMENDATIONS_SECTION}}", "");
-      html = html.replace("{{RECOMMENDATIONS}}", renderRecommendations(recs.data));
+      html = html.replace("{{RECOMMENDATIONS}}", renderRecommendations(validRecs));
     } else {
       html = html.replace(/{{#RECOMMENDATIONS_SECTION}}[\s\S]*?{{\/RECOMMENDATIONS_SECTION}}/g, "");
     }

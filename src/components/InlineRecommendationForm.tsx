@@ -111,7 +111,7 @@ export const InlineRecommendationForm = ({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="contact" className="text-xs">Contact</Label>
+          <Label htmlFor="contact" className="text-xs">Mobile</Label>
           <Input
             id="contact"
             placeholder="+44 123 456 7890"
