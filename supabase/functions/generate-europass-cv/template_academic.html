@@ -20,18 +20,26 @@
         max-width: 210mm;
         min-height: 297mm;
         margin: 0 auto;
-        padding: 14mm 16mm;
+        padding: 12mm 14mm;
         background: #fff;
         box-sizing: border-box;
     }
 
     .header-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
-    .profile-col { width: 85px; vertical-align: top; }
-    .name-col { vertical-align: top; padding-left: 15px; }
-    .profile-pic-circle {
-        width: 80px; height: 80px; border-radius: 50%;
-        border: 0.5pt solid #999; object-fit: cover;
+    .profile-col { width: 96px; vertical-align: top; }
+    .name-col { vertical-align: top; padding-left: 14px; }
+
+    /* Passport-style photo box (Europass) */
+    .photo-box {
+        width: 88px; height: 105px;
+        border: 0.75pt solid #888;
+        background: #fafafa;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
     }
+    .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-placeholder { font-size: 8px; color: #aaa; text-align: center; }
+
     .name-text {
         font-size: 18pt; font-weight: bold; color: #000;
         text-transform: uppercase; margin: 0; line-height: 1.1;
@@ -39,18 +47,20 @@
     }
     .header-divider {
         height: 0.5pt; background-color: #004a99;
-        width: 100%; margin: 4px 0 8px 0;
+        width: 100%; margin: 4px 0 6px 0;
     }
     .personal-details-block {
-        line-height: 1.4; font-size: 9.5px;
+        line-height: 1.45; font-size: 9px;
         page-break-inside: avoid; break-inside: avoid-page;
     }
-    .label { font-weight: bold; color: #333; text-transform: uppercase; font-size: 8pt; margin-right: 3px; }
+    .personal-details-block .row { margin-bottom: 1px; }
+    .label { font-weight: bold; color: #000; margin-right: 2px; }
+    .sep { color: #888; margin: 0 4px; }
 
     .section-title {
         font-size: 10.5px; font-weight: bold; color: #004a99;
         text-transform: uppercase; border-bottom: 0.5pt solid #ccc;
-        margin: 12px 0 6px 0; padding-bottom: 1px;
+        margin: 10px 0 5px 0; padding-bottom: 1px;
         page-break-after: avoid; break-after: avoid-page;
     }
 
@@ -58,7 +68,7 @@
     .entry-title { font-weight: bold; font-size: 10px; text-align: left; }
     .entry-date { font-weight: bold; font-size: 10px; text-align: right; white-space: nowrap; width: 120px; }
 
-    .entry { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid-page; }
+    .entry { margin-bottom: 6px; page-break-inside: avoid; break-inside: avoid-page; }
     .sub-info { font-style: italic; color: #444; margin: 1px 0; font-size: 10px; }
     .academic-meta { font-size: 9px; color: #555; margin: 2px 0; }
 
@@ -70,13 +80,30 @@
         border: 0.5pt solid #666; padding: 3px;
         text-align: center; font-size: 9px;
     }
-    .lang-table th { background-color: #f9f9f9; font-weight: bold; }
+    .lang-table th { background-color: #f0f4f8; font-weight: bold; }
+    .lang-note { font-size: 8.5px; color: #555; margin-top: 3px; font-style: italic; }
 
-    .mother-tongue-text { margin: 2px 0; font-size: 10px; }
+    .mother-tongue-text { margin: 2px 0 4px; font-size: 10px; }
     .bullet-list { margin: 2px 0; font-size: 10px; line-height: 1.5; }
 
+    /* Skills 2-column layout */
+    .skills-grid {
+        display: table; width: 100%; table-layout: fixed; border-collapse: collapse;
+    }
+    .skills-col {
+        display: table-cell; vertical-align: top; padding: 2px 8px 2px 0;
+        width: 50%;
+    }
+    .skills-col:last-child { padding-right: 0; padding-left: 8px; }
+    .skills-heading {
+        font-weight: bold; font-size: 10px; color: #000;
+        margin-bottom: 2px;
+    }
+    .skills-list { margin: 0 0 0 14px; padding: 0; font-size: 9.5px; line-height: 1.4; }
+    .skills-list li { margin-bottom: 1px; }
+
     .sig-area {
-        margin-top: 25px; display: flex; justify-content: space-between;
+        margin-top: 18px; display: flex; justify-content: space-between;
         align-items: flex-end; font-size: 9px;
         page-break-inside: avoid; break-inside: avoid-page;
     }
@@ -88,44 +115,26 @@
         display: block; margin: 0 auto 2px;
     }
 
-    .signature img {
-        width: 120px;
-        height: auto;
-    }
+    .signature img { width: 120px; height: auto; }
 
     a { color: #004a99; text-decoration: none; }
 
     @media print {
         html, body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0;
-            padding: 0;
-            background: #fff;
+            width: 210mm; height: 297mm;
+            margin: 0; padding: 0; background: #fff;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
         .cv-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            background: #fff;
-            box-sizing: border-box;
+            width: 210mm; min-height: 297mm;
+            margin: 0 auto; background: #fff; box-sizing: border-box;
         }
-        .section-title,
-        .entry,
-        .lang-table {
-            page-break-inside: avoid;
-            break-inside: avoid-page;
+        .section-title, .entry, .lang-table {
+            page-break-inside: avoid; break-inside: avoid-page;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
+        table { width: 100%; border-collapse: collapse; }
+        img { max-width: 100%; height: auto; }
     }
 </style>
 </head>
@@ -137,26 +146,28 @@
     <table class="header-table">
         <tr>
             <td class="profile-col">
-                {{#PROFILE_PIC}}<img src="{{PROFILE_PIC}}" alt="Profile" class="profile-pic-circle">{{/PROFILE_PIC}}
+                <div class="photo-box">
+                    {{#PROFILE_PIC}}<img src="{{PROFILE_PIC}}" alt="Profile">{{/PROFILE_PIC}}
+                </div>
             </td>
             <td class="name-col">
                 <h1 class="name-text">{{FULL_NAME}}</h1>
                 <div class="header-divider"></div>
 
                 <div class="personal-details-block">
-                    <div>
-                        <span class="label">Passport:</span>{{PASSPORT_NUMBER}} |
-                        <span class="label">DOB:</span>{{DATE_OF_BIRTH}} |
-                        <span class="label">Nationality:</span>{{NATIONALITY}} |
-                        <span class="label">Gender:</span>{{GENDER}}
+                    <div class="row">
+                        <span class="label">Passport:</span>{{PASSPORT_NUMBER}}<span class="sep">|</span>
+                        <span class="label">Date of birth:</span>{{DATE_OF_BIRTH}}<span class="sep">|</span>
+                        <span class="label">Place of birth:</span>{{PLACE_OF_BIRTH}}
                     </div>
-                    <div><span class="label">Place of Birth:</span>{{PLACE_OF_BIRTH}}</div>
-                    <div>
-                        <span class="label">Phone:</span>{{PHONE}} |
+                    <div class="row">
+                        <span class="label">Nationality:</span>{{NATIONALITY}}<span class="sep">|</span>
+                        <span class="label">Gender:</span>{{GENDER}}<span class="sep">|</span>
+                        <span class="label">Phone:</span>{{PHONE}}<span class="sep">|</span>
                         <span class="label">Email:</span><a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
                     </div>
-                    <div><span class="label">Address:</span>{{ADDRESS}}</div>
-                    {{#LINKEDIN}}<div><span class="label">LinkedIn:</span><a href="{{LINKEDIN_URL}}">{{LINKEDIN_URL}}</a></div>{{/LINKEDIN}}
+                    <div class="row"><span class="label">Address:</span>{{ADDRESS}}</div>
+                    {{#LINKEDIN}}<div class="row"><span class="label">LinkedIn:</span><a href="{{LINKEDIN_URL}}">{{LINKEDIN_URL}}</a></div>{{/LINKEDIN}}
                 </div>
             </td>
         </tr>
@@ -165,12 +176,6 @@
     <!-- EDUCATION AND TRAINING -->
     <div class="section-title">Education and Training</div>
     {{EDUCATIONS}}
-
-    <!-- RESEARCH PUBLICATIONS -->
-    {{#PUBLICATIONS_SECTION}}
-    <div class="section-title">Research Publications</div>
-    {{PUBLICATIONS}}
-    {{/PUBLICATIONS_SECTION}}
 
     <!-- WORK EXPERIENCE -->
     {{#WORK_EXPERIENCES_SECTION}}
@@ -183,19 +188,23 @@
     <div class="mother-tongue-text">{{MOTHER_TONGUES}}</div>
     {{LANGUAGES_TABLE}}
 
+    <!-- DIGITAL & ACADEMIC SKILLS -->
+    {{#DIGITAL_RESEARCH_SKILLS}}
+    <div class="section-title">Digital &amp; Academic Skills</div>
+    {{DIGITAL_RESEARCH_SKILLS}}
+    {{/DIGITAL_RESEARCH_SKILLS}}
+
     <!-- CERTIFICATIONS -->
     {{#CERTIFICATIONS_SECTION}}
     <div class="section-title">Certifications</div>
     {{CERTIFICATIONS}}
     {{/CERTIFICATIONS_SECTION}}
 
-    <!-- DIGITAL & RESEARCH SKILLS -->
-    {{#DIGITAL_RESEARCH_SKILLS}}
-    <div class="section-title">Digital & Research Skills</div>
-    <div class="entry">
-        {{DIGITAL_RESEARCH_SKILLS}}
-    </div>
-    {{/DIGITAL_RESEARCH_SKILLS}}
+    <!-- RESEARCH PUBLICATIONS -->
+    {{#PUBLICATIONS_SECTION}}
+    <div class="section-title">Research Publications</div>
+    {{PUBLICATIONS}}
+    {{/PUBLICATIONS_SECTION}}
 
     <!-- RECOMMENDATIONS -->
     {{#RECOMMENDATIONS_SECTION}}
