@@ -99,29 +99,43 @@ function renderLanguagesTable(languages: any[]): string {
   
   const rows = nonMotherTongues
     .map(
-      (lang) => `
+      (lang) => {
+        const sp = escapeHtml(lang.speaking) || "—";
+        return `
 <tr>
 <td>${escapeHtml(lang.language_name)}</td>
 <td>${escapeHtml(lang.listening) || "—"}</td>
 <td>${escapeHtml(lang.reading) || "—"}</td>
+<td>${sp}</td>
+<td>${sp}</td>
 <td>${escapeHtml(lang.writing) || "—"}</td>
-<td>${escapeHtml(lang.speaking) || "—"}</td>
 </tr>
-`
+`;
+      }
     )
     .join("");
   
   return `
 <table class="lang-table">
+<thead>
 <tr>
-<th>Language</th>
+<th rowspan="2">Language</th>
+<th colspan="2">UNDERSTANDING</th>
+<th colspan="2">SPEAKING</th>
+<th rowspan="2">WRITING</th>
+</tr>
+<tr>
 <th>Listening</th>
 <th>Reading</th>
-<th>Writing</th>
-<th>Speaking</th>
+<th>Spoken production</th>
+<th>Spoken interaction</th>
 </tr>
+</thead>
+<tbody>
 ${rows}
+</tbody>
 </table>
+<div class="lang-note">Levels: A1 and A2: Basic user; B1 and B2: Independent user; C1 and C2: Proficient user</div>
 `;
 }
 
@@ -135,7 +149,7 @@ function renderMotherTongues(languages: any[]): string {
     .join(", ");
   
   if (!motherTongues) return "";
-  return `Mother tongue(s): ${motherTongues}<br><br>`;
+  return `<strong>Mother tongue(s):</strong> ${motherTongues}`;
 }
 
 // Render certifications as bullet list
