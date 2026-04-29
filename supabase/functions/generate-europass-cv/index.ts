@@ -173,13 +173,17 @@ function renderPublications(pubs: any[]): string {
   if (!pubs || pubs.length === 0) return "";
   
   return pubs
+    .filter((p) => p && (p.title || p.journal))
     .map(
-      (pub) => `
+      (pub) => {
+        const meta = [pub.journal ? escapeHtml(pub.journal) : "", pub.year || ""].filter(Boolean).join(" ");
+        return `
 <div class="entry">
     <strong>${escapeHtml(pub.title)}</strong>
-    <div class="academic-meta">${escapeHtml(pub.journal)} (${pub.year})${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}</div>
+    ${meta ? `<div class="academic-meta">${meta}${pub.doi_url ? `. <a href="${escapeHtml(pub.doi_url)}" target="_blank">${escapeHtml(pub.doi_url)}</a>` : ""}</div>` : ""}
 </div>
-`
+`;
+      }
     )
     .join("");
 }
@@ -190,17 +194,20 @@ function renderRecommendations(recs: any[]): string {
   
   return recs
     .map(
-      (rec) => `
-<div class="entry">
-    <strong>${escapeHtml(rec.name)}</strong> – ${escapeHtml(rec.designation)}
-    <div class="sub-info">${escapeHtml(rec.institution)}</div>
-    <div class="academic-meta">
-        ${rec.email ? `Email: <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a> | ` : ""}
-        ${rec.contact ? `Contact: ${escapeHtml(rec.contact)}` : ""}
-        ${rec.lor_link ? ` | <a href="${escapeHtml(rec.lor_link)}" target="_blank">Letter of Recommendation</a>` : ""}
-    </div>
+      (rec) => {
+        const titleLine = [rec.designation, rec.institution].filter(Boolean).map(escapeHtml).join(", ");
+        const contactBits = [];
+        if (rec.email) contactBits.push(`✉ <a href="mailto:${escapeHtml(rec.email)}">${escapeHtml(rec.email)}</a>`);
+        if (rec.contact) contactBits.push(`Mobile: ${escapeHtml(rec.contact)}`);
+        if (rec.lor_link) contactBits.push(`<a href="${escapeHtml(rec.lor_link)}" target="_blank">Letter of Recommendation</a>`);
+        return `
+<div class="entry" style="margin-bottom:5px;">
+    <strong>${escapeHtml(rec.name)}</strong>
+    ${titleLine ? `<div class="sub-info">${titleLine}</div>` : ""}
+    ${contactBits.length ? `<div class="academic-meta">${contactBits.join(" | ")}</div>` : ""}
 </div>
-`
+`;
+      }
     )
     .join("");
 }
