@@ -228,23 +228,33 @@ function renderAdditionalSections(sections: any[]): string {
     .join("");
 }
 
-// Render digital & research skills
+// Render digital & research skills as 2-column layout
 function renderDigitalResearchSkills(skills: any): string {
   if (!skills) return "";
   
-  const technicalSkills = Array.isArray(skills.technical_skills)
-    ? skills.technical_skills.join(", ")
-    : skills.technical_skills || "";
-  const researchMethods = Array.isArray(skills.research_methods)
-    ? skills.research_methods.join(", ")
-    : skills.research_methods || "";
-  const tools = Array.isArray(skills.tools) ? skills.tools.join(", ") : skills.tools || "";
+  const toList = (v: any): string[] => {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.filter(Boolean);
+    return String(v).split(",").map((s) => s.trim()).filter(Boolean);
+  };
   
-  return `
-Technical Skills: ${escapeHtml(technicalSkills)}<br>
-Research Methods: ${escapeHtml(researchMethods)}<br>
-Tools: ${escapeHtml(tools)}
-`;
+  const technical = [...toList(skills.technical_skills), ...toList(skills.tools)];
+  const academic = toList(skills.research_methods);
+  
+  if (technical.length === 0 && academic.length === 0) return "";
+  
+  const col = (heading: string, items: string[]) => items.length === 0 ? "" : `
+    <div class="skills-col">
+      <div class="skills-heading">${heading}</div>
+      <ul class="skills-list">
+        ${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}
+      </ul>
+    </div>`;
+  
+  return `<div class="skills-grid">
+    ${col("Technical Tools", technical)}
+    ${col("Academic &amp; Professional Skills", academic)}
+  </div>`;
 }
 
 // Embedded fallback template (minimal Europass CV)
