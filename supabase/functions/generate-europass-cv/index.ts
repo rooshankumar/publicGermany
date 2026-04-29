@@ -570,10 +570,11 @@ serve(async (req) => {
     // Replace array sections
     html = html.replace("{{EDUCATIONS}}", renderEducations(educations.data));
     
-    if (workExps.data && workExps.data.length > 0) {
+    const validWorkExps = (workExps.data || []).filter((w: any) => w && (w.job_title || w.organisation));
+    if (validWorkExps.length > 0) {
       html = html.replace("{{#WORK_EXPERIENCES_SECTION}}", "");
       html = html.replace("{{/WORK_EXPERIENCES_SECTION}}", "");
-      html = html.replace("{{WORK_EXPERIENCES}}", renderWorkExperiences(workExps.data));
+      html = html.replace("{{WORK_EXPERIENCES}}", renderWorkExperiences(validWorkExps));
     } else {
       html = html.replace(/{{#WORK_EXPERIENCES_SECTION}}[\s\S]*?{{\/WORK_EXPERIENCES_SECTION}}/g, "");
     }
@@ -581,34 +582,38 @@ serve(async (req) => {
     html = html.replace("{{MOTHER_TONGUES}}", renderMotherTongues(languages.data));
     html = html.replace("{{LANGUAGES_TABLE}}", renderLanguagesTable(languages.data));
 
-    if (profile.digital_research_skills) {
+    const skillsHtml = renderDigitalResearchSkills(profile.digital_research_skills);
+    if (skillsHtml) {
       html = html.replace("{{#DIGITAL_RESEARCH_SKILLS}}", "");
       html = html.replace("{{/DIGITAL_RESEARCH_SKILLS}}", "");
-      html = html.replace("{{DIGITAL_RESEARCH_SKILLS}}", renderDigitalResearchSkills(profile.digital_research_skills));
+      html = html.replace("{{DIGITAL_RESEARCH_SKILLS}}", skillsHtml);
     } else {
       html = html.replace(/{{#DIGITAL_RESEARCH_SKILLS}}[\s\S]*?{{\/DIGITAL_RESEARCH_SKILLS}}/g, "");
     }
 
-    if (certs.data && certs.data.length > 0) {
+    const validCerts = (certs.data || []).filter((c: any) => c && c.title);
+    if (validCerts.length > 0) {
       html = html.replace("{{#CERTIFICATIONS_SECTION}}", "");
       html = html.replace("{{/CERTIFICATIONS_SECTION}}", "");
-      html = html.replace("{{CERTIFICATIONS}}", renderCertifications(certs.data));
+      html = html.replace("{{CERTIFICATIONS}}", renderCertifications(validCerts));
     } else {
       html = html.replace(/{{#CERTIFICATIONS_SECTION}}[\s\S]*?{{\/CERTIFICATIONS_SECTION}}/g, "");
     }
 
-    if (pubs.data && pubs.data.length > 0) {
+    const validPubs = (pubs.data || []).filter((p: any) => p && (p.title || p.journal));
+    if (validPubs.length > 0) {
       html = html.replace("{{#PUBLICATIONS_SECTION}}", "");
       html = html.replace("{{/PUBLICATIONS_SECTION}}", "");
-      html = html.replace("{{PUBLICATIONS}}", renderPublications(pubs.data));
+      html = html.replace("{{PUBLICATIONS}}", renderPublications(validPubs));
     } else {
       html = html.replace(/{{#PUBLICATIONS_SECTION}}[\s\S]*?{{\/PUBLICATIONS_SECTION}}/g, "");
     }
 
-    if (recs.data && recs.data.length > 0) {
+    const validRecs = (recs.data || []).filter((r: any) => r && r.name);
+    if (validRecs.length > 0) {
       html = html.replace("{{#RECOMMENDATIONS_SECTION}}", "");
       html = html.replace("{{/RECOMMENDATIONS_SECTION}}", "");
-      html = html.replace("{{RECOMMENDATIONS}}", renderRecommendations(recs.data));
+      html = html.replace("{{RECOMMENDATIONS}}", renderRecommendations(validRecs));
     } else {
       html = html.replace(/{{#RECOMMENDATIONS_SECTION}}[\s\S]*?{{\/RECOMMENDATIONS_SECTION}}/g, "");
     }
