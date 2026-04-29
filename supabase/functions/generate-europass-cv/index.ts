@@ -25,27 +25,45 @@ function escapeHtml(text: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
+// Format grade based on max scale (percentage vs GPA)
+function formatGrade(finalGrade: any, maxScale: any): string {
+  if (!finalGrade) return "";
+  const grade = String(finalGrade).replace("%", "").trim();
+  const scale = Number(maxScale);
+  if (scale === 100 || scale >= 90) {
+    return `${grade}%`;
+  }
+  if (scale && !isNaN(scale)) {
+    return `${grade} / ${scale}`;
+  }
+  return grade;
+}
+
 // Render education entries for academic template
 function renderEducations(educations: any[]): string {
   if (!educations || educations.length === 0) return "";
   
   return educations
     .map(
-      (edu) => `
+      (edu) => {
+        const locationLine = edu.country ? `<div class="sub-info" style="margin-bottom:1px;">${escapeHtml(edu.country)}</div>` : "";
+        return `
 <div class="entry">
     <table class="entry-table">
         <tr>
-            <td class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()} – ${escapeHtml(edu.field_of_study).toUpperCase()}</td>
-            <td class="entry-date">${edu.start_year} – ${edu.end_year}</td>
+            <td class="entry-title">${escapeHtml(edu.degree_title).toUpperCase()}${edu.field_of_study ? ` – ${escapeHtml(edu.field_of_study).toUpperCase()}` : ""}</td>
+            <td class="entry-date">${edu.start_year || ""} – ${edu.end_year || ""}</td>
         </tr>
     </table>
-    <div class="sub-info">${escapeHtml(edu.institution)}, ${escapeHtml(edu.country)}</div>
+    ${locationLine}
+    <div class="sub-info" style="font-weight:600;font-style:normal;">${escapeHtml(edu.institution)}</div>
     ${edu.key_subjects ? `<div class="academic-meta"><strong>Focus:</strong> ${escapeHtml(edu.key_subjects)}</div>` : ""}
     <div class="academic-meta">
-        Grade: ${escapeHtml(edu.final_grade)} / ${edu.max_scale}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""} | Credits: ${edu.total_credits}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
+        Grade: ${formatGrade(edu.final_grade, edu.max_scale)}${edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : ""}${edu.total_credits ? ` | Credits: ${edu.total_credits}` : ""}${edu.thesis_title ? ` | Thesis: <em>${escapeHtml(edu.thesis_title)}</em>` : ""}
     </div>
 </div>
-`
+`;
+      }
     )
     .join("");
 }
