@@ -581,14 +581,17 @@ html, body {
 
 /* ── Root container ──
    display:block — NEVER flex (collapses to zero height in headless Chrome).
-   min-height:297mm ensures at least one full A4 page even with sparse content.
-   No position:relative needed — footer is in normal flow, JS spacer handles bottom alignment.
+   On screen we let the wrap hug its content so the live preview iframe does
+   not show a misleading blank trailing page when the CV is short.
+   In print we force a full A4 minimum so the coloured header still fills page 1.
 */
 .cv-wrap {
   display: block;
   width: 210mm;
-  min-height: 297mm;
   background: #fff;
+}
+@media print {
+  .cv-wrap { min-height: 297mm; }
 }
 
 /* ── Header ──

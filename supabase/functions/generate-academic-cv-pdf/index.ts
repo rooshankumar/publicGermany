@@ -22,7 +22,15 @@ function embedMeta(html: string, data: unknown): string {
   let   binary  = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-  const tag     = `<div id="pgcvmeta" aria-hidden="true" style="display:none;">PGCVMETA:${encoded}:ENDPGCVMETA</div>`;
+  // ── Embed as a PDF URI annotation via an invisible <a href> ─────────────
+  // PDFShift / headless Chromium preserves <a href> URLs as PDF URI annotation
+  // objects, which are stored as literal ASCII in the PDF byte stream. The
+  // importer scans for this exact PGCVMETA-…-ENDPGCVMETA pattern.
+  // We also keep a tiny visible text fallback for browser print-to-PDF.
+  const href = `https://pgcv.app/?d=PGCVMETA-${encoded}-ENDPGCVMETA`;
+  const tag  =
+    `<a href="${href}" style="position:fixed;left:0;bottom:0;width:1px;height:1px;font-size:1px;line-height:1px;color:#fff;text-decoration:none;overflow:hidden;opacity:0.01;" aria-hidden="true">.</a>` +
+    `<div id="pgcvmeta-text" aria-hidden="true" style="position:fixed;left:0;bottom:0;font-size:1px;line-height:1px;color:#ffffff;opacity:0.01;white-space:pre-wrap;word-break:break-all;width:1px;overflow:hidden;">PGCVMETA:${encoded}:ENDPGCVMETA</div>`;
   return html.includes("</body>") ? html.replace("</body>", `${tag}</body>`) : html + tag;
 }
 
