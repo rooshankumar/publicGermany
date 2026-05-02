@@ -424,7 +424,15 @@ function buildCSS(headerBgColor: string): string {
    controlled by the format field in the API call (or its A4 default).
    We keep this here for browser print preview accuracy.
 */
-@page { size: A4 portrait; margin: 0; }
+/* ── Page margins ──
+   First printed page bleeds the colored header to the top edge (margin-top: 0).
+   Every subsequent page gets a 14mm top margin so content does not slam
+   into the very top of the page. All pages get a 12mm bottom margin so
+   no row is clipped by the page edge.
+   PDFShift / headless Chromium honours both @page rules.
+*/
+@page         { size: A4 portrait; margin: 14mm 0 12mm 0; }
+@page :first  { size: A4 portrait; margin: 0    0 12mm 0; }
 
 /* ── Reset ──
    Explicitly reset h1-h6 because headless Chromium UA stylesheet
@@ -455,14 +463,17 @@ html, body {
 
 /* ── Root container ──
    display:block — NEVER flex (collapses to zero height in headless Chrome).
-   min-height:297mm ensures at least one full A4 page even with sparse content.
-   No position:relative needed — footer is in normal flow, JS spacer handles bottom alignment.
+   On screen (live preview iframe) the wrap hugs its content so we don't
+   render a misleading "blank second page" gap. In print, we let it grow
+   naturally; @page margins handle the page top/bottom whitespace.
 */
 .cv-wrap {
   display: block;
   width: 210mm;
-  min-height: 297mm;
   background: #fff;
+}
+@media print {
+  .cv-wrap { min-height: auto; }
 }
 
 /* ── Header ──
