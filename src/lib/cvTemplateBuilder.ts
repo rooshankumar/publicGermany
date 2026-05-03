@@ -423,7 +423,8 @@ html, body {
   padding-bottom: 10px;
 }
 .photo-box {
-  width: 88px; height: 105px;
+  width: 96px; height: 96px;
+  border-radius: 50%;
   border: 2px solid #1a6b8a;
   flex-shrink: 0; overflow: hidden;
   background: #e8f0f5;
@@ -454,13 +455,13 @@ html, body {
 .section { margin-bottom: 14px; page-break-inside: auto; }
 .section-title {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-bottom: 1px solid #d0d0d0;
   padding-bottom: 4px;
   page-break-after: avoid; break-after: avoid;
 }
 .section-dot {
-  width: 11px; height: 11px;
+  width: 10px; height: 10px;
   border-radius: 50%; background: #1a3a4a;
   flex-shrink: 0;
 }
@@ -472,15 +473,29 @@ html, body {
 
 /* ENTRY */
 .edu-entry {
-  margin-bottom: 12px; padding-bottom: 10px;
-  border-bottom: 1px solid #efefef;
+  margin-bottom: 10px; padding-bottom: 8px;
   page-break-inside: avoid; break-inside: avoid;
 }
-.edu-entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.edu-header { margin-bottom: 2px; }
-.edu-degree { font-weight: 700; font-size: 10.5px; color: #1a3a4a; text-transform: uppercase; letter-spacing: 0.3px; }
-.edu-institution { font-size: 9.5px; color: #333; margin-bottom: 4px; font-style: italic; }
-.edu-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 5px; }
+.edu-entry + .edu-entry { border-top: 1px dashed #ececec; padding-top: 8px; }
+
+.entry-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; margin-bottom: 2px;
+}
+.entry-left {
+  font-weight: 700; font-size: 10.5px; color: #1a3a4a;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  flex: 1;
+}
+.entry-inst {
+  font-weight: 500; font-style: italic; color: #444; text-transform: none; letter-spacing: 0;
+}
+.entry-dates {
+  font-size: 9.5px; color: #1a3a4a; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.edu-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 5px; margin-top: 3px; }
 .edu-meta-item { font-size: 9px; color: #555; }
 .edu-meta-item span { font-weight: 700; color: #1a3a4a; }
 
@@ -518,7 +533,6 @@ html, body {
   border: 1px solid #1a3a4a;
 }
 .lang-table th.lang-name-header { text-align: left; padding-left: 8px; }
-.lang-table .subheader th { background: #2e6b8a; font-size: 8px; padding: 4px 6px; border-color: #2e6b8a; }
 .lang-table td {
   padding: 5px 6px; text-align: center;
   border-bottom: 1px solid #e8e8e8;
@@ -554,13 +568,14 @@ a { color: #1a6b8a; text-decoration: none; }
 
 /* SCREEN PREVIEW */
 @media screen {
-  body { background: #dde3ec; }
+  html, body { background: #fff; }
   .cv-wrap {
-    max-width: 210mm;
-    margin: 24px auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     padding: 14mm;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
-    border-radius: 4px;
+    box-shadow: none;
+    border-radius: 0;
   }
 }
 </style>`;
