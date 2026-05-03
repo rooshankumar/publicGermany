@@ -236,6 +236,7 @@ function buildEducation(eds: any[]): string {
     const dates = [start, end].filter(Boolean).join(" – ");
 
     const inst = `${escapeHtml(edu.institution || "")}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}`;
+    const headerRow = `<div class="entry-row"><div class="entry-left">${title}${inst ? ` <span class="entry-inst">— ${inst}</span>` : ""}</div>${dates ? `<div class="entry-dates">${dates}</div>` : ""}</div>`;
 
     const metaParts: string[] = [];
     if (edu.website_url)   metaParts.push(`<span class="edu-meta-item"><span>Website</span> <a href="${escapeHtml(edu.website_url)}">${escapeHtml(edu.website_url)}</a></span>`);
