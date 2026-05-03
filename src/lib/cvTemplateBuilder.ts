@@ -258,10 +258,7 @@ function buildEducation(eds: any[]): string {
 
     return `
 <div class="edu-entry">
-  <div class="edu-header">
-    <div class="edu-degree">${title}${dates ? ` | ${dates}` : ""}</div>
-  </div>
-  <div class="edu-institution">${inst}</div>
+  ${headerRow}
   ${meta}
   ${thesis}
   ${desc}
