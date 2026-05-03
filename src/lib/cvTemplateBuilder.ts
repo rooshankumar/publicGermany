@@ -305,36 +305,26 @@ function buildLanguages(langs: any[]): string {
     .map(l => escapeHtml(l.language_name).toUpperCase()).join(", ");
   const others = langs.filter(l => !l.mother_tongue);
 
-  const rows = others.map(l => {
-    const sp = escapeHtml(l.speaking ?? "") || "—";
-    return `
+  const rows = others.map(l => `
 <tr>
   <td class="lang-name">${escapeHtml(l.language_name).toUpperCase()}</td>
   <td>${escapeHtml(l.listening ?? "") || "—"}</td>
   <td>${escapeHtml(l.reading ?? "")   || "—"}</td>
-  <td>${sp}</td>
-  <td>${sp}</td>
   <td>${escapeHtml(l.writing ?? "")   || "—"}</td>
-</tr>`;
-  }).join("");
+  <td>${escapeHtml(l.speaking ?? "")  || "—"}</td>
+</tr>`).join("");
 
   const table = others.length ? `
 <table class="lang-table">
   <thead>
     <tr>
-      <th class="lang-name-header" rowspan="2">LANGUAGE</th>
-      <th colspan="2">UNDERSTANDING</th>
-      <th colspan="2">SPEAKING</th>
-      <th rowspan="2">WRITING</th>
-    </tr>
-    <tr class="subheader">
-      <th>Listening</th><th>Reading</th>
-      <th>Spoken production</th><th>Spoken interaction</th>
+      <th class="lang-name-header">LANGUAGE</th>
+      <th>LISTENING</th><th>READING</th><th>WRITING</th><th>SPEAKING</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="lang-note">Levels: A1 and A2: Basic user; B1 and B2: Independent user; C1 and C2: Proficient user</div>
+<div class="lang-note">CEFR Levels: A1/A2 Basic · B1/B2 Independent · C1/C2 Proficient</div>
 ` : "";
 
   const body = `
