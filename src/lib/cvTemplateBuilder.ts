@@ -279,8 +279,7 @@ function buildWork(works: any[]): string {
     const org   = [w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
     return `
 <div class="edu-entry">
-  <div class="edu-header"><div class="edu-degree">${title}${dates ? ` | ${dates}` : ""}</div></div>
-  ${org ? `<div class="edu-institution">${org}</div>` : ""}
+  <div class="entry-row"><div class="entry-left">${title}${org ? ` <span class="entry-inst">— ${org}</span>` : ""}</div>${dates ? `<div class="entry-dates">${dates}</div>` : ""}</div>
   ${w.description ? `<div class="edu-desc">${richOrBullets(w.description)}</div>` : ""}
 </div>`;
   }).join("");
