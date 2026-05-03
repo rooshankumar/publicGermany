@@ -1,7 +1,6 @@
 // supabase/functions/generate-academic-cv-pdf/cvTemplateBuilder.ts
 // @ts-nocheck
 //
-// CV TEMPLATE — "Veer Singh" reference style
 // Photo box (square, teal border), dark-teal name, contact grid,
 // section title with bullet dot + bottom rule, language table with
 // merged Understanding/Speaking/Writing headers, dot-separated bullets.
@@ -137,6 +136,7 @@ function buildEducation(eds: any[]): string {
     const dates = [start, end].filter(Boolean).join(" – ");
 
     const inst = `${escapeHtml(edu.institution || "")}${edu.country ? `, ${escapeHtml(edu.country)}` : ""}`;
+    const headerRow = `<div class="entry-row"><div class="entry-left">${title}${inst ? ` <span class="entry-inst">— ${inst}</span>` : ""}</div>${dates ? `<div class="entry-dates">${dates}</div>` : ""}</div>`;
 
     const metaParts: string[] = [];
     if (edu.website_url)   metaParts.push(`<span class="edu-meta-item"><span>Website</span> <a href="${escapeHtml(edu.website_url)}">${escapeHtml(edu.website_url)}</a></span>`);
@@ -158,10 +158,7 @@ function buildEducation(eds: any[]): string {
 
     return `
 <div class="edu-entry">
-  <div class="edu-header">
-    <div class="edu-degree">${title}${dates ? ` | ${dates}` : ""}</div>
-  </div>
-  <div class="edu-institution">${inst}</div>
+  ${headerRow}
   ${meta}
   ${thesis}
   ${desc}
@@ -182,8 +179,7 @@ function buildWork(works: any[]): string {
     const org   = [w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
     return `
 <div class="edu-entry">
-  <div class="edu-header"><div class="edu-degree">${title}${dates ? ` | ${dates}` : ""}</div></div>
-  ${org ? `<div class="edu-institution">${org}</div>` : ""}
+  <div class="entry-row"><div class="entry-left">${title}${org ? ` <span class="entry-inst">— ${org}</span>` : ""}</div>${dates ? `<div class="entry-dates">${dates}</div>` : ""}</div>
   ${w.description ? `<div class="edu-desc">${richOrBullets(w.description)}</div>` : ""}
 </div>`;
   }).join("");
@@ -209,36 +205,26 @@ function buildLanguages(langs: any[]): string {
     .map(l => escapeHtml(l.language_name).toUpperCase()).join(", ");
   const others = langs.filter(l => !l.mother_tongue);
 
-  const rows = others.map(l => {
-    const sp = escapeHtml(l.speaking ?? "") || "—";
-    return `
+  const rows = others.map(l => `
 <tr>
   <td class="lang-name">${escapeHtml(l.language_name).toUpperCase()}</td>
   <td>${escapeHtml(l.listening ?? "") || "—"}</td>
   <td>${escapeHtml(l.reading ?? "")   || "—"}</td>
-  <td>${sp}</td>
-  <td>${sp}</td>
   <td>${escapeHtml(l.writing ?? "")   || "—"}</td>
-</tr>`;
-  }).join("");
+  <td>${escapeHtml(l.speaking ?? "")  || "—"}</td>
+</tr>`).join("");
 
   const table = others.length ? `
 <table class="lang-table">
   <thead>
     <tr>
-      <th class="lang-name-header" rowspan="2">LANGUAGE</th>
-      <th colspan="2">UNDERSTANDING</th>
-      <th colspan="2">SPEAKING</th>
-      <th rowspan="2">WRITING</th>
-    </tr>
-    <tr class="subheader">
-      <th>Listening</th><th>Reading</th>
-      <th>Spoken production</th><th>Spoken interaction</th>
+      <th class="lang-name-header">LANGUAGE</th>
+      <th>LISTENING</th><th>READING</th><th>WRITING</th><th>SPEAKING</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="lang-note">Levels: A1 and A2: Basic user; B1 and B2: Independent user; C1 and C2: Proficient user</div>
+<div class="lang-note">CEFR Levels: A1/A2 Basic · B1/B2 Independent · C1/C2 Proficient</div>
 ` : "";
 
   const body = `
@@ -337,7 +323,8 @@ html, body {
   padding-bottom: 10px;
 }
 .photo-box {
-  width: 88px; height: 105px;
+  width: 96px; height: 96px;
+  border-radius: 50%;
   border: 2px solid #1a6b8a;
   flex-shrink: 0; overflow: hidden;
   background: #e8f0f5;
@@ -368,13 +355,13 @@ html, body {
 .section { margin-bottom: 14px; page-break-inside: auto; }
 .section-title {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-bottom: 1px solid #d0d0d0;
   padding-bottom: 4px;
   page-break-after: avoid; break-after: avoid;
 }
 .section-dot {
-  width: 11px; height: 11px;
+  width: 10px; height: 10px;
   border-radius: 50%; background: #1a3a4a;
   flex-shrink: 0;
 }
@@ -386,15 +373,29 @@ html, body {
 
 /* ENTRY */
 .edu-entry {
-  margin-bottom: 12px; padding-bottom: 10px;
-  border-bottom: 1px solid #efefef;
+  margin-bottom: 10px; padding-bottom: 8px;
   page-break-inside: avoid; break-inside: avoid;
 }
-.edu-entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.edu-header { margin-bottom: 2px; }
-.edu-degree { font-weight: 700; font-size: 10.5px; color: #1a3a4a; text-transform: uppercase; letter-spacing: 0.3px; }
-.edu-institution { font-size: 9.5px; color: #333; margin-bottom: 4px; font-style: italic; }
-.edu-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 5px; }
+.edu-entry + .edu-entry { border-top: 1px dashed #ececec; padding-top: 8px; }
+
+.entry-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; margin-bottom: 2px;
+}
+.entry-left {
+  font-weight: 700; font-size: 10.5px; color: #1a3a4a;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  flex: 1;
+}
+.entry-inst {
+  font-weight: 500; font-style: italic; color: #444; text-transform: none; letter-spacing: 0;
+}
+.entry-dates {
+  font-size: 9.5px; color: #1a3a4a; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.edu-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 5px; margin-top: 3px; }
 .edu-meta-item { font-size: 9px; color: #555; }
 .edu-meta-item span { font-weight: 700; color: #1a3a4a; }
 
@@ -432,7 +433,6 @@ html, body {
   border: 1px solid #1a3a4a;
 }
 .lang-table th.lang-name-header { text-align: left; padding-left: 8px; }
-.lang-table .subheader th { background: #2e6b8a; font-size: 8px; padding: 4px 6px; border-color: #2e6b8a; }
 .lang-table td {
   padding: 5px 6px; text-align: center;
   border-bottom: 1px solid #e8e8e8;
@@ -468,13 +468,14 @@ a { color: #1a6b8a; text-decoration: none; }
 
 /* SCREEN PREVIEW */
 @media screen {
-  body { background: #dde3ec; }
+  html, body { background: #fff; }
   .cv-wrap {
-    max-width: 210mm;
-    margin: 24px auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     padding: 14mm;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
-    border-radius: 4px;
+    box-shadow: none;
+    border-radius: 0;
   }
 }
 </style>`;
