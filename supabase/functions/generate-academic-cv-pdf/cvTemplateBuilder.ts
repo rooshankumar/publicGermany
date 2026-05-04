@@ -413,6 +413,7 @@ a { color: var(--accent); text-decoration: none; }
   html, body { background: #fff; }
   .cv-wrap { width: 100%; max-width: 100%; margin: 0; padding: 8mm 9mm; box-shadow: none; border-radius: 0; }
 }
+${headerOverride}
 </style>`;
 }
 
