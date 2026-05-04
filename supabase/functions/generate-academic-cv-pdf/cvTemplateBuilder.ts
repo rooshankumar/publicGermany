@@ -290,15 +290,26 @@ function buildFooter(personal: any): string {
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 function buildCSS(opts: any = {}): string {
   const raw = (opts.headerBgColor || '').toString().trim();
-  const accent = /^#?[0-9a-fA-F]{3,8}$/.test(raw.replace('#',''))
+  const headerBg = /^#?[0-9a-fA-F]{3,8}$/.test(raw.replace('#',''))
     ? (raw.startsWith('#') ? raw : `#${raw}`)
-    : '#1a3a4a';
+    : '';
+  const hasHeaderBg = !!headerBg;
+  const accent = '#1a3a4a';
   const density = opts.density || 'standard';
   const dens = density === 'compact'
     ? { fs: '9.5px', lh: '1.4',  sec: '10px', name: '23px', entryGap: '7px' }
     : density === 'expanded'
     ? { fs: '11.5px', lh: '1.65', sec: '18px', name: '28px', entryGap: '12px' }
     : { fs: '10.5px', lh: '1.5',  sec: '14px', name: '26px', entryGap: '10px' };
+
+  const headerOverride = hasHeaderBg ? `
+.header { background: ${headerBg}; padding: 10mm 9mm; margin: -8mm -9mm ${dens.sec} -9mm; }
+.header .header-name { color: #fff; }
+.header .contact-item { color: #fff; }
+.header .contact-item .label { color: #fff; opacity: 0.85; }
+.header .contact-item a { color: #fff; text-decoration: underline; }
+.header .photo-box { border-color: #fff; }
+` : '';
 
   return `
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -308,6 +319,7 @@ function buildCSS(opts: any = {}): string {
 @page { size: A4 portrait; margin: 0; }
 
 :root { --accent: ${accent}; }
+
 
 *, *::before, *::after {
   margin: 0; padding: 0; box-sizing: border-box;
@@ -401,6 +413,7 @@ a { color: var(--accent); text-decoration: none; }
   html, body { background: #fff; }
   .cv-wrap { width: 100%; max-width: 100%; margin: 0; padding: 8mm 9mm; box-shadow: none; border-radius: 0; }
 }
+${headerOverride}
 </style>`;
 }
 
