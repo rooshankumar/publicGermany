@@ -294,7 +294,7 @@ function buildCSS(): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-@page { size: A4 portrait; margin: 12mm 14mm; }
+@page { size: A4 portrait; margin: 6mm 7mm; }
 
 *, *::before, *::after {
   margin: 0; padding: 0; box-sizing: border-box;
@@ -473,7 +473,7 @@ a { color: #1a6b8a; text-decoration: none; }
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 14mm;
+    padding: 7mm;
     box-shadow: none;
     border-radius: 0;
   }
