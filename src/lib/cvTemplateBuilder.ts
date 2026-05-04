@@ -604,6 +604,7 @@ a { color: var(--accent); text-decoration: none; }
     border-radius: 0;
   }
 }
+${headerOverride}
 </style>`;
 }
 
