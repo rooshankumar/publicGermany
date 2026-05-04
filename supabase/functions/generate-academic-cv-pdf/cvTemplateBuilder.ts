@@ -473,7 +473,7 @@ a { color: #1a6b8a; text-decoration: none; }
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 14mm;
+    padding: 7mm;
     box-shadow: none;
     border-radius: 0;
   }
