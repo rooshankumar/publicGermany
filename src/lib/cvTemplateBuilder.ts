@@ -388,13 +388,28 @@ function buildFooter(personal: any): string {
 }
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
-function buildCSS(): string {
+function buildCSS(opts: CVBuildOptions = {}): string {
+  const accent = opts.headerBgColor && /^#?[0-9a-fA-F]{3,8}$/.test(opts.headerBgColor.replace('#',''))
+    ? (opts.headerBgColor.startsWith('#') ? opts.headerBgColor : `#${opts.headerBgColor}`)
+    : '#1a3a4a';
+  const density = opts.density || 'standard';
+  const dens = density === 'compact'
+    ? { fs: '9.5px', lh: '1.4',  sec: '10px', name: '23px', entryGap: '7px' }
+    : density === 'expanded'
+    ? { fs: '11.5px', lh: '1.65', sec: '18px', name: '28px', entryGap: '12px' }
+    : { fs: '10.5px', lh: '1.5',  sec: '14px', name: '26px', entryGap: '10px' };
+
   return `
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-@page { size: A4 portrait; margin: 6mm 7mm; }
+@page { size: A4 portrait; margin: 0; }
+
+:root {
+  --accent: ${accent};
+  --accent-soft: ${accent}1a;
+}
 
 *, *::before, *::after {
   margin: 0; padding: 0; box-sizing: border-box;
@@ -405,27 +420,27 @@ h1,h2,h3,h4,h5,h6,p { margin: 0; padding: 0; }
 
 html, body {
   font-family: 'Open Sans', Arial, sans-serif;
-  font-size: 10.5px;
+  font-size: ${dens.fs};
   color: #2c2c2c;
   background: #fff;
-  line-height: 1.5;
+  line-height: ${dens.lh};
   -webkit-font-smoothing: antialiased;
 }
 
-.cv-wrap { width: 100%; background: #fff; }
+.cv-wrap { width: 100%; background: #fff; padding: 8mm 9mm; }
 
 /* HEADER */
 .header {
   display: flex;
   align-items: flex-start;
   gap: 18px;
-  margin-bottom: 14px;
+  margin-bottom: ${dens.sec};
   padding-bottom: 10px;
 }
 .photo-box {
   width: 96px; height: 96px;
   border-radius: 50%;
-  border: 2px solid #1a6b8a;
+  border: 2px solid var(--accent);
   flex-shrink: 0; overflow: hidden;
   background: #e8f0f5;
   display: flex; align-items: center; justify-content: center;
@@ -434,8 +449,8 @@ html, body {
 .photo-box img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .header-info { flex: 1; }
 .header-name {
-  font-size: 26px; font-weight: 700;
-  color: #1a3a4a; letter-spacing: 0.5px;
+  font-size: ${dens.name}; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.5px;
   margin-bottom: 10px; line-height: 1.1;
 }
 .contact-grid {
@@ -448,11 +463,11 @@ html, body {
   display: flex; gap: 5px;
   word-break: break-word;
 }
-.contact-item .label { font-weight: 700; color: #1a3a4a; flex-shrink: 0; }
-.contact-item a { color: #1a6b8a; text-decoration: none; }
+.contact-item .label { font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.contact-item a { color: var(--accent); text-decoration: none; }
 
 /* SECTION */
-.section { margin-bottom: 14px; page-break-inside: auto; }
+.section { margin-bottom: ${dens.sec}; page-break-inside: auto; }
 .section-title {
   display: flex; align-items: center; gap: 8px;
   margin-bottom: 8px;
@@ -462,18 +477,18 @@ html, body {
 }
 .section-dot {
   width: 10px; height: 10px;
-  border-radius: 50%; background: #1a3a4a;
+  border-radius: 50%; background: var(--accent);
   flex-shrink: 0;
 }
 .section-title h2 {
   font-size: 11.5px; font-weight: 700;
-  color: #1a3a4a; letter-spacing: 0.5px;
+  color: var(--accent); letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 /* ENTRY */
 .edu-entry {
-  margin-bottom: 10px; padding-bottom: 8px;
+  margin-bottom: ${dens.entryGap}; padding-bottom: 8px;
   page-break-inside: avoid; break-inside: avoid;
 }
 .edu-entry + .edu-entry { border-top: 1px dashed #ececec; padding-top: 8px; }
@@ -483,7 +498,7 @@ html, body {
   gap: 12px; margin-bottom: 2px;
 }
 .entry-left {
-  font-weight: 700; font-size: 10.5px; color: #1a3a4a;
+  font-weight: 700; font-size: 10.5px; color: var(--accent);
   text-transform: uppercase; letter-spacing: 0.3px;
   flex: 1;
 }
@@ -491,18 +506,18 @@ html, body {
   font-weight: 500; font-style: italic; color: #444; text-transform: none; letter-spacing: 0;
 }
 .entry-dates {
-  font-size: 9.5px; color: #1a3a4a; font-weight: 600;
+  font-size: 9.5px; color: var(--accent); font-weight: 600;
   white-space: nowrap; flex-shrink: 0;
 }
 
 .edu-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 5px; margin-top: 3px; }
 .edu-meta-item { font-size: 9px; color: #555; }
-.edu-meta-item span { font-weight: 700; color: #1a3a4a; }
+.edu-meta-item span { font-weight: 700; color: var(--accent); }
 
 .edu-desc, .entry-desc {
   font-size: 9.5px; color: #444; line-height: 1.55; margin-top: 3px;
 }
-.edu-desc strong, .entry-desc strong { color: #1a3a4a; font-weight: 700; }
+.edu-desc strong, .entry-desc strong { color: var(--accent); font-weight: 700; }
 .edu-desc p, .entry-desc p { margin: 2px 0; }
 .edu-desc ul, .entry-desc ul, .blist {
   list-style: none; padding-left: 0; margin: 3px 0;
@@ -515,22 +530,22 @@ html, body {
 }
 .edu-desc li::before, .entry-desc li::before, .blist li::before {
   content: '•'; position: absolute; left: 0;
-  color: #1a6b8a; font-size: 11px; line-height: 1;
+  color: var(--accent); font-size: 11px; line-height: 1;
 }
 
 /* LANGUAGE TABLE */
 .mother-tongue, .other-lang { font-size: 10px; margin-bottom: 4px; }
-.mother-tongue strong, .other-lang strong { color: #1a3a4a; }
+.mother-tongue strong, .other-lang strong { color: var(--accent); }
 .lang-table {
   width: 100%; border-collapse: collapse;
   font-size: 9px; margin-top: 4px;
   page-break-inside: avoid;
 }
 .lang-table th {
-  background: #1a3a4a; color: #fff;
+  background: var(--accent); color: #fff;
   padding: 5px 6px; text-align: center;
   font-weight: 600; font-size: 8.5px;
-  border: 1px solid #1a3a4a;
+  border: 1px solid var(--accent);
 }
 .lang-table th.lang-name-header { text-align: left; padding-left: 8px; }
 .lang-table td {
@@ -539,7 +554,7 @@ html, body {
   border-right: 1px solid #e8e8e8;
   font-size: 9px;
 }
-.lang-table td.lang-name { text-align: left; font-weight: 700; color: #1a3a4a; padding-left: 8px; }
+.lang-table td.lang-name { text-align: left; font-weight: 700; color: var(--accent); padding-left: 8px; }
 .lang-table tr:nth-child(even) td { background: #f7f9fb; }
 .lang-note { font-size: 8px; color: #777; margin-top: 5px; font-style: italic; }
 
@@ -549,22 +564,22 @@ html, body {
   grid-template-columns: 1fr 1fr;
   gap: 6px 20px;
 }
-.skill-group-title { font-weight: 700; font-size: 9.5px; color: #1a3a4a; margin-bottom: 2px; }
+.skill-group-title { font-weight: 700; font-size: 9.5px; color: var(--accent); margin-bottom: 2px; }
 
 /* RECOMMENDATIONS */
 .rec-entry { margin-bottom: 8px; font-size: 9.5px; }
-.rec-name  { font-weight: 700; color: #1a3a4a; font-size: 10px; }
+.rec-name  { font-weight: 700; color: var(--accent); font-size: 10px; }
 .rec-detail { color: #555; }
-.rec-link  { color: #1a6b8a; text-decoration: none; font-size: 9px; }
+.rec-link  { color: var(--accent); text-decoration: none; font-size: 9px; }
 hr.thin    { border: none; border-top: 1px solid #e0e0e0; margin: 8px 0; }
 
 /* FOOTER */
 .footer { margin-top: 18px; text-align: right; page-break-inside: avoid; }
 .sig-img { max-width: 110px; height: auto; filter: grayscale(1); }
-.sig-name { font-weight: 700; font-size: 10px; margin-top: 2px; color: #1a3a4a; }
+.sig-name { font-weight: 700; font-size: 10px; margin-top: 2px; color: var(--accent); }
 
 /* LINKS */
-a { color: #1a6b8a; text-decoration: none; }
+a { color: var(--accent); text-decoration: none; }
 
 /* SCREEN PREVIEW */
 @media screen {
@@ -573,7 +588,7 @@ a { color: #1a6b8a; text-decoration: none; }
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 7mm;
+    padding: 8mm 9mm;
     box-shadow: none;
     border-radius: 0;
   }
@@ -610,7 +625,7 @@ export function buildCVHtml(
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(personal.full_name)} – Curriculum Vitae</title>
-${buildCSS()}
+${buildCSS(options)}
 </head>
 <body>
 <div class="cv-wrap">
