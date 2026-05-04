@@ -389,15 +389,28 @@ function buildFooter(personal: any): string {
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 function buildCSS(opts: CVBuildOptions = {}): string {
-  const accent = opts.headerBgColor && /^#?[0-9a-fA-F]{3,8}$/.test(opts.headerBgColor.replace('#',''))
-    ? (opts.headerBgColor.startsWith('#') ? opts.headerBgColor : `#${opts.headerBgColor}`)
-    : '#1a3a4a';
+  const raw = (opts.headerBgColor || '').toString().trim();
+  const headerBg = /^#?[0-9a-fA-F]{3,8}$/.test(raw.replace('#',''))
+    ? (raw.startsWith('#') ? raw : `#${raw}`)
+    : '';
+  const hasHeaderBg = !!headerBg;
+  const accent = '#1a3a4a';
   const density = opts.density || 'standard';
   const dens = density === 'compact'
     ? { fs: '9.5px', lh: '1.4',  sec: '10px', name: '23px', entryGap: '7px' }
     : density === 'expanded'
     ? { fs: '11.5px', lh: '1.65', sec: '18px', name: '28px', entryGap: '12px' }
     : { fs: '10.5px', lh: '1.5',  sec: '14px', name: '26px', entryGap: '10px' };
+
+  // When header has bg, text/labels/links inside header turn white for contrast
+  const headerOverride = hasHeaderBg ? `
+.header { background: ${headerBg}; padding: 10mm 9mm; margin: -8mm -9mm ${dens.sec} -9mm; }
+.header .header-name { color: #fff; }
+.header .contact-item { color: #fff; }
+.header .contact-item .label { color: #fff; opacity: 0.85; }
+.header .contact-item a { color: #fff; text-decoration: underline; }
+.header .photo-box { border-color: #fff; }
+` : '';
 
   return `
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -406,10 +419,8 @@ function buildCSS(opts: CVBuildOptions = {}): string {
 <style>
 @page { size: A4 portrait; margin: 0; }
 
-:root {
-  --accent: ${accent};
-  --accent-soft: ${accent}1a;
-}
+:root { --accent: ${accent}; }
+
 
 *, *::before, *::after {
   margin: 0; padding: 0; box-sizing: border-box;
