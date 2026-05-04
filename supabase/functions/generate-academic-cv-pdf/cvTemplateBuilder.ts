@@ -433,7 +433,7 @@ export function buildCVHtml(
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(personal.full_name)} – Curriculum Vitae</title>
-${buildCSS()}
+${buildCSS(options)}
 </head>
 <body>
 <div class="cv-wrap">
