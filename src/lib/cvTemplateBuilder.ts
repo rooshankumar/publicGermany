@@ -214,8 +214,10 @@ function buildEducation(eds: any[]): string {
       ? `<b>Core Areas:</b> ${escapeHtml(subjects)}`
       : "";
     const thesis = edu.thesis_title ? `<b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i>` : "";
+    const descLines = toLines(edu.description);
+    const descBlock = descLines.length ? descLines.map(l => `• ${escapeHtml(l)}`).join("<br>") : "";
 
-    const metaLines = [metaBits.join(" &nbsp;|&nbsp; "), thesis, subjectsLine].filter(Boolean).join("<br>");
+    const metaLines = [metaBits.join(" &nbsp;|&nbsp; "), thesis, subjectsLine, descBlock].filter(Boolean).join("<br>");
 
     return `
 <div class="row-entry">
@@ -408,27 +410,25 @@ html, body {
 .page {
   width: 100%;
   background: #fff;
-  padding: ${dens.padY} ${dens.padX};
+  padding: 0 ${dens.padX} ${dens.padY} ${dens.padX};
 }
 
-/* HEADER */
+/* HEADER — full-bleed across the page */
 .header {
   display: flex;
   align-items: center;
   gap: 14px;
   background: var(--accent);
   color: #fff;
-  padding: 12px 16px;
-  border-radius: 3px;
-  margin-bottom: 11px;
+  padding: 14px ${dens.padX};
+  margin: 0 -${dens.padX} ${dens.padY} -${dens.padX};
 }
 .photo-circle {
   width: 82px; height: 82px;
   border-radius: 50%;
   border: 2.5px solid #fff;
   overflow: hidden; flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  background: #ccc;
+  background: transparent;
   display: flex; align-items: center; justify-content: center;
 }
 .photo-circle img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
@@ -498,7 +498,9 @@ html, body {
 .skill-text  { font-size: 9px; color: #444; line-height: 1.5; }
 
 /* REFS */
-.ref-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.ref-row { display: flex; flex-direction: column; gap: 6px; }
+.ref-item { padding-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
+.ref-item:last-child { border-bottom: none; padding-bottom: 0; }
 .ref-item { font-size: 9px; color: #444; line-height: 1.55; }
 .ref-name { font-weight: 700; font-size: 9.5px; color: var(--accent); }
 .ref-item a { color: var(--accent); text-decoration: none; }
