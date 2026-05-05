@@ -410,27 +410,25 @@ html, body {
 .page {
   width: 100%;
   background: #fff;
-  padding: ${dens.padY} ${dens.padX};
+  padding: 0 ${dens.padX} ${dens.padY} ${dens.padX};
 }
 
-/* HEADER */
+/* HEADER — full-bleed across the page */
 .header {
   display: flex;
   align-items: center;
   gap: 14px;
   background: var(--accent);
   color: #fff;
-  padding: 12px 16px;
-  border-radius: 3px;
-  margin-bottom: 11px;
+  padding: 14px ${dens.padX};
+  margin: 0 -${dens.padX} ${dens.padY} -${dens.padX};
 }
 .photo-circle {
   width: 82px; height: 82px;
   border-radius: 50%;
   border: 2.5px solid #fff;
   overflow: hidden; flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  background: #ccc;
+  background: transparent;
   display: flex; align-items: center; justify-content: center;
 }
 .photo-circle img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
