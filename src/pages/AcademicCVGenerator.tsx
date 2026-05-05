@@ -525,7 +525,7 @@ export default function AcademicCVGenerator() {
       const iframe = previewIframeRef.current;
       if (!iframe || !iframe.contentDocument || !iframe.contentDocument.body) return;
       const body = iframe.contentDocument.body;
-      const container = body.querySelector('.cv-wrap') as HTMLElement;
+      const container = body.querySelector('.page') as HTMLElement;
       if (!container) return;
       const height = Math.max(container.scrollHeight, container.offsetHeight, 1200);
       setPreviewDocHeight(height + 40);
@@ -819,7 +819,7 @@ export default function AcademicCVGenerator() {
         const iframe = previewIframeRef.current;
         if (!iframe || !iframe.contentDocument?.body) throw new Error("Preview not ready");
 
-        const container = iframe.contentDocument.body.querySelector('.cv-wrap') as HTMLElement;
+        const container = iframe.contentDocument.body.querySelector('.page') as HTMLElement;
         if (!container) throw new Error("CV container not found in preview");
 
         const canvas = await html2canvas(container, {
