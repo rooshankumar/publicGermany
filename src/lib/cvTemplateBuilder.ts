@@ -500,7 +500,9 @@ html, body {
 .skill-text  { font-size: 9px; color: #444; line-height: 1.5; }
 
 /* REFS */
-.ref-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.ref-row { display: flex; flex-direction: column; gap: 6px; }
+.ref-item { padding-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
+.ref-item:last-child { border-bottom: none; padding-bottom: 0; }
 .ref-item { font-size: 9px; color: #444; line-height: 1.55; }
 .ref-name { font-weight: 700; font-size: 9.5px; color: var(--accent); }
 .ref-item a { color: var(--accent); text-decoration: none; }
