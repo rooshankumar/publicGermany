@@ -214,8 +214,10 @@ function buildEducation(eds: any[]): string {
       ? `<b>Core Areas:</b> ${escapeHtml(subjects)}`
       : "";
     const thesis = edu.thesis_title ? `<b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i>` : "";
+    const descLines = toLines(edu.description);
+    const descBlock = descLines.length ? descLines.map(l => `• ${escapeHtml(l)}`).join("<br>") : "";
 
-    const metaLines = [metaBits.join(" &nbsp;|&nbsp; "), thesis, subjectsLine].filter(Boolean).join("<br>");
+    const metaLines = [metaBits.join(" &nbsp;|&nbsp; "), thesis, subjectsLine, descBlock].filter(Boolean).join("<br>");
 
     return `
 <div class="row-entry">
