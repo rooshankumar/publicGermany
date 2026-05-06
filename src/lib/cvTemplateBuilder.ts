@@ -260,8 +260,9 @@ function buildWork(works: any[]): string {
 
 // ─── Publications ───────────────────────────────────────────────────────────
 function buildPublications(pubs: any[]): string {
-  if (!pubs?.length) return "";
-  const body = pubs.map(p => {
+  const filtered = (pubs || []).filter(p => p && (p.title || p.journal));
+  if (!filtered.length) return "";
+  const body = filtered.map(p => {
     const meta: string[] = [];
     if (p.journal) meta.push(`<b>Journal:</b> ${escapeHtml(p.journal)}`);
     if (p.year) meta.push(`<b>Year:</b> ${escapeHtml(String(p.year))}`);
