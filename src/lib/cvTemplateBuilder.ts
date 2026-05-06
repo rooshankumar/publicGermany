@@ -355,8 +355,9 @@ function buildCustomSections(sections: any[]): string {
 
 // ─── Recommendations ────────────────────────────────────────────────────────
 function buildRecommendations(recs: any[]): string {
-  if (!recs?.length) return "";
-  const cells = recs.map(r => {
+  const filtered = (recs || []).filter(r => r && (r.name || r.email || r.institution));
+  if (!filtered.length) return "";
+  const cells = filtered.map(r => {
     const subline = [r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(" · ");
     const contactBits: string[] = [];
     if (r.email) contactBits.push(`✉ <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
