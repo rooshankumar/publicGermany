@@ -350,7 +350,7 @@ function buildCustomSections(sections: any[]): string {
 </div>`;
     }).join("");
     return sectionWrap(section.title || "Skills", groups);
-  }).join("");
+  }).filter(Boolean).join("");
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
