@@ -341,7 +341,7 @@ function buildCustomSections(sections: any[]): string {
     .map(section => {
       const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
       if (!validItems.length) return "";
-    const groups = section.items.map((item: any, i: number) => {
+    const groups = validItems.map((item: any, i: number) => {
       const lines = toLines(item.description);
       const txt = lines.length ? lines.join(" · ") : "";
       return `<div class="skill-group"${i ? ' style="margin-top:4px;"' : ''}>
