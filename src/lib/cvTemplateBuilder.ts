@@ -43,6 +43,8 @@ export interface CVEducation {
 export interface CVWorkExperience {
   job_title: string;
   organisation: string;
+  city?: string;
+  country?: string;
   city_country?: string;
   start_date: string;
   end_date?: string;
