@@ -234,8 +234,8 @@ const emptyEducation = (): CVEducation => ({
   website_url: "",
 } as any);
 const emptyWork = (): CVWorkExperience => ({
-  job_title: "", organisation: "", city_country: "", start_date: "", end_date: "", is_current: false, description: [],
-});
+  job_title: "", organisation: "", city: "", country: "", city_country: "", start_date: "", end_date: "", is_current: false, description: [],
+} as any);
 const emptyLanguage = (): CVLanguage => ({
   language_name: "", mother_tongue: false, listening: "", reading: "", writing: "", speaking: "",
 });
