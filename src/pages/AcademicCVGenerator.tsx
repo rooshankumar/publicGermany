@@ -1067,14 +1067,39 @@ export default function AcademicCVGenerator() {
                     <div className="flex items-start">
                       <ReorderButtons index={i} length={workExperiences.length} onMove={dir => setWorkExperiences(dir === "up" ? moveUp(workExperiences, i) : moveDown(workExperiences, i))} />
                       <div className="flex-1">
+                        {/* Group 1: Role + Organisation */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div>
+                            <FieldLabel hint="Your role / position title.">Job Title *</FieldLabel>
+                            <Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} placeholder="Software Engineer Intern" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Company, lab, or organisation name.">Organisation *</FieldLabel>
+                            <Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} placeholder="Acme Inc." />
+                          </div>
+                        </div>
+
+                        {/* Group 2: Location */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="City of the workplace.">City</FieldLabel>
+                            <Input value={(w as any).city || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city: e.target.value } as any; setWorkExperiences(n); }} placeholder="Berlin" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Country of the workplace.">Country</FieldLabel>
+                            <Input value={(w as any).country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], country: e.target.value } as any; setWorkExperiences(n); }} placeholder="Germany" />
+                          </div>
+                        </div>
+
+                        {/* Group 3: Duration */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="Format: Mon YYYY (e.g. Jun 2022).">Start Date</FieldLabel>
+                            <Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} />
+                          </div>
                           <div className="flex items-end gap-3">
                             <div className="flex-1">
-                              <Label className="text-xs">End Date (Mon YYYY)</Label>
+                              <FieldLabel hint="Leave empty if ongoing.">End Date</FieldLabel>
                               <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
                             </div>
                             <div className="flex items-center gap-1.5 pb-1.5">
@@ -1083,13 +1108,14 @@ export default function AcademicCVGenerator() {
                             </div>
                           </div>
                         </div>
+
                           <div className="mt-2">
-                            <Label className="text-xs">Description / Responsibilities</Label>
+                            <FieldLabel hint="Key responsibilities and achievements. Leave empty to hide.">Description / Responsibilities</FieldLabel>
                             <RichTextEditor
                               value={Array.isArray(w.description) ? w.description.map((l: string) => `<p>${l}</p>`).join("") : (w.description || "")}
                               onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
                               placeholder="e.g. Developed React dashboards..."
-                              minHeight={80}
+                              minHeight={70}
                             />
                           </div>
                       </div>
