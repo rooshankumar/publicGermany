@@ -281,8 +281,9 @@ function buildPublications(pubs: any[]): string {
 
 // ─── Certifications ─────────────────────────────────────────────────────────
 function buildCertifications(certs: any[]): string {
-  if (!certs?.length) return "";
-  const body = certs.map(c => {
+  const filtered = (certs || []).filter(c => c && (c.title || c.institution));
+  if (!filtered.length) return "";
+  const body = filtered.map(c => {
     const meta: string[] = [];
     if (c.institution) meta.push(`<b>Issued by:</b> ${escapeHtml(c.institution)}`);
     if (c.date) meta.push(`<b>Date:</b> ${escapeHtml(c.date)}`);
