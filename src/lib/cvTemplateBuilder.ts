@@ -195,8 +195,9 @@ function sectionWrap(title: string, body: string): string {
 
 // ─── Education ──────────────────────────────────────────────────────────────
 function buildEducation(eds: any[]): string {
-  if (!eds?.length) return "";
-  const body = eds.map(edu => {
+  const filtered = (eds || []).filter(e => e && (e.degree_title || e.institution || e.field_of_study));
+  if (!filtered.length) return "";
+  const body = filtered.map(edu => {
     const titleParts = [edu.degree_title, edu.field_of_study].filter(Boolean).map(escapeHtml);
     const title = titleParts.join(" – ");
     const dates = fmtYearRange(edu.start_year, edu.end_year, edu.start_date, edu.end_date);
@@ -236,10 +237,12 @@ function buildEducation(eds: any[]): string {
 
 // ─── Work ───────────────────────────────────────────────────────────────────
 function buildWork(works: any[]): string {
-  if (!works?.length) return "";
-  const body = works.map(w => {
+  const filtered = (works || []).filter(w => w && (w.job_title || w.organisation));
+  if (!filtered.length) return "";
+  const body = filtered.map(w => {
     const dates = fmtYearRange(undefined, undefined, w.start_date, w.end_date, w.is_current);
-    const inst = [w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
+    const location = [w.city, w.country].filter(Boolean).join(", ") || w.city_country || "";
+    const inst = [w.organisation, location].filter(Boolean).map(escapeHtml).join(", ");
     const lines = toLines(w.description);
     const desc = lines.length ? lines.join(" · ") : "";
     return `
