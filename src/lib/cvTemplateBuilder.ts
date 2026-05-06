@@ -336,7 +336,11 @@ ${table}`;
 // ─── Custom (Skills, etc) ───────────────────────────────────────────────────
 function buildCustomSections(sections: any[]): string {
   if (!sections?.length) return "";
-  return sections.filter(s => s.items?.length).map(section => {
+  return sections
+    .filter(s => s && (s.title || s.items?.length))
+    .map(section => {
+      const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
+      if (!validItems.length) return "";
     const groups = section.items.map((item: any, i: number) => {
       const lines = toLines(item.description);
       const txt = lines.length ? lines.join(" · ") : "";
