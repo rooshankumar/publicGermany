@@ -234,8 +234,8 @@ const emptyEducation = (): CVEducation => ({
   website_url: "",
 } as any);
 const emptyWork = (): CVWorkExperience => ({
-  job_title: "", organisation: "", city_country: "", start_date: "", end_date: "", is_current: false, description: [],
-});
+  job_title: "", organisation: "", city: "", country: "", city_country: "", start_date: "", end_date: "", is_current: false, description: [],
+} as any);
 const emptyLanguage = (): CVLanguage => ({
   language_name: "", mother_tongue: false, listening: "", reading: "", writing: "", speaking: "",
 });
@@ -280,6 +280,25 @@ function SectionTip({ tipKey }: { tipKey: string }) {
         <TooltipContent side="top" className="max-w-[260px] text-xs">{tip}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+// Inline label with (i) tooltip — keeps fields compact yet self-explanatory.
+function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <Label className="text-xs flex items-center gap-1">
+      {children}
+      {hint && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px] text-[11px]">{hint}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </Label>
   );
 }
 
@@ -891,6 +910,11 @@ export default function AcademicCVGenerator() {
         })}
       </div>
 
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-md px-3 py-1.5 text-[11px] text-blue-800 dark:text-blue-200 flex items-center gap-1.5 -mt-2">
+        <Info className="w-3 h-3 shrink-0" />
+        Empty fields and sections won't appear in your downloaded CV — fill only what's relevant. Hover any <Info className="w-3 h-3 inline" /> for tips.
+      </div>
+
       <div className="min-h-[400px]">
         {activeStep === 0 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -950,26 +974,78 @@ export default function AcademicCVGenerator() {
                     <div className="flex items-start">
                       <ReorderButtons index={i} length={educations.length} onMove={dir => setEducations(dir === "up" ? moveUp(educations, i) : moveDown(educations, i))} />
                       <div className="flex-1">
+                        {/* Group 1: What you studied */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div><Label className="text-xs">Degree Title *</Label><Input value={edu.degree_title} onChange={e => { const n = [...educations]; n[i] = { ...n[i], degree_title: e.target.value }; setEducations(n); }} placeholder="Bachelor of Arts (Honours)" /></div>
-                          <div><Label className="text-xs">Field of Study *</Label><Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" /></div>
-                          <div><Label className="text-xs">Institution *</Label><Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} /></div>
-                          <div><Label className="text-xs">Country *</Label><Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" /></div>
-                          <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} /></div>
-                          <div><Label className="text-xs">End Date (Mon YYYY)</Label><Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} /></div>
-                          <div><Label className="text-xs">Final Grade</Label><Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33 or 88%" /></div>
-                          <div><Label className="text-xs">Max Scale</Label><Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" /></div>
-                          <div><Label className="text-xs">Type of Credits</Label><Input value={(edu as any).credit_system || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], credit_system: e.target.value }; setEducations(n); }} placeholder="Indian University Credit System" /></div>
-                          <div><Label className="text-xs">Number of Credits</Label><Input type="number" value={(edu as any).total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} placeholder="217" /></div>
-                          <div className="sm:col-span-2"><Label className="text-xs">Institution Website URL</Label><Input value={(edu as any).website_url || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], website_url: e.target.value }; setEducations(n); }} placeholder="https://www.university.edu/" /></div>
+                          <div>
+                            <FieldLabel hint="e.g. Bachelor of Commerce, B.Tech, M.Sc — the official degree name.">Degree *</FieldLabel>
+                            <Input value={edu.degree_title} onChange={e => { const n = [...educations]; n[i] = { ...n[i], degree_title: e.target.value }; setEducations(n); }} placeholder="Bachelor of Arts (Honours)" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Your major / specialization. Leave blank if your degree title already includes it.">Specialization</FieldLabel>
+                            <Input value={edu.field_of_study} onChange={e => { const n = [...educations]; n[i] = { ...n[i], field_of_study: e.target.value }; setEducations(n); }} placeholder="Applied Psychology" />
+                          </div>
                         </div>
+
+                        {/* Group 2: Where (institution + city + country in one row) */}
+                        <div className="grid grid-cols-12 gap-2 mt-2">
+                          <div className="col-span-12 sm:col-span-6">
+                            <FieldLabel hint="The full official name of the school or university.">Institution *</FieldLabel>
+                            <Input value={edu.institution} onChange={e => { const n = [...educations]; n[i] = { ...n[i], institution: e.target.value }; setEducations(n); }} placeholder="University of XYZ" />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <FieldLabel hint="City where the institution is located.">City</FieldLabel>
+                            <Input value={(edu as any).city || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], city: e.target.value } as any; setEducations(n); }} placeholder="Kanpur" />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <FieldLabel hint="Country where you studied.">Country *</FieldLabel>
+                            <Input value={edu.country} onChange={e => { const n = [...educations]; n[i] = { ...n[i], country: e.target.value }; setEducations(n); }} placeholder="India" />
+                          </div>
+                        </div>
+
+                        {/* Group 3: When */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="Format: Mon YYYY (e.g. Oct 2022). Year alone also works.">Start Date</FieldLabel>
+                            <Input value={edu.start_date || ""} placeholder="Oct 2022" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], start_date: normalized, start_year: parseYearFromMonthYear(normalized) || n[i].start_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], start_date: e.target.value }; setEducations(n); }} />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Leave the expected end date if currently studying.">End Date</FieldLabel>
+                            <Input value={edu.end_date || ""} placeholder="Jul 2026" onBlur={e => { const normalized = normalizeMonthYearInput(e.target.value); const n = [...educations]; n[i] = { ...n[i], end_date: normalized, end_year: parseYearFromMonthYear(normalized) || n[i].end_year }; setEducations(n); }} onChange={e => { const n = [...educations]; n[i] = { ...n[i], end_date: e.target.value }; setEducations(n); }} />
+                          </div>
+                        </div>
+
+                        {/* Group 4: Grade & credits (optional) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="Your final CGPA, GPA, or percentage.">Final Grade</FieldLabel>
+                            <Input value={edu.final_grade || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], final_grade: e.target.value }; setEducations(n); }} placeholder="8.33" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Maximum possible score on your grading scale (e.g. 10 for CGPA, 100 for percentage).">Max Scale</FieldLabel>
+                            <Input type="number" value={edu.max_scale || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], max_scale: Number(e.target.value) }; setEducations(n); }} placeholder="10" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Total credits earned (optional).">Credits</FieldLabel>
+                            <Input type="number" value={(edu as any).total_credits || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], total_credits: Number(e.target.value) }; setEducations(n); }} placeholder="217" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Credit system used (ECTS, Indian, US, etc).">Credit System</FieldLabel>
+                            <Input value={(edu as any).credit_system || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], credit_system: e.target.value }; setEducations(n); }} placeholder="ECTS" />
+                          </div>
+                        </div>
+
                         <div className="mt-2">
-                          <Label className="text-xs">Description (Courses, thesis, achievements — formatted freely)</Label>
+                          <FieldLabel hint="Optional. Helps verify the institution.">Institution Website URL</FieldLabel>
+                          <Input value={(edu as any).website_url || ""} onChange={e => { const n = [...educations]; n[i] = { ...n[i], website_url: e.target.value }; setEducations(n); }} placeholder="https://www.university.edu/" />
+                        </div>
+
+                        <div className="mt-2">
+                          <FieldLabel hint="Free-form: thesis title, courses, achievements. Leave empty to hide.">Description</FieldLabel>
                           <RichTextEditor
                             value={(edu as any).description || ""}
                             onChange={v => { const n = [...educations]; n[i] = { ...n[i], description: v } as any; setEducations(n); }}
-                            placeholder="e.g. Core Computer Science: Data Structures, Algorithms..."
-                            minHeight={80}
+                            placeholder="Thesis: ... · Core: Data Structures, Algorithms..."
+                            minHeight={70}
                           />
                         </div>
                       </div>
@@ -996,14 +1072,39 @@ export default function AcademicCVGenerator() {
                     <div className="flex items-start">
                       <ReorderButtons index={i} length={workExperiences.length} onMove={dir => setWorkExperiences(dir === "up" ? moveUp(workExperiences, i) : moveDown(workExperiences, i))} />
                       <div className="flex-1">
+                        {/* Group 1: Role + Organisation */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div><Label className="text-xs">Job Title *</Label><Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">Organisation *</Label><Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">City, Country</Label><Input value={w.city_country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city_country: e.target.value }; setWorkExperiences(n); }} /></div>
-                          <div><Label className="text-xs">Start Date (Mon YYYY)</Label><Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} /></div>
+                          <div>
+                            <FieldLabel hint="Your role / position title.">Job Title *</FieldLabel>
+                            <Input value={w.job_title} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], job_title: e.target.value }; setWorkExperiences(n); }} placeholder="Software Engineer Intern" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Company, lab, or organisation name.">Organisation *</FieldLabel>
+                            <Input value={w.organisation} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], organisation: e.target.value }; setWorkExperiences(n); }} placeholder="Acme Inc." />
+                          </div>
+                        </div>
+
+                        {/* Group 2: Location */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="City of the workplace.">City</FieldLabel>
+                            <Input value={(w as any).city || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], city: e.target.value } as any; setWorkExperiences(n); }} placeholder="Berlin" />
+                          </div>
+                          <div>
+                            <FieldLabel hint="Country of the workplace.">Country</FieldLabel>
+                            <Input value={(w as any).country || ""} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], country: e.target.value } as any; setWorkExperiences(n); }} placeholder="Germany" />
+                          </div>
+                        </div>
+
+                        {/* Group 3: Duration */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <FieldLabel hint="Format: Mon YYYY (e.g. Jun 2022).">Start Date</FieldLabel>
+                            <Input value={w.start_date} placeholder="Jun 2022" onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], start_date: e.target.value }; setWorkExperiences(n); }} />
+                          </div>
                           <div className="flex items-end gap-3">
                             <div className="flex-1">
-                              <Label className="text-xs">End Date (Mon YYYY)</Label>
+                              <FieldLabel hint="Leave empty if ongoing.">End Date</FieldLabel>
                               <Input value={w.end_date || ""} placeholder="Aug 2022" disabled={w.is_current} onBlur={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: normalizeMonthYearInput(e.target.value) }; setWorkExperiences(n); }} onChange={e => { const n = [...workExperiences]; n[i] = { ...n[i], end_date: e.target.value }; setWorkExperiences(n); }} />
                             </div>
                             <div className="flex items-center gap-1.5 pb-1.5">
@@ -1012,13 +1113,14 @@ export default function AcademicCVGenerator() {
                             </div>
                           </div>
                         </div>
+
                           <div className="mt-2">
-                            <Label className="text-xs">Description / Responsibilities</Label>
+                            <FieldLabel hint="Key responsibilities and achievements. Leave empty to hide.">Description / Responsibilities</FieldLabel>
                             <RichTextEditor
                               value={Array.isArray(w.description) ? w.description.map((l: string) => `<p>${l}</p>`).join("") : (w.description || "")}
                               onChange={v => { const n = [...workExperiences]; n[i] = { ...n[i], description: v }; setWorkExperiences(n); }}
                               placeholder="e.g. Developed React dashboards..."
-                              minHeight={80}
+                              minHeight={70}
                             />
                           </div>
                       </div>

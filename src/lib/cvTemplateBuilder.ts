@@ -43,6 +43,8 @@ export interface CVEducation {
 export interface CVWorkExperience {
   job_title: string;
   organisation: string;
+  city?: string;
+  country?: string;
   city_country?: string;
   start_date: string;
   end_date?: string;
@@ -193,8 +195,9 @@ function sectionWrap(title: string, body: string): string {
 
 // ─── Education ──────────────────────────────────────────────────────────────
 function buildEducation(eds: any[]): string {
-  if (!eds?.length) return "";
-  const body = eds.map(edu => {
+  const filtered = (eds || []).filter(e => e && (e.degree_title || e.institution || e.field_of_study));
+  if (!filtered.length) return "";
+  const body = filtered.map(edu => {
     const titleParts = [edu.degree_title, edu.field_of_study].filter(Boolean).map(escapeHtml);
     const title = titleParts.join(" – ");
     const dates = fmtYearRange(edu.start_year, edu.end_year, edu.start_date, edu.end_date);
@@ -234,10 +237,12 @@ function buildEducation(eds: any[]): string {
 
 // ─── Work ───────────────────────────────────────────────────────────────────
 function buildWork(works: any[]): string {
-  if (!works?.length) return "";
-  const body = works.map(w => {
+  const filtered = (works || []).filter(w => w && (w.job_title || w.organisation));
+  if (!filtered.length) return "";
+  const body = filtered.map(w => {
     const dates = fmtYearRange(undefined, undefined, w.start_date, w.end_date, w.is_current);
-    const inst = [w.organisation, w.city_country].filter(Boolean).map(escapeHtml).join(", ");
+    const location = [w.city, w.country].filter(Boolean).join(", ") || w.city_country || "";
+    const inst = [w.organisation, location].filter(Boolean).map(escapeHtml).join(", ");
     const lines = toLines(w.description);
     const desc = lines.length ? lines.join(" · ") : "";
     return `
@@ -255,8 +260,9 @@ function buildWork(works: any[]): string {
 
 // ─── Publications ───────────────────────────────────────────────────────────
 function buildPublications(pubs: any[]): string {
-  if (!pubs?.length) return "";
-  const body = pubs.map(p => {
+  const filtered = (pubs || []).filter(p => p && (p.title || p.journal));
+  if (!filtered.length) return "";
+  const body = filtered.map(p => {
     const meta: string[] = [];
     if (p.journal) meta.push(`<b>Journal:</b> ${escapeHtml(p.journal)}`);
     if (p.year) meta.push(`<b>Year:</b> ${escapeHtml(String(p.year))}`);
@@ -275,8 +281,9 @@ function buildPublications(pubs: any[]): string {
 
 // ─── Certifications ─────────────────────────────────────────────────────────
 function buildCertifications(certs: any[]): string {
-  if (!certs?.length) return "";
-  const body = certs.map(c => {
+  const filtered = (certs || []).filter(c => c && (c.title || c.institution));
+  if (!filtered.length) return "";
+  const body = filtered.map(c => {
     const meta: string[] = [];
     if (c.institution) meta.push(`<b>Issued by:</b> ${escapeHtml(c.institution)}`);
     if (c.date) meta.push(`<b>Date:</b> ${escapeHtml(c.date)}`);
@@ -292,9 +299,10 @@ function buildCertifications(certs: any[]): string {
 
 // ─── Languages ──────────────────────────────────────────────────────────────
 function buildLanguages(langs: any[]): string {
-  if (!langs?.length) return "";
-  const mothers = langs.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name)).join(", ");
-  const others = langs.filter(l => !l.mother_tongue);
+  const filtered = (langs || []).filter(l => l && l.language_name);
+  if (!filtered.length) return "";
+  const mothers = filtered.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name)).join(", ");
+  const others = filtered.filter(l => !l.mother_tongue);
   const rows = others.map(l => `
 <tr>
   <td class="lang-name">${escapeHtml(l.language_name || "")}</td>
@@ -328,8 +336,12 @@ ${table}`;
 // ─── Custom (Skills, etc) ───────────────────────────────────────────────────
 function buildCustomSections(sections: any[]): string {
   if (!sections?.length) return "";
-  return sections.filter(s => s.items?.length).map(section => {
-    const groups = section.items.map((item: any, i: number) => {
+  return sections
+    .filter(s => s && (s.title || s.items?.length))
+    .map(section => {
+      const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
+      if (!validItems.length) return "";
+    const groups = validItems.map((item: any, i: number) => {
       const lines = toLines(item.description);
       const txt = lines.length ? lines.join(" · ") : "";
       return `<div class="skill-group"${i ? ' style="margin-top:4px;"' : ''}>
@@ -338,13 +350,14 @@ function buildCustomSections(sections: any[]): string {
 </div>`;
     }).join("");
     return sectionWrap(section.title || "Skills", groups);
-  }).join("");
+  }).filter(Boolean).join("");
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
 function buildRecommendations(recs: any[]): string {
-  if (!recs?.length) return "";
-  const cells = recs.map(r => {
+  const filtered = (recs || []).filter(r => r && (r.name || r.email || r.institution));
+  if (!filtered.length) return "";
+  const cells = filtered.map(r => {
     const subline = [r.designation, r.department, r.institution].filter(Boolean).map(escapeHtml).join(" · ");
     const contactBits: string[] = [];
     if (r.email) contactBits.push(`✉ <a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
