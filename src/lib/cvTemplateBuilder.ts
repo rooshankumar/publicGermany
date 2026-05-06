@@ -299,9 +299,10 @@ function buildCertifications(certs: any[]): string {
 
 // ─── Languages ──────────────────────────────────────────────────────────────
 function buildLanguages(langs: any[]): string {
-  if (!langs?.length) return "";
-  const mothers = langs.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name)).join(", ");
-  const others = langs.filter(l => !l.mother_tongue);
+  const filtered = (langs || []).filter(l => l && l.language_name);
+  if (!filtered.length) return "";
+  const mothers = filtered.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name)).join(", ");
+  const others = filtered.filter(l => !l.mother_tongue);
   const rows = others.map(l => `
 <tr>
   <td class="lang-name">${escapeHtml(l.language_name || "")}</td>
