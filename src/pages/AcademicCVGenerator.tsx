@@ -283,6 +283,25 @@ function SectionTip({ tipKey }: { tipKey: string }) {
   );
 }
 
+// Inline label with (i) tooltip — keeps fields compact yet self-explanatory.
+function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <Label className="text-xs flex items-center gap-1">
+      {children}
+      {hint && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px] text-[11px]">{hint}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </Label>
+  );
+}
+
 function RichTextField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const committed = useRef<string | null>(null);
