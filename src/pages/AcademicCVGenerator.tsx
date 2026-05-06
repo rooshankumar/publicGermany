@@ -910,6 +910,11 @@ export default function AcademicCVGenerator() {
         })}
       </div>
 
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-md px-3 py-1.5 text-[11px] text-blue-800 dark:text-blue-200 flex items-center gap-1.5 -mt-2">
+        <Info className="w-3 h-3 shrink-0" />
+        Empty fields and sections won't appear in your downloaded CV — fill only what's relevant. Hover any <Info className="w-3 h-3 inline" /> for tips.
+      </div>
+
       <div className="min-h-[400px]">
         {activeStep === 0 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
