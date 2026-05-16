@@ -104,6 +104,28 @@ export function escapeHtml(v: string | null | undefined): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// Sanitize rich HTML from contentEditable: keep formatting tags, strip styles/scripts.
+export function sanitizeRichHtml(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return value.map(v => String(v ?? "").trim()).filter(Boolean)
+      .map(l => `<p>${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`).join("");
+  }
+  let html = String(value);
+  const ALLOWED = /^(b|strong|i|em|u|p|br|ul|ol|li|span|sub|sup|div)$/i;
+  html = html
+    .replace(/<\?[\s\S]*?\?>/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<([^>]+)>/g, (m, inner) => {
+      const closing = inner.startsWith("/");
+      const name = (closing ? inner.slice(1) : inner).split(/[\s/>]/)[0];
+      if (!ALLOWED.test(name)) return "";
+      return closing ? `</${name.toLowerCase()}>` : `<${name.toLowerCase()}>`;
+    });
+  return html.trim();
+}
+
 export function toLines(value: unknown): string[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(v => String(v ?? "").trim()).filter(Boolean);
