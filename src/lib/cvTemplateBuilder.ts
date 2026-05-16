@@ -508,6 +508,16 @@ html, body {
 .row-meta  { font-size: 9px; color: #444; line-height: 1.5; }
 .row-meta b { color: #222; }
 .row-meta a { color: var(--accent); text-decoration: none; }
+.rich-desc { font-size: 9px; color: #444; line-height: 1.5; margin-top: 2px; }
+.rich-desc p { margin: 0 0 2px 0; }
+.rich-desc p:last-child { margin-bottom: 0; }
+.rich-desc ul, .rich-desc ol { margin: 2px 0 2px 16px; padding: 0; }
+.rich-desc li { margin: 0 0 1px 0; }
+.rich-desc b, .rich-desc strong { color: #222; font-weight: 700; }
+.rich-desc i, .rich-desc em { font-style: italic; }
+.rich-desc u { text-decoration: underline; }
+.rich-desc sub { vertical-align: sub; font-size: 7.5px; }
+.rich-desc sup { vertical-align: super; font-size: 7.5px; }
 
 /* CERT */
 .cert-item { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
