@@ -104,6 +104,28 @@ export function escapeHtml(v: string | null | undefined): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// Sanitize rich HTML from contentEditable: keep formatting tags, strip styles/scripts.
+export function sanitizeRichHtml(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return value.map(v => String(v ?? "").trim()).filter(Boolean)
+      .map(l => `<p>${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`).join("");
+  }
+  let html = String(value);
+  const ALLOWED = /^(b|strong|i|em|u|p|br|ul|ol|li|span|sub|sup|div)$/i;
+  html = html
+    .replace(/<\?[\s\S]*?\?>/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<([^>]+)>/g, (m, inner) => {
+      const closing = inner.startsWith("/");
+      const name = (closing ? inner.slice(1) : inner).split(/[\s/>]/)[0];
+      if (!ALLOWED.test(name)) return "";
+      return closing ? `</${name.toLowerCase()}>` : `<${name.toLowerCase()}>`;
+    });
+  return html.trim();
+}
+
 export function toLines(value: unknown): string[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(v => String(v ?? "").trim()).filter(Boolean);
@@ -217,8 +239,8 @@ function buildEducation(eds: any[]): string {
       ? `<b>Core Areas:</b> ${escapeHtml(subjects)}`
       : "";
     const thesis = edu.thesis_title ? `<b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i>` : "";
-    const descLines = toLines(edu.description);
-    const descBlock = descLines.length ? descLines.map(l => `• ${escapeHtml(l)}`).join("<br>") : "";
+    const descHtml = sanitizeRichHtml(edu.description);
+    const descBlock = descHtml ? `<div class="rich-desc">${descHtml}</div>` : "";
 
     const metaLines = [metaBits.join(" &nbsp;|&nbsp; "), thesis, subjectsLine, descBlock].filter(Boolean).join("<br>");
 
@@ -402,7 +424,8 @@ function buildCSS(opts: CVBuildOptions = {}): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-@page { size: A4 portrait; margin: 0; }
+@page { size: A4 portrait; margin: 0.5cm 0 0 0; }
+@page :first { size: A4 portrait; margin: 0; }
 :root { --accent: ${accent}; --accent-light: #ffffff; }
 
 *, *::before, *::after {
@@ -485,6 +508,16 @@ html, body {
 .row-meta  { font-size: 9px; color: #444; line-height: 1.5; }
 .row-meta b { color: #222; }
 .row-meta a { color: var(--accent); text-decoration: none; }
+.rich-desc { font-size: 9px; color: #444; line-height: 1.5; margin-top: 2px; }
+.rich-desc p { margin: 0 0 2px 0; }
+.rich-desc p:last-child { margin-bottom: 0; }
+.rich-desc ul, .rich-desc ol { margin: 2px 0 2px 16px; padding: 0; }
+.rich-desc li { margin: 0 0 1px 0; }
+.rich-desc b, .rich-desc strong { color: #222; font-weight: 700; }
+.rich-desc i, .rich-desc em { font-style: italic; }
+.rich-desc u { text-decoration: underline; }
+.rich-desc sub { vertical-align: sub; font-size: 7.5px; }
+.rich-desc sup { vertical-align: super; font-size: 7.5px; }
 
 /* CERT */
 .cert-item { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
