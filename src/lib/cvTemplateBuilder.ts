@@ -424,7 +424,8 @@ function buildCSS(opts: CVBuildOptions = {}): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-@page { size: A4 portrait; margin: 0; }
+@page { size: A4 portrait; margin: 0.5cm 0 0 0; }
+@page :first { size: A4 portrait; margin: 0; }
 :root { --accent: ${accent}; --accent-light: #ffffff; }
 
 *, *::before, *::after {
