@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 import { Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import ManualPayments from '@/components/admin/ManualPayments';
 
 export default function Payments() {
   const [payments, setPayments] = useState<any[]>([]); // now holds service_requests with joined profiles and service_payments
@@ -609,6 +610,8 @@ export default function Payments() {
             )}
           </CardContent>
         </Card>
+
+        <ManualPayments />
       </div>
     </Layout>
   );
