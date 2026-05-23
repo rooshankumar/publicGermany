@@ -756,6 +756,57 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_payments: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          paid_at: string
+          payment_method: string | null
+          service_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          paid_at?: string
+          payment_method?: string | null
+          service_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          paid_at?: string
+          payment_method?: string | null
+          service_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
