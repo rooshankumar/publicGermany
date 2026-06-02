@@ -140,22 +140,24 @@ export default function ManualPayments({
 
   return (
     <Card className="overflow-hidden border-none sm:border shadow-sm">
-      <CardHeader className="px-3 py-2 bg-muted/30">
-        <CardTitle className="text-sm font-bold flex items-center justify-between gap-2 flex-wrap">
-          <span>Manual / Offline Payments ({rows.length})</span>
-          <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(totals).map(([cur, val]) => (
-              <span key={cur} className="text-[10px] font-normal text-muted-foreground">
-                Received: <strong className="text-success">{cur} {val.toLocaleString()}</strong>
-              </span>
-            ))}
-            <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() => setOpen((o) => !o)}>
-              {open ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-              {open ? 'Close' : 'Add Payment'}
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
+      {!hideHeader && (
+        <CardHeader className="px-3 py-2 bg-muted/30">
+          <CardTitle className="text-sm font-bold flex items-center justify-between gap-2 flex-wrap">
+            <span>Manual / Offline Payments ({rows.length})</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {Object.entries(totals).map(([cur, val]) => (
+                <span key={cur} className="text-[10px] font-normal text-muted-foreground">
+                  Received: <strong className="text-success">{cur} {val.toLocaleString()}</strong>
+                </span>
+              ))}
+              <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() => setOpen((o) => !o)}>
+                {open ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                {open ? 'Close' : 'Add Payment'}
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+      )}
 
       {open && (
         <div className="p-3 border-b bg-muted/10 space-y-2">
