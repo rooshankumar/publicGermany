@@ -408,9 +408,12 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
                       >
                         Download
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key} className="px-2">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {(docs[doc.key] as any)?.status !== 'approved' && (
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key} className="px-2">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+
                     </div>
                   </div>
                 ) : (
