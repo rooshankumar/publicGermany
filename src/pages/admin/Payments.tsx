@@ -426,7 +426,10 @@ export default function Payments() {
           </Button>
         </div>
 
+        <ManualPayments />
+
         <Card className="shadow-sm border-none sm:border">
+
           <CardContent className="p-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <Input
@@ -610,9 +613,8 @@ export default function Payments() {
             )}
           </CardContent>
         </Card>
-
-        <ManualPayments />
       </div>
     </Layout>
+
   );
 }
