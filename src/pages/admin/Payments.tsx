@@ -610,9 +610,8 @@ export default function Payments() {
             )}
           </CardContent>
         </Card>
-
-        <ManualPayments />
       </div>
     </Layout>
+
   );
 }
