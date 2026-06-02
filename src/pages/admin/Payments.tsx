@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendEmail } from '@/lib/sendEmail';
 import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
-import { Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import { Loader2, RefreshCw, ExternalLink, Plus, X } from 'lucide-react';
 import ManualPayments from '@/components/admin/ManualPayments';
 
 export default function Payments() {
