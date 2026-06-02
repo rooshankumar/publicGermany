@@ -20,6 +20,7 @@ export default function Payments() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sendingBillId, setSendingBillId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [manualOpen, setManualOpen] = useState(false);
   const [editState, setEditState] = useState<Record<string, {
     amount?: number | null;
     status?: string;
