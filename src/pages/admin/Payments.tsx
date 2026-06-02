@@ -427,12 +427,19 @@ export default function Payments() {
           </Button>
         </div>
 
-        <ManualPayments />
-
         <Card className="shadow-sm border-none sm:border">
 
           <CardContent className="p-3">
             <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                size="sm"
+                variant={manualOpen ? 'secondary' : 'default'}
+                onClick={() => setManualOpen((o) => !o)}
+                className="h-8 w-8 p-0 shrink-0"
+                title={manualOpen ? 'Close manual payment form' : 'Add manual / offline payment'}
+              >
+                {manualOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </Button>
               <Input
                 placeholder="Search name or service..."
                 value={searchTerm}
@@ -453,6 +460,9 @@ export default function Payments() {
             </div>
           </CardContent>
         </Card>
+
+        <ManualPayments controlledOpen={manualOpen} onOpenChange={setManualOpen} hideHeader />
+
 
         <Card className="overflow-hidden border-none sm:border shadow-sm">
           <CardHeader className="px-3 py-2 bg-muted/30 hidden sm:flex">
