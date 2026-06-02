@@ -37,11 +37,25 @@ const emptyForm = {
   admin_note: '',
 };
 
-export default function ManualPayments() {
+export default function ManualPayments({
+  controlledOpen,
+  onOpenChange,
+  hideHeader = false,
+}: {
+  controlledOpen?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  hideHeader?: boolean;
+} = {}) {
   const { toast } = useToast();
   const [rows, setRows] = useState<ManualPaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? (v as any)(open) : v;
+    if (onOpenChange) onOpenChange(next);
+    else setInternalOpen(next);
+  };
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
 
