@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import TestimonialCard from '@/components/TestimonialCard';
 const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
+const PackagesShowcase = React.lazy(() => import('@/components/PackagesShowcase'));
 // import ThemeToggle from '@/components/ThemeToggle';
 
 // Simple error boundary for Navbar
