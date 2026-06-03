@@ -66,6 +66,7 @@ const ServicesNew = () => {
   const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Fetch services catalog
   const catalogQuery = useQuery({
