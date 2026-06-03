@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  ShoppingCart, 
-  Clock, 
-  CheckCircle, 
-  FileText, 
+import {
+  ShoppingCart,
+  Clock,
+  CheckCircle,
+  FileText,
   Download,
   Package,
   AlertCircle,
@@ -26,6 +27,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
+import PackagesShowcase from '@/components/PackagesShowcase';
+import { SERVICE_PACKAGES } from '@/data/servicePackages';
 
 interface Service {
   id: string;
