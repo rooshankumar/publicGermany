@@ -163,11 +163,7 @@ const AppRoutes = () => {
             <Profile />
           </ProtectedRoute>
         } />
-        <Route path="/services" element={
-          <ProtectedRoute disallowRole="admin">
-            <Services />
-          </ProtectedRoute>
-        } />
+        <Route path="/services" element={<Services />} />
         <Route path="/resources" element={
           <ProtectedRoute>
             <Resources />
