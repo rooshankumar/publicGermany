@@ -791,6 +791,10 @@ const Index = () => {
         <div className="border-t border-border" />
         <HowItWorksSection />
         <div className="border-t border-border" />
+        <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading packages…</div>}>
+          <PackagesShowcase compact showComparison heading="Our Service Packages" subtitle="Pick the package that fits your stage — transparent pricing, no surprises." />
+        </React.Suspense>
+        <div className="border-t border-border" />
         <FreeVsPaidSection />
         <div className="border-t border-border" />
         <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading FAQs…</div>}>
