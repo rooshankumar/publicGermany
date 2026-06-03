@@ -8,7 +8,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Plus, X } from 'lucide-react';
+import ManualPayments from '@/components/admin/ManualPayments';
 
 interface StudentPaymentSummary {
   user_id: string;
@@ -26,6 +27,7 @@ export default function PaymentStudents() {
   const [students, setStudents] = useState<StudentPaymentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [manualOpen, setManualOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -161,13 +163,29 @@ export default function PaymentStudents() {
             </Button>
             <h1 className="text-lg font-bold">Payments</h1>
           </div>
-          <Input
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 text-xs w-32 sm:w-48"
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={manualOpen ? 'secondary' : 'default'}
+              onClick={() => setManualOpen((open) => !open)}
+              className="h-8 w-8 p-0 shrink-0"
+              title={manualOpen ? 'Close manual payment form' : 'Add manual / offline payment'}
+              aria-label={manualOpen ? 'Close manual payment form' : 'Add manual offline payment'}
+            >
+              {manualOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </Button>
+            <Input
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-8 text-xs w-32 sm:w-48"
+            />
+          </div>
         </div>
+
+        {manualOpen && (
+          <ManualPayments controlledOpen={manualOpen} onOpenChange={setManualOpen} hideHeader />
+        )}
 
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-muted/30 border rounded-md p-1.5 sm:p-3 text-center">
