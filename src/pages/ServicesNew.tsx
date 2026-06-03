@@ -156,10 +156,27 @@ const ServicesNew = () => {
 
   const services = catalogQuery.data || [];
   const packages = services.filter(s => s.kind === 'package');
-  const individualServices = services.filter(s => s.kind === 'individual');
+  // Hide "Visa Application Only" from Individual Services to avoid duplication with the package.
+  const individualServices = services.filter(
+    s => s.kind === 'individual' && !/visa\s*application\s*only/i.test(s.name)
+  );
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter(r => r.status === 'completed');
   const activeRequests = requests; // Show ALL requests in My Requests tab
+
+  // Preselect a package when arriving with ?package=<slug>
+  useEffect(() => {
+    const slug = searchParams.get('package');
+    if (!slug) return;
+    const pkg = SERVICE_PACKAGES.find(p => p.slug === slug);
+    if (pkg) {
+      setPackageRequestName(pkg.name);
+      setShowRequestDialog(true);
+      // clear the query param so it doesn't retrigger
+      searchParams.delete('package');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Filter services by search
   const filteredServices = individualServices.filter(s =>
