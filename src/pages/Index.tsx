@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import TestimonialCard from '@/components/TestimonialCard';
 const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
+const PackagesShowcase = React.lazy(() => import('@/components/PackagesShowcase'));
 // import ThemeToggle from '@/components/ThemeToggle';
 
 // Simple error boundary for Navbar
@@ -789,6 +790,10 @@ const Index = () => {
         <FeaturesSection />
         <div className="border-t border-border" />
         <HowItWorksSection />
+        <div className="border-t border-border" />
+        <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading packages…</div>}>
+          <PackagesShowcase compact showComparison heading="Our Service Packages" subtitle="Pick the package that fits your stage — transparent pricing, no surprises." />
+        </React.Suspense>
         <div className="border-t border-border" />
         <FreeVsPaidSection />
         <div className="border-t border-border" />

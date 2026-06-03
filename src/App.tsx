@@ -14,7 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Converter = lazy(() => import("./pages/Converter"));
 const Applications = lazy(() => import("./pages/Applications"));
 const GradeConverter = lazy(() => import("./pages/tools/grade-converter"));
-const Services = lazy(() => import("./pages/ServicesNew"));
+const Services = lazy(() => import("./pages/ServicesEntry"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Help = lazy(() => import("./pages/Help"));
@@ -163,11 +163,7 @@ const AppRoutes = () => {
             <Profile />
           </ProtectedRoute>
         } />
-        <Route path="/services" element={
-          <ProtectedRoute disallowRole="admin">
-            <Services />
-          </ProtectedRoute>
-        } />
+        <Route path="/services" element={<Services />} />
         <Route path="/resources" element={
           <ProtectedRoute>
             <Resources />
