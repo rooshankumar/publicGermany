@@ -403,78 +403,15 @@ const ServicesNew = () => {
 
           {/* TAB 1: Browse Services */}
           <TabsContent value="browse" className="space-y-6">
-            {/* Packages */}
-            {packages.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Service Packages
-                  </CardTitle>
-                  <CardDescription>Complete solutions for your needs</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {packages.map(pkg => {
-                      const lines = (pkg.description || '').split('\n').map(l => l.trim()).filter(Boolean);
-                      const intro = lines.find(l => !l.startsWith('•') && !/^what'?s included/i.test(l) && !/^note:/i.test(l));
-                      const bullets = lines.filter(l => l.startsWith('•')).map(l => l.replace(/^•\s*/, ''));
-                      const note = lines.find(l => /^note:/i.test(l));
-                      return (
-                        <Card key={pkg.id} className="border-primary/20 flex flex-col">
-                          <CardHeader>
-                            <div className="flex items-center justify-between gap-2">
-                              <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                              {pkg.price_range_inr && (
-                                <Badge variant="secondary">₹{Number(pkg.price_range_inr).toLocaleString()}</Badge>
-                              )}
-                            </div>
-                            {intro && <CardDescription>{intro}</CardDescription>}
-                          </CardHeader>
-                          <CardContent className="flex flex-col gap-3 flex-1">
-                            {bullets.length > 0 && (
-                              <>
-                                <ul className="space-y-1.5 text-sm">
-                                  {(expandedPackages[pkg.id] ? bullets : bullets.slice(0, 2)).map((b, i) => (
-                                    <li key={i} className="flex items-start gap-2">
-                                      <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                      <span className="text-foreground/90">{b}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                                {bullets.length > 2 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setExpandedPackages(prev => ({ ...prev, [pkg.id]: !prev[pkg.id] }))}
-                                    className="text-xs font-medium text-primary hover:underline self-start"
-                                  >
-                                    {expandedPackages[pkg.id] ? 'Show less' : `Read more (${bullets.length - 2} more)`}
-                                  </button>
-                                )}
-                              </>
-                            )}
-                            {note && expandedPackages[pkg.id] && (
-                              <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-2">
-                                {note}
-                              </p>
-                            )}
-                            <Button
-                              onClick={() => {
-                                setPackageRequestName(pkg.name);
-                                setShowRequestDialog(true);
-                              }}
-                              className="w-full mt-auto"
-                            >
-                              Request Package
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Service Packages — static catalog with comparison + structured data */}
+            <PackagesShowcase
+              showComparison
+              onRequest={(pkg) => {
+                setPackageRequestName(pkg.name);
+                setShowRequestDialog(true);
+              }}
+            />
+
 
             {/* Individual Services */}
             <Card>
