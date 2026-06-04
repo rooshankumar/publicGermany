@@ -123,16 +123,36 @@ export default function PaymentStudents() {
         }
       }
 
-      // Merge manual / offline payments into the list as synthetic rows,
-      // grouped by client email (fallback: client name).
+      // Merge manual / offline payments. If a manual payment's client_email
+      // matches an existing student's email, merge into that student's row so
+      // revenue/totals are unified. Otherwise create a synthetic offline row.
       try {
         const { data: manualRows } = await (supabase as any)
           .from('manual_payments')
           .select('id, client_name, client_email, amount, status, currency, paid_at, created_at, service_name');
+
+        const emailToStudent = new Map<string, StudentPaymentSummary>();
+        for (const s of studentMap.values()) {
+          if (s.email) emailToStudent.set(s.email.toLowerCase().trim(), s);
+        }
+
         for (const m of (manualRows || []) as any[]) {
-          const key = `manual::${(m.client_email || m.client_name || m.id).toLowerCase()}`;
           const amt = Number(m.amount) || 0;
           const received = (m.status || '').toLowerCase() === 'received';
+          const email = (m.client_email || '').toLowerCase().trim();
+          const stamp = m.paid_at || m.created_at;
+
+          const matched = email ? emailToStudent.get(email) : undefined;
+          if (matched) {
+            matched.request_count++;
+            matched.total_amount += amt;
+            if (received) matched.received_amount += amt;
+            else matched.pending_amount += amt;
+            if (stamp && new Date(stamp) > new Date(matched.last_updated)) matched.last_updated = stamp;
+            continue;
+          }
+
+          const key = `manual::${(m.client_email || m.client_name || m.id).toLowerCase()}`;
           if (!studentMap.has(key)) {
             studentMap.set(key, {
               user_id: key,
@@ -143,7 +163,7 @@ export default function PaymentStudents() {
               pending_amount: 0,
               currency: m.currency || 'INR',
               request_count: 0,
-              last_updated: m.paid_at || m.created_at,
+              last_updated: stamp,
               is_manual: true,
             });
           }
@@ -152,7 +172,6 @@ export default function PaymentStudents() {
           row.total_amount += amt;
           if (received) row.received_amount += amt;
           else row.pending_amount += amt;
-          const stamp = m.paid_at || m.created_at;
           if (stamp && new Date(stamp) > new Date(row.last_updated)) row.last_updated = stamp;
         }
       } catch {}
