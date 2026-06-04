@@ -45,7 +45,17 @@ const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; 
   { label: "Expanded", value: "expanded", hint: "Slightly larger text and spacing to fill short CVs." },
 ];
 
+const CUSTOM_SECTION_PREFIX = "custom-";
+const TOP_LEVEL_SECTION_KEYS = ["education", "work", "publications", "languages", "certifications", "recommendations"] as const;
+
+type TopLevelSectionKey = (typeof TOP_LEVEL_SECTION_KEYS)[number];
+
+type CustomSectionKey = `${typeof CUSTOM_SECTION_PREFIX}${number}`;
+
+type SectionOrderKey = TopLevelSectionKey | CustomSectionKey | "custom";
+
 const REORDERABLE_SECTIONS: Array<{ key: string; label: string }> = [
+  { key: "education", label: "Education" },
   { key: "work", label: "Work Experience" },
   { key: "publications", label: "Research Publications" },
   { key: "languages", label: "Language Skills" },
@@ -508,8 +518,48 @@ export default function AcademicCVGenerator() {
   const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
   const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
   const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
-    ["work", "publications", "languages", "certifications", "custom", "recommendations"],
+    ["education", "work", "publications", "languages", "certifications", "custom", "recommendations"],
   );
+
+  const normalizeSectionOrder = useCallback((order: string[], customCount: number) => {
+    const normalized: string[] = [];
+    const customKeys = Array.from({ length: customCount }, (_, i) => `${CUSTOM_SECTION_PREFIX}${i}`);
+
+    for (const key of order || []) {
+      if (key === "custom") {
+        normalized.push(...customKeys);
+        continue;
+      }
+      const customMatch = /^custom-(\d+)$/.exec(key);
+      if (customMatch) {
+        const index = Number(customMatch[1]);
+        if (index >= 0 && index < customCount) normalized.push(`${CUSTOM_SECTION_PREFIX}${index}`);
+        continue;
+      }
+      if ((TOP_LEVEL_SECTION_KEYS as readonly string[]).includes(key)) {
+        normalized.push(key);
+      }
+    }
+
+    const tailKeys = TOP_LEVEL_SECTION_KEYS.filter(k => k !== "recommendations");
+    for (const topKey of tailKeys) {
+      if (!normalized.includes(topKey)) normalized.push(topKey);
+    }
+    for (const key of customKeys) {
+      if (!normalized.includes(key)) normalized.push(key);
+    }
+    if (!normalized.includes("recommendations")) normalized.push("recommendations");
+    return normalized;
+  }, []);
+
+  const effectiveSectionOrder = useMemo(
+    () => normalizeSectionOrder(sectionOrder, customSections.length),
+    [normalizeSectionOrder, sectionOrder, customSections.length],
+  );
+
+  useEffect(() => {
+    setSectionOrder(prev => normalizeSectionOrder(prev, customSections.length));
+  }, [customSections.length, normalizeSectionOrder]);
 
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -667,7 +717,10 @@ export default function AcademicCVGenerator() {
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
-      if (data.buildOptions.sectionOrder?.length) setSectionOrder(data.buildOptions.sectionOrder);
+      if (data.buildOptions.sectionOrder?.length) {
+        const customCount = data.customSections?.length ?? 0;
+        setSectionOrder(normalizeSectionOrder(data.buildOptions.sectionOrder, customCount));
+      }
     }
 
     const hasPhotos = !!(data.personal?.avatar_url || data.personal?.signature_url);
@@ -1361,14 +1414,16 @@ export default function AcademicCVGenerator() {
                   <Label className="text-xs mb-3 block">Section Order</Label>
                   <div className="space-y-2">
                     {(() => {
-                      interface OrderedItem { key: string; label: string; originalKey: string; }
+                      interface OrderedItem { key: string; label: string; }
                       const orderedItems: OrderedItem[] = [];
-                      for (const key of sectionOrder) {
-                        if (key === "custom") {
-                          customSections.forEach((s, idx) => orderedItems.push({ key: `custom-${idx}`, label: s.title || `Additional Section ${idx + 1}`, originalKey: "custom" }));
+                      for (const key of effectiveSectionOrder) {
+                        const customMatch = /^custom-(\d+)$/.exec(key);
+                        if (customMatch) {
+                          const idx = Number(customMatch[1]);
+                          orderedItems.push({ key, label: customSections[idx]?.title || `Additional Section ${idx + 1}` });
                           continue;
                         }
-                        orderedItems.push({ key, label: REORDERABLE_SECTIONS.find(s => s.key === key)?.label || key, originalKey: key });
+                        orderedItems.push({ key, label: REORDERABLE_SECTIONS.find(s => s.key === key)?.label || key });
                       }
                       return orderedItems.map((item, index) => (
                         <div key={item.key} className="flex items-center justify-between border-2 border-muted/50 rounded-xl px-4 py-3 bg-background hover:border-primary/20 transition-colors shadow-sm">
@@ -1377,8 +1432,14 @@ export default function AcademicCVGenerator() {
                             <span className="text-xs font-semibold">{item.label}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={index === 0} onClick={() => setSectionOrder(prev => moveUp(prev, prev.indexOf(item.originalKey as any)))}><ChevronUp className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={index === orderedItems.length - 1} onClick={() => setSectionOrder(prev => moveDown(prev, prev.indexOf(item.originalKey as any)))}><ChevronDown className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={index === 0} onClick={() => setSectionOrder(prev => {
+                              const normalized = normalizeSectionOrder(prev, customSections.length);
+                              return moveUp(normalized, normalized.indexOf(item.key));
+                            })}><ChevronUp className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={index === orderedItems.length - 1} onClick={() => setSectionOrder(prev => {
+                              const normalized = normalizeSectionOrder(prev, customSections.length);
+                              return moveDown(normalized, normalized.indexOf(item.key));
+                            })}><ChevronDown className="w-4 h-4" /></Button>
                           </div>
                         </div>
                       ));

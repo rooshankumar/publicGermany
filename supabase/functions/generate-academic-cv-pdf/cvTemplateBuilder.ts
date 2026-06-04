@@ -96,6 +96,40 @@ export interface CVBuildOptions {
   sectionOrder?: string[];
 }
 
+const CUSTOM_SECTION_PREFIX = "custom-";
+const TOP_LEVEL_SECTION_KEYS = ["education", "work", "publications", "languages", "certifications", "recommendations"] as const;
+
+function normalizeSectionOrder(order: string[] = [], customCount: number): string[] {
+  const normalized: string[] = [];
+  const customKeys = Array.from({ length: customCount }, (_, i) => `${CUSTOM_SECTION_PREFIX}${i}`);
+
+  for (const key of order) {
+    if (key === "custom") {
+      normalized.push(...customKeys);
+      continue;
+    }
+    const customMatch = /^custom-(\d+)$/.exec(key);
+    if (customMatch) {
+      const index = Number(customMatch[1]);
+      if (index >= 0 && index < customCount) normalized.push(`${CUSTOM_SECTION_PREFIX}${index}`);
+      continue;
+    }
+    if ((TOP_LEVEL_SECTION_KEYS as readonly string[]).includes(key)) {
+      normalized.push(key);
+    }
+  }
+
+  const tailKeys = TOP_LEVEL_SECTION_KEYS.filter(k => k !== "recommendations");
+  for (const topKey of tailKeys) {
+    if (!normalized.includes(topKey)) normalized.push(topKey);
+  }
+  for (const key of customKeys) {
+    if (!normalized.includes(key)) normalized.push(key);
+  }
+  if (!normalized.includes("recommendations")) normalized.push("recommendations");
+  return normalized;
+}
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 export function escapeHtml(v: string | null | undefined): string {
   if (v == null) return "";
@@ -371,22 +405,22 @@ ${table}`;
 }
 
 // ─── Custom (Skills, etc) ───────────────────────────────────────────────────
-function buildCustomSections(sections: any[]): string {
-  if (!sections?.length) return "";
-  return sections
-    .filter(s => s && (s.title || s.items?.length))
-    .map(section => {
-      const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
-      if (!validItems.length) return "";
-    const groups = validItems.map((item: any, i: number) => {
-      const descHtml = sanitizeRichHtml(item.description);
-      return `<div class="skill-group"${i ? ' style="margin-top:4px;"' : ''}>
+function buildCustomSection(section: any): string {
+  const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
+  if (!validItems.length) return "";
+  const groups = validItems.map((item: any, i: number) => {
+    const descHtml = sanitizeRichHtml(item.description);
+    return `<div class="skill-group"${i ? ' style="margin-top:4px;"' : ''}>
   ${item.label ? `<div class="skill-label">${escapeHtml(item.label)}</div>` : ""}
   ${descHtml ? `<div class="rich-desc">${descHtml}</div>` : ""}
 </div>`;
-    }).join("");
-    return sectionWrap(section.title || "Skills", groups);
-  }).filter(Boolean).join("");
+  }).join("");
+  return sectionWrap(section.title || "Skills", groups);
+}
+
+function buildCustomSections(sections: any[]): string {
+  if (!sections?.length) return "";
+  return sections.map(buildCustomSection).filter(Boolean).join("");
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
@@ -591,16 +625,18 @@ export function buildCVHtml(
   recommendations: any[] = [],
   options: CVBuildOptions = {},
 ): string {
-  const order = options.sectionOrder || ["education", "work", "publications", "certifications", "languages", "custom", "recommendations"];
+  const order = normalizeSectionOrder(options.sectionOrder, customSections.length);
   const map: Record<string, string> = {
     education:       buildEducation(educations),
     work:            buildWork(workExperiences),
     publications:    buildPublications(publications),
     certifications:  buildCertifications(certifications),
     languages:       buildLanguages(languages),
-    custom:          buildCustomSections(customSections),
     recommendations: buildRecommendations(recommendations),
   };
+  customSections.forEach((section, idx) => {
+    map[`${CUSTOM_SECTION_PREFIX}${idx}`] = buildCustomSection(section);
+  });
   const body = order.map(k => map[k] || "").filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
