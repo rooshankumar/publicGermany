@@ -116,7 +116,18 @@ const AdminDashboard = () => {
       const applicationsCount = applicationsCountRes.count || 0;
       const requestsCount = requestsCountRes.count || 0;
       const receivedRows = receivedRowsRes.data || [];
-      const totalRevenue = receivedRows.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      let totalRevenue = receivedRows.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      // Include manual / offline received payments in revenue
+      try {
+        const { data: manualReceived } = await (supabase as any)
+          .from('manual_payments')
+          .select('amount')
+          .eq('status', 'received');
+        totalRevenue += ((manualReceived || []) as any[]).reduce(
+          (sum: number, p: any) => sum + (Number(p?.amount) || 0),
+          0
+        );
+      } catch {}
       const pendingPayments = pendingPaymentsCountRes.count || 0;
       const receivedPayments = receivedPaymentsCountRes.count || 0;
       const recentPayments = recentPaymentsRes.data || [];
