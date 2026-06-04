@@ -839,11 +839,10 @@ const ServicesNew = () => {
                     <div className="text-right ml-2">
                       {(() => {
                         const pkg = packages.find(p => p.name === packageRequestName);
-                        return pkg?.price_range_inr ? (
-                          <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>
-                        ) : pkg?.price_inr ? (
-                          <p className="font-semibold text-xs">₹{pkg.price_inr.toLocaleString()}</p>
-                        ) : null;
+                        const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
+                        if (pkg?.price_range_inr) return <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>;
+                        const price = pkg?.price_inr || staticPkg?.price;
+                        return price ? <p className="font-semibold text-xs">₹{price.toLocaleString()}</p> : null;
                       })()}
                     </div>
                   </div>
