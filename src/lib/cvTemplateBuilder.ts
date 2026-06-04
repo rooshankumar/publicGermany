@@ -591,8 +591,9 @@ export function buildCVHtml(
   recommendations: any[] = [],
   options: CVBuildOptions = {},
 ): string {
-  const order = options.sectionOrder || ["work", "publications", "certifications", "languages", "custom", "recommendations"];
+  const order = options.sectionOrder || ["education", "work", "publications", "certifications", "languages", "custom", "recommendations"];
   const map: Record<string, string> = {
+    education:       buildEducation(educations),
     work:            buildWork(workExperiences),
     publications:    buildPublications(publications),
     certifications:  buildCertifications(certifications),
@@ -612,7 +613,6 @@ ${buildCSS(options)}
 <body>
 <div class="page">
   ${buildHeader(personal)}
-  ${buildEducation(educations)}
   ${body}
   ${buildSignature(personal)}
 </div>
