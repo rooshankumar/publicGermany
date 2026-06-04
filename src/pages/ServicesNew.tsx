@@ -202,10 +202,11 @@ const ServicesNew = () => {
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
     const pkg = packages.find(p => p.name === packageRequestName);
-    // For packages, we'll use the minimum of the range or 0 if not specified
-    // Admin will adjust the final price
     if (pkg?.price_inr) return pkg.price_inr;
-    return 0;
+    // Fallback to static catalog price (used when arriving via ?package=slug
+    // for a package not yet present in the DB services table).
+    const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
+    return staticPkg?.price || 0;
   };
 
   const getTotalAmount = () => {
