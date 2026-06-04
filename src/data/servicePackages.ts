@@ -93,5 +93,6 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       'University application fees are paid directly by the student.',
       'Visa support is not included and can be added separately.',
     ],
+    popular: true,
   },
 ];
