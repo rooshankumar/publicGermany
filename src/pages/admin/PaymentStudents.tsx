@@ -123,6 +123,40 @@ export default function PaymentStudents() {
         }
       }
 
+      // Merge manual / offline payments into the list as synthetic rows,
+      // grouped by client email (fallback: client name).
+      try {
+        const { data: manualRows } = await (supabase as any)
+          .from('manual_payments')
+          .select('id, client_name, client_email, amount, status, currency, paid_at, created_at, service_name');
+        for (const m of (manualRows || []) as any[]) {
+          const key = `manual::${(m.client_email || m.client_name || m.id).toLowerCase()}`;
+          const amt = Number(m.amount) || 0;
+          const received = (m.status || '').toLowerCase() === 'received';
+          if (!studentMap.has(key)) {
+            studentMap.set(key, {
+              user_id: key,
+              full_name: m.client_name || 'Offline client',
+              email: m.client_email || '',
+              total_amount: 0,
+              received_amount: 0,
+              pending_amount: 0,
+              currency: m.currency || 'INR',
+              request_count: 0,
+              last_updated: m.paid_at || m.created_at,
+              is_manual: true,
+            });
+          }
+          const row = studentMap.get(key)!;
+          row.request_count++;
+          row.total_amount += amt;
+          if (received) row.received_amount += amt;
+          else row.pending_amount += amt;
+          const stamp = m.paid_at || m.created_at;
+          if (stamp && new Date(stamp) > new Date(row.last_updated)) row.last_updated = stamp;
+        }
+      } catch {}
+
       setStudents(Array.from(studentMap.values()));
     } catch (error: any) {
       toast({
