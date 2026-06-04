@@ -43,6 +43,9 @@ export default function PaymentStudents() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
         fetchStudentSummaries();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'manual_payments' }, () => {
+        fetchStudentSummaries();
+      })
       .subscribe();
 
     return () => {
