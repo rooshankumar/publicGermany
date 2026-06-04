@@ -878,12 +878,14 @@ const ServicesNew = () => {
                     // Calculate package price
                     if (packageRequestName) {
                       const pkg = packages.find(p => p.name === packageRequestName);
+                      const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
                       if (pkg?.price_range_inr) {
-                        // Extract first number from range string
                         const firstNum = pkg.price_range_inr.split('-')[0].replace(/[^\d]/g, '');
                         total += firstNum ? Number(firstNum) : 0;
                       } else if (pkg?.price_inr) {
                         total += pkg.price_inr;
+                      } else if (staticPkg?.price) {
+                        total += staticPkg.price;
                       }
                     }
                     
