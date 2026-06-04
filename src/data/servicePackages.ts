@@ -70,7 +70,6 @@ export const SERVICE_PACKAGES: ServicePackage[] = [
       'The package fee becomes payable after the first university application has been submitted.',
     bestFor:
       'Students who want complete admission and visa support under one package.',
-    popular: true,
   },
   {
     id: 'pay-after-admission',
