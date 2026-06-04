@@ -406,7 +406,6 @@ const ServicesNew = () => {
           <TabsContent value="browse" className="space-y-6">
             {/* Service Packages — static catalog with comparison + structured data */}
             <PackagesShowcase
-              showComparison
               onRequest={(pkg) => {
                 setPackageRequestName(pkg.name);
                 setShowRequestDialog(true);
