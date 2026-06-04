@@ -138,16 +138,32 @@ export function toLines(value: unknown): string[] {
   return text.split(/\r?\n/).map(l => l.replace(/^\s*[-*•·]\s*/, "").trim()).filter(Boolean);
 }
 
+function fmtMonthYear(dateStr?: string | number): string {
+  if (!dateStr) return "";
+  const d = new Date(String(dateStr));
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+
 function fmtYearRange(startYear?: number | string, endYear?: number | string,
                      startDate?: string, endDate?: string, isCurrent?: boolean): string {
+  // Prefer full date formatting if dates are provided
+  if (startDate || endDate) {
+    const s = fmtMonthYear(startDate) || (startYear ? String(new Date(String(startYear)).getFullYear()) : "");
+    const e = isCurrent ? "Present" : (fmtMonthYear(endDate) || (endYear ? String(new Date(String(endYear)).getFullYear()) : ""));
+    if (!s && !e) return "";
+    if (s && e) return `${s} – ${e}`;
+    return s || e;
+  }
+  // Fallback to year-only format
   const yr = (v?: string | number) => {
     if (!v) return "";
     const s = String(v);
     const m = s.match(/(\d{4})/);
     return m ? m[1] : "";
   };
-  const s = yr(startDate) || yr(startYear);
-  const e = isCurrent ? "Present" : (yr(endDate) || yr(endYear));
+  const s = yr(startYear);
+  const e = isCurrent ? "Present" : yr(endYear);
   if (!s && !e) return "";
   if (s && e) return `${s} – ${e}`;
   return s || e;
@@ -265,8 +281,7 @@ function buildWork(works: any[]): string {
     const dates = fmtYearRange(undefined, undefined, w.start_date, w.end_date, w.is_current);
     const location = [w.city, w.country].filter(Boolean).join(", ") || w.city_country || "";
     const inst = [w.organisation, location].filter(Boolean).map(escapeHtml).join(", ");
-    const lines = toLines(w.description);
-    const desc = lines.length ? lines.join(" · ") : "";
+    const descHtml = sanitizeRichHtml(w.description);
     return `
 <div class="row-entry">
   <div class="row-top">
@@ -274,7 +289,7 @@ function buildWork(works: any[]): string {
     ${dates ? `<div class="row-date">${dates}</div>` : ""}
   </div>
   ${inst ? `<div class="row-inst">${inst}</div>` : ""}
-  ${desc ? `<div class="row-meta">${escapeHtml(desc)}</div>` : ""}
+  ${descHtml ? `<div class="rich-desc">${descHtml}</div>` : ""}
 </div>`;
   }).join("");
   return sectionWrap("Work Experience", body);
@@ -364,11 +379,10 @@ function buildCustomSections(sections: any[]): string {
       const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
       if (!validItems.length) return "";
     const groups = validItems.map((item: any, i: number) => {
-      const lines = toLines(item.description);
-      const txt = lines.length ? lines.join(" · ") : "";
+      const descHtml = sanitizeRichHtml(item.description);
       return `<div class="skill-group"${i ? ' style="margin-top:4px;"' : ''}>
   ${item.label ? `<div class="skill-label">${escapeHtml(item.label)}</div>` : ""}
-  ${txt ? `<div class="skill-text">${escapeHtml(txt)}</div>` : ""}
+  ${descHtml ? `<div class="rich-desc">${descHtml}</div>` : ""}
 </div>`;
     }).join("");
     return sectionWrap(section.title || "Skills", groups);
@@ -425,7 +439,7 @@ function buildCSS(opts: CVBuildOptions = {}): string {
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 @page { size: A4 portrait; margin: 0.5cm 0 0 0; }
-@page :first { size: A4 portrait; margin: 0; }
+@page :first { size: A4 portrait; margin: 0 0 0.5cm 0; }
 :root { --accent: ${accent}; --accent-light: #ffffff; }
 
 *, *::before, *::after {

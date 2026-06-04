@@ -25,6 +25,31 @@ function escapeHtml(text: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
+// Sanitize rich HTML from contentEditable: keep formatting tags, strip scripts/styles.
+function sanitizeRichHtml(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v ?? "").trim())
+      .filter(Boolean)
+      .map((l) => `<p>${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+      .join("");
+  }
+  let html = String(value);
+  const ALLOWED = /^(b|strong|i|em|u|p|br|ul|ol|li|span|sub|sup|div)$/i;
+  html = html
+    .replace(/<\?[\s\S]*?\?>/g, "")
+    .replace(/<!--([\s\S]*?)-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<([^>]+)>/g, (m, inner) => {
+      const closing = inner.startsWith("/");
+      const name = (closing ? inner.slice(1) : inner).split(/[\s/>]/)[0];
+      if (!ALLOWED.test(name)) return "";
+      return closing ? `</${name.toLowerCase()}>` : `<${name.toLowerCase()}>`;
+    });
+  return html.trim();
+}
+
 // Format grade based on max scale (percentage vs GPA)
 function formatGrade(finalGrade: any, maxScale: any): string {
   if (!finalGrade) return "";
@@ -74,7 +99,9 @@ function renderWorkExperiences(workExps: any[]): string {
   
   return workExps
     .map(
-      (work) => `
+      (work) => {
+        const descriptionHtml = work.description ? sanitizeRichHtml(work.description) : "";
+        return `
 <div class="entry">
     <table class="entry-table">
         <tr>
@@ -83,9 +110,10 @@ function renderWorkExperiences(workExps: any[]): string {
         </tr>
     </table>
     <div class="sub-info">${escapeHtml(work.organisation)}, ${escapeHtml(work.city_country)}</div>
-    ${work.description ? `<div class="academic-meta">${escapeHtml(work.description)}</div>` : ""}
+    ${descriptionHtml ? `<div class="academic-meta">${descriptionHtml}</div>` : ""}
 </div>
-`
+`;
+      }
     )
     .join("");
 }
@@ -221,7 +249,7 @@ function renderAdditionalSections(sections: any[]): string {
       (section) => `
 <div class="section-title">${escapeHtml(section.section_title)}</div>
 <div class="entry">
-    ${escapeHtml(section.section_content)}
+    ${sanitizeRichHtml(section.section_content)}
 </div>
 `
     )
