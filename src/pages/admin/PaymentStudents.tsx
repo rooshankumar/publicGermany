@@ -21,6 +21,7 @@ interface StudentPaymentSummary {
   currency: string;
   request_count: number;
   last_updated: string;
+  is_manual?: boolean;
 }
 
 export default function PaymentStudents() {
@@ -40,6 +41,9 @@ export default function PaymentStudents() {
         fetchStudentSummaries();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        fetchStudentSummaries();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'manual_payments' }, () => {
         fetchStudentSummaries();
       })
       .subscribe();
@@ -118,6 +122,40 @@ export default function PaymentStudents() {
           student.last_updated = request.updated_at;
         }
       }
+
+      // Merge manual / offline payments into the list as synthetic rows,
+      // grouped by client email (fallback: client name).
+      try {
+        const { data: manualRows } = await (supabase as any)
+          .from('manual_payments')
+          .select('id, client_name, client_email, amount, status, currency, paid_at, created_at, service_name');
+        for (const m of (manualRows || []) as any[]) {
+          const key = `manual::${(m.client_email || m.client_name || m.id).toLowerCase()}`;
+          const amt = Number(m.amount) || 0;
+          const received = (m.status || '').toLowerCase() === 'received';
+          if (!studentMap.has(key)) {
+            studentMap.set(key, {
+              user_id: key,
+              full_name: m.client_name || 'Offline client',
+              email: m.client_email || '',
+              total_amount: 0,
+              received_amount: 0,
+              pending_amount: 0,
+              currency: m.currency || 'INR',
+              request_count: 0,
+              last_updated: m.paid_at || m.created_at,
+              is_manual: true,
+            });
+          }
+          const row = studentMap.get(key)!;
+          row.request_count++;
+          row.total_amount += amt;
+          if (received) row.received_amount += amt;
+          else row.pending_amount += amt;
+          const stamp = m.paid_at || m.created_at;
+          if (stamp && new Date(stamp) > new Date(row.last_updated)) row.last_updated = stamp;
+        }
+      } catch {}
 
       setStudents(Array.from(studentMap.values()));
     } catch (error: any) {
@@ -224,15 +262,24 @@ export default function PaymentStudents() {
                     {filteredStudents.map((student) => (
                       <tr 
                         key={student.user_id} 
-                        className="hover:bg-muted/20 transition-colors cursor-pointer group"
-                        onClick={() => navigate(`/admin/payments/${student.user_id}`)}
+                        className={`hover:bg-muted/20 transition-colors group ${student.is_manual ? '' : 'cursor-pointer'}`}
+                        onClick={() => {
+                          if (!student.is_manual) navigate(`/admin/payments/${student.user_id}`);
+                        }}
                       >
                         <td className="px-3 py-2 min-w-[120px]">
                           <p className="font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{student.full_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-none">{student.email}</p>
-                          <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 mt-0.5 font-normal">
-                            {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
-                          </Badge>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 font-normal">
+                              {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
+                            </Badge>
+                            {student.is_manual && (
+                              <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 font-normal border-amber-400 text-amber-700 dark:text-amber-400">
+                                Offline
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2">
                           <div className="space-y-0.5 text-[10px] text-right sm:text-center">
@@ -242,7 +289,9 @@ export default function PaymentStudents() {
                           </div>
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
+                          {!student.is_manual && (
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
+                          )}
                         </td>
                       </tr>
                     ))}
