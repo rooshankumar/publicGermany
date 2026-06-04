@@ -262,15 +262,24 @@ export default function PaymentStudents() {
                     {filteredStudents.map((student) => (
                       <tr 
                         key={student.user_id} 
-                        className="hover:bg-muted/20 transition-colors cursor-pointer group"
-                        onClick={() => navigate(`/admin/payments/${student.user_id}`)}
+                        className={`hover:bg-muted/20 transition-colors group ${student.is_manual ? '' : 'cursor-pointer'}`}
+                        onClick={() => {
+                          if (!student.is_manual) navigate(`/admin/payments/${student.user_id}`);
+                        }}
                       >
                         <td className="px-3 py-2 min-w-[120px]">
                           <p className="font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{student.full_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-none">{student.email}</p>
-                          <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 mt-0.5 font-normal">
-                            {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
-                          </Badge>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 font-normal">
+                              {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
+                            </Badge>
+                            {student.is_manual && (
+                              <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 font-normal border-amber-400 text-amber-700 dark:text-amber-400">
+                                Offline
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2">
                           <div className="space-y-0.5 text-[10px] text-right sm:text-center">
@@ -280,7 +289,9 @@ export default function PaymentStudents() {
                           </div>
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
+                          {!student.is_manual && (
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
+                          )}
                         </td>
                       </tr>
                     ))}
