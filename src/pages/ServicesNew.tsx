@@ -202,10 +202,11 @@ const ServicesNew = () => {
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
     const pkg = packages.find(p => p.name === packageRequestName);
-    // For packages, we'll use the minimum of the range or 0 if not specified
-    // Admin will adjust the final price
     if (pkg?.price_inr) return pkg.price_inr;
-    return 0;
+    // Fallback to static catalog price (used when arriving via ?package=slug
+    // for a package not yet present in the DB services table).
+    const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
+    return staticPkg?.price || 0;
   };
 
   const getTotalAmount = () => {
@@ -838,11 +839,10 @@ const ServicesNew = () => {
                     <div className="text-right ml-2">
                       {(() => {
                         const pkg = packages.find(p => p.name === packageRequestName);
-                        return pkg?.price_range_inr ? (
-                          <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>
-                        ) : pkg?.price_inr ? (
-                          <p className="font-semibold text-xs">₹{pkg.price_inr.toLocaleString()}</p>
-                        ) : null;
+                        const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
+                        if (pkg?.price_range_inr) return <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>;
+                        const price = pkg?.price_inr || staticPkg?.price;
+                        return price ? <p className="font-semibold text-xs">₹{price.toLocaleString()}</p> : null;
                       })()}
                     </div>
                   </div>
@@ -878,12 +878,14 @@ const ServicesNew = () => {
                     // Calculate package price
                     if (packageRequestName) {
                       const pkg = packages.find(p => p.name === packageRequestName);
+                      const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
                       if (pkg?.price_range_inr) {
-                        // Extract first number from range string
                         const firstNum = pkg.price_range_inr.split('-')[0].replace(/[^\d]/g, '');
                         total += firstNum ? Number(firstNum) : 0;
                       } else if (pkg?.price_inr) {
                         total += pkg.price_inr;
+                      } else if (staticPkg?.price) {
+                        total += staticPkg.price;
                       }
                     }
                     

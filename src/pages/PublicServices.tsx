@@ -94,9 +94,9 @@ const PublicServices: React.FC = () => {
 
           <PackagesShowcase
             onRequest={handleRequest}
-            showComparison
             heading="Choose your package"
             subtitle="All packages include personalized guidance from our team."
+            compact
           />
 
           <section
