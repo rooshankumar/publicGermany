@@ -21,6 +21,7 @@ interface StudentPaymentSummary {
   currency: string;
   request_count: number;
   last_updated: string;
+  is_manual?: boolean;
 }
 
 export default function PaymentStudents() {
