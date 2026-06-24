@@ -1,16 +1,22 @@
 {
   "name": "publicgermany",
   "short_name": "publicgermany",
+  "description": "Your complete guide to study in Germany — APS certification, university applications, and visa processes for Indian students.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F9F9F9",
-  "theme_color": "#D00000",
+  "background_color": "#ffffff",
+  "theme_color": "#003366",
   "icons": [
     {
       "src": "/favicon.png",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
