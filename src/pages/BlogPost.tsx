@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import logos from '@/assets/logos.png';
 
 interface Blog {
@@ -68,42 +70,56 @@ const BlogPost = () => {
     return result;
   }, [post?.content_markdown]);
 
+  const slugify = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
   const renderContent = () => {
     if (!post) return null;
-    const lines = post.content_markdown.split('\n');
-    return lines.map((line, idx) => {
-      const headingMatch = line.match(/^(#{2,3})\s+(.*)$/);
-      if (headingMatch) {
-        const level = headingMatch[1].length; // 2 or 3
-        const text = headingMatch[2].trim();
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        const Tag = level === 2 ? 'h2' : 'h3';
-        return (
-          <Tag
-            key={idx}
-            id={id}
-            className={
-              level === 2
-                ? 'text-2xl font-semibold mt-8 mb-3 scroll-mt-24'
-                : 'text-xl font-semibold mt-6 mb-2 scroll-mt-24'
-            }
-          >
-            {text}
-          </Tag>
-        );
-      }
-
-      if (!line.trim()) {
-        return <br key={idx} />;
-      }
-
-      return (
-        <p key={idx} className="mb-3 leading-relaxed">
-          {line}
-        </p>
-      );
-    });
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => {
+            const text = String(children);
+            return <h1 id={slugify(text)} className="text-3xl font-bold mt-8 mb-4 scroll-mt-24">{children}</h1>;
+          },
+          h2: ({ children }) => {
+            const text = String(children);
+            return <h2 id={slugify(text)} className="text-2xl font-semibold mt-8 mb-3 scroll-mt-24">{children}</h2>;
+          },
+          h3: ({ children }) => {
+            const text = String(children);
+            return <h3 id={slugify(text)} className="text-xl font-semibold mt-6 mb-2 scroll-mt-24">{children}</h3>;
+          },
+          p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+          a: ({ href, children }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:no-underline">
+              {children}
+            </a>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-primary/40 pl-4 italic text-muted-foreground my-4">{children}</blockquote>
+          ),
+          code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{children}</code>,
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-4">
+              <table className="min-w-full border border-border text-sm">{children}</table>
+            </div>
+          ),
+          th: ({ children }) => <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">{children}</th>,
+          td: ({ children }) => <td className="border border-border px-3 py-2 align-top">{children}</td>,
+          hr: () => <hr className="my-6 border-border" />,
+        }}
+      >
+        {post.content_markdown}
+      </ReactMarkdown>
+    );
   };
+
 
   const publishedDate = post?.published_at
     ? new Date(post.published_at).toLocaleDateString('en-US', {
@@ -177,7 +193,7 @@ const BlogPost = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)] gap-10 lg:gap-12">
-                <article className="prose prose-sm sm:prose-base max-w-none">
+                <article className="max-w-none text-foreground">
                   {post.featured_image_url && (
                     <div className="mb-6 rounded-lg overflow-hidden">
                       <img
