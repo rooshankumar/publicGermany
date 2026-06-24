@@ -51,6 +51,77 @@
     <meta name="twitter:site" content="@publicgermany" />
     <meta name="twitter:image" content="/favicon.png" />
     <link rel="canonical" href="https://publicgermany.vercel.app" />
+
+    <!-- Organization + WebSite + FAQPage JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://publicgermany.vercel.app/#organization",
+          "name": "publicgermany",
+          "url": "https://publicgermany.vercel.app/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://publicgermany.vercel.app/logo.png",
+            "width": 512,
+            "height": 512
+          },
+          "description": "publicgermany is a free platform guiding Indian students through APS certification, university applications, and German student visa processes.",
+          "foundingDate": "2023",
+          "areaServed": "IN",
+          "audience": {
+            "@type": "Audience",
+            "audienceType": "Indian students planning to study in Germany"
+          },
+          "sameAs": [
+            "https://x.com/publicgermany",
+            "https://www.linkedin.com/groups/17793029",
+            "https://facebook.com/groups/1520681509728790/",
+            "https://t.me/publicgermany"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": ["English", "Hindi"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://publicgermany.vercel.app/#website",
+          "url": "https://publicgermany.vercel.app/",
+          "name": "publicgermany",
+          "description": "Your complete guide to study in Germany — APS certification, university applications, and visa processes for Indian students.",
+          "publisher": { "@id": "https://publicgermany.vercel.app/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://publicgermany.vercel.app/blog?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://publicgermany.vercel.app/#faq",
+          "mainEntity": [
+            { "@type": "Question", "name": "What is publicgermany and how can it assist me?", "acceptedAnswer": { "@type": "Answer", "text": "publicgermany is a free platform for Indian students planning to study in Germany. It provides personalized checklists, progress tracking, and guides covering APS certification, university applications, visa processes, and pre-departure support. Optional paid services include APS guidance, university shortlisting, SOP/CV/LOR editing, and visa file review." } },
+            { "@type": "Question", "name": "How much money do I need in my blocked account for a German student visa?", "acceptedAnswer": { "@type": "Answer", "text": "As of September 2024, the German government requires €11,904 per year (€992 per month) in a blocked account (Sperrkonto) for a student visa. This is approximately ₹10.7–10.9 lakh. The old amount of €10,332 is no longer accepted. Recommended providers: Fintiba or Expatrio." } },
+            { "@type": "Question", "name": "Do I really need an APS certificate to study in Germany?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The APS certificate is mandatory for all Indian students applying to German universities and for the German student visa — required since November 2022. Fee: ₹18,000, processing 3–4 weeks (up to 10 weeks in peak season). From Winter 2026/27, a minimum of 70% in Class XII is required." } },
+            { "@type": "Question", "name": "What are the application deadlines for German universities?", "acceptedAnswer": { "@type": "Answer", "text": "Winter Semester via uni-assist: July 15. Summer Semester via uni-assist: January 15. Direct portals are earlier — TUM: April 30, KIT: May 31, RWTH Aachen: March 15–May 31 depending on program." } },
+            { "@type": "Question", "name": "What English language score do I need for German universities?", "acceptedAnswer": { "@type": "Answer", "text": "English-taught Master's: IELTS 6.0–6.5 (TUM/RWTH require 6.5) or TOEFL iBT 80–95 (TUM requires 95). German-taught: TestDaF TDN-4 or DSH-2." } },
+            { "@type": "Question", "name": "How much does it cost to study at a German public university?", "acceptedAnswer": { "@type": "Answer", "text": "Most public universities charge zero tuition — only a semester contribution of €70–€380. Exception: Baden-Württemberg universities charge non-EU students €1,500/semester. Living costs: €800–€1,200/month." } },
+            { "@type": "Question", "name": "How early should I apply for a German student visa?", "acceptedAnswer": { "@type": "Answer", "text": "Apply 3–4 months before arrival. From January 2025, all applications must start at digital.diplo.de (CSP) before booking a VFS appointment. From July 1, 2025, Germany abolished the remonstration procedure — Indian students get one attempt. Fee: €75 plus VFS charges. Processing: 6–25 business days." } },
+            { "@type": "Question", "name": "Can I work while studying in Germany?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — 140 full days or 280 half-days per year without a separate work permit (updated from 120/240 in 2024). Werkstudent positions pay €13–25/hour. National minimum wage: €12.82/hour (2025)." } },
+            { "@type": "Question", "name": "Can I stay in Germany after graduation?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — an 18-month Job Seeker Visa after graduation. After 2–3 years of skilled work you can apply for permanent residence. After 5 years you may be eligible for German citizenship." } },
+            { "@type": "Question", "name": "Should I apply directly to universities or through uni-assist?", "acceptedAnswer": { "@type": "Answer", "text": "Most public universities use uni-assist (170+ including FU Berlin, HU Berlin, Heidelberg, Cologne). Direct portals: TUM, KIT, RWTH Aachen, TU Berlin. Always check the specific university page — wrong portal = application not received." } }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
 
   <body>
