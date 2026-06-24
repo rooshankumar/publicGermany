@@ -193,7 +193,7 @@ const BlogPost = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)] gap-10 lg:gap-12">
-                <article className="prose prose-sm sm:prose-base max-w-none">
+                <article className="max-w-none text-foreground">
                   {post.featured_image_url && (
                     <div className="mb-6 rounded-lg overflow-hidden">
                       <img
