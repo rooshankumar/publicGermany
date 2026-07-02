@@ -2,129 +2,237 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   publicgermany — iOS-style design system
+   Font: system stack. Colors: white/off-white, near-black, muted red, muted gold.
+   ============================================================ */
+
 @layer base {
   :root {
-    /* Base layout colors */
+    /* ---- New iOS-style tokens (raw hex, referenced via pg.* tailwind namespace) ---- */
+    --pg-bg: #FFFFFF;
+    --pg-bg2: #F5F5F7;
+    --pg-bg3: #EFEFF1;
+    --pg-label: #1D1D1F;
+    --pg-label2: #6E6E73;
+    --pg-label3: #AEAEB2;
+    --pg-accent: #B23A2E;
+    --pg-accent-d: #8f2f24;
+    --pg-gold: #B8862E;
+    --pg-sep: #E5E5EA;
+    --pg-green: #3F8558;
+    --pg-radius-lg: 20px;
+    --pg-radius-md: 14px;
+    --pg-radius-sm: 10px;
+    --pg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --pg-shadow-md: 0 16px 32px -12px rgba(0, 0, 0, 0.14);
+
+    /* ---- Shadcn semantic tokens re-pointed to the new palette ---- */
     --background: 0 0% 100%;
-    /* Main text to brand black */
-    --foreground: 0 0% 11%; /* #1C1C1C */
+    --foreground: 220 6% 12%;              /* #1D1D1F */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 11%;
+    --card-foreground: 220 6% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 11%;
+    --popover-foreground: 220 6% 12%;
 
-    /* Primary branding */
-    --primary: 0 100% 41%; /* #D00000 */
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 0 100% 46%; /* a bit lighter red for glow */
+    --primary: 7 59% 44%;                  /* #B23A2E muted red */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 7 59% 50%;
 
-    /* Secondary neutral tones */
-    --secondary: 0 0% 98%; /* bg light */
-    --secondary-foreground: 0 0% 11%;
-    --muted: 0 0% 98%;
-    --muted-foreground: 0 0% 40%; /* #666 */
-    --accent: 48 100% 50%; /* Gold */
-    --accent-foreground: 0 0% 11%;
+    --secondary: 240 6% 96%;               /* #F5F5F7 */
+    --secondary-foreground: 220 6% 12%;
+    --muted: 240 6% 96%;
+    --muted-foreground: 240 4% 43%;        /* #6E6E73 */
+    --accent: 240 6% 94%;                  /* #EFEFF1 subtle chip */
+    --accent-foreground: 220 6% 12%;
 
-    /* Status colors */
-    --success: 123 46% 33%; /* #2E7D32 */
-    --success-foreground: 0 0% 98%;
-    --warning: 48 100% 50%; /* use gold as warning/accent */
+    --success: 143 36% 39%;                /* #3F8558 */
+    --success-foreground: 0 0% 100%;
+    --warning: 36 62% 44%;                 /* #B8862E gold */
     --warning-foreground: 0 0% 100%;
+    --destructive: 7 59% 44%;
+    --destructive-foreground: 0 0% 100%;
 
-    --destructive: 350 100% 35%; /* #B00020 */
-    --destructive-foreground: 0 0% 98%;
+    --border: 240 8% 91%;                  /* #E5E5EA */
+    --input: 240 8% 91%;
+    --ring: 7 59% 44%;
+    --radius: 0.875rem;                    /* 14px cards */
 
-    /* UI elements */
-    --border: 0 0% 88%;
-    --input: 0 0% 92%;
-    --ring: 0 100% 41%;
-    --radius: 0.5rem;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 100% 41%), hsl(0 100% 46%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%), hsl(0 0% 92%), hsl(0 0% 88%)); /* classic, less bright */
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 98%));
-    --gradient-success: linear-gradient(135deg, hsl(123 46% 33%), hsl(123 46% 43%));
-
-    /* Trust indicators */
-    --trust-blue: 215 84% 35%; /* retained for links if needed */
-    --trust-green: 123 46% 33%;
-    --trust-gold: 48 100% 50%;
-
-    /* Shadows */
-    --shadow-soft: 0 4px 12px hsl(215 20% 20% / 0.08);
-    --shadow-medium: 0 8px 25px hsl(215 20% 20% / 0.12);
-    --shadow-strong: 0 16px 40px hsl(215 20% 20% / 0.16);
-    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.15);
-    
-    /* Glassmorphism */
-    --glass-bg: hsla(0, 0%, 100%, 0.75);
-    --glass-border: hsla(0, 0%, 100%, 0.18);
-    --glass-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.1);
-    --blur-amount: 12px;
-
-    /* Sidebar styling */
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* PublicGermany brand (hex tokens) */
-    --color-primary-red: #D00000;
-    --color-primary-black: #1C1C1C;
-    --color-accent-gold: #FFCC00;
-    --color-bg-light: #F9F9F9;
-    --color-neutral-gray: #666666;
-    --color-success-green: #2E7D32;
-    --color-error-red: #B00020;
-
-    /* Bright Accent */
-    --bright-accent: 195 100% 50%;
+    /* Legacy tokens kept so existing components don't break */
+    --trust-blue: 215 84% 35%;
+    --trust-green: 143 36% 39%;
+    --trust-gold: 36 62% 44%;
+    --bright-accent: 7 59% 44%;
     --bright-accent-foreground: 0 0% 100%;
+    --gradient-primary: linear-gradient(135deg, hsl(7 59% 44%), hsl(7 59% 50%));
+    --gradient-hero: linear-gradient(180deg, #FFFFFF, #F5F5F7);
+    --gradient-card: linear-gradient(145deg, #FFFFFF, #FAFAFB);
+    --gradient-success: linear-gradient(135deg, hsl(143 36% 39%), hsl(143 36% 46%));
+    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-medium: 0 8px 24px -12px rgba(0, 0, 0, 0.12);
+    --shadow-strong: 0 16px 32px -12px rgba(0, 0, 0, 0.16);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.78);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+    --blur-amount: 20px;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 6% 12%;
+    --sidebar-primary: 7 59% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 6% 96%;
+    --sidebar-accent-foreground: 220 6% 12%;
+    --sidebar-border: 240 8% 91%;
+    --sidebar-ring: 7 59% 44%;
   }
 
-@layer base {
-  /* Ensure images never overflow on mobile */
+  .dark {
+    --background: 220 6% 8%;
+    --foreground: 0 0% 96%;
+    --card: 220 6% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 220 6% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 7 55% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 6% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 220 6% 14%;
+    --muted-foreground: 220 6% 65%;
+    --accent: 220 6% 16%;
+    --accent-foreground: 0 0% 96%;
+    --success: 143 36% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 62% 52%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 7 55% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 6% 20%;
+    --input: 220 6% 16%;
+    --ring: 7 55% 55%;
+    --sidebar-background: 220 6% 8%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 7 55% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 6% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 220 6% 20%;
+    --sidebar-ring: 7 55% 55%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Segoe UI", Roboto, Helvetica, Arial, system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-size: 16px;
+    line-height: 1.47;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
   img {
     max-width: 100%;
     height: auto;
   }
-  /* Default text and background tokens */
-  body {
-    @apply bg-background text-foreground;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-foreground;
-  }
+
   *, *::before, *::after {
     border-color: hsl(var(--border));
   }
+
+  /* Hide scrollbar on horizontal snap carousels but keep functionality */
+  .pg-carousel::-webkit-scrollbar { display: none; }
+  .pg-carousel { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @layer utilities {
-  /* Hide horizontal scroll issues on mobile */
-  .no-x-scroll {
-    overflow-x: hidden;
-  }
+  .no-x-scroll { overflow-x: hidden; }
 
-  /* Add safe bottom padding for sticky bars (mobile) */
   .safe-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
   }
 
-  /* Auto-fit grid helper for cards on small screens */
+  /* iOS translucent bar */
+  .pg-blur {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .dark .pg-blur {
+    background: rgba(20, 20, 22, 0.78);
+  }
+
+  /* iOS pill button */
+  .pg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 22px;
+    font-weight: 600;
+    font-size: 14.5px;
+    border-radius: 980px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, background-color 0.15s, opacity 0.15s;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .pg-btn:active { transform: scale(0.97); }
+  .pg-btn-primary { background: var(--pg-accent); color: #fff; }
+  .pg-btn-primary:hover { background: var(--pg-accent-d); }
+  .pg-btn-secondary { background: var(--pg-bg3); color: var(--pg-label); }
+  .pg-btn-secondary:hover { background: #e4e4e6; }
+  .pg-btn-dark { background: var(--pg-label); color: #fff; }
+  .pg-btn-dark:hover { opacity: 0.9; }
+  .pg-btn-sm { padding: 9px 16px; font-size: 13.5px; }
+
+  /* Grouped list card (iOS) */
+  .pg-group {
+    background: var(--pg-bg2);
+    border-radius: var(--pg-radius-lg);
+    overflow: hidden;
+  }
+  .pg-group > * + * { border-top: 1px solid var(--pg-sep); }
+
+  /* Legacy — keep bright accent utilities working */
+  .btn-bright {
+    @apply px-4 py-2 rounded-full font-medium;
+    color: hsl(var(--primary-foreground));
+    background-color: hsl(var(--primary));
+  }
+  .btn-bright:hover { opacity: 0.9; }
+  .badge-bright {
+    @apply inline-block px-3 py-1 text-sm rounded-full font-semibold;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Legacy glass utility */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid var(--glass-border);
+  }
+  .glass-card { @apply glass rounded-2xl; }
+  .glass-panel { @apply glass rounded-xl; }
+  .glass-subtle {
+    background: hsla(var(--background) / 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  /* Grid helper kept for older pages */
   .auto-grid-sm {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -137,129 +245,22 @@
     }
   }
 
-  /* German flag accent stripe (3px tri-color bar) */
+  /* German stripe kept for admin/legacy compatibility */
   .german-stripe {
     height: 3px;
-    background: linear-gradient(to right, #1C1C1C 33.33%, #D00000 33.33%, #D00000 66.66%, #FFCC00 66.66%);
+    background: linear-gradient(
+      to right,
+      #1C1C1C 33.33%,
+      var(--pg-accent) 33.33%,
+      var(--pg-accent) 66.66%,
+      var(--pg-gold) 66.66%
+    );
     border-radius: 2px;
   }
 
-  /* Compact table utility for Excel-style dense rows */
   .compact-table th {
     @apply text-xs font-semibold py-2 px-2 text-muted-foreground;
   }
-  .compact-table td {
-    @apply text-xs py-2 px-2;
-  }
-  .compact-table tr {
-    @apply border-b;
-  }
-}
-
-  .dark {
-    /* Monochromatic Minimalism (Dark Mode) */
-    /* Base */
-    --background: 0 0% 7%; /* #121212 */
-    --foreground: 0 0% 88%; /* #E0E0E0 primary text */
-
-    --card: 0 0% 9%; /* slightly above bg */
-    --card-foreground: 0 0% 88%;
-
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 88%;
-
-    /* Semantic tokens (grayscale) */
-    --primary: 0 0% 53%; /* #888888 for interactive/primary */
-    --primary-foreground: 0 0% 7%; /* #121212 on primary surfaces */
-    --primary-glow: 0 0% 60%; /* subtle lighter gray for focus/hover */
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 88%;
-
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 69%; /* #B0B0B0 secondary text */
-
-    --accent: 0 0% 53%; /* #888888 */
-    --accent-foreground: 0 0% 7%;
-
-    /* Keep status colors for semantics/accessibility */
-    --success: 123 46% 33%;
-    --success-foreground: 0 0% 98%;
-    --warning: 48 100% 50%;
-    --warning-foreground: 0 0% 0%;
-    --destructive: 350 100% 35%;
-    --destructive-foreground: 0 0% 98%;
-
-    /* UI elements */
-    --border: 0 0% 27%; /* #444444 */
-    --input: 0 0% 16%; /* inputs a touch lighter than bg */
-    --ring: 0 0% 53%; /* use accent gray for focus ring */
-
-    /* Neutral gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 20%), hsl(0 0% 35%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 13%), hsl(0 0% 20%), hsl(0 0% 35%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 7%), hsl(0 0% 10%));
-    --gradient-success: linear-gradient(135deg, hsl(123 46% 28%), hsl(123 46% 38%));
-
-    /* Subtle shadows for dark surfaces */
-    --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.25);
-    --shadow-medium: 0 8px 25px hsl(0 0% 0% / 0.35);
-    --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.45);
-    --shadow-glass: 0 8px 32px 0 hsl(0 0% 0% / 0.25);
-    
-    /* Glassmorphism Dark Mode */
-    --glass-bg: hsla(0, 0%, 10%, 0.75);
-    --glass-border: hsla(0, 0%, 100%, 0.08);
-    --glass-shadow: 0 8px 32px 0 hsla(0, 0%, 0%, 0.4);
-    --blur-amount: 16px;
-
-    /* Bright Accent adjusted to neutral */
-    --bright-accent: 0 0% 60%;
-    --bright-accent-foreground: 0 0% 7%;
-  }
-
-  /* Bright Accent Button */
-  .btn-bright {
-    @apply px-4 py-2 rounded-md font-medium shadow-soft transition-all duration-300;
-    color: hsl(var(--bright-accent-foreground));
-    background-color: hsl(var(--bright-accent));
-  }
-
-  .btn-bright:hover {
-    background-color: hsl(0 0% 70%);
-    transform: translateY(-1px);
-  }
-
-  /* Bright Accent Badge */
-  .badge-bright {
-    @apply inline-block px-3 py-1 text-sm rounded-full font-semibold;
-    background-color: hsl(var(--bright-accent));
-    color: hsl(var(--bright-accent-foreground));
-  }
-  
-  /* Glassmorphism Utilities */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur-amount));
-    -webkit-backdrop-filter: blur(var(--blur-amount));
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-  }
-  
-  .glass-card {
-    @apply glass rounded-2xl;
-  }
-  
-  .glass-panel {
-    @apply glass rounded-xl;
-  }
-  
-  .glass-subtle {
-    background: hsla(var(--background) / 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid hsl(var(--border) / 0.3);
-  }
-  
-  /* Removed brand-logo styles per design request */
+  .compact-table td { @apply text-xs py-2 px-2; }
+  .compact-table tr { @apply border-b; }
 }
