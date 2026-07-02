@@ -71,24 +71,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // PublicGermany palette
+        // publicgermany — iOS-style palette (design tokens)
         pg: {
-          primary: {
-            red: "#D00000",
-            black: "#1C1C1C",
-          },
-          accent: {
-            gold: "#FFCC00",
-            blue: "#00BFFF", // Bright complementary color
-          },
-          neutral: {
-            light: "#F9F9F9",
-            gray: "#666666",
-          },
-          status: {
-            success: "#2E7D32",
-            error: "#B00020",
-          },
+          bg: "#FFFFFF",
+          bg2: "#F5F5F7",
+          bg3: "#EFEFF1",
+          label: "#1D1D1F",
+          label2: "#6E6E73",
+          label3: "#AEAEB2",
+          accent: "#B23A2E",
+          "accent-d": "#8f2f24",
+          gold: "#B8862E",
+          sep: "#E5E5EA",
+          green: "#3F8558",
+          // Legacy aliases so older code keeps compiling
+          primary: { red: "#B23A2E", black: "#1D1D1F" },
+          neutral: { light: "#F5F5F7", gray: "#6E6E73" },
+          status: { success: "#3F8558", error: "#B23A2E" },
         },
       },
       borderRadius: {

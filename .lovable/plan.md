@@ -1,103 +1,70 @@
 
+# iOS-style Redesign — publicgermany
 
-## Plan: Editor Role System + Performance Optimization
+You've given me two reference HTMLs (homepage + services) and asked me to rebuild the entire app around that design system, keeping all logic and routes untouched. That's a large surface area, so I want to do it in clear phases and confirm the approach before touching every page.
 
-### Overview
-Add a new "editor" role with granular, per-student permissions controlled by you (the main admin). Also fix the existing build errors and improve app performance.
+## Design system (applied globally, phase 0)
 
-### Part A: Fix Existing Build Errors (prerequisite)
+Locked from your HTML. No emojis in UI chrome — replaced with `lucide-react` icons (Check, Search, ChevronRight, Menu, etc.). Emojis stay only where they're content (testimonial names, blog text).
 
-1. **`src/lib/cvImporter.ts` line 70** — `String.indexOf` called with 3 args (the 3rd `searchEnd` is invalid). Fix by using `.slice()` before `.indexOf()`.
+- Background: `#FFFFFF` / `#F5F5F7` / `#EFEFF1`
+- Text: `#1D1D1F` (label) / `#6E6E73` (label2) / `#AEAEB2` (label3)
+- Accent red: `#B23A2E` (hover `#8f2f24`)
+- Accent gold: `#B8862E` (used only for "most popular" tag + highlight)
+- Success green: `#3F8558`
+- Radii: cards 14–20px, buttons full pill (`rounded-full`)
+- Font: `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif` — set on `body`, overrides any current serif/decorative fonts
+- Nav: sticky, `backdrop-blur` + 78% white
+- List pattern: one rounded container, thin dividers between rows (FAQs, service lists, settings sections)
+- Cards: white or `bg2`, subtle 1px border, no gradients, no glow
 
-2. **`src/pages/admin/Requests.tsx`** — `Label` component not imported; `deliverable_files` should be `deliverable_urls`. Add the missing `Label` import and fix the property name.
+These become CSS tokens in `src/index.css` + `tailwind.config.ts` (extending, not replacing, existing shadcn tokens so all the existing UI keeps working).
 
-3. **`src/components/admin/BulkEmailPanel.tsx` line 68** — Type predicate mismatch. Add `created_at` to the `UserProfile` interface.
+## Phase 1 — Foundation (do first)
 
-### Part B: Database Changes (migrations)
+1. Add design tokens to `index.css` (HSL vars: `--pg-bg`, `--pg-bg2`, `--pg-label`, `--pg-accent`, `--pg-gold`, `--pg-green`, `--pg-sep`) and matching Tailwind colors under a `pg` namespace (already partially there — I'll align it to the new palette).
+2. Set the system font stack on `body` in `index.css`, remove any competing serif imports.
+3. Rewrite `LandingHero`, `LandingFeatures`, `LandingHowItWorks`, `LandingFAQ`, `LandingFooter`, plus `Index.tsx` composition, to match `homepage.html` section-for-section: hero → features grid → testimonial scroll-snap carousel → 4-step process strip → pricing scroll-snap carousel → grouped FAQ list → dark final CTA → minimal footer. No comparison table.
+4. Rebuild the logged-in `ServicesEntry.tsx` (and `ServicesNew.tsx` if that's the live one — I'll confirm from the router) to match `services.html`: sticky app bar, segmented Browse/Requests/Delivered, pricing carousel, individual-services grouped list with radio-style checkbox, live-total sticky bottom bar, search field. Wired to your existing services data + request handlers — no logic changes.
 
-1. **Add `'editor'` to the `app_role` enum**:
-   ```sql
-   ALTER TYPE public.app_role ADD VALUE 'editor';
-   ```
+## Phase 2 — Shared shell
 
-2. **Create `editor_permissions` table** — controls which students an editor can see and what sections are visible:
-   ```sql
-   CREATE TABLE public.editor_permissions (
-     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     editor_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-     student_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-     can_view_profile boolean DEFAULT true,
-     can_view_documents boolean DEFAULT true,
-     can_view_applications boolean DEFAULT true,
-     can_view_payments boolean DEFAULT false,  -- off by default
-     can_view_contracts boolean DEFAULT false,
-     created_at timestamptz DEFAULT now(),
-     UNIQUE(editor_user_id, student_user_id)
-   );
-   ALTER TABLE public.editor_permissions ENABLE ROW LEVEL SECURITY;
-   ```
+5. New `AppShell` / update `Layout.tsx` so every authenticated page uses the same iOS-style sticky app bar + avatar + hamburger (from `services.html`). Mobile bottom nav (`StudentMobileBottomNav`, `AdminMobileBottomNav`) restyled to match — flat white with blur, no gradients, lucide icons.
+6. Restyle shadcn primitives that we use most (`button`, `card`, `input`, `tabs`, `accordion`, `dialog`, `badge`) via variants — no API changes, so no page needs to be rewritten to pick up the look.
 
-3. **RLS policies for `editor_permissions`**:
-   - Admins can manage all rows
-   - Editors can SELECT their own rows
+## Phase 3 — Interior pages (bulk restyle, no logic changes)
 
-4. **Update RLS on `profiles`, `documents`, `applications`** to allow editors to read students they have permission for (using a `SECURITY DEFINER` helper function).
+Applied top-down as time allows, in this order:
 
-### Part C: Editor Dashboard & UI
+- Dashboard
+- Applications (student + admin)
+- Documents
+- Profile / StudentProfileForm
+- Payments (student + admin)
+- Blog + BlogPost
+- Contact, Help, Privacy, Terms, Reviews, Resources
+- Auth pages (Auth, ResetPassword)
+- Admin pages (Students, Universities, Requests, PaymentStudents, Blog admin, etc.)
 
-1. **New page: `src/pages/editor/EditorDashboard.tsx`** — A simplified admin dashboard showing only assigned students with their allowed details. No financial stats, no payment sections, no bulk email.
+Each page: swap current wrapper cards/gradients for the new token classes, replace emoji chrome with lucide icons, convert vertical stacks of repeated rows into grouped-list cards where it matches your HTML pattern (FAQ, settings, service lists). Route paths and data queries stay identical.
 
-2. **New page: `src/pages/editor/EditorStudentProfile.tsx`** — Shows student profile/docs/applications based on permissions. Hides payments/contracts tabs if `can_view_payments`/`can_view_contracts` is false.
+## Out of scope
 
-3. **Admin "Manage Editors" page: `src/pages/admin/Editors.tsx`**:
-   - List all users with role `editor`
-   - Invite/create editor accounts
-   - Assign students to editors with toggle controls per permission (profile, docs, applications, payments, contracts)
+- Backend, RLS, edge functions, DB schema — untouched.
+- Route names, URLs, auth flow — untouched.
+- Content copy on interior pages — untouched unless the layout requires condensing.
 
-4. **Update `ProtectedRoute.tsx`** to handle `'editor'` role — editors get redirected to `/editor` dashboard, not `/dashboard` or `/admin`.
+## Technical notes
 
-5. **Update `MobileNavigation.tsx`** and `Layout.tsx`** to show editor-specific nav items.
+- Tailwind tokens go under a `pg.*` namespace so `bg-pg-bg2`, `text-pg-label`, `border-pg-sep`, `bg-pg-accent`, `text-pg-accent`, `bg-pg-gold` are usable everywhere. Existing shadcn semantic tokens (`--primary`, `--background`, etc.) will be re-pointed to the same palette so any un-touched component picks up the theme automatically.
+- Carousels use native CSS `overflow-x-auto` + `scroll-snap` — no new dependency.
+- Icons come from the already-installed `lucide-react`.
+- Blur header uses Tailwind's `backdrop-blur` (already enabled).
 
-6. **Update `useAuth.ts` Profile type** to include `'editor'` in the role union.
+## What I need from you
 
-7. **New routes in `App.tsx`**:
-   - `/editor` → EditorDashboard
-   - `/editor/students/:studentId` → EditorStudentProfile
-   - `/admin/editors` → Manage Editors page
+**One decision** before I start:
 
-### Part D: Performance Improvements
+Do you want me to do Phase 1 (homepage + logged-in Services page + design tokens) as a single deliverable first — so you can review the exact look on the two reference pages — and then I proceed to Phases 2 and 3? Or do you want me to push through all three phases in one go and hand back the full app restyled at once (larger diff, slower to review)?
 
-1. **React Query optimizations** — Reduce `staleTime` for admin pages, add `keepPreviousData` to list queries to prevent UI flicker on re-fetch.
-
-2. **Memoize heavy components** — Wrap list items (student cards, request rows) with `React.memo`.
-
-3. **Virtualize long lists** — Add `@tanstack/react-virtual` for the Students list page to avoid rendering hundreds of DOM nodes.
-
-4. **Debounce search inputs** — Already partially done; ensure all admin search/filter inputs use debounced values.
-
-5. **Lazy-load editor routes** — Add to the existing lazy-import pattern.
-
-6. **Optimize `useAuth` profile fetch** — Skip re-fetching profile if cached version matches `user_id` and is < 5 minutes old.
-
-### Technical Details
-
-**Role hierarchy**: `admin` > `editor` > `student`. The `is_admin()` function remains unchanged (only matches `admin`). A new `is_editor_for_student(editor_uid, student_uid)` SECURITY DEFINER function will check `editor_permissions`.
-
-**RLS example for documents**:
-```sql
-CREATE POLICY "Editors can view permitted student documents"
-ON public.documents FOR SELECT TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.editor_permissions ep
-    WHERE ep.editor_user_id = auth.uid()
-      AND ep.student_user_id = documents.user_id
-      AND ep.can_view_documents = true
-  )
-);
-```
-
-**Files to create**: ~4 new pages, 1 new hook (`useEditorPermissions`).
-**Files to edit**: ~8 existing files (App.tsx, ProtectedRoute, useAuth, MobileNavigation, Layout, BulkEmailPanel, cvImporter, Requests).
-**Migration**: 1 migration with enum update + new table + RLS + helper function.
-
+Reply "phased" or "all at once" and I'll start.
