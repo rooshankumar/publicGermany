@@ -1,810 +1,341 @@
-import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import logos from '@/assets/logos.png';
-import ThemeToggle from '@/components/ThemeToggle';
-import { PWAInstallButton, PWAInstallPopup } from '@/components/PWAInstallPrompt';
-import { 
-  GraduationCap, 
-  Shield, 
-  Users, 
-  CheckCircle, 
-  Star,
-  BookOpen,
-  Globe,
-  Award,
-  ArrowRight,
-  Menu,
-  X,
-  FileCheck,
-  Building,
-  MapPin,
-  Calendar,
-  StarHalf,
-  StarOff
-} from 'lucide-react';
-import TestimonialCard from '@/components/TestimonialCard';
-const LandingFAQ = React.lazy(() => import('@/components/LandingFAQ'));
-const PackagesShowcase = React.lazy(() => import('@/components/PackagesShowcase'));
-// import ThemeToggle from '@/components/ThemeToggle';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import PgLogo, { PgLogoMark } from '@/components/PgLogo';
+import { SERVICE_PACKAGES } from '@/data/servicePackages';
 
-// Simple error boundary for Navbar
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
-  constructor(props: {children: React.ReactNode}) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: any, info: any) {
-    // You can log error here
-  }
-  render() {
-    if (this.state.hasError) {
-      return <div className="bg-destructive/10 text-destructive p-4 rounded-lg">Something went wrong in the Navbar.</div>;
-    }
-    return this.props.children;
-  }
-}
-
-function FreeVsPaidSection() {
+// ---------- Header ----------
+const Header: React.FC = () => {
+  const [open, setOpen] = useState(false);
   return (
-    <section id="free-vs-paid" className="py-16 md:py-24 bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 md:mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3">What’s Free vs Paid</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">publicgermany is free to use. You only pay if you request personalized, one‑on‑one help.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          <Card className="border-success/30 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-success text-xl">
-                <Shield className="w-5 h-5" /> Free (Forever)
-              </CardTitle>
-              <CardDescription>Everything you need to get started and stay on track.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <ul className="list-disc pl-5 space-y-2">
-                <li>Create profile and get personalized checklist</li>
-                <li>Track progress across APS, documents, and applications</li>
-                <li>Access resources, FAQs, and guides</li>
-                <li>Upload/manage documents</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/30 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary text-xl">
-                <Users className="w-5 h-5" /> Personalized Help (Paid)
-              </CardTitle>
-              <CardDescription>Optional one‑on‑one services to maximize results.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <ul className="list-disc pl-5 space-y-2">
-                <li>APS guidance and review</li>
-                <li>University shortlisting tailored to your profile</li>
-                <li>SOP/CV/LOR editing and feedback</li>
-                <li>Visa file review and interview prep</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
-function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const queryClient = useQueryClient();
-
-  const prefetchServices = async () => {
-    try {
-      await queryClient.prefetchQuery({
-        queryKey: ['services_catalog_active'],
-        queryFn: async () => {
-          const { data } = await (supabase as any)
-            .from('services_catalog')
-            .select('id, kind, name, description, price_inr, price_range_inr, is_active')
-            .eq('is_active', true);
-          return data || [];
-        },
-        staleTime: 5 * 60 * 1000,
-      });
-    } catch (_) {}
-  };
-  
-  return (
-    <nav className="w-full py-3 px-4 md:px-6 bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-4 pr-2 md:pr-4 min-w-0">
-          <div className="h-12 w-12 md:h-16 md:w-16 rounded-md overflow-hidden shrink-0">
-            <img
-              src={logos}
-              srcSet={`${logos} 1x, ${logos} 2x`}
-              sizes="(min-width: 768px) 64px, 56px"
-              alt="publicgermany logo"
-              loading="eager"
-              decoding="async"
-              className="h-full w-full object-contain object-center"
-            />
-          </div>
-          <div className="flex flex-col justify-center leading-tight">
-            <Badge className="trust-badge inline-flex self-start mb-0.5 text-[10px] md:text-[11px] px-2 py-0 h-5">
-              <Shield className="w-3 h-3" />
-              Trusted
-            </Badge>
-            <span className="font-bold text-lg text-foreground tracking-tight whitespace-nowrap">publicgermany</span>
-          </div>
-        </div>
-        
-        {/* Desktop Navigation (show from lg and up). Only requested links */}
-        <div className="hidden lg:flex items-center gap-3 xl:gap-4">
-          <a href="#features" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Features</a>
-          <a href="#testimonials" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Success Stories</a>
-          <Link to="/services" onMouseEnter={prefetchServices} className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Services</Link>
-          <Link to="/resources" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Resources</Link>
-          <Link to="/blog" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Blog</Link>
-          <Link to="/converter" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Grade Converter</Link>
-          <Link to="/europass-cv" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">CV Generator</Link>
-          <a href="#faq" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">FAQ</a>
-          <Link to="/contact" className="text-sm font-medium text-foreground/90 hover:text-primary transition-colors whitespace-nowrap">Contact</Link>
-          <PWAInstallButton />
-          <ThemeToggle variant="icon" />
-          <Button variant="outline" asChild className="text-sm px-3 py-1.5">
-            <Link to="/auth">Sign In</Link>
-          </Button>
-          <Button asChild className="btn-cta text-sm px-3 py-1.5">
-            <Link to="/auth">Get Started Free</Link>
-          </Button>
-        </div>
-
-        {/* Mobile menu button (show until lg) */}
-        <div className="lg:hidden flex items-center gap-1">
-          <PWAInstallButton />
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-foreground hover:text-primary"
-            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+    <header className="pg-blur sticky top-0 z-50 border-b border-pg-sep">
+      <div className="max-w-[1080px] mx-auto flex items-center justify-between px-6 h-[52px]">
+        <Link to="/" className="flex items-center"><PgLogo /></Link>
+        <nav className="hidden md:flex gap-7">
+          {[
+            { href: '#features', label: 'Features' },
+            { href: '#stories', label: 'Stories' },
+            { href: '#pricing', label: 'Pricing' },
+            { href: '#faq', label: 'FAQ' },
+          ].map((l) => (
+            <a key={l.href} href={l.href} className="text-[14px] font-medium text-pg-label2 hover:text-pg-label transition-colors">
+              {l.label}
+            </a>
+          ))}
+        </nav>
+        <div className="flex items-center gap-3">
+          <Link to="/auth" className="hidden sm:inline text-[14px] font-medium text-pg-label2 hover:text-pg-label">Sign in</Link>
+          <Link to="/auth" className="pg-btn pg-btn-primary pg-btn-sm">Get started</Link>
+          <button
+            className="md:hidden p-1.5 -mr-1.5"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={() => setOpen((v) => !v)}
           >
-            {isMenuOpen ? <X className="w-6 h-6 text-foreground" /> : <Menu className="w-6 h-6 text-foreground" />}
+            {open ? <X className="w-5 h-5 text-pg-label" /> : <Menu className="w-5 h-5 text-pg-label" />}
           </button>
         </div>
       </div>
-
-        {/* Mobile Navigation (active below lg) */}
-        {isMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-background border-b shadow-medium">
-            <div className="px-4 py-3 space-y-3">
-              <a href="#features" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Features</a>
-              <a href="#testimonials" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Success Stories</a>
-              <Link to="/services" onMouseEnter={prefetchServices} className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Services</Link>
-              <Link to="/resources" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Resources</Link>
-              <Link to="/blog" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Blog</Link>
-              <Link to="/converter" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Grade Converter</Link>
-              <Link to="/europass-cv" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">CV Generator</Link>
-              <a href="#faq" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">FAQ</a>
-              <Link to="/contact" className="block text-base font-medium text-foreground hover:text-primary whitespace-nowrap">Contact</Link>
-              <div className="flex flex-col gap-2 pt-4">
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/auth" className="text-base">Sign In</Link>
-                </Button>
-                <Button asChild className="w-full btn-cta">
-                  <Link to="/auth" className="text-base">Get Started Free</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-    </nav>
-  );
-}
-
-function HeroSection({ onGetStarted, studentCount, servicesCount }: { onGetStarted: () => void; studentCount: number | null; servicesCount: number | null }) {
-  return (
-    <section className="relative py-16 md:py-24 lg:py-28 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-success/5"></div>
-      
-      {/* Pattern overlay */}
-      <div className="absolute inset-0 opacity-30" style={{
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-      }}></div>
-
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center">
-          {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 md:mb-8">
-            <Badge className="trust-badge animate-fade-in flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-              </span>
-              {studentCount ? `${studentCount}+` : '50+'} Students Guided
-            </Badge>
-            <Badge className="trust-badge animate-fade-in">
-              <Star className="w-3 h-3" />
-              Trusted Support
-            </Badge>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4 md:mb-6 animate-fade-in-up">
-            Your Complete Guide to 
-            <span className="bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent"> Study in Germany</span>
-          </h1>
-          
-          <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-5 md:mb-8 animate-fade-in">
-            Navigate APS certification, university applications, and visa processes with our comprehensive 
-            checklist and expert guidance. Start your German education journey today.
-          </p>
-
-          {/* Simple illustrative SVG */}
-          <div className="max-w-md mx-auto mb-8 animate-fade-in hidden sm:block">
-            <svg viewBox="0 0 300 120" className="w-full h-auto">
-              <defs>
-                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(210 29% 24%)" />
-                  <stop offset="100%" stopColor="hsl(24 100% 50%)" />
-                </linearGradient>
-              </defs>
-              <rect x="10" y="20" rx="12" ry="12" width="280" height="80" fill="url(#grad)" opacity="0.12" />
-              <g fill="none" stroke="hsl(210 29% 24% / 0.4)" strokeWidth="2">
-                <rect x="40" y="40" width="60" height="40" rx="6" />
-                <rect x="120" y="40" width="140" height="20" rx="6" />
-                <rect x="120" y="66" width="100" height="10" rx="5" />
-              </g>
-            </svg>
-          </div>
-
-          <div className="max-w-md mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-12 animate-scale-in">
-            <Button size="lg" onClick={onGetStarted} className="btn-cta w-full sm:w-auto text-base md:text-lg px-5 py-3 md:px-8 md:py-4">
-              <GraduationCap className="mr-2 w-5 h-5" />
-              Start Your Journey Free
-            </Button>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base md:text-lg px-5 py-3 md:px-8 md:py-4" asChild>
-              <a href="#how-it-works">
-                See How It Works
-                <ArrowRight className="ml-2 w-5 h-5" />
+      {open && (
+        <div className="md:hidden absolute left-0 right-0 top-[52px] pg-blur border-b border-pg-sep">
+          <div className="flex flex-col gap-3 px-6 py-4">
+            {['features', 'stories', 'pricing', 'faq'].map((s) => (
+              <a
+                key={s}
+                href={`#${s}`}
+                onClick={() => setOpen(false)}
+                className="text-[15px] font-medium text-pg-label capitalize"
+              >
+                {s}
               </a>
-            </Button>
-          </div>
-          <div className="w-full text-center">
-              <p className="mt-2 text-sm text-muted-foreground">Free app. Pay only if you need personalized help.</p>
-            </div>
-
-          {/* Social proof */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto place-items-center text-center animate-fade-in">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2 flex items-center justify-center gap-2">
-                <span className="relative">
-                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-success rounded-full animate-ping"></span>
-                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-success rounded-full"></span>
-                </span>
-                {studentCount ? `${studentCount}+` : '50+'}
-              </div>
-              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>
-                Live Students Guided
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-success mb-2">1.5+</div>
-              <div className="text-sm text-muted-foreground">Years of Experience</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-warning mb-2 flex items-center justify-center gap-2">
-                <span className="relative">
-                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-warning rounded-full animate-ping"></span>
-                  <span className="absolute -left-2 -top-1 w-2 h-2 bg-warning rounded-full"></span>
-                </span>
-                {servicesCount ? `${servicesCount}+` : '10+'}
-              </div>
-              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 bg-warning rounded-full animate-pulse"></span>
-                Happy Services
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FeaturesSection() {
-  const features = React.useMemo(() => ([
-    {
-      icon: FileCheck,
-      title: "APS Certification Guidance",
-      description: "Step-by-step assistance with APS document preparation and submission process."
-    },
-    {
-      icon: Building,
-      title: "University Selection",
-      description: "Personalized university recommendations based on your profile and preferences."
-    },
-    {
-      icon: Globe,
-      title: "Visa Application Support",
-      description: "Complete guidance through the German student visa application process."
-    },
-    {
-      icon: BookOpen,
-      title: "Document Preparation",
-      description: "Help with SOP, CV, LOR, and all required documents for applications."
-    },
-    {
-      icon: Users,
-      title: "Expert Consultations",
-      description: "One-on-one sessions with experienced education consultants."
-    },
-    {
-      icon: MapPin,
-      title: "Pre-departure Support",
-      description: "Guidance on accommodation, insurance, and settling in Germany."
-    }
-  ]), []);
-
-  return (
-    <section id="features" className="py-16 md:py-24 bg-muted/30">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Everything You Need for German Education
-          </h2>
-          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
-          <p className="text-lead max-w-2xl mx-auto">
-            From APS certification to university admission, we provide comprehensive support 
-            for your entire study abroad journey.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {features.map((feature, index) => (
-            <Card key={index} className="card-hover border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-md transition-shadow transition-transform hover:-translate-y-0.5 animate-fade-in">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorksSection() {
-  const steps = React.useMemo(() => ([
-    {
-      step: "1",
-      title: "Create Your Profile",
-      description: "Tell us about your academic background and goals",
-      icon: Users
-    },
-    {
-      step: "2", 
-      title: "Get Personalized Checklist",
-      description: "Receive a customized roadmap for your APS and university applications",
-      icon: CheckCircle
-    },
-    {
-      step: "3",
-      title: "Track Your Progress",
-      description: "Follow your progress and get expert guidance at every step",
-      icon: Calendar
-    },
-    {
-      step: "4",
-      title: "Achieve Your Goal",
-      description: "Successfully get admitted to your dream German university",
-      icon: GraduationCap
-    }
-  ]), []);
-
-  return (
-    <section id="how-it-works" className="py-16 md:py-24 bg-accent/30">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            How publicgermany Works
-          </h2>
-          <div className="w-16 h-1 bg-warning mx-auto rounded-full mb-4"></div>
-          <p className="text-lead max-w-2xl mx-auto">
-            Our proven 4-step process has helped thousands of students achieve their German education dreams.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {steps.map((step, index) => (
-            <div key={index} className="text-center animate-fade-in">
-              <div className="relative mb-6">
-                <div className="w-16 h-16 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4">
-                  <step.icon className="w-8 h-8 text-primary-foreground" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-success rounded-full flex items-center justify-center text-success-foreground font-bold text-sm">
-                  {step.step}
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">{step.title}</h3>
-              <p className="text-muted-foreground">{step.description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-interface Review {
-  id: string;
-  rating: number;
-  review_text: string;
-  service_type: string;
-  created_at: string;
-  profiles: {
-    full_name: string;
-    avatar_url?: string;
-  } | null;
-  // Optional metadata for richer cards
-  course_name?: string;
-  university_name?: string;
-  approval_status?: string; // e.g., "Visa Approved!"
-}
-
-function TestimonialsSection() {
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
-  const toggleExpand = (id: string) =>
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  // Mobile slider ref and controls
-  const mobileSliderRef = React.useRef<HTMLDivElement | null>(null);
-  const scrollMobile = (dir: 'prev' | 'next') => {
-    const el = mobileSliderRef.current;
-    if (!el) return;
-    const delta = Math.round(el.clientWidth * 0.9) * (dir === 'next' ? 1 : -1);
-    el.scrollBy({ left: delta, behavior: 'smooth' });
-  };
-  const { data: reviews, isLoading, error } = useQuery<Review[]>({
-    queryKey: ['approved-reviews-home'],
-    queryFn: async () => {
-      // 1) Fetch approved reviews
-      const { data: base, error: baseErr } = await (supabase as any)
-        .from('reviews')
-        .select('*')
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false })
-        .limit(6);
-      if (baseErr) throw baseErr;
-
-      const arr = (base || []) as any[];
-      if (arr.length === 0) return [] as Review[];
-
-      // 2) Fetch profiles for display names
-      const userIds = Array.from(new Set(arr.map(r => r.user_id)));
-      let profiles: any[] = [];
-      if (userIds.length > 0) {
-        const { data: p } = await (supabase as any)
-          .from('profiles')
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', userIds);
-        profiles = p || [];
-      }
-
-      // 3) Attach profiles
-      const withProfiles: Review[] = arr.map(r => ({
-        ...r,
-        profiles: profiles.find(pr => pr.user_id === r.user_id) || null,
-      }));
-      return withProfiles;
-    }
-  });
-
-  // Star rendering and date formatting handled inside TestimonialCard
-
-  if (error) {
-    return (
-      <section className="py-16 bg-muted/50">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-destructive">Failed to load testimonials. Please try again later.</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <section className="py-16 bg-muted/50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <Skeleton className="h-6 w-24 mx-auto mb-4" />
-            <Skeleton className="h-8 w-64 mx-auto mb-4" />
-            <Skeleton className="h-4 w-96 mx-auto" />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="h-full">
-                <CardContent className="px-7 py-7 h-full flex flex-col">
-                  <Skeleton className="h-5 w-32 mb-4" />
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-5/6 mb-2" />
-                  <Skeleton className="h-4 w-2/3 mb-6 flex-grow" />
-                  <div>
-                    <Skeleton className="h-5 w-36 mb-1" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </CardContent>
-              </Card>
             ))}
+            <Link to="/services" onClick={() => setOpen(false)} className="text-[15px] font-medium text-pg-label">Services</Link>
+            <Link to="/blog" onClick={() => setOpen(false)} className="text-[15px] font-medium text-pg-label">Blog</Link>
+            <Link to="/contact" onClick={() => setOpen(false)} className="text-[15px] font-medium text-pg-label">Contact</Link>
           </div>
         </div>
-      </section>
-    );
-  }
-
-  if (!reviews || reviews.length === 0) {
-    return (
-      <section className="py-16 bg-muted/50">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <StarOff className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">No Reviews Yet</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">Check back later to see what our students are saying about their experience.</p>
-          <Button variant="outline">
-            Share Your Experience
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section id="testimonials" className="relative py-20 md:py-24" style={{ background: 'var(--gradient-hero)' }}>
-      <div className="absolute inset-0 opacity-15" style={{
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-      }}></div>
-      <div className="relative max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <Badge variant="outline" className="mb-3">Testimonials</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">Students love publicgermany</h2>
-          <p className="text-base md:text-lg text-foreground/90 max-w-2xl mx-auto">
-            Real stories from students who reached Germany with our guidance.
-          </p>
-        </div>
-        
-        {/* Mobile slider with controls */}
-        <div className="md:hidden relative">
-          <div ref={mobileSliderRef} className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory space-x-4 flex">
-          {reviews.map((review) => (
-            <TestimonialCard
-              key={review.id}
-              review={review}
-              isOpen={!!expanded[review.id]}
-              onToggle={toggleExpand}
-              truncateAt={180}
-              className="min-w-[85%] snap-center"
-              showNameBelowCard={false}
-            />
-          ))}
-          </div>
-          {/* Controls */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => scrollMobile('prev')}
-              aria-label="Previous review"
-              className="pointer-events-auto h-8 w-8 rounded-full bg-background/80 backdrop-blur border-border/60"
-            >
-              ‹
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => scrollMobile('next')}
-              aria-label="Next review"
-              className="pointer-events-auto h-8 w-8 rounded-full bg-background/80 backdrop-blur border-border/60"
-            >
-              ›
-            </Button>
-          </div>
-        </div>
-
-        {/* Desktop grid */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {reviews.map((review) => (
-            <TestimonialCard
-              key={review.id}
-              review={review}
-              isOpen={!!expanded[review.id]}
-              onToggle={toggleExpand}
-              truncateAt={220}
-              className="h-full"
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CTASection({ onGetStarted }: { onGetStarted: () => void }) {
-  return (
-    <section
-      className="py-20 md:py-24 relative overflow-hidden animate-fade-in-up"
-      style={{ background: 'var(--gradient-hero)' }}
-    >
-      <div className="absolute inset-0 opacity-20" style={{
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-      }}></div>
-      
-      <div className="relative max-w-6xl mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-          Ready to Start Your German Education Journey?
-        </h2>
-        <p className="text-xl text-foreground/90 mb-8 max-w-2xl mx-auto">
-          Join thousands of successful students who have achieved their dreams with publicgermany.
-        </p>
-        <Button 
-          size="lg" 
-          onClick={onGetStarted}
-          className="btn-cta text-lg px-8 py-4"
-        >
-          <GraduationCap className="mr-2 w-5 h-5" />
-          Get Started Free Today
-        </Button>
-      </div>
-    </section>
-  );
-}
-
-function Footer({ studentCount }: { studentCount: number | null }) {
-  return (
-    <footer className="bg-card border-t py-12">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-md overflow-hidden">
-                <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
-              </div>
-              <span className="font-bold text-xl text-foreground">publicgermany</span>
-            </div>
-            <p className="text-muted-foreground mb-4">
-              Your trusted partner for studying in Germany. We provide comprehensive guidance 
-              from APS certification to university admission.
-            </p>
-            <div className="flex items-center gap-2">
-              <Badge className="trust-badge">
-                <Shield className="w-3 h-3" />
-                Trusted by {studentCount ? `${studentCount}+` : '50+'} Students
-              </Badge>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-foreground mb-4">Services</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">APS Guidance</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">University Selection</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Document Preparation</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Visa Support</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-foreground mb-4">Support</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="/help" className="hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="/contact" className="hover:text-primary transition-colors">Contact Us</a></li>
-              <li><a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 publicgermany. All rights reserved. Made with ❤️ for aspiring German students.</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function GermanyFlagBar() {
-  return (
-    <div className="w-full h-1">
-      <div className="max-w-6xl mx-auto flex h-full">
-        <div className="flex-1 bg-black" />
-        <div className="flex-1 bg-red-600" />
-        <div className="flex-1 bg-yellow-400" />
-      </div>
-    </div>
-  );
-}
-
-const Index = () => {
-  const navigate = useNavigate();
-  
-  // Live student count query
-  const { data: studentCount } = useQuery({
-    queryKey: ['student-count'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'student');
-      return count || 0;
-    },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
-  
-  // Live services count query (completed service requests)
-  const { data: servicesCount } = useQuery({
-    queryKey: ['services-count'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('service_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed');
-      return count || 0;
-    },
-    staleTime: 30 * 1000, // Cache for 30 seconds only
-  });
-  
-  const handleGetStarted = () => {
-    navigate('/auth');
-  };
-
-
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <PWAInstallPopup />
-      <ErrorBoundary>
-        <Navbar />
-      </ErrorBoundary>
-      <GermanyFlagBar />
-      <main className="flex-1">
-        <HeroSection onGetStarted={handleGetStarted} studentCount={studentCount ?? null} servicesCount={servicesCount ?? null} />
-        {/* Testimonials highlighted section */}
-        <TestimonialsSection />
-        <div className="border-t border-border" />
-        <FeaturesSection />
-        <div className="border-t border-border" />
-        <HowItWorksSection />
-        <div className="border-t border-border" />
-        <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading packages…</div>}>
-          <PackagesShowcase compact showComparison heading="Our Service Packages" subtitle="Pick the package that fits your stage — transparent pricing, no surprises." />
-        </React.Suspense>
-        <div className="border-t border-border" />
-        <FreeVsPaidSection />
-        <div className="border-t border-border" />
-        <React.Suspense fallback={<div className="max-w-6xl mx-auto px-6 py-10 text-muted-foreground">Loading FAQs…</div>}>
-          <LandingFAQ />
-        </React.Suspense>
-        <CTASection onGetStarted={() => navigate('/auth')} />
-      </main>
-      <Footer studentCount={studentCount || null} />
-    </div>
+      )}
+    </header>
   );
 };
+
+// ---------- Hero ----------
+const Hero: React.FC = () => (
+  <section className="px-6 pt-14 pb-10 text-center">
+    <div className="max-w-[1080px] mx-auto">
+      <h1 className="text-[clamp(32px,6vw,52px)] leading-[1.06] font-bold tracking-[-0.02em] max-w-[680px] mx-auto mb-3.5 text-pg-label">
+        Study in Germany,<br />without the guesswork<span className="text-pg-accent">.</span>
+      </h1>
+      <p className="text-[18px] text-pg-label2 max-w-[480px] mx-auto mb-7">
+        One guided path through APS, university applications, and your visa — start to finish.
+      </p>
+      <div className="flex gap-2.5 justify-center flex-wrap mb-6">
+        <Link to="/auth" className="pg-btn pg-btn-primary">Start free</Link>
+        <a href="#features" className="pg-btn pg-btn-secondary">See how it works</a>
+      </div>
+      <div className="flex items-center justify-center gap-4 text-[13px] text-pg-label3 flex-wrap">
+        <span><b className="text-pg-label2 font-semibold">10,500+</b> students guided</span>
+        <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
+        <span><b className="text-pg-label2 font-semibold">120+</b> partner universities</span>
+        <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
+        <span><b className="text-pg-label2 font-semibold">6</b> years of experience</span>
+      </div>
+    </div>
+  </section>
+);
+
+// ---------- Features ----------
+const FEATURES = [
+  { icon: ClipboardList, title: 'APS certification', desc: 'Step-by-step help with the document every application needs.' },
+  { icon: Target, title: 'University fit', desc: 'A shortlist matched to your grades, budget, and course.' },
+  { icon: Plane, title: 'Visa support', desc: 'Full guidance from blocked account to VFS appointment.' },
+  { icon: FileText, title: 'Documents', desc: "SOPs, LORs, and CVs reviewed until they're ready." },
+  { icon: MessagesSquare, title: '1:1 consultations', desc: "Advisors who've placed students in your exact field." },
+  { icon: Luggage, title: 'Pre-departure', desc: 'Housing, insurance, and settling-in support.' },
+] as const;
+
+const Features: React.FC = () => (
+  <section id="features" className="bg-pg-bg2 py-[52px]">
+    <div className="max-w-[1080px] mx-auto px-6">
+      <div className="text-center max-w-[520px] mx-auto mb-8">
+        <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">What's inside</div>
+        <h2 className="text-[clamp(24px,4vw,32px)]">Everything your file needs</h2>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {FEATURES.map(({ icon: Icon, title, desc }) => (
+          <div key={title} className="bg-white rounded-[14px] p-5 border border-pg-sep/60">
+            <Icon className="w-[22px] h-[22px] text-pg-label mb-2.5" strokeWidth={1.8} />
+            <h3 className="text-[15.5px] font-semibold mb-1 text-pg-label">{title}</h3>
+            <p className="text-[13.5px] leading-[1.4] text-pg-label2">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------- Testimonials ----------
+const TESTIMONIALS = [
+  { initial: 'S', name: 'Sanvijeet SR', role: 'Student', quote: 'A dream-come-true journey that felt manageable from day one.', stars: 5 },
+  { initial: 'P', name: 'Pragati Jain', role: 'BMW Munich', quote: 'My advisor explained every intricate step until it clicked.', stars: 5 },
+  { initial: 'M', name: 'Mimmini V.', role: 'Student', quote: 'Felt like a study partner, patient through every hard question.', stars: 5 },
+  { initial: 'S', name: 'Shubham Kumar', role: 'B.Eng, Logistics', quote: 'Shortlisting was tuned to what I actually qualified for.', stars: 5 },
+  { initial: 'V', name: 'Vaibhav', role: 'B.Sc, AI', quote: 'A clear shortlist early made resettling far less daunting.', stars: 4 },
+];
+
+const Stars: React.FC<{ n: number }> = ({ n }) => (
+  <div className="text-pg-gold text-[11px] leading-none">{'★'.repeat(n)}{'☆'.repeat(5 - n)}</div>
+);
+
+const Testimonials: React.FC = () => (
+  <section id="stories" className="py-[52px]">
+    <div className="max-w-[1080px] mx-auto px-6 mb-6">
+      <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Testimonials</div>
+      <h2 className="text-[clamp(24px,4vw,32px)]">Students who made it</h2>
+    </div>
+    <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-2">
+      {TESTIMONIALS.map((t, i) => (
+        <div key={i} className="snap-start shrink-0 w-[260px] bg-pg-bg2 rounded-[14px] p-[18px] flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-white flex items-center justify-center font-semibold text-[13px]">
+              {t.initial}
+            </div>
+            <div>
+              <div className="font-semibold text-[13.5px] text-pg-label">{t.name}</div>
+              <div className="text-[11.5px] text-pg-label3">{t.role}</div>
+            </div>
+          </div>
+          <Stars n={t.stars} />
+          <p className="text-[13px] text-pg-label2 leading-[1.45]">{t.quote}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+// ---------- Process ----------
+const STEPS = [
+  { n: '01', title: 'Create your profile', desc: 'Academics, budget, target course.' },
+  { n: '02', title: 'Get your checklist', desc: 'Shortlisted universities & documents.' },
+  { n: '03', title: 'Track progress', desc: 'Every deadline, one dashboard.' },
+  { n: '04', title: 'Reach Germany', desc: 'Offer, visa, departure.' },
+];
+
+const Process: React.FC = () => (
+  <section className="bg-pg-bg2 py-[52px]">
+    <div className="max-w-[1080px] mx-auto px-6">
+      <div className="text-center max-w-[520px] mx-auto mb-8">
+        <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">How it works</div>
+        <h2 className="text-[clamp(24px,4vw,32px)]">Four steps, one file</h2>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {STEPS.map((s) => (
+          <div key={s.n} className="bg-pg-label text-white rounded-[14px] p-5">
+            <div className="text-[12px] font-bold text-[#9aa4b3] mb-2">{s.n}</div>
+            <h4 className="text-white text-[14.5px] font-semibold mb-1">{s.title}</h4>
+            <p className="text-[#a9b1bd] text-[12px] leading-[1.4]">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------- Pricing ----------
+const Pricing: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <section id="pricing" className="py-[52px]">
+      <div className="max-w-[1080px] mx-auto px-6 mb-7">
+        <div className="text-center max-w-[520px] mx-auto">
+          <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Pricing</div>
+          <h2 className="text-[clamp(24px,4vw,32px)] mb-2">A package for wherever you're starting</h2>
+          <p className="text-[15.5px] text-pg-label2">Transparent, staged pricing — no surprise fees mid-application.</p>
+        </div>
+      </div>
+      <div className="pg-carousel flex md:grid md:grid-cols-4 gap-3.5 overflow-x-auto md:overflow-visible snap-x snap-mandatory px-6 pb-2.5 max-w-[1080px] mx-auto">
+        {SERVICE_PACKAGES.map((p) => (
+          <div
+            key={p.id}
+            className={`snap-start shrink-0 w-[250px] md:w-auto bg-white rounded-[20px] p-5 flex flex-col relative border ${
+              p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
+            }`}
+          >
+            {p.popular && (
+              <span className="absolute -top-[11px] left-5 bg-pg-accent text-white text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
+                Most popular
+              </span>
+            )}
+            <div className="text-[15px] font-semibold mb-1 text-pg-label">{p.name}</div>
+            <div className="text-[26px] font-bold text-pg-label leading-none mb-0.5">{p.priceLabel}</div>
+            <div className="text-[11.5px] text-pg-label3 mb-3.5">{p.payment}</div>
+            <ul className="mb-4 space-y-1.5">
+              {p.included.slice(0, 3).map((it) => (
+                <li key={it} className="flex gap-1.5 text-[12.5px] text-pg-label">
+                  <span className="text-pg-green font-bold shrink-0">✓</span>
+                  {it}
+                </li>
+              ))}
+              {p.notes?.[0] && (
+                <li className="flex gap-1.5 text-[12.5px] italic text-pg-label3">
+                  <span className="shrink-0">+</span>
+                  {p.notes[0]}
+                </li>
+              )}
+            </ul>
+            <button
+              onClick={() => navigate(`/services?package=${p.slug}`)}
+              className={`pg-btn pg-btn-sm mt-auto w-full ${p.popular ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
+            >
+              Request
+            </button>
+          </div>
+        ))}
+      </div>
+      <p className="md:hidden text-center text-[12px] text-pg-label3 mt-1">Swipe for more →</p>
+    </section>
+  );
+};
+
+// ---------- FAQ ----------
+const FAQS = [
+  { q: 'Do I need an APS certificate to study in Germany?', a: "Most Indian applicants need APS certification before German universities process their application. We'll confirm if it applies to you." },
+  { q: 'Which documents do I need for applications?', a: 'Typically transcripts, SOP, LORs, CV, and language certificates. Your checklist lists exactly what your programs ask for.' },
+  { q: 'Can I apply to multiple universities at once?', a: 'Yes — most students apply to 7–8 universities to maximise their chances.' },
+  { q: 'How much money do I need in my blocked account?', a: "The German government sets an annual minimum, reviewed yearly. We'll confirm the current figure with you." },
+  { q: 'How early should I apply for a visa?', a: 'As soon as you have an admission offer — appointment slots can book out weeks in advance.' },
+  { q: 'Can I stay in Germany after graduation?', a: "Yes, Germany offers a post-study work visa. We'll walk you through the conditions closer to graduation." },
+];
+
+const FAQ: React.FC = () => {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section id="faq" className="bg-pg-bg2 py-[52px]">
+      <div className="max-w-[1080px] mx-auto px-6">
+        <div className="text-center max-w-[520px] mx-auto mb-8">
+          <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Questions</div>
+          <h2 className="text-[clamp(24px,4vw,32px)]">Frequently asked</h2>
+        </div>
+        <div className="pg-group max-w-[720px] mx-auto">
+          {FAQS.map((item, i) => (
+            <div key={i}>
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                className="w-full flex justify-between items-center gap-3.5 px-5 py-4 text-left text-[15px] font-medium text-pg-label"
+                aria-expanded={open === i}
+              >
+                <span>{item.q}</span>
+                <ChevronRight
+                  className={`w-4 h-4 text-pg-label3 transition-transform ${open === i ? 'rotate-90' : ''}`}
+                />
+              </button>
+              {open === i && (
+                <div className="px-5 pb-4 text-[14px] text-pg-label2 leading-[1.5]">{item.a}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ---------- Final CTA ----------
+const FinalCTA: React.FC = () => (
+  <section className="py-[52px]">
+    <div className="max-w-[1080px] mx-auto px-6">
+      <div className="bg-pg-label text-white rounded-[20px] px-7 py-11 text-center">
+        <h2 className="text-white text-[clamp(22px,3.6vw,30px)] mb-2">Start your Germany file today</h2>
+        <p className="text-[#a9b1bd] mb-6 text-[15px]">Free to create. No commitment until you're ready.</p>
+        <Link to="/auth" className="pg-btn pg-btn-primary">Get started free</Link>
+      </div>
+    </div>
+  </section>
+);
+
+// ---------- Footer ----------
+const Footer: React.FC = () => (
+  <footer className="py-9 border-t border-pg-sep">
+    <div className="max-w-[1080px] mx-auto px-6">
+      <div className="flex justify-between items-center flex-wrap gap-3.5">
+        <PgLogo />
+        <div className="flex gap-5 flex-wrap">
+          <Link to="/services" className="text-[13px] text-pg-label2 hover:text-pg-label">Services</Link>
+          <a href="#stories" className="text-[13px] text-pg-label2 hover:text-pg-label">Stories</a>
+          <Link to="/resources" className="text-[13px] text-pg-label2 hover:text-pg-label">Resources</Link>
+          <Link to="/blog" className="text-[13px] text-pg-label2 hover:text-pg-label">Blog</Link>
+          <Link to="/contact" className="text-[13px] text-pg-label2 hover:text-pg-label">Contact</Link>
+          <Link to="/privacy" className="text-[13px] text-pg-label2 hover:text-pg-label">Privacy</Link>
+        </div>
+      </div>
+      <div className="text-[12.5px] text-pg-label3 mt-4.5">© {new Date().getFullYear()} publicgermany. All rights reserved.</div>
+    </div>
+  </footer>
+);
+
+// ---------- Page ----------
+const Index: React.FC = () => (
+  <div className="min-h-screen bg-pg-bg text-pg-label">
+    <Helmet>
+      <title>publicgermany — Study in Germany, guided</title>
+      <meta name="description" content="One guided path through APS, university applications, and your German student visa. Trusted by 10,500+ students." />
+      <meta property="og:title" content="publicgermany — Study in Germany, guided" />
+      <meta property="og:description" content="One guided path through APS, university applications, and your German student visa." />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary_large_image" />
+    </Helmet>
+    <Header />
+    <main>
+      <Hero />
+      <Features />
+      <Testimonials />
+      <Process />
+      <Pricing />
+      <FAQ />
+      <FinalCTA />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default Index;
