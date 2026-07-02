@@ -1,34 +1,28 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  ShoppingCart,
+  Search,
+  Plus,
   Clock,
   CheckCircle,
   FileText,
   Download,
-  Package,
-  AlertCircle,
   Eye,
-  Trash2
+  Trash2,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
-import PackagesShowcase from '@/components/PackagesShowcase';
 import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Service {
   id: string;
@@ -55,20 +49,21 @@ interface ServiceRequest {
   created_at: string;
 }
 
-const ServicesNew = () => {
+type Tab = 'browse' | 'requests' | 'delivered';
+
+const ServicesNew: React.FC = () => {
+  const [tab, setTab] = useState<Tab>('browse');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [packageRequestName, setPackageRequestName] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string>('');
   const [requestDetails, setRequestDetails] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedPackages, setExpandedPackages] = useState<Record<string, boolean>>({});
-  const [expandedServices, setExpandedServices] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Fetch services catalog
+  // ------- Data -------
   const catalogQuery = useQuery({
     queryKey: ['services-catalog'],
     queryFn: async () => {
@@ -82,19 +77,13 @@ const ServicesNew = () => {
     },
   });
 
-  // Fetch user's service requests with payment data
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('service_requests')
-        .select(`
-          *,
-          service_payments (
-            id, amount, currency, status, paid_at
-          )
-        `)
+        .select(`*, service_payments (id, amount, currency, status, paid_at)`)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -103,145 +92,96 @@ const ServicesNew = () => {
     enabled: !!user,
   });
 
-  // Real-time subscription for service requests
   useEffect(() => {
     if (!user?.id) return;
-
     const channel = supabase
       .channel('service-requests-realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          requestsQuery.refetch();
-        }
+        { event: '*', schema: 'public', table: 'service_requests', filter: `user_id=eq.${user.id}` },
+        () => requestsQuery.refetch(),
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, requestsQuery]);
-
-  // Auto-scroll to services content on page load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const servicesContent = document.getElementById('services-content');
-      if (servicesContent) {
-        servicesContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Auto-scroll to request form when dialog opens
-  useEffect(() => {
-    if (showRequestDialog) {
-      const timer = setTimeout(() => {
-        const requestForm = document.getElementById('request-form-card');
-        if (requestForm) {
-          requestForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [showRequestDialog]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const services = catalogQuery.data || [];
-  const packages = services.filter(s => s.kind === 'package');
-  // Hide "Visa Application Only" from Individual Services to avoid duplication with the package.
+  const dbPackages = services.filter((s) => s.kind === 'package');
   const individualServices = services.filter(
-    s => s.kind === 'individual' && !/visa\s*application\s*only/i.test(s.name)
+    (s) => s.kind === 'individual' && !/visa\s*application\s*only/i.test(s.name),
   );
   const requests = requestsQuery.data || [];
-  const completedRequests = requests.filter(r => r.status === 'completed');
-  const activeRequests = requests; // Show ALL requests in My Requests tab
+  const completedRequests = requests.filter((r) => r.status === 'completed');
+  const totalDeliveredFiles = completedRequests.reduce(
+    (sum, r) => sum + (r.deliverable_urls?.length || 0),
+    0,
+  );
 
-  // Preselect a package when arriving with ?package=<slug>
+  // Preselect a package via ?package=<slug>
   useEffect(() => {
     const slug = searchParams.get('package');
     if (!slug) return;
-    const pkg = SERVICE_PACKAGES.find(p => p.slug === slug);
+    const pkg = SERVICE_PACKAGES.find((p) => p.slug === slug);
     if (pkg) {
       setPackageRequestName(pkg.name);
       setShowRequestDialog(true);
-      // clear the query param so it doesn't retrigger
       searchParams.delete('package');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 
-  // Filter services by search
-  const filteredServices = individualServices.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredServices = useMemo(
+    () =>
+      individualServices.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.description || '').toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    [individualServices, searchTerm],
   );
 
-  const handleServiceSelection = (serviceId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedServices([...selectedServices, serviceId]);
-    } else {
-      setSelectedServices(selectedServices.filter(id => id !== serviceId));
-    }
+  const toggleService = (id: string) => {
+    setSelectedServices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const calculateTotalPrice = () => {
-    return selectedServices.reduce((total, serviceId) => {
-      const service = services.find(s => s.id === serviceId);
-      return total + (service?.price_inr || 0);
-    }, 0);
-  };
+  const extrasTotal = selectedServices.reduce((total, id) => {
+    const s = services.find((x) => x.id === id);
+    return total + (s?.price_inr || 0);
+  }, 0);
 
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
-    const pkg = packages.find(p => p.name === packageRequestName);
-    if (pkg?.price_inr) return pkg.price_inr;
-    // Fallback to static catalog price (used when arriving via ?package=slug
-    // for a package not yet present in the DB services table).
-    const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
-    return staticPkg?.price || 0;
+    const dbPkg = dbPackages.find((p) => p.name === packageRequestName);
+    if (dbPkg?.price_inr) return dbPkg.price_inr;
+    return SERVICE_PACKAGES.find((p) => p.name === packageRequestName)?.price || 0;
   };
 
-  const getTotalAmount = () => {
-    const extrasTotal = calculateTotalPrice();
-    const packagePrice = getPackagePrice();
-    return extrasTotal + packagePrice;
-  };
+  const totalAmount = extrasTotal + getPackagePrice();
 
+  // ------- Actions -------
   const handleRequestSubmit = async () => {
     if (selectedServices.length === 0 && !packageRequestName) {
-      toast({ title: "Error", description: "Please select at least one service or package", variant: "destructive" });
+      toast({ title: 'Please select a package or one service', variant: 'destructive' });
       return;
     }
-
     if (!timeline) {
-      toast({ title: "Timeline required", description: "Please choose a preferred timeline", variant: "destructive" });
+      toast({ title: 'Timeline required', description: 'Please choose a preferred timeline', variant: 'destructive' });
       return;
     }
+    if (!user) return;
 
-    if (!user) {
-      toast({ title: "Error", description: "You must be logged in", variant: "destructive" });
-      return;
-    }
-
-    const selectedExtras = selectedServices.map(id => services.find(s => s.id === id)?.name).filter(Boolean) as string[];
+    const extras = selectedServices
+      .map((id) => services.find((s) => s.id === id)?.name)
+      .filter(Boolean) as string[];
     const serviceNames = packageRequestName
-      ? [packageRequestName, ...(selectedExtras.length ? ["Extras: " + selectedExtras.join(', ')] : [])].join(' | ')
-      : selectedExtras.join(', ');
-
-    const totalAmount = getTotalAmount();
+      ? [packageRequestName, ...(extras.length ? [`Extras: ${extras.join(', ')}`] : [])].join(' | ')
+      : extras.join(', ');
 
     try {
-      const { error } = await supabase
-        .from('service_requests')
-        .insert([{
+      const { error } = await supabase.from('service_requests').insert([
+        {
           user_id: user.id,
           service_type: serviceNames,
           service_price: totalAmount,
@@ -249,701 +189,521 @@ const ServicesNew = () => {
           request_details: requestDetails,
           preferred_timeline: timeline,
           status: 'new',
-        }]);
-
+        },
+      ]);
       if (error) throw error;
 
-      // Show success toast with nice styling
-      toast({ 
-        title: "✓ Service Request Submitted", 
-        description: "Your request has been received successfully. Our team will review it shortly and contact you with pricing details.",
-        className: "success-toast border-green-500 bg-green-50 dark:bg-green-950"
-      });
-      
-      // Send emails
+      toast({ title: 'Request submitted', description: "Our team will contact you shortly." });
+
       try {
         const studentName = profile?.full_name || user.email?.split('@')[0] || 'Student';
         const studentEmail = user.email || '';
-        const pkg = packages.find(p => p.name === packageRequestName);
-        const priceInfo = packageRequestName && pkg?.price_range_inr
-          ? `Package Range: ₹${pkg.price_range_inr}`
-          : `Total: ₹${totalAmount.toLocaleString()}`;
-        
-        // Email to admin
-        const adminEmailPromise = sendEmail(
-          'publicgermany@outlook.com',
-          'New Service Request',
-          `<p>New service request from ${studentName}</p>
-           <p><strong>Email:</strong> ${studentEmail}<br/>
-           <strong>Services:</strong> ${serviceNames}<br/>
-           <strong>${priceInfo}</strong><br/>
-           ${selectedServices.length > 0 ? `<strong>Extras Total:</strong> ₹${calculateTotalPrice().toLocaleString()}<br/>` : ''}
-           <strong>Timeline:</strong> ${timeline}</p>`
-        );
-
-        // Email to student
-        const studentEmailPromise = studentEmail ? sendEmail(
-          studentEmail,
-          'Service Request Received',
-          `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1C1C1C;">
-             <p>Hi ${studentName},</p>
-             <p>We've received your service request and our team will review it shortly.</p>
-             <p><strong>Requested Services:</strong> ${serviceNames}<br/>
-             <strong>${priceInfo}</strong><br/>
-             <strong>Timeline:</strong> ${timeline}</p>
-             <p style="margin-top:12px;color:#666">You can track your request status in the Services page.</p>
-             <p>— publicGermany Team</p>
-           </div>`
-        ) : Promise.resolve();
-
-        await Promise.allSettled([adminEmailPromise, studentEmailPromise]);
+        await Promise.allSettled([
+          sendEmail(
+            'publicgermany@outlook.com',
+            'New Service Request',
+            `<p>New service request from ${studentName}</p>
+             <p><strong>Email:</strong> ${studentEmail}<br/>
+             <strong>Services:</strong> ${serviceNames}<br/>
+             <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
+             <strong>Timeline:</strong> ${timeline}</p>`,
+          ),
+          studentEmail
+            ? sendEmail(
+                studentEmail,
+                'Service Request Received',
+                `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#1D1D1F;">
+                   <p>Hi ${studentName},</p>
+                   <p>We've received your service request. Our team will reach out shortly.</p>
+                   <p><strong>Services:</strong> ${serviceNames}<br/>
+                   <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
+                   <strong>Timeline:</strong> ${timeline}</p>
+                   <p>— publicgermany</p>
+                 </div>`,
+              )
+            : Promise.resolve(),
+        ]);
       } catch {}
 
-      // Reset and close
       setSelectedServices([]);
       setPackageRequestName(null);
       setTimeline('');
       setRequestDetails('');
       setShowRequestDialog(false);
       requestsQuery.refetch();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
   };
 
   const handleDeleteRequest = async (requestId: string) => {
-    if (!confirm('Are you sure you want to delete this request? This cannot be undone.')) return;
-
+    if (!confirm('Delete this request? This cannot be undone.')) return;
     try {
       const { error } = await supabase
         .from('service_requests')
         .delete()
         .eq('id', requestId)
         .eq('user_id', user?.id);
-
       if (error) throw error;
-
-      toast({ title: 'Success', description: 'Request deleted successfully' });
+      toast({ title: 'Request deleted' });
       requestsQuery.refetch();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      'new': { variant: 'outline', icon: Clock, color: 'text-blue-600' },
-      'in_review': { variant: 'secondary', icon: AlertCircle, color: 'text-yellow-600' },
-      'payment_pending': { variant: 'secondary', icon: Clock, color: 'text-orange-600' },
-      'in_progress': { variant: 'default', icon: Clock, color: 'text-blue-600' },
-      'completed': { variant: 'default', icon: CheckCircle, color: 'text-green-600' },
-    };
-    const config = variants[status] || variants['new'];
-    const Icon = config.icon;
-    return (
-      <Badge variant={config.variant} className="gap-1">
-        <Icon className="h-3 w-3" />
-        {status.replace('_', ' ')}
-      </Badge>
-    );
-  };
-
-  const getAllDeliverableUrls = (req: ServiceRequest): string[] => {
-    const urls: string[] = [];
-    if (req.deliverable_urls && Array.isArray(req.deliverable_urls)) {
-      urls.push(...req.deliverable_urls);
-    }
-    return urls;
   };
 
   const getFileNameFromUrl = (url: string) => {
     try {
       const pathname = new URL(url).pathname;
       const last = pathname.substring(pathname.lastIndexOf('/') + 1);
-      let fileName = decodeURIComponent(last) || 'download';
-      
-      // Remove timestamp prefix (e.g., "1762083264940-" or "1761644307660-")
-      fileName = fileName.replace(/^\d+-/, '');
-      
-      return fileName;
+      return decodeURIComponent(last).replace(/^\d+-/, '') || 'download';
     } catch {
       const parts = url.split('/');
-      let fileName = decodeURIComponent(parts[parts.length - 1] || 'download');
-      
-      // Remove timestamp prefix
-      fileName = fileName.replace(/^\d+-/, '');
-      
-      return fileName;
+      return decodeURIComponent(parts[parts.length - 1] || 'download').replace(/^\d+-/, '');
     }
   };
 
+  const openFile = async (url: string, download = false) => {
+    try {
+      const filePath = url.includes('/documents/') ? url.split('/documents/')[1] : url;
+      const fileName = getFileNameFromUrl(url);
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(filePath, 3600, download ? { download: fileName } : undefined);
+      const finalUrl = error || !data?.signedUrl ? url : data.signedUrl;
+      if (download) {
+        const a = document.createElement('a');
+        a.href = finalUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } else {
+        window.open(finalUrl, '_blank');
+      }
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
+  const StatusBadge = ({ status }: { status: string }) => {
+    const map: Record<string, { icon: any; label: string; className: string }> = {
+      new: { icon: Clock, label: 'New', className: 'bg-pg-bg3 text-pg-label2' },
+      in_review: { icon: AlertCircle, label: 'In review', className: 'bg-pg-gold/15 text-pg-gold' },
+      payment_pending: { icon: Clock, label: 'Payment pending', className: 'bg-pg-gold/15 text-pg-gold' },
+      in_progress: { icon: Clock, label: 'In progress', className: 'bg-pg-accent/10 text-pg-accent' },
+      completed: { icon: CheckCircle, label: 'Completed', className: 'bg-pg-green/15 text-pg-green' },
+    };
+    const c = map[status] || map.new;
+    const Icon = c.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${c.className}`}>
+        <Icon className="w-3 h-3" />
+        {c.label}
+      </span>
+    );
+  };
+
+  // ----------------- UI -----------------
   return (
-     <Layout>
-       <div id="services-content" className="space-y-3 pb-6">
-         {/* German stripe */}
-         <div className="german-stripe w-full" />
+    <Layout>
+      <div className="max-w-[1080px] mx-auto px-1 sm:px-2 pb-24">
+        {/* Page head */}
+        <div className="pt-2">
+          <div className="flex justify-between items-center flex-wrap gap-2.5 mb-4">
+            <h1 className="text-[26px] font-bold text-pg-label tracking-tight">Services</h1>
+            <div className="text-[12.5px] text-pg-label3">
+              {requests.length} requests · {totalDeliveredFiles} files
+            </div>
+          </div>
 
-         <div className="flex items-center justify-between">
-           <h1 className="text-lg font-bold text-foreground">Services</h1>
-           <p className="text-xs text-muted-foreground">
-             {requests.length} requests · {completedRequests.length} completed · {completedRequests.reduce((sum, r) => sum + getAllDeliverableUrls(r).length, 0)} files
-           </p>
-         </div>
+          {/* Segmented control */}
+          <div className="flex bg-pg-bg2 rounded-[10px] p-[3px] mb-8 max-w-[340px]">
+            {(['browse', 'requests', 'delivered'] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 text-center py-2 px-2.5 text-[13.5px] font-semibold rounded-[8px] transition-colors ${
+                  tab === t ? 'bg-white text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
+                }`}
+              >
+                {t === 'browse'
+                  ? 'Browse'
+                  : t === 'requests'
+                  ? `Requests${requests.length ? ` (${requests.length})` : ''}`
+                  : `Delivered${completedRequests.length ? ` (${completedRequests.length})` : ''}`}
+              </button>
+            ))}
+          </div>
+        </div>
 
-         {/* Tabs */}
-         <Tabs defaultValue="browse" className="w-full">
-           <TabsList className="grid w-full grid-cols-3 h-8">
-             <TabsTrigger value="browse" className="text-xs">Browse</TabsTrigger>
-             <TabsTrigger value="requests" className="text-xs">
-               Requests {requests.length > 0 && `(${requests.length})`}
-             </TabsTrigger>
-             <TabsTrigger value="delivered" className="text-xs">
-               Delivered {completedRequests.length > 0 && `(${completedRequests.length})`}
-             </TabsTrigger>
-           </TabsList>
+        {/* ========= BROWSE ========= */}
+        {tab === 'browse' && (
+          <>
+            <div className="mb-5">
+              <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Packages</div>
+              <h2 className="text-[22px] font-bold text-pg-label mb-1">Pick a package</h2>
+              <p className="text-pg-label2 text-[14.5px]">Fixed pricing, staged payment, no surprises.</p>
+            </div>
 
-          {/* TAB 1: Browse Services */}
-          <TabsContent value="browse" className="space-y-6">
-            {/* Service Packages — static catalog with comparison + structured data */}
-            <PackagesShowcase
-              onRequest={(pkg) => {
-                setPackageRequestName(pkg.name);
-                setShowRequestDialog(true);
-              }}
-            />
-
-
-            {/* Individual Services */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Individual Services
-                </CardTitle>
-                <CardDescription>Select one or more services</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input
-                  placeholder="Search services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-
-                {filteredServices.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No services found</p>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredServices.map(service => (
-                      <Card 
-                        key={service.id} 
-                        className="border-border/60 cursor-pointer hover:border-primary/50 transition-colors"
-                        onClick={() => handleServiceSelection(service.id, !selectedServices.includes(service.id))}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex items-start gap-3">
-                            <div className="pt-0.5">
-                              <Checkbox
-                                checked={selectedServices.includes(service.id)}
-                                onCheckedChange={(checked) => {
-                                  handleServiceSelection(service.id, checked as boolean);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-3 mb-1">
-                                <h3 className="font-semibold text-base">{service.name}</h3>
-                                <Badge variant="secondary" className="flex-shrink-0">
-                                  ₹{service.price_inr?.toLocaleString() || '—'}
-                                </Badge>
-                              </div>
-                              {service.description && (() => {
-                                const isLong = service.description.length > 110;
-                                const isOpen = !!expandedServices[service.id];
-                                const text = !isLong || isOpen
-                                  ? service.description
-                                  : service.description.slice(0, 110).trimEnd() + '…';
-                                return (
-                                  <>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-line">{text}</p>
-                                    {isLong && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setExpandedServices(prev => ({ ...prev, [service.id]: !prev[service.id] }));
-                                        }}
-                                        className="text-xs font-medium text-primary hover:underline mt-1"
-                                      >
-                                        {isOpen ? 'Show less' : 'Read more'}
-                                      </button>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+            <div className="pg-carousel flex md:grid md:grid-cols-4 gap-3.5 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2.5 mb-6">
+              {SERVICE_PACKAGES.map((p) => (
+                <div
+                  key={p.id}
+                  className={`snap-start shrink-0 w-[240px] md:w-auto bg-white rounded-[20px] p-[18px] flex flex-col relative border ${
+                    p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
+                  }`}
+                >
+                  {p.popular && (
+                    <span className="absolute -top-[11px] left-[18px] bg-pg-accent text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+                      Most popular
+                    </span>
+                  )}
+                  <div className="text-[14.5px] font-semibold text-pg-label mb-0.5">{p.name}</div>
+                  <div className="text-[24px] font-bold text-pg-label leading-none mb-0.5">{p.priceLabel}</div>
+                  <div className="text-[11px] text-pg-label3 mb-3">{p.payment}</div>
+                  <ul className="mb-3.5 space-y-1.5">
+                    {p.included.map((it) => (
+                      <li key={it} className="flex gap-1.5 text-[12px] text-pg-label">
+                        <span className="text-pg-green font-bold shrink-0">✓</span>
+                        {it}
+                      </li>
                     ))}
-                  </div>
-                )}
-
-                {selectedServices.length > 0 && (
-                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-                    <div>
-                      <p className="font-semibold">{selectedServices.length} service(s) selected</p>
-                      <p className="text-sm text-muted-foreground">
-                        Total: ₹{calculateTotalPrice().toLocaleString()}
-                      </p>
-                    </div>
-                    <Button onClick={() => setShowRequestDialog(true)}>
-                      Request Services
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* TAB 2: My Requests */}
-          <TabsContent value="requests" className="space-y-3 md:space-y-4">
-            {requests.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm md:text-base text-muted-foreground">No requests yet</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => document.querySelector('[value="browse"]')?.dispatchEvent(new Event('click', { bubbles: true }))}
+                    {p.notes?.[0] && (
+                      <li className="flex gap-1.5 text-[12px] italic text-pg-label3">
+                        <span className="shrink-0">+</span>
+                        {p.notes[0]}
+                      </li>
+                    )}
+                  </ul>
+                  <button
+                    onClick={() => {
+                      setPackageRequestName(p.name);
+                      setShowRequestDialog(true);
+                    }}
+                    className={`pg-btn w-full mt-auto ${p.popular ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
                   >
-                    Browse Services
-                  </Button>
-                </CardContent>
-              </Card>
+                    Request
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Individual services */}
+            <div className="flex items-center gap-2.5 mt-11 mb-1">
+              <div className="w-[34px] h-[34px] rounded-[9px] bg-pg-bg2 flex items-center justify-center">
+                <Plus className="w-4 h-4 text-pg-label" strokeWidth={2.2} />
+              </div>
+              <h2 className="text-[22px] font-bold text-pg-label">Individual services</h2>
+            </div>
+            <p className="text-pg-label2 text-[14px] mb-4.5">Select one or more to build your own bundle.</p>
+
+            <div className="relative mb-4">
+              <Search className="w-4 h-4 text-pg-label3 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search services…"
+                className="w-full pl-10 pr-3.5 py-3 bg-pg-bg2 rounded-[12px] text-[15px] text-pg-label placeholder:text-pg-label3 border-0 outline-none focus:ring-2 focus:ring-pg-accent focus:ring-offset-1"
+              />
+            </div>
+
+            {filteredServices.length === 0 ? (
+              <div className="pg-group px-5 py-10 text-center text-pg-label3 text-[14px]">No services found</div>
             ) : (
-              requests.map(request => (
-                <Card key={request.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div className="pg-group">
+                {filteredServices.map((s) => {
+                  const selected = selectedServices.includes(s.id);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => toggleService(s.id)}
+                      className="w-full flex items-center gap-3.5 px-[18px] py-3.5 text-left active:bg-pg-bg3 transition-colors"
+                    >
+                      <span
+                        className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] shrink-0 ${
+                          selected ? 'bg-pg-accent border-pg-accent text-white' : 'border-[#C7C7CC] bg-white'
+                        }`}
+                      >
+                        {selected && <CheckCircle className="w-3 h-3" strokeWidth={3} />}
+                      </span>
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base md:text-lg truncate">{request.service_type}</CardTitle>
-                        <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                          Requested on {new Date(request.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(request.status)}
-                        {request.status !== 'completed' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteRequest(request.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="text-[14.5px] font-medium text-pg-label truncate">{s.name}</div>
+                        {s.description && (
+                          <div className="text-[12.5px] text-pg-label3 line-clamp-1">{s.description}</div>
                         )}
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {request.request_details && (
-                      <div>
-                        <p className="text-xs md:text-sm font-medium">Details:</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">{request.request_details}</p>
+                      <div className="text-[14px] font-semibold text-pg-label whitespace-nowrap">
+                        ₹{s.price_inr?.toLocaleString() || '—'}
                       </div>
-                    )}
-                    {request.preferred_timeline && (
-                      <div>
-                        <p className="text-xs md:text-sm font-medium">Timeline:</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">{request.preferred_timeline}</p>
-                      </div>
-                    )}
-                    {request.admin_response && (
-                      <div className="bg-muted/50 p-2 md:p-3 rounded-lg">
-                        <p className="text-xs md:text-sm font-medium mb-1">Admin Response:</p>
-                        <p className="text-xs md:text-sm">{request.admin_response}</p>
-                      </div>
-                    )}
-                    
-                    {/* Payment Breakdown */}
-                    {(() => {
-                      const paymentsArr = ((request as any).service_payments || []) as Array<{ amount: number|null; status: string|null }>;
-                      const receivedSum = paymentsArr
-                        .filter((sp) => (sp?.status || '').toLowerCase() === 'received')
-                        .reduce((acc, sp) => acc + (Number(sp?.amount) || 0), 0);
-                      const totalTarget = Number(((request as any).target_total_amount ?? request.service_price) ?? 0);
-                      const curr = (request as any).target_currency || request.service_currency || 'INR';
-                      const remaining = Math.max(0, totalTarget - receivedSum);
-                      
-                      return (
-                        <div className="mt-3 p-2 md:p-3 bg-muted/30 rounded-lg">
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div>
-                              <p className="text-muted-foreground mb-1">Total Amount</p>
-                              <p className="font-semibold">{curr} {isNaN(totalTarget) ? '-' : totalTarget.toLocaleString()}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Paid</p>
-                              <p className="font-semibold text-green-600">{curr} {receivedSum.toLocaleString()}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Remaining</p>
-                              <p className="font-semibold text-orange-600">{curr} {remaining.toLocaleString()}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-                    {/* Delivered Files - Compact Version */}
-                    {request.status === 'completed' && (() => {
-                      const files = getAllDeliverableUrls(request);
-                      if (files.length === 0) return null;
-                      
-                      return (
-                        <div className="mt-3 p-2 md:p-3 bg-green-50/10 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <p className="text-xs md:text-sm font-medium text-green-700 dark:text-green-400">
-                              {files.length} File{files.length > 1 ? 's' : ''} Delivered
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            {files.map((url, idx) => {
-                              const fileName = getFileNameFromUrl(url);
-                              return (
-                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-xs">
-                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="truncate font-medium text-xs">{fileName}</span>
-                                  </div>
-                                  <div className="flex gap-1 flex-shrink-0 ml-5 sm:ml-0">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="h-6 px-2 text-[10px] sm:text-xs"
-                                      onClick={async () => {
-                                        try {
-                                          const urlParts = url.split('/documents/');
-                                          const filePath = urlParts.length > 1 ? urlParts[1] : url;
-                                          const { data, error } = await supabase.storage
-                                            .from('documents')
-                                            .createSignedUrl(filePath, 3600);
-                                          if (error || !data?.signedUrl) {
-                                            window.open(url, '_blank');
-                                          } else {
-                                            window.open(data.signedUrl, '_blank');
-                                          }
-                                        } catch (e) {
-                                          window.open(url, '_blank');
-                                        }
-                                      }}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      className="h-6 px-2 text-[10px] sm:text-xs"
-                                      onClick={async () => {
-                                        try {
-                                          const urlParts = url.split('/documents/');
-                                          const filePath = urlParts.length > 1 ? urlParts[1] : url;
-                                          const { data, error } = await supabase.storage
-                                            .from('documents')
-                                            .createSignedUrl(filePath, 3600, { download: fileName });
-                                          if (error || !data?.signedUrl) {
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = fileName;
-                                            document.body.appendChild(a);
-                                            a.click();
-                                            a.remove();
-                                          } else {
-                                            const a = document.createElement('a');
-                                            a.href = data.signedUrl;
-                                            a.download = fileName;
-                                            document.body.appendChild(a);
-                                            a.click();
-                                            a.remove();
-                                          }
-                                        } catch (e) {
-                                          const a = document.createElement('a');
-                                          a.href = url;
-                                          a.download = fileName;
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          a.remove();
-                                        }
-                                      }}
-                                    >
-                                      <Download className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+            {/* Sticky selection bar */}
+            {selectedServices.length > 0 && (
+              <div className="sticky bottom-4 mt-5 bg-pg-label text-white rounded-[16px] px-5 py-3.5 flex items-center justify-between gap-3.5 flex-wrap shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
+                <div>
+                  <div className="text-[12px] text-[#9aa4b3]">{selectedServices.length} selected</div>
+                  <div className="text-[18px] font-bold">₹{extrasTotal.toLocaleString('en-IN')}</div>
+                </div>
+                <button
+                  onClick={() => setShowRequestDialog(true)}
+                  className="pg-btn"
+                  style={{ background: 'var(--pg-gold)', color: '#fff' }}
+                >
+                  Request selected
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ========= REQUESTS ========= */}
+        {tab === 'requests' && (
+          <div className="space-y-3">
+            {requests.length === 0 ? (
+              <div className="pg-group px-6 py-14 text-center">
+                <Clock className="w-8 h-8 text-pg-label3 mx-auto mb-3" />
+                <p className="text-[14px] text-pg-label2 mb-4">No requests yet</p>
+                <button onClick={() => setTab('browse')} className="pg-btn pg-btn-secondary pg-btn-sm">
+                  Browse services
+                </button>
+              </div>
+            ) : (
+              requests.map((r) => (
+                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
+                      <div className="text-[12px] text-pg-label3 mt-0.5">
+                        Requested {new Date(r.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusBadge status={r.status} />
+                      {r.status !== 'completed' && (
+                        <button
+                          onClick={() => handleDeleteRequest(r.id)}
+                          className="p-1.5 rounded-full text-pg-label3 hover:text-pg-accent hover:bg-pg-bg2"
+                          aria-label="Delete request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {r.request_details && (
+                    <p className="text-[13px] text-pg-label2 mt-2">{r.request_details}</p>
+                  )}
+                  {r.preferred_timeline && (
+                    <p className="text-[12.5px] text-pg-label3 mt-1">Timeline: {r.preferred_timeline}</p>
+                  )}
+                  {r.admin_response && (
+                    <div className="mt-3 bg-pg-bg2 rounded-[10px] px-3.5 py-2.5 text-[13px] text-pg-label">
+                      <div className="text-[11px] font-medium text-pg-label3 mb-1">Admin response</div>
+                      {r.admin_response}
+                    </div>
+                  )}
+                  {(() => {
+                    const payments = ((r as any).service_payments || []) as Array<{ amount: number | null; status: string | null }>;
+                    const received = payments
+                      .filter((p) => (p?.status || '').toLowerCase() === 'received')
+                      .reduce((a, p) => a + (Number(p?.amount) || 0), 0);
+                    const target = Number(((r as any).target_total_amount ?? r.service_price) ?? 0);
+                    const curr = (r as any).target_currency || r.service_currency || 'INR';
+                    const remaining = Math.max(0, target - received);
+                    return (
+                      <div className="mt-3 grid grid-cols-3 gap-2.5 text-[12px] bg-pg-bg2 rounded-[10px] p-3">
+                        <div>
+                          <div className="text-pg-label3 mb-0.5">Total</div>
+                          <div className="font-semibold text-pg-label">{curr} {target.toLocaleString()}</div>
                         </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
+                        <div>
+                          <div className="text-pg-label3 mb-0.5">Paid</div>
+                          <div className="font-semibold text-pg-green">{curr} {received.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-pg-label3 mb-0.5">Remaining</div>
+                          <div className="font-semibold text-pg-gold">{curr} {remaining.toLocaleString()}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {r.status === 'completed' && r.deliverable_urls?.length ? (
+                    <div className="mt-3 pt-3 border-t border-pg-sep">
+                      <div className="text-[12px] font-medium text-pg-green mb-2 flex items-center gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        {r.deliverable_urls.length} file{r.deliverable_urls.length > 1 ? 's' : ''} delivered
+                      </div>
+                      <div className="space-y-1.5">
+                        {r.deliverable_urls.map((url, i) => (
+                          <div key={i} className="flex items-center justify-between gap-2 text-[12.5px]">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <FileText className="w-3.5 h-3.5 text-pg-label3 shrink-0" />
+                              <span className="truncate text-pg-label">{getFileNameFromUrl(url)}</span>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                onClick={() => openFile(url, false)}
+                                className="p-1.5 rounded-full hover:bg-pg-bg2 text-pg-label2"
+                                aria-label="View"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => openFile(url, true)}
+                                className="p-1.5 rounded-full hover:bg-pg-bg2 text-pg-label2"
+                                aria-label="Download"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ))
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          {/* TAB 3: Delivered Files */}
-          <TabsContent value="delivered" className="space-y-3 md:space-y-4">
+        {/* ========= DELIVERED ========= */}
+        {tab === 'delivered' && (
+          <div className="space-y-3">
             {completedRequests.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm md:text-base text-muted-foreground">No delivered files yet</p>
-                </CardContent>
-              </Card>
+              <div className="pg-group px-6 py-14 text-center">
+                <FileText className="w-8 h-8 text-pg-label3 mx-auto mb-3" />
+                <p className="text-[14px] text-pg-label2">No delivered files yet</p>
+              </div>
             ) : (
-              completedRequests.map(request => {
-                const files = getAllDeliverableUrls(request);
-                return (
-                  <Card key={request.id} className="border-green-200 dark:border-green-800">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600 flex-shrink-0" />
-                            <span className="truncate">{request.service_type}</span>
-                          </CardTitle>
-                          <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                            Delivered on {new Date(request.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {files.length === 0 ? (
-                        <p className="text-xs md:text-sm text-muted-foreground">No files attached</p>
-                      ) : (
-                        <div className="space-y-2">
-                          <p className="text-xs md:text-sm font-medium mb-2">Files:</p>
-                          {files.map((url, idx) => (
-                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 md:p-3 bg-muted/30 rounded-lg">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <span className="text-xs md:text-sm font-medium truncate">{getFileNameFromUrl(url)}</span>
-                              </div>
-                              <div className="flex gap-2 flex-shrink-0">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-xs h-8"
-                                  onClick={async () => {
-                                    try {
-                                      const urlParts = url.split('/documents/');
-                                      const filePath = urlParts.length > 1 ? urlParts[1] : url;
-                                      const { data, error } = await supabase.storage
-                                        .from('documents')
-                                        .createSignedUrl(filePath, 3600);
-                                      if (error || !data?.signedUrl) {
-                                        window.open(url, '_blank');
-                                      } else {
-                                        window.open(data.signedUrl, '_blank');
-                                      }
-                                    } catch (e) {
-                                      window.open(url, '_blank');
-                                    }
-                                  }}
-                                >
-                                  <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                  <span className="hidden sm:inline">View</span>
-                                  <span className="sm:hidden">View</span>
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  className="text-xs h-8"
-                                  onClick={async () => {
-                                    try {
-                                      const urlParts = url.split('/documents/');
-                                      const filePath = urlParts.length > 1 ? urlParts[1] : url;
-                                      const fileName = getFileNameFromUrl(url);
-                                      const { data, error } = await supabase.storage
-                                        .from('documents')
-                                        .createSignedUrl(filePath, 3600, { download: fileName });
-                                      if (error || !data?.signedUrl) {
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = fileName;
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        a.remove();
-                                      } else {
-                                        const a = document.createElement('a');
-                                        a.href = data.signedUrl;
-                                        a.download = fileName;
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        a.remove();
-                                      }
-                                    } catch (e) {
-                                      const fileName = getFileNameFromUrl(url);
-                                      const a = document.createElement('a');
-                                      a.href = url;
-                                      a.download = fileName;
-                                      document.body.appendChild(a);
-                                      a.click();
-                                      a.remove();
-                                    }
-                                  }}
-                                >
-                                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                  <span className="hidden sm:inline">Download</span>
-                                  <span className="sm:hidden">Get</span>
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Inline Request Form */}
-        {showRequestDialog && (
-          <Card id="request-form-card" className="mt-4 border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="py-2 px-4 border-b">
-              <CardTitle className="text-sm font-semibold">Confirm Your Service Request</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-3 p-4">
-              
-              {/* Selected Services Summary */}
-              <div className="bg-white dark:bg-slate-950 border border-border/60 rounded p-2 space-y-1.5">
-                <h3 className="font-semibold text-xs text-foreground">Selected Services</h3>
-                
-                {packageRequestName && (
-                  <div className="flex items-center justify-between p-2 bg-primary/10 rounded text-xs">
-                    <div className="flex-1">
-                      <p className="font-medium text-xs">{packageRequestName}</p>
-                      <p className="text-[10px] text-muted-foreground">Main Package</p>
-                    </div>
-                    <div className="text-right ml-2">
-                      {(() => {
-                        const pkg = packages.find(p => p.name === packageRequestName);
-                        const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
-                        if (pkg?.price_range_inr) return <p className="font-semibold text-xs">₹{pkg.price_range_inr}</p>;
-                        const price = pkg?.price_inr || staticPkg?.price;
-                        return price ? <p className="font-semibold text-xs">₹{price.toLocaleString()}</p> : null;
-                      })()}
-                    </div>
+              completedRequests.map((r) => (
+                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-4 h-4 text-pg-green" />
+                    <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
                   </div>
-                )}
-
-                {selectedServices.length > 0 && (
-                  <div className="space-y-1">
-                    {selectedServices.map(id => {
-                      const service = services.find(s => s.id === id);
-                      return (
-                        <div key={id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded text-xs">
-                          <div className="flex-1">
-                            <p className="font-medium text-xs">{service?.name}</p>
-                            {packageRequestName && <p className="text-[10px] text-muted-foreground">Additional Service</p>}
+                  {r.deliverable_urls?.length ? (
+                    <div className="pg-group">
+                      {r.deliverable_urls.map((url, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <FileText className="w-4 h-4 text-pg-label3 shrink-0" />
+                            <span className="text-[13.5px] text-pg-label truncate">{getFileNameFromUrl(url)}</span>
                           </div>
-                          <div className="text-right ml-2">
-                            <p className="font-semibold text-xs">₹{service?.price_inr?.toLocaleString()}</p>
+                          <div className="flex gap-1 shrink-0">
+                            <button
+                              onClick={() => openFile(url, false)}
+                              className="pg-btn pg-btn-sm pg-btn-secondary"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View
+                            </button>
+                            <button
+                              onClick={() => openFile(url, true)}
+                              className="pg-btn pg-btn-sm pg-btn-secondary"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Total Price - Bill Format */}
-              <div className="border-t border-b border-dashed border-muted py-2 px-0">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-medium">Total Amount:</span>
-                  <span className="font-semibold">₹{(() => {
-                    let total = 0;
-                    
-                    // Calculate package price
-                    if (packageRequestName) {
-                      const pkg = packages.find(p => p.name === packageRequestName);
-                      const staticPkg = SERVICE_PACKAGES.find(p => p.name === packageRequestName);
-                      if (pkg?.price_range_inr) {
-                        const firstNum = pkg.price_range_inr.split('-')[0].replace(/[^\d]/g, '');
-                        total += firstNum ? Number(firstNum) : 0;
-                      } else if (pkg?.price_inr) {
-                        total += pkg.price_inr;
-                      } else if (staticPkg?.price) {
-                        total += staticPkg.price;
-                      }
-                    }
-                    
-                    // Add additional services
-                    total += calculateTotalPrice();
-                    
-                    return total.toLocaleString();
-                  })()}/- Only</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-pg-label3">No files attached</p>
+                  )}
                 </div>
-              </div>
-
-              {/* Timeline Selection */}
-              <div>
-                <Label htmlFor="timeline" className="text-xs font-semibold mb-1 block">When do you need this? *</Label>
-                <Select value={timeline} onValueChange={setTimeline}>
-                  <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select timeline" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-3 days">1-3 days (Urgent)</SelectItem>
-                    <SelectItem value="1 week">1 week</SelectItem>
-                    <SelectItem value="2 weeks">2 weeks</SelectItem>
-                    <SelectItem value="1 month">1 month</SelectItem>
-                    <SelectItem value="flexible">Flexible</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Additional Details */}
-              <div>
-                <Label htmlFor="details" className="text-xs font-semibold mb-1 block">Additional Requirements</Label>
-                <Textarea 
-                  id="details" 
-                  placeholder="Any specific needs or documents..." 
-                  value={requestDetails} 
-                  onChange={(e) => setRequestDetails(e.target.value)} 
-                  rows={2}
-                  className="resize-none text-xs"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2 border-t">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowRequestDialog(false)}
-                  className="flex-1 h-7 text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleRequestSubmit}
-                  className="flex-1 h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Submit Request
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              ))
+            )}
+          </div>
         )}
       </div>
+
+      {/* Request Dialog */}
+      <Dialog
+        open={showRequestDialog}
+        onOpenChange={(open) => {
+          setShowRequestDialog(open);
+          if (!open) setPackageRequestName(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px] rounded-[20px]">
+          <DialogHeader>
+            <DialogTitle className="text-[20px] font-bold text-pg-label">Request services</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-pg-bg2 rounded-[14px] p-4">
+              {packageRequestName && (
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-pg-label3">Package</div>
+                    <div className="font-semibold text-pg-label">{packageRequestName}</div>
+                  </div>
+                  <button
+                    onClick={() => setPackageRequestName(null)}
+                    className="text-pg-label3 hover:text-pg-label"
+                    aria-label="Remove package"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              {selectedServices.length > 0 && (
+                <div className="text-[12.5px] text-pg-label2 mb-2">
+                  + {selectedServices.length} individual service{selectedServices.length > 1 ? 's' : ''}
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-pg-sep">
+                <div className="text-[13px] text-pg-label2">Estimated total</div>
+                <div className="text-[18px] font-bold text-pg-label">₹{totalAmount.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-[13px] font-medium text-pg-label mb-1.5 block">Preferred timeline</Label>
+              <Select value={timeline} onValueChange={setTimeline}>
+                <SelectTrigger className="rounded-[10px] border-pg-sep">
+                  <SelectValue placeholder="Choose a timeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asap">As soon as possible</SelectItem>
+                  <SelectItem value="1-week">Within 1 week</SelectItem>
+                  <SelectItem value="2-weeks">Within 2 weeks</SelectItem>
+                  <SelectItem value="1-month">Within 1 month</SelectItem>
+                  <SelectItem value="flexible">Flexible</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-[13px] font-medium text-pg-label mb-1.5 block">Anything else? (optional)</Label>
+              <Textarea
+                value={requestDetails}
+                onChange={(e) => setRequestDetails(e.target.value)}
+                placeholder="Any details you'd like us to know…"
+                className="rounded-[10px] border-pg-sep min-h-[80px]"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                onClick={() => setShowRequestDialog(false)}
+                className="pg-btn pg-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button onClick={handleRequestSubmit} className="pg-btn pg-btn-primary">
+                Submit request
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
