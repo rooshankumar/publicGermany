@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
 import { SERVICE_PACKAGES } from '@/data/servicePackages';
 
@@ -314,28 +313,27 @@ const Footer: React.FC = () => (
 );
 
 // ---------- Page ----------
-const Index: React.FC = () => (
-  <div className="min-h-screen bg-pg-bg text-pg-label">
-    <Helmet>
-      <title>publicgermany — Study in Germany, guided</title>
-      <meta name="description" content="One guided path through APS, university applications, and your German student visa. Trusted by 10,500+ students." />
-      <meta property="og:title" content="publicgermany — Study in Germany, guided" />
-      <meta property="og:description" content="One guided path through APS, university applications, and your German student visa." />
-      <meta property="og:type" content="website" />
-      <meta name="twitter:card" content="summary_large_image" />
-    </Helmet>
-    <Header />
-    <main>
-      <Hero />
-      <Features />
-      <Testimonials />
-      <Process />
-      <Pricing />
-      <FAQ />
-      <FinalCTA />
-    </main>
-    <Footer />
-  </div>
-);
+const Index: React.FC = () => {
+  useEffect(() => {
+    document.title = 'publicgermany — Study in Germany, guided';
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', 'One guided path through APS, university applications, and your German student visa. Trusted by 10,500+ students.');
+  }, []);
+  return (
+    <div className="min-h-screen bg-pg-bg text-pg-label">
+      <Header />
+      <main>
+        <Hero />
+        <Features />
+        <Testimonials />
+        <Process />
+        <Pricing />
+        <FAQ />
+        <FinalCTA />
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 export default Index;
