@@ -385,7 +385,7 @@ const Index: React.FC = () => {
   useEffect(() => {
     document.title = 'publicgermany — Study in Germany, guided';
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute('content', 'One guided path through APS, university applications, and your German student visa. Trusted by 10,500+ students.');
+    if (meta) meta.setAttribute('content', 'One guided path through APS, university applications, and your German student visa. Trusted by real students since April 2024.');
   }, []);
   return (
     <div className="min-h-screen bg-pg-bg text-pg-label">
