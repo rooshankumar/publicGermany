@@ -1,8 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
 import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { supabase } from '@/integrations/supabase/client';
+
+// April 2024 → now
+const START_DATE = new Date('2024-04-01T00:00:00Z');
+const useYearsOfExperience = () => {
+  return useMemo(() => {
+    const now = new Date();
+    const years = (now.getTime() - START_DATE.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    if (years < 1) {
+      const months = Math.max(1, Math.round(years * 12));
+      return `${months} month${months === 1 ? '' : 's'}`;
+    }
+    return `${Math.floor(years)}+ years`;
+  }, []);
+};
+
+const useLiveStats = () => {
+  const [students, setStudents] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true });
+      if (typeof count === 'number') setStudents(count);
+    })();
+  }, []);
+  return { students };
+};
+
+type LiveReview = {
+  id: string;
+  rating: number;
+  review_text: string;
+  service_type: string | null;
+  created_at: string;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
+};
+
+const useLiveReviews = (limit = 8) => {
+  const [reviews, setReviews] = useState<LiveReview[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('reviews')
+        .select('id, rating, review_text, service_type, created_at, profiles ( full_name, avatar_url )')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      setReviews((data || []) as LiveReview[]);
+    })();
+  }, [limit]);
+  return reviews;
+};
 
 // ---------- Header ----------
 const Header: React.FC = () => {
@@ -59,29 +112,37 @@ const Header: React.FC = () => {
 };
 
 // ---------- Hero ----------
-const Hero: React.FC = () => (
-  <section className="px-6 pt-14 pb-10 text-center">
-    <div className="max-w-[1080px] mx-auto">
-      <h1 className="text-[clamp(32px,6vw,52px)] leading-[1.06] font-bold tracking-[-0.02em] max-w-[680px] mx-auto mb-3.5 text-pg-label">
-        Study in Germany,<br />without the guesswork<span className="text-pg-accent">.</span>
-      </h1>
-      <p className="text-[18px] text-pg-label2 max-w-[480px] mx-auto mb-7">
-        One guided path through APS, university applications, and your visa — start to finish.
-      </p>
-      <div className="flex gap-2.5 justify-center flex-wrap mb-6">
-        <Link to="/auth" className="pg-btn pg-btn-primary">Start free</Link>
-        <a href="#features" className="pg-btn pg-btn-secondary">See how it works</a>
+const Hero: React.FC = () => {
+  const { students } = useLiveStats();
+  const years = useYearsOfExperience();
+  const studentsLabel = students === null ? '…' : `${students}+`;
+  return (
+    <section className="px-6 pt-14 pb-10 text-center">
+      <div className="max-w-[1080px] mx-auto">
+        <div className="flex justify-center mb-5">
+          <PgLogo />
+        </div>
+        <h1 className="text-[clamp(32px,6vw,52px)] leading-[1.06] font-bold tracking-[-0.02em] max-w-[680px] mx-auto mb-3.5 text-pg-label">
+          Study in Germany,<br />without the guesswork<span className="text-pg-accent">.</span>
+        </h1>
+        <p className="text-[18px] text-pg-label2 max-w-[480px] mx-auto mb-7">
+          One guided path through APS, university applications, and your visa — start to finish.
+        </p>
+        <div className="flex gap-2.5 justify-center flex-wrap mb-6">
+          <Link to="/auth" className="pg-btn pg-btn-primary">Start free</Link>
+          <a href="#features" className="pg-btn pg-btn-secondary">See how it works</a>
+        </div>
+        <div className="flex items-center justify-center gap-4 text-[13px] text-pg-label3 flex-wrap">
+          <span><b className="text-pg-label2 font-semibold">{studentsLabel}</b> students guided</span>
+          <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
+          <span><b className="text-pg-label2 font-semibold">{years}</b> of experience</span>
+          <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
+          <span>Since <b className="text-pg-label2 font-semibold">April 2024</b></span>
+        </div>
       </div>
-      <div className="flex items-center justify-center gap-4 text-[13px] text-pg-label3 flex-wrap">
-        <span><b className="text-pg-label2 font-semibold">10,500+</b> students guided</span>
-        <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
-        <span><b className="text-pg-label2 font-semibold">120+</b> partner universities</span>
-        <span className="w-[3px] h-[3px] rounded-full bg-pg-label3" />
-        <span><b className="text-pg-label2 font-semibold">6</b> years of experience</span>
-      </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ---------- Features ----------
 const FEATURES = [
@@ -114,43 +175,50 @@ const Features: React.FC = () => (
 );
 
 // ---------- Testimonials ----------
-const TESTIMONIALS = [
-  { initial: 'S', name: 'Sanvijeet SR', role: 'Student', quote: 'A dream-come-true journey that felt manageable from day one.', stars: 5 },
-  { initial: 'P', name: 'Pragati Jain', role: 'BMW Munich', quote: 'My advisor explained every intricate step until it clicked.', stars: 5 },
-  { initial: 'M', name: 'Mimmini V.', role: 'Student', quote: 'Felt like a study partner, patient through every hard question.', stars: 5 },
-  { initial: 'S', name: 'Shubham Kumar', role: 'B.Eng, Logistics', quote: 'Shortlisting was tuned to what I actually qualified for.', stars: 5 },
-  { initial: 'V', name: 'Vaibhav', role: 'B.Sc, AI', quote: 'A clear shortlist early made resettling far less daunting.', stars: 4 },
-];
-
 const Stars: React.FC<{ n: number }> = ({ n }) => (
   <div className="text-pg-gold text-[11px] leading-none">{'★'.repeat(n)}{'☆'.repeat(5 - n)}</div>
 );
 
-const Testimonials: React.FC = () => (
-  <section id="stories" className="py-[52px]">
-    <div className="max-w-[1080px] mx-auto px-6 mb-6">
-      <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Testimonials</div>
-      <h2 className="text-[clamp(24px,4vw,32px)]">Students who made it</h2>
-    </div>
-    <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-2">
-      {TESTIMONIALS.map((t, i) => (
-        <div key={i} className="snap-start shrink-0 w-[260px] bg-pg-bg2 rounded-[14px] p-[18px] flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-white flex items-center justify-center font-semibold text-[13px]">
-              {t.initial}
+const initialOf = (name?: string | null) => (name?.trim()?.[0] || 'S').toUpperCase();
+
+const Testimonials: React.FC = () => {
+  const reviews = useLiveReviews(8);
+  if (reviews.length === 0) return null;
+  return (
+    <section id="stories" className="py-[52px]">
+      <div className="max-w-[1080px] mx-auto px-6 mb-6">
+        <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Testimonials</div>
+        <h2 className="text-[clamp(24px,4vw,32px)]">Students who made it</h2>
+      </div>
+      <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-2">
+        {reviews.map((r) => {
+          const name = r.profiles?.full_name || 'Student';
+          return (
+            <div key={r.id} className="snap-start shrink-0 w-[260px] bg-pg-bg2 rounded-[14px] p-[18px] flex flex-col gap-2">
+              <div className="flex items-center gap-2.5">
+                {r.profiles?.avatar_url ? (
+                  <img src={r.profiles.avatar_url} alt={name} className="w-[34px] h-[34px] rounded-full object-cover" />
+                ) : (
+                  <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-white flex items-center justify-center font-semibold text-[13px]">
+                    {initialOf(name)}
+                  </div>
+                )}
+                <div>
+                  <div className="font-semibold text-[13.5px] text-pg-label">{name}</div>
+                  <div className="text-[11.5px] text-pg-label3">
+                    {r.service_type && r.service_type !== 'general' ? r.service_type : 'Student'}
+                  </div>
+                </div>
+              </div>
+              <Stars n={Math.max(1, Math.min(5, Math.round(r.rating)))} />
+              <p className="text-[13px] text-pg-label2 leading-[1.45] line-clamp-5">{r.review_text}</p>
             </div>
-            <div>
-              <div className="font-semibold text-[13.5px] text-pg-label">{t.name}</div>
-              <div className="text-[11.5px] text-pg-label3">{t.role}</div>
-            </div>
-          </div>
-          <Stars n={t.stars} />
-          <p className="text-[13px] text-pg-label2 leading-[1.45]">{t.quote}</p>
-        </div>
-      ))}
-    </div>
-  </section>
-);
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 // ---------- Process ----------
 const STEPS = [
@@ -317,7 +385,7 @@ const Index: React.FC = () => {
   useEffect(() => {
     document.title = 'publicgermany — Study in Germany, guided';
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute('content', 'One guided path through APS, university applications, and your German student visa. Trusted by 10,500+ students.');
+    if (meta) meta.setAttribute('content', 'One guided path through APS, university applications, and your German student visa. Trusted by real students since April 2024.');
   }, []);
   return (
     <div className="min-h-screen bg-pg-bg text-pg-label">
