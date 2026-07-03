@@ -1,8 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
 import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { supabase } from '@/integrations/supabase/client';
+
+// April 2024 → now
+const START_DATE = new Date('2024-04-01T00:00:00Z');
+const useYearsOfExperience = () => {
+  return useMemo(() => {
+    const now = new Date();
+    const years = (now.getTime() - START_DATE.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    if (years < 1) {
+      const months = Math.max(1, Math.round(years * 12));
+      return `${months} month${months === 1 ? '' : 's'}`;
+    }
+    return `${Math.floor(years)}+ years`;
+  }, []);
+};
+
+const useLiveStats = () => {
+  const [students, setStudents] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true });
+      if (typeof count === 'number') setStudents(count);
+    })();
+  }, []);
+  return { students };
+};
+
+type LiveReview = {
+  id: string;
+  rating: number;
+  review_text: string;
+  service_type: string | null;
+  created_at: string;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
+};
+
+const useLiveReviews = (limit = 8) => {
+  const [reviews, setReviews] = useState<LiveReview[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('reviews')
+        .select('id, rating, review_text, service_type, created_at, profiles ( full_name, avatar_url )')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      setReviews((data || []) as LiveReview[]);
+    })();
+  }, [limit]);
+  return reviews;
+};
 
 // ---------- Header ----------
 const Header: React.FC = () => {
