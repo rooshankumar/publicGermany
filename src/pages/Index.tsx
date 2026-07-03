@@ -269,7 +269,7 @@ const Pricing: React.FC = () => {
             }`}
           >
             {p.popular && (
-              <span className="absolute -top-[11px] left-5 bg-pg-accent text-pg-bg text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
+              <span className="absolute -top-[11px] left-5 bg-pg-accent text-white text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
                 Most popular
               </span>
             )}
