@@ -3,7 +3,7 @@ import React from 'react';
 /** Tri-color dot logo mark used across the iOS-style redesign. */
 export const PgLogoMark: React.FC<{ className?: string }> = ({ className }) => (
   <span className={`inline-flex items-center gap-[2px] ${className || ''}`} aria-hidden="true">
-    <span className="block w-[5px] h-[5px] rounded-full bg-[#1c1c1e]" />
+    <span className="block w-[5px] h-[5px] rounded-full bg-pg-label" />
     <span className="block w-[5px] h-[5px] rounded-full bg-pg-accent" />
     <span className="block w-[5px] h-[5px] rounded-full bg-pg-gold" />
   </span>

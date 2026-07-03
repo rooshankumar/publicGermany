@@ -163,7 +163,7 @@ const Features: React.FC = () => (
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {FEATURES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="bg-white rounded-[14px] p-5 border border-pg-sep/60">
+          <div key={title} className="bg-pg-bg rounded-[14px] p-5 border border-pg-sep/60">
             <Icon className="w-[22px] h-[22px] text-pg-label mb-2.5" strokeWidth={1.8} />
             <h3 className="text-[15.5px] font-semibold mb-1 text-pg-label">{title}</h3>
             <p className="text-[13.5px] leading-[1.4] text-pg-label2">{desc}</p>
@@ -199,7 +199,7 @@ const Testimonials: React.FC = () => {
                 {r.profiles?.avatar_url ? (
                   <img src={r.profiles.avatar_url} alt={name} className="w-[34px] h-[34px] rounded-full object-cover" />
                 ) : (
-                  <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-white flex items-center justify-center font-semibold text-[13px]">
+                  <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-pg-bg flex items-center justify-center font-semibold text-[13px]">
                     {initialOf(name)}
                   </div>
                 )}
@@ -237,10 +237,10 @@ const Process: React.FC = () => (
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {STEPS.map((s) => (
-          <div key={s.n} className="bg-pg-label text-white rounded-[14px] p-5">
-            <div className="text-[12px] font-bold text-[#9aa4b3] mb-2">{s.n}</div>
-            <h4 className="text-white text-[14.5px] font-semibold mb-1">{s.title}</h4>
-            <p className="text-[#a9b1bd] text-[12px] leading-[1.4]">{s.desc}</p>
+          <div key={s.n} className="bg-pg-label text-pg-bg rounded-[14px] p-5">
+            <div className="text-[12px] font-bold text-pg-label3 mb-2">{s.n}</div>
+            <h4 className="text-pg-bg text-[14.5px] font-semibold mb-1">{s.title}</h4>
+            <p className="text-pg-label3 text-[12px] leading-[1.4]">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -264,7 +264,7 @@ const Pricing: React.FC = () => {
         {SERVICE_PACKAGES.map((p) => (
           <div
             key={p.id}
-            className={`snap-start shrink-0 w-[250px] md:w-auto bg-white rounded-[20px] p-5 flex flex-col relative border ${
+            className={`snap-start shrink-0 w-[250px] md:w-auto bg-pg-bg rounded-[20px] p-5 flex flex-col relative border ${
               p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
             }`}
           >
@@ -351,9 +351,9 @@ const FAQ: React.FC = () => {
 const FinalCTA: React.FC = () => (
   <section className="py-[52px]">
     <div className="max-w-[1080px] mx-auto px-6">
-      <div className="bg-pg-label text-white rounded-[20px] px-7 py-11 text-center">
-        <h2 className="text-white text-[clamp(22px,3.6vw,30px)] mb-2">Start your Germany file today</h2>
-        <p className="text-[#a9b1bd] mb-6 text-[15px]">Free to create. No commitment until you're ready.</p>
+      <div className="bg-pg-label text-pg-bg rounded-[20px] px-7 py-11 text-center">
+        <h2 className="text-pg-bg text-[clamp(22px,3.6vw,30px)] mb-2">Start your Germany file today</h2>
+        <p className="text-pg-label3 mb-6 text-[15px]">Free to create. No commitment until you're ready.</p>
         <Link to="/auth" className="pg-btn pg-btn-primary">Get started free</Link>
       </div>
     </div>
