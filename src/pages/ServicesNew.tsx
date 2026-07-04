@@ -325,7 +325,7 @@ const ServicesNew: React.FC = () => {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 text-center py-2 px-2.5 text-[13.5px] font-semibold rounded-[8px] transition-colors ${
-                  tab === t ? 'bg-white text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
+                  tab === t ? 'bg-pg-bg text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
                 }`}
               >
                 {t === 'browse'
