@@ -54,6 +54,7 @@ type Tab = 'browse' | 'requests' | 'delivered';
 const ServicesNew: React.FC = () => {
   const [tab, setTab] = useState<Tab>('browse');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [packageRequestName, setPackageRequestName] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string>('');
@@ -324,7 +325,7 @@ const ServicesNew: React.FC = () => {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 text-center py-2 px-2.5 text-[13.5px] font-semibold rounded-[8px] transition-colors ${
-                  tab === t ? 'bg-white text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
+                  tab === t ? 'bg-pg-bg text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
                 }`}
               >
                 {t === 'browse'
@@ -350,7 +351,7 @@ const ServicesNew: React.FC = () => {
               {SERVICE_PACKAGES.map((p) => (
                 <div
                   key={p.id}
-                  className={`snap-start shrink-0 w-[240px] md:w-auto bg-white rounded-[20px] p-[18px] flex flex-col relative border ${
+                  className={`snap-start shrink-0 w-[240px] md:w-auto bg-pg-bg rounded-[20px] p-[18px] flex flex-col relative border ${
                     p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
                   }`}
                 >
@@ -396,7 +397,7 @@ const ServicesNew: React.FC = () => {
               </div>
               <h2 className="text-[22px] font-bold text-pg-label">Individual services</h2>
             </div>
-            <p className="text-pg-label2 text-[14px] mb-4.5">Select one or more to build your own bundle.</p>
+            <p className="text-pg-label2 text-[14px] mb-4.5">Swipe through, tap a card to preview and add.</p>
 
             <div className="relative mb-4">
               <Search className="w-4 h-4 text-pg-label3 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -412,43 +413,152 @@ const ServicesNew: React.FC = () => {
             {filteredServices.length === 0 ? (
               <div className="pg-group px-5 py-10 text-center text-pg-label3 text-[14px]">No services found</div>
             ) : (
-              <div className="pg-group">
-                {filteredServices.map((s) => {
-                  const selected = selectedServices.includes(s.id);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => toggleService(s.id)}
-                      className="w-full flex items-center gap-3.5 px-[18px] py-3.5 text-left active:bg-pg-bg3 transition-colors"
-                    >
-                      <span
-                        className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] shrink-0 ${
-                          selected ? 'bg-pg-accent border-pg-accent text-white' : 'border-[#C7C7CC] bg-white'
+              <>
+                {/* Horizontal snap carousel of service tiles */}
+                <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory pb-3 -mx-1 px-1">
+                  {filteredServices.map((s) => {
+                    const selected = selectedServices.includes(s.id);
+                    const expanded = expandedServiceId === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setExpandedServiceId(expanded ? null : s.id)}
+                        className={`snap-start shrink-0 w-[220px] text-left bg-pg-bg rounded-[16px] p-4 border transition-all ${
+                          expanded
+                            ? 'border-pg-accent shadow-[0_12px_28px_-14px_rgba(0,0,0,0.25)]'
+                            : selected
+                            ? 'border-pg-accent/60'
+                            : 'border-pg-sep'
                         }`}
                       >
-                        {selected && <CheckCircle className="w-3 h-3" strokeWidth={3} />}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[14.5px] font-medium text-pg-label truncate">{s.name}</div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="text-[14px] font-semibold text-pg-label leading-tight line-clamp-2">
+                            {s.name}
+                          </div>
+                          {selected && (
+                            <span className="w-[18px] h-[18px] rounded-full bg-pg-accent text-white flex items-center justify-center shrink-0">
+                              <CheckCircle className="w-2.5 h-2.5" strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
                         {s.description && (
-                          <div className="text-[12.5px] text-pg-label3 line-clamp-1">{s.description}</div>
+                          <div className="text-[12px] text-pg-label3 line-clamp-3 mb-3 min-h-[48px]">
+                            {s.description}
+                          </div>
                         )}
+                        <div className="flex items-center justify-between">
+                          <div className="text-[15px] font-bold text-pg-label">
+                            ₹{s.price_inr?.toLocaleString() || '—'}
+                          </div>
+                          <div className="text-[11px] font-medium text-pg-accent">
+                            {expanded ? 'Hide' : 'Preview'}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Inline expanded detail — like the testimonials expanded card */}
+                {expandedServiceId && (() => {
+                  const s = filteredServices.find((x) => x.id === expandedServiceId);
+                  if (!s) return null;
+                  const selected = selectedServices.includes(s.id);
+                  return (
+                    <div className="mb-6 bg-pg-bg rounded-[20px] border border-pg-sep p-5 md:p-6 animate-fade-in-up">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="text-[11.5px] uppercase tracking-[0.06em] text-pg-accent font-semibold mb-1">
+                            Service preview
+                          </div>
+                          <h3 className="text-[19px] font-bold text-pg-label leading-tight">{s.name}</h3>
+                        </div>
+                        <button
+                          onClick={() => setExpandedServiceId(null)}
+                          className="p-1.5 rounded-full text-pg-label3 hover:text-pg-label hover:bg-pg-bg2"
+                          aria-label="Close preview"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="text-[14px] font-semibold text-pg-label whitespace-nowrap">
-                        ₹{s.price_inr?.toLocaleString() || '—'}
+                      {s.description && (
+                        <p className="text-[14px] text-pg-label2 leading-[1.55] mb-4 whitespace-pre-line">
+                          {s.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between bg-pg-bg2 rounded-[12px] px-4 py-3 mb-4">
+                        <div>
+                          <div className="text-[11px] uppercase tracking-wide text-pg-label3">Price</div>
+                          <div className="text-[20px] font-bold text-pg-label">
+                            ₹{s.price_inr?.toLocaleString() || '—'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[11px] uppercase tracking-wide text-pg-label3">Delivery</div>
+                          <div className="text-[13px] font-medium text-pg-label">Discussed on request</div>
+                        </div>
                       </div>
-                    </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => toggleService(s.id)}
+                          className={`pg-btn ${selected ? 'pg-btn-secondary' : 'pg-btn-secondary'}`}
+                        >
+                          {selected ? 'Remove from bundle' : 'Add to bundle'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!selected) toggleService(s.id);
+                            setShowRequestDialog(true);
+                          }}
+                          className="pg-btn pg-btn-primary"
+                        >
+                          Request now
+                        </button>
+                      </div>
+                    </div>
                   );
-                })}
-              </div>
+                })()}
+
+                {/* Full grouped list for quick multi-select */}
+                <div className="pg-group">
+                  {filteredServices.map((s) => {
+                    const selected = selectedServices.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleService(s.id)}
+                        className="w-full flex items-center gap-3.5 px-[18px] py-3.5 text-left active:bg-pg-bg3 transition-colors"
+                      >
+                        <span
+                          className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] shrink-0 ${
+                            selected ? 'bg-pg-accent border-pg-accent text-white' : 'border-pg-label3/50 bg-pg-bg'
+                          }`}
+                        >
+                          {selected && <CheckCircle className="w-3 h-3" strokeWidth={3} />}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[14.5px] font-medium text-pg-label truncate">{s.name}</div>
+                          {s.description && (
+                            <div className="text-[12.5px] text-pg-label3 line-clamp-1">{s.description}</div>
+                          )}
+                        </div>
+                        <div className="text-[14px] font-semibold text-pg-label whitespace-nowrap">
+                          ₹{s.price_inr?.toLocaleString() || '—'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
             {/* Sticky selection bar */}
             {selectedServices.length > 0 && (
-              <div className="sticky bottom-4 mt-5 bg-pg-label text-white rounded-[16px] px-5 py-3.5 flex items-center justify-between gap-3.5 flex-wrap shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
+              <div className="sticky bottom-4 mt-5 bg-pg-label text-pg-bg rounded-[16px] px-5 py-3.5 flex items-center justify-between gap-3.5 flex-wrap shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
                 <div>
-                  <div className="text-[12px] text-[#9aa4b3]">{selectedServices.length} selected</div>
+                  <div className="text-[12px] text-pg-label3">{selectedServices.length} selected</div>
                   <div className="text-[18px] font-bold">₹{extrasTotal.toLocaleString('en-IN')}</div>
                 </div>
                 <button
@@ -476,7 +586,7 @@ const ServicesNew: React.FC = () => {
               </div>
             ) : (
               requests.map((r) => (
-                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
@@ -584,7 +694,7 @@ const ServicesNew: React.FC = () => {
               </div>
             ) : (
               completedRequests.map((r) => (
-                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-pg-green" />
                     <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
