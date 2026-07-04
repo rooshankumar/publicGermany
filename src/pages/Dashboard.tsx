@@ -2,13 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from "@/components/ui/button";
-import { Badge } from '@/components/ui/badge';
 import { ContractCard } from '@/components/ContractCard';
 import { Link } from 'react-router-dom';
-import { 
-  FileText, 
+import {
+  FileText,
   ArrowRight,
   BookOpen,
   Loader2,
@@ -24,7 +21,7 @@ import {
   Trophy,
   BarChart3,
   Lightbulb,
-  MessageCircle
+  MessageCircle,
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -65,7 +62,7 @@ const Dashboard = () => {
         const fields = [
           !!prof?.full_name, !!prof?.date_of_birth, !!prof?.country_of_education,
           !!prof?.class_12_marks, !!prof?.bachelor_degree_name,
-          !!(prof?.ielts_toefl_score || prof?.german_level)
+          !!(prof?.ielts_toefl_score || prof?.german_level),
         ];
         setProfileCompletion(Math.round((fields.filter(Boolean).length / fields.length) * 100));
         setDocsCount(dCount || 0);
@@ -82,14 +79,13 @@ const Dashboard = () => {
           setNearestDeadline({
             name: upcoming[0].university_name,
             date: d.toLocaleDateString(),
-            days: Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            days: Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
           });
         }
 
         setContracts(ctrData || []);
         setRecentEvents(events || []);
 
-        // Compute pending payment across all service requests
         let totalPending = 0;
         let currency = 'INR';
         (requests || []).forEach((r: any) => {
@@ -112,277 +108,208 @@ const Dashboard = () => {
   }, [user]);
 
   if (loading) {
-    return <Layout><div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Layout>;
+    return (
+      <Layout>
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="h-6 w-6 animate-spin text-pg-label3" />
+        </div>
+      </Layout>
+    );
   }
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const money = pendingAmount > 0
+    ? `${pendingCurrency === 'INR' ? '₹' : pendingCurrency + ' '}${pendingAmount.toLocaleString()}`
+    : 'All clear';
+
+  const stats = [
+    { to: '/profile', icon: User, label: 'Profile', value: `${profileCompletion}%` },
+    { to: '/documents', icon: FileText, label: 'Documents', value: `${docsCount} uploaded` },
+    { to: '/applications', icon: GraduationCap, label: 'Applications', value: `${appsCount} added` },
+    { to: '/services', icon: Briefcase, label: 'Services', value: 'Get help' },
+    { to: '/payments', icon: AlertCircle, label: 'Pending', value: money, urgent: pendingAmount > 0 },
+  ];
+
+  const quickActions = [
+    { to: '/profile', icon: User, label: 'Complete profile' },
+    { to: '/documents', icon: Upload, label: 'Upload docs' },
+    { to: '/applications', icon: GraduationCap, label: 'Add university' },
+    { to: '/services', icon: Briefcase, label: 'Browse services' },
+    { to: '/converter', icon: BarChart3, label: 'Grade converter' },
+    { to: '/resources', icon: BookOpen, label: 'Resources' },
+  ];
 
   return (
     <Layout>
-      <div className="space-y-4 pb-6">
-        <div className="german-stripe w-full" />
-
-        {/* Greeting + Quick Stats */}
-        <div className="space-y-2">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Welcome, {firstName}! 👋</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {profileCompletion < 100 
-                ? `Your profile is ${profileCompletion}% complete. Let's get you to 100%!` 
-                : '✓ Your profile is complete! Ready to take next steps.'}
-            </p>
-          </div>
-
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <Link to="/profile" className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg hover:border-blue-400 transition-colors">
-              <User className="h-4 w-4 text-blue-600" />
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">Profile</div>
-                <div className="text-muted-foreground">{profileCompletion}%</div>
-              </div>
-            </Link>
-            <Link to="/documents" className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg hover:border-green-400 transition-colors">
-              <FileText className="h-4 w-4 text-green-600" />
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">Documents</div>
-                <div className="text-muted-foreground">{docsCount} uploaded</div>
-              </div>
-            </Link>
-            <Link to="/applications" className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg hover:border-purple-400 transition-colors">
-              <GraduationCap className="h-4 w-4 text-purple-600" />
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">Applications</div>
-                <div className="text-muted-foreground">{appsCount} added</div>
-              </div>
-            </Link>
-            <Link to="/services" className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg hover:border-orange-400 transition-colors">
-              <Briefcase className="h-4 w-4 text-orange-600" />
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">Services</div>
-                <div className="text-muted-foreground">Get help</div>
-              </div>
-            </Link>
-            <Link to="/payments" className={`flex items-center gap-2 p-3 rounded-lg transition-colors col-span-2 md:col-span-1 ${pendingAmount > 0 ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 hover:border-red-400' : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'}`}>
-              <AlertCircle className={`h-4 w-4 ${pendingAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">Pending</div>
-                <div className={pendingAmount > 0 ? 'text-red-700 dark:text-red-300 font-semibold' : 'text-muted-foreground'}>
-                  {pendingAmount > 0 ? `${pendingCurrency === 'INR' ? '₹' : pendingCurrency + ' '}${pendingAmount.toLocaleString()}` : 'All clear'}
-                </div>
-              </div>
-            </Link>
-          </div>
+      <div className="max-w-[1080px] mx-auto px-1 sm:px-2 pb-24 space-y-5">
+        {/* Greeting */}
+        <div className="pt-2">
+          <h1 className="text-[26px] font-bold text-pg-label tracking-tight">Welcome, {firstName}</h1>
+          <p className="text-[14px] text-pg-label2 mt-1">
+            {profileCompletion < 100
+              ? `Your profile is ${profileCompletion}% complete — a few fields left.`
+              : 'Your profile is complete. Ready for the next step.'}
+          </p>
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Zap className="h-4 w-4 text-yellow-500" />
-              Quick Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <Link to="/profile">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <User className="h-3 w-3 mr-1" />
-                  Complete Profile
-                </Button>
+        {/* Stat grid */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+          {stats.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Link
+                key={s.to}
+                to={s.to}
+                className={`flex items-center gap-2.5 p-3.5 rounded-[14px] border transition-colors bg-pg-bg ${
+                  s.urgent ? 'border-pg-accent/40 hover:border-pg-accent' : 'border-pg-sep hover:border-pg-label3/50'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 ${
+                  s.urgent ? 'bg-pg-accent/10 text-pg-accent' : 'bg-pg-bg2 text-pg-label'
+                }`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12.5px] font-semibold text-pg-label">{s.label}</div>
+                  <div className={`text-[11.5px] truncate ${s.urgent ? 'text-pg-accent font-semibold' : 'text-pg-label3'}`}>{s.value}</div>
+                </div>
               </Link>
-              <Link to="/documents">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <Upload className="h-3 w-3 mr-1" />
-                  Upload Docs
-                </Button>
-              </Link>
-              <Link to="/applications">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <GraduationCap className="h-3 w-3 mr-1" />
-                  Add University
-                </Button>
-              </Link>
-              <Link to="/services">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <Briefcase className="h-3 w-3 mr-1" />
-                  Browse Services
-                </Button>
-              </Link>
-              <Link to="/converter">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <BarChart3 className="h-3 w-3 mr-1" />
-                  Grade Converter
-                </Button>
-              </Link>
-              <Link to="/resources">
-                <Button variant="outline" size="sm" className="w-full text-xs h-8 justify-start">
-                  <BookOpen className="h-3 w-3 mr-1" />
-                  Resources
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+            );
+          })}
+        </div>
 
-        {/* Journey Progress */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-blue-600" />
-              Your Journey
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${profileCompletion === 100 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                {profileCompletion === 100 ? <CheckCircle2 className="h-4 w-4" /> : '1'}
-              </div>
-              <div className="flex-1">
-                <div className="text-xs font-medium">Complete Your Profile</div>
-                <div className="text-xs text-muted-foreground">Fill in all essential details</div>
-              </div>
-              <div className="text-xs font-semibold">{profileCompletion}%</div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${docsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                {docsCount > 0 ? <CheckCircle2 className="h-4 w-4" /> : '2'}
-              </div>
-              <div className="flex-1">
-                <div className="text-xs font-medium">Upload Documents</div>
-                <div className="text-xs text-muted-foreground">Provide required certificates & transcripts</div>
-              </div>
-              <Link to="/documents" className="text-xs text-primary hover:underline">
-                {docsCount > 0 ? 'View' : 'Add'} →
-              </Link>
-            </div>
+        {/* Quick actions */}
+        <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4 text-pg-gold" />
+            <h2 className="text-[15px] font-semibold text-pg-label">Quick actions</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {quickActions.map((a) => {
+              const Icon = a.icon;
+              return (
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-[10px] bg-pg-bg2 hover:bg-pg-bg3 text-[13px] text-pg-label transition-colors"
+                >
+                  <Icon className="w-3.5 h-3.5 text-pg-label2" />
+                  <span className="truncate">{a.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
 
-            <div className="flex items-center gap-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${appsCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                {appsCount > 0 ? <CheckCircle2 className="h-4 w-4" /> : '3'}
+        {/* Journey */}
+        <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="w-4 h-4 text-pg-accent" />
+            <h2 className="text-[15px] font-semibold text-pg-label">Your journey</h2>
+          </div>
+          <div className="space-y-2.5">
+            {[
+              { done: profileCompletion === 100, n: 1, title: 'Complete your profile', desc: 'Fill in all essential details', to: '/profile', extra: `${profileCompletion}%` },
+              { done: docsCount > 0, n: 2, title: 'Upload documents', desc: 'Certificates & transcripts', to: '/documents', extra: docsCount > 0 ? 'View →' : 'Add →' },
+              { done: appsCount > 0, n: 3, title: 'Add universities', desc: 'Shortlist your targets', to: '/applications', extra: appsCount > 0 ? 'View →' : 'Add →' },
+              { done: false, n: 4, title: 'Get professional help', desc: 'SOP, LOR, visa guidance', to: '/services', extra: 'Explore →' },
+            ].map((step) => (
+              <div key={step.n} className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
+                  step.done ? 'bg-pg-green/15 text-pg-green' : 'bg-pg-bg2 text-pg-label2'
+                }`}>
+                  {step.done ? <CheckCircle2 className="w-4 h-4" /> : step.n}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] font-medium text-pg-label">{step.title}</div>
+                  <div className="text-[12px] text-pg-label3">{step.desc}</div>
+                </div>
+                <Link to={step.to} className="text-[12px] font-semibold text-pg-accent hover:underline shrink-0">
+                  {step.extra}
+                </Link>
               </div>
-              <div className="flex-1">
-                <div className="text-xs font-medium">Add Universities</div>
-                <div className="text-xs text-muted-foreground">Shortlist your target universities</div>
-              </div>
-              <Link to="/applications" className="text-xs text-primary hover:underline">
-                {appsCount > 0 ? 'View' : 'Add'} →
-              </Link>
-            </div>
+            ))}
+          </div>
+        </section>
 
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-gray-100 text-gray-700">
-                4
-              </div>
-              <div className="flex-1">
-                <div className="text-xs font-medium">Get Professional Help</div>
-                <div className="text-xs text-muted-foreground">Access SOP, LOR, and visa guidance</div>
-              </div>
-              <Link to="/services" className="text-xs text-primary hover:underline">
-                Explore →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Priority Alerts */}
+        {/* Alerts */}
         {(nearestDeadline || profileCompletion < 50) && (
-          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                {profileCompletion < 50 && (
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <div className="font-semibold text-amber-900 dark:text-amber-100">Profile Incomplete</div>
-                      <div className="text-amber-800 dark:text-amber-200">Complete your profile to unlock all features and get better recommendations.</div>
-                      <Link to="/profile"><Button size="sm" variant="outline" className="mt-1 h-6 text-xs">Complete Now</Button></Link>
-                    </div>
-                  </div>
-                )}
-                {nearestDeadline && (
-                  <div className="flex items-start gap-2">
-                    <Clock className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <div className="font-semibold text-orange-900 dark:text-orange-100">Upcoming Deadline</div>
-                      <div className="text-orange-800 dark:text-orange-200">{nearestDeadline.name} application deadline in {nearestDeadline.days} days ({nearestDeadline.date})</div>
-                      <Link to="/applications"><Button size="sm" variant="outline" className="mt-1 h-6 text-xs">View Details</Button></Link>
-                    </div>
-                  </div>
-                )}
+          <section className="bg-pg-gold/10 border border-pg-gold/30 rounded-[16px] p-5 space-y-3">
+            {profileCompletion < 50 && (
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-pg-gold shrink-0 mt-0.5" />
+                <div className="text-[13px]">
+                  <div className="font-semibold text-pg-label">Profile incomplete</div>
+                  <div className="text-pg-label2">Complete your profile to unlock better recommendations.</div>
+                  <Link to="/profile" className="inline-block mt-2 pg-btn pg-btn-secondary pg-btn-sm">Complete now</Link>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+            {nearestDeadline && (
+              <div className="flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-pg-accent shrink-0 mt-0.5" />
+                <div className="text-[13px]">
+                  <div className="font-semibold text-pg-label">Upcoming deadline</div>
+                  <div className="text-pg-label2">{nearestDeadline.name} closes in {nearestDeadline.days} days ({nearestDeadline.date})</div>
+                  <Link to="/applications" className="inline-block mt-2 pg-btn pg-btn-secondary pg-btn-sm">View details</Link>
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
-        {/* Social Groups */}
-        <Card className="border-green-100 dark:border-green-900 bg-green-50/30 dark:bg-green-950/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-green-600" />
-              Join our Community
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center justify-start gap-2 h-9 border-green-200 hover:bg-green-50 text-green-700 font-semibold"
-                onClick={() => window.open('https://chat.whatsapp.com/IX9Z24dCKIk0nVn98L3rxd?mode=hqctcla', '_blank')}
-              >
-                <MessageCircle className="h-3.5 w-3.5 fill-green-600/20" /> WhatsApp Group
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center justify-start gap-2 h-9 border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold"
-                onClick={() => window.open('https://t.me/publicgermany', '_blank')}
-              >
-                <Send className="h-3.5 w-3.5 fill-blue-600/20" /> Telegram Channel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Community */}
+        <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageCircle className="w-4 h-4 text-pg-green" />
+            <h2 className="text-[15px] font-semibold text-pg-label">Join our community</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a
+              href="https://chat.whatsapp.com/IX9Z24dCKIk0nVn98L3rxd?mode=hqctcla"
+              target="_blank"
+              rel="noreferrer"
+              className="pg-btn pg-btn-secondary justify-start"
+            >
+              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp group
+            </a>
+            <a
+              href="https://t.me/publicgermany"
+              target="_blank"
+              rel="noreferrer"
+              className="pg-btn pg-btn-secondary justify-start"
+            >
+              <Send className="w-3.5 h-3.5" /> Telegram channel
+            </a>
+          </div>
+        </section>
 
-        {/* Helpful Tips Section */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-primary" />
-              Helpful Tips
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-xs text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                <span>A complete profile improves the accuracy of university and program recommendations.</span>
+        {/* Tips */}
+        <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="w-4 h-4 text-pg-accent" />
+            <h2 className="text-[15px] font-semibold text-pg-label">Helpful tips</h2>
+          </div>
+          <ul className="space-y-2 text-[13px] text-pg-label2">
+            {[
+              'A complete profile improves the accuracy of university and program recommendations.',
+              'Keep Class 10, 12, Bachelor transcripts and language certificates ready in PDF format.',
+              'Shortlist universities early to stay ahead of intake deadlines and portal opening dates.',
+              'Use our SOP, LOR, and visa guidance services to strengthen each step.',
+            ].map((t) => (
+              <li key={t} className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-pg-green mt-0.5 shrink-0" />
+                <span>{t}</span>
               </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                <span>Keep academic transcripts (Class 10, 12, Bachelor) and language certificates ready in PDF format.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                <span>Shortlist universities early to stay ahead of intake deadlines and portal opening dates.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                <span>Use our SOP, LOR, and visa guidance services to strengthen each step of your application.</span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
+            ))}
+          </ul>
+        </section>
 
-        {/* Active Contracts — compact */}
+        {/* Contracts */}
         {contracts.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Active Contracts</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+            <h2 className="text-[15px] font-semibold text-pg-label mb-3">Active contracts</h2>
+            <div className="space-y-2">
               {contracts.map((contract) => (
                 <ContractCard
                   key={contract.id}
@@ -394,32 +321,28 @@ const Dashboard = () => {
                   }}
                 />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         )}
 
-        {/* Recent Activity */}
+        {/* Activity */}
         {recentEvents.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {recentEvents.map((ev, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
-                    <div className="flex items-center gap-2">
-                      {ev.entity_type === 'document' ? <Upload className="h-3 w-3 text-muted-foreground" /> :
-                       ev.entity_type === 'application' ? <Send className="h-3 w-3 text-muted-foreground" /> :
-                       <FileText className="h-3 w-3 text-muted-foreground" />}
-                      <span className="text-muted-foreground">{ev.action}</span>
-                    </div>
-                    <span className="text-muted-foreground">{new Date(ev.created_at).toLocaleDateString()}</span>
+          <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
+            <h2 className="text-[15px] font-semibold text-pg-label mb-3">Recent activity</h2>
+            <div className="divide-y divide-pg-sep">
+              {recentEvents.map((ev, i) => (
+                <div key={i} className="flex items-center justify-between text-[12.5px] py-2">
+                  <div className="flex items-center gap-2 text-pg-label2">
+                    {ev.entity_type === 'document' ? <Upload className="w-3 h-3" /> :
+                      ev.entity_type === 'application' ? <Send className="w-3 h-3" /> :
+                      <FileText className="w-3 h-3" />}
+                    <span>{ev.action}</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <span className="text-pg-label3">{new Date(ev.created_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </Layout>
