@@ -751,7 +751,7 @@ const Profile = () => {
                     </SelectContent>
                   </Select>
                   {formData.has_aps_certificate === 'no' && (
-                    <div className="mt-2 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-800 flex items-start gap-2">
+                    <div className="mt-2 p-3 rounded-md border border-pg-gold/30 bg-pg-gold/10 text-pg-gold flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-xs font-medium">APS certificate is mandatory. Please apply as soon as possible.</p>

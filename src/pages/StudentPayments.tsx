@@ -241,11 +241,11 @@ export default function StudentPayments() {
   const statusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'received':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-pg-green/15 text-pg-green border-pg-green/30';
       case 'pending':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return 'bg-pg-gold/15 text-pg-gold border-pg-gold/30';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-pg-accent/10 text-pg-accent border-pg-accent/30';
       default:
         return 'bg-muted text-muted-foreground border-border';
     }
