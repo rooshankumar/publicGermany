@@ -54,6 +54,7 @@ type Tab = 'browse' | 'requests' | 'delivered';
 const ServicesNew: React.FC = () => {
   const [tab, setTab] = useState<Tab>('browse');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [packageRequestName, setPackageRequestName] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string>('');
