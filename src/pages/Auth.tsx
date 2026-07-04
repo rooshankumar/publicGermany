@@ -1,29 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, GraduationCap, Shield, Star, Users, Globe, BookOpen, ArrowLeft } from 'lucide-react';
-import logos from '@/assets/logos.png';
 import { supabase } from '@/integrations/supabase/client';
+import { PgLogoMark } from '@/components/PgLogo';
+import { Loader2, ArrowLeft, Check } from 'lucide-react';
+
+type Mode = 'signin' | 'signup' | 'forgot';
 
 const Auth = () => {
   const { signIn, signUp, signInWithGoogle, resetPasswordForEmail, loading } = useAuth();
+  const [mode, setMode] = useState<Mode>('signin');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // Live student count query
   const { data: studentCount } = useQuery({
     queryKey: ['student-count'],
     queryFn: async () => {
@@ -36,433 +30,265 @@ const Auth = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const resetBanners = () => {
     setError(null);
     setMessage(null);
+  };
 
-    const formData = new FormData(e.target as HTMLFormElement);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetBanners();
+    const fd = new FormData(e.target as HTMLFormElement);
+    const email = fd.get('email') as string;
+    const password = fd.get('password') as string;
+    if (!email || !password) return setError('Please fill in all fields');
     const { error } = await signIn(email, password);
-    if (error) {
-      setError(error);
-    }
+    if (error) setError(error);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setMessage(null);
-
-    const formData = new FormData(e.target as HTMLFormElement);
-    const fullName = formData.get('fullName') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
-
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
+    resetBanners();
+    const fd = new FormData(e.target as HTMLFormElement);
+    const fullName = fd.get('fullName') as string;
+    const email = fd.get('email') as string;
+    const password = fd.get('password') as string;
+    const confirmPassword = fd.get('confirmPassword') as string;
+    if (!fullName || !email || !password || !confirmPassword) return setError('Please fill in all fields');
+    if (password !== confirmPassword) return setError('Passwords do not match');
+    if (password.length < 6) return setError('Password must be at least 6 characters');
     const { error } = await signUp(email, password, fullName);
-    if (error) {
-      setError(error);
-    } else {
-      setMessage('Check your email to confirm your account');
-    }
+    if (error) setError(error);
+    else setMessage('Check your email to confirm your account.');
   };
 
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setMessage(null);
+  const handleGoogle = async () => {
+    resetBanners();
     setGoogleLoading(true);
-
     const { error } = await signInWithGoogle();
     if (error) {
       setError(error);
       setGoogleLoading(false);
     }
-    // Note: If successful, the user will be redirected, so we don't need to set loading to false
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setMessage(null);
-    if (!forgotEmail) { setError('Please enter your email'); return; }
+    resetBanners();
+    if (!forgotEmail) return setError('Please enter your email');
     setForgotLoading(true);
     const { error } = await resetPasswordForEmail(forgotEmail);
-    if (error) { setError(error); } else { setMessage('Password reset link sent! Check your email.'); }
+    if (error) setError(error);
+    else setMessage('Password reset link sent. Check your inbox.');
     setForgotLoading(false);
   };
 
-  const features = [
-    { icon: GraduationCap, text: "APS Certification Guidance" },
-    { icon: Globe, text: "University Application Support" },
-    { icon: BookOpen, text: "Document Preparation Help" },
-    { icon: Users, text: "Expert Consultations" }
-  ];
+  if (loading) return <FullScreenLoader label="Preparing sign in" />;
 
-  if (loading) {
-    return <FullScreenLoader label="Preparing sign in" />;
-  }
+  const inputClass =
+    'w-full h-11 px-3.5 rounded-[10px] bg-pg-bg2 border border-transparent text-[15px] text-pg-label placeholder:text-pg-label3 outline-none focus:border-pg-accent focus:bg-pg-bg transition';
+  const labelClass = 'block text-[12.5px] font-medium text-pg-label2 mb-1.5';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-primary/5">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-30" style={{
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-      }}></div>
+    <div className="min-h-screen bg-pg-bg2 flex flex-col">
+      {/* Top bar */}
+      <header className="sticky top-0 z-10 bg-pg-bg/80 backdrop-blur border-b border-pg-sep">
+        <div className="max-w-[1080px] mx-auto px-5 h-14 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <PgLogoMark />
+            <span className="font-semibold text-[15px] text-pg-label tracking-tight">publicgermany</span>
+          </Link>
+          <Link
+            to="/"
+            className="text-[13px] text-pg-label2 hover:text-pg-label flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Home
+          </Link>
+        </div>
+      </header>
 
-      <div className="relative flex items-center justify-center min-h-screen p-4">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          
-          {/* Left Side - Branding & Features */}
-          <div className="space-y-8 text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-              <div className="h-12 w-12 rounded-md overflow-hidden">
-                <img src={logos} alt="publicgermany Logo" className="h-full w-full object-contain object-center p-0.5" />
-              </div>
-              <span className="font-bold text-2xl text-foreground">publicgermany</span>
-              <Badge className="trust-badge">
-                <Shield className="w-3 h-3" />
-                Trusted
-              </Badge>
-            </div>
+      <main className="flex-1 flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-[420px]">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="inline-flex mb-4"><PgLogoMark /></div>
+            <h1 className="text-[26px] font-bold text-pg-label tracking-tight mb-1">
+              {mode === 'forgot' ? 'Reset password' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
+            </h1>
+            <p className="text-[14px] text-pg-label2">
+              {mode === 'forgot'
+                ? 'Enter your email and we will send you a reset link.'
+                : mode === 'signup'
+                ? 'Start your Germany file in under a minute.'
+                : 'Sign in to continue your Germany journey.'}
+            </p>
+          </div>
 
-            <div className="space-y-4">
-              <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-                Your Gateway to 
-                <span className="bg-gradient-to-r from-primary to-success bg-clip-text text-transparent"> German Education</span>
-              </h1>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Join thousands of students who have successfully navigated their way to German universities 
-                with our comprehensive guidance and expert support.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-3 p-4 bg-card/50 backdrop-blur-sm rounded-lg border">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <feature.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">{feature.text}</span>
-                </div>
+          {/* Segmented tabs */}
+          {mode !== 'forgot' && (
+            <div className="flex bg-pg-bg3 rounded-[10px] p-[3px] mb-5">
+              {(['signin', 'signup'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setMode(m);
+                    resetBanners();
+                  }}
+                  className={`flex-1 py-2 text-[13.5px] font-semibold rounded-[8px] transition-colors ${
+                    mode === m ? 'bg-pg-bg text-pg-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-pg-label2'
+                  }`}
+                >
+                  {m === 'signin' ? 'Sign in' : 'Create account'}
+                </button>
               ))}
             </div>
+          )}
 
-            {/* Stats removed for cleaner auth page */}
-          </div>
-
-          {/* Right Side - Auth Forms */}
-          <div className="w-full max-w-md mx-auto">
-            {showForgotPassword ? (
-              <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl">Reset Password</CardTitle>
-                  <CardDescription>Enter your email to receive a reset link</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="forgot-email">Email Address</Label>
-                      <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="your@email.com" required className="h-11" />
-                    </div>
-                    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                    {message && <Alert className="border-success/20 bg-success/10"><AlertDescription className="text-success">{message}</AlertDescription></Alert>}
-                    <Button type="submit" className="w-full h-11" disabled={forgotLoading}>
-                      {forgotLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : 'Send Reset Link'}
-                    </Button>
-                    <Button type="button" variant="ghost" className="w-full" onClick={() => { setShowForgotPassword(false); setError(null); setMessage(null); }}>
-                      <ArrowLeft className="mr-2 h-4 w-4" /> Back to Sign In
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : (
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="text-sm">Create Account</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="signin">
-                <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
-                  <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Welcome Back</CardTitle>
-                    <CardDescription>
-                      Continue your German education journey
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signin-email">Email Address</Label>
-                        <Input 
-                          id="signin-email" 
-                          name="email" 
-                          type="email" 
-                          placeholder="your@email.com"
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signin-password">Password</Label>
-                        <Input 
-                          id="signin-password" 
-                          name="password" 
-                          type="password" 
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="text-right">
-                        <button type="button" className="text-xs text-primary hover:underline" onClick={() => { setShowForgotPassword(true); setError(null); setMessage(null); }}>Forgot Password?</button>
-                      </div>
-                      
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      {message && (
-                        <Alert>
-                          <AlertDescription>{message}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button type="submit" className="w-full h-11 btn-primary" disabled={loading || googleLoading}>
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Signing in...
-                          </>
-                        ) : (
-                          <>
-                            <GraduationCap className="mr-2 h-4 w-4" />
-                            Sign In to Dashboard
-                          </>
-                        )}
-                      </Button>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                        </div>
-                      </div>
-
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full h-11" 
-                        onClick={handleGoogleSignIn}
-                        disabled={loading || googleLoading}
-                      >
-                        {googleLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Connecting to Google...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                              <path
-                                fill="currentColor"
-                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                              />
-                            </svg>
-                            Continue with Google
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <Card className="shadow-medium border-border/50 bg-card/95 backdrop-blur-sm">
-                  <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Start Your Journey</CardTitle>
-                    <CardDescription>
-                      Begin your path to German universities
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSignUp} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-fullName">Full Name</Label>
-                        <Input 
-                          id="signup-fullName" 
-                          name="fullName" 
-                          type="text" 
-                          placeholder="John Doe"
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-email">Email Address</Label>
-                        <Input 
-                          id="signup-email" 
-                          name="email" 
-                          type="email" 
-                          placeholder="your@email.com"
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-password">Password</Label>
-                        <Input 
-                          id="signup-password" 
-                          name="password" 
-                          type="password" 
-                          placeholder="Minimum 6 characters"
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-confirmPassword">Confirm Password</Label>
-                        <Input 
-                          id="signup-confirmPassword" 
-                          name="confirmPassword" 
-                          type="password" 
-                          required 
-                          className="h-11"
-                        />
-                      </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      {message && (
-                        <Alert className="border-success/20 bg-success/10">
-                          <AlertDescription className="text-success">{message}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button type="submit" className="w-full h-11 btn-success" disabled={loading || googleLoading}>
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating account...
-                          </>
-                        ) : (
-                          <>
-                            <Star className="mr-2 h-4 w-4" />
-                            Create Free Account
-                          </>
-                        )}
-                      </Button>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                        </div>
-                      </div>
-
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full h-11" 
-                        onClick={handleGoogleSignIn}
-                        disabled={loading || googleLoading}
-                      >
-                        {googleLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Connecting to Google...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                              <path
-                                fill="currentColor"
-                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                              />
-                              <path
-                                fill="currentColor"
-                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                              />
-                            </svg>
-                            Continue with Google
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+          {/* Card */}
+          <div className="bg-pg-bg rounded-[16px] border border-pg-sep p-5 md:p-6">
+            {error && (
+              <div className="mb-4 text-[13px] bg-pg-accent/10 text-pg-accent border border-pg-accent/20 rounded-[10px] px-3.5 py-2.5">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="mb-4 text-[13px] bg-pg-green/10 text-pg-green border border-pg-green/20 rounded-[10px] px-3.5 py-2.5 flex gap-2">
+                <Check className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{message}</span>
+              </div>
             )}
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Trusted by <span className="font-semibold text-primary">{studentCount ? `${studentCount}+` : '50+'}</span> students worldwide
-              </p>
-            </div>
-            <div className="mt-4 text-center text-xs text-muted-foreground">
-              <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
-              <span className="mx-2">•</span>
-              <Link to="/terms" className="hover:underline">Terms of Service</Link>
-            </div>
+            {mode === 'signin' && (
+              <form onSubmit={handleSignIn} className="space-y-3.5">
+                <div>
+                  <label className={labelClass} htmlFor="signin-email">Email</label>
+                  <input id="signin-email" name="email" type="email" required placeholder="you@example.com" className={inputClass} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[12.5px] font-medium text-pg-label2" htmlFor="signin-password">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot'); resetBanners(); }}
+                      className="text-[12px] text-pg-accent hover:underline"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
+                  <input id="signin-password" name="password" type="password" required className={inputClass} />
+                </div>
+                <button type="submit" disabled={loading || googleLoading} className="pg-btn pg-btn-primary w-full h-11">
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</> : 'Sign in'}
+                </button>
+                <Divider />
+                <GoogleButton onClick={handleGoogle} loading={googleLoading} />
+              </form>
+            )}
+
+            {mode === 'signup' && (
+              <form onSubmit={handleSignUp} className="space-y-3.5">
+                <div>
+                  <label className={labelClass} htmlFor="su-name">Full name</label>
+                  <input id="su-name" name="fullName" type="text" required placeholder="Your name" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="su-email">Email</label>
+                  <input id="su-email" name="email" type="email" required placeholder="you@example.com" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="su-pw">Password</label>
+                  <input id="su-pw" name="password" type="password" required placeholder="Min. 6 characters" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="su-pw2">Confirm password</label>
+                  <input id="su-pw2" name="confirmPassword" type="password" required className={inputClass} />
+                </div>
+                <button type="submit" disabled={loading || googleLoading} className="pg-btn pg-btn-primary w-full h-11">
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : 'Create account'}
+                </button>
+                <Divider />
+                <GoogleButton onClick={handleGoogle} loading={googleLoading} />
+              </form>
+            )}
+
+            {mode === 'forgot' && (
+              <form onSubmit={handleForgot} className="space-y-3.5">
+                <div>
+                  <label className={labelClass} htmlFor="forgot-email">Email</label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    className={inputClass}
+                  />
+                </div>
+                <button type="submit" disabled={forgotLoading} className="pg-btn pg-btn-primary w-full h-11">
+                  {forgotLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : 'Send reset link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('signin'); resetBanners(); }}
+                  className="pg-btn pg-btn-secondary w-full h-11"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to sign in
+                </button>
+              </form>
+            )}
+          </div>
+
+          <p className="mt-5 text-center text-[12.5px] text-pg-label3">
+            Trusted by <span className="font-semibold text-pg-label">{studentCount ? `${studentCount}+` : '50+'}</span> students.
+          </p>
+          <div className="mt-3 text-center text-[11.5px] text-pg-label3 flex gap-3 justify-center">
+            <Link to="/privacy" className="hover:text-pg-label">Privacy</Link>
+            <span>·</span>
+            <Link to="/terms" className="hover:text-pg-label">Terms</Link>
+            <span>·</span>
+            <Link to="/help" className="hover:text-pg-label">Help</Link>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
+
+const Divider: React.FC = () => (
+  <div className="relative py-1">
+    <div className="absolute inset-0 flex items-center">
+      <span className="w-full border-t border-pg-sep" />
+    </div>
+    <div className="relative flex justify-center">
+      <span className="bg-pg-bg px-2.5 text-[11px] uppercase tracking-wide text-pg-label3">or</span>
+    </div>
+  </div>
+);
+
+const GoogleButton: React.FC<{ onClick: () => void; loading: boolean }> = ({ onClick, loading }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={loading}
+    className="pg-btn pg-btn-secondary w-full h-11"
+  >
+    {loading ? (
+      <><Loader2 className="w-4 h-4 animate-spin" /> Connecting…</>
+    ) : (
+      <>
+        <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        </svg>
+        Continue with Google
+      </>
+    )}
+  </button>
+);
 
 export default Auth;
