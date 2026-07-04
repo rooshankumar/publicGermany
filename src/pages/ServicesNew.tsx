@@ -586,7 +586,7 @@ const ServicesNew: React.FC = () => {
               </div>
             ) : (
               requests.map((r) => (
-                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
@@ -694,7 +694,7 @@ const ServicesNew: React.FC = () => {
               </div>
             ) : (
               completedRequests.map((r) => (
-                <div key={r.id} className="bg-white border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-pg-green" />
                     <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
