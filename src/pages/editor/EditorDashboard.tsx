@@ -77,13 +77,13 @@ const EditorDashboard = () => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
     if (!hasLoadedInitialData && loading) {
-      timeout = window.setTimeout(() => setShowInitialLoader(true), 50);
+      timeout = setTimeout(() => setShowInitialLoader(true), 50);
     } else {
       setShowInitialLoader(false);
     }
 
     return () => {
-      if (timeout) window.clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
     };
   }, [hasLoadedInitialData, loading]);
 
