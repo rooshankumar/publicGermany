@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, ArrowUpRight, Search, MapPin, FileText, GraduationCap, CreditCard, FileSignature, ChevronDown, FileCheck2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import InlineLoader from '@/components/InlineLoader';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import { Input } from '@/components/ui/input';
 import {
   Collapsible,
@@ -34,6 +34,8 @@ const EditorDashboard = () => {
   const { assignedStudentIds, permissions, loading: permLoading } = useEditorPermissions();
   const [students, setStudents] = useState<StudentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+  const [showInitialLoader, setShowInitialLoader] = useState(false);
   const [query, setQuery] = useState('');
   const [agreementOpen, setAgreementOpen] = useState(false);
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ const EditorDashboard = () => {
     if (assignedStudentIds.length === 0) {
       setStudents([]);
       setLoading(false);
+      setHasLoadedInitialData(true);
       return;
     }
 
@@ -54,6 +57,7 @@ const EditorDashboard = () => {
         .in('user_id', assignedStudentIds);
       if (!error) setStudents((data || []) as StudentSummary[]);
       setLoading(false);
+      setHasLoadedInitialData(true);
     };
     fetchStudents();
   }, [assignedStudentIds.join(','), permLoading]);
@@ -67,6 +71,22 @@ const EditorDashboard = () => {
     );
   }, [students, query]);
 
+  const shouldShowInitialLoader = !hasLoadedInitialData && loading;
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    if (!hasLoadedInitialData && loading) {
+      timeout = window.setTimeout(() => setShowInitialLoader(true), 50);
+    } else {
+      setShowInitialLoader(false);
+    }
+
+    return () => {
+      if (timeout) window.clearTimeout(timeout);
+    };
+  }, [hasLoadedInitialData, loading]);
+
   const totalPermsGranted = permissions.reduce((acc, p) => {
     return acc +
       (p.can_view_profile ? 1 : 0) +
@@ -79,10 +99,10 @@ const EditorDashboard = () => {
   return (
     <Layout>
       <div className="min-h-[calc(100vh-4rem)] bg-background">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10 space-y-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-6 space-y-5">
 
           {/* Clean header */}
-          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-border">
+          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-4 border-b border-border">
             <div className="space-y-1">
               <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">Editor Workspace</p>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
@@ -92,14 +112,14 @@ const EditorDashboard = () => {
                 Manage assigned students and review their progress.
               </p>
             </div>
-            <div className="flex gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Students</p>
-                <p className="text-2xl font-semibold text-foreground tabular-nums">{students.length}</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">{students.length}</p>
               </div>
-              <div className="border-l border-border pl-6">
+              <div className="border-l border-border pl-4 sm:pl-6">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Permissions</p>
-                <p className="text-2xl font-semibold text-foreground tabular-nums">{totalPermsGranted}</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">{totalPermsGranted}</p>
               </div>
             </div>
           </header>
@@ -108,7 +128,7 @@ const EditorDashboard = () => {
           <Collapsible open={agreementOpen} onOpenChange={setAgreementOpen}>
             <Card className="border-border overflow-hidden">
               <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors text-left">
+                <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center">
                       <FileCheck2 className="h-4 w-4 text-primary" />
@@ -122,7 +142,7 @@ const EditorDashboard = () => {
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="px-5 pb-5 pt-2 border-t border-border space-y-5 text-sm">
+                <div className="px-4 pb-4 pt-2 border-t border-border space-y-3 text-sm">
                   {/* Path A */}
                   <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -150,8 +170,8 @@ const EditorDashboard = () => {
                   </div>
 
                   {/* Post-Admission */}
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                    <h3 className="font-semibold text-foreground mb-2">Post-Admission (Both Paths)</h3>
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                    <h3 className="font-semibold text-foreground mb-1">Post-Admission (Both Paths)</h3>
                     <p className="text-foreground/80">
                       Blocked account + loan services → <span className="font-semibold text-foreground">50–50 split</span>
                     </p>
@@ -162,7 +182,7 @@ const EditorDashboard = () => {
           </Collapsible>
 
           {/* Section header + search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-foreground">
               Assigned Students <span className="text-muted-foreground font-normal">({filtered.length})</span>
             </h2>
@@ -178,14 +198,12 @@ const EditorDashboard = () => {
           </div>
 
           {/* Roster */}
-          {loading || permLoading ? (
-            <div className="rounded-lg border border-border bg-card p-12">
-              <InlineLoader />
-            </div>
+          {shouldShowInitialLoader ? (
+            <FullScreenLoader label="Loading editor workspace" />
           ) : filtered.length === 0 ? (
             <Card className="border-dashed">
-              <CardContent className="py-16 text-center space-y-3">
-                <Users className="h-10 w-10 mx-auto text-muted-foreground/50" />
+              <CardContent className="py-10 text-center space-y-2">
+                <Users className="h-8 w-8 mx-auto text-muted-foreground/50" />
                 <p className="text-sm font-medium text-foreground">
                   {students.length === 0 ? 'No students assigned yet' : 'No matches found'}
                 </p>
@@ -197,7 +215,7 @@ const EditorDashboard = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {filtered.map((student) => {
                 const perm = permissions.find(p => p.student_user_id === student.user_id);
                 const grantedChips = PERM_CHIPS.filter(c => perm && (perm as any)[c.key]);
@@ -212,11 +230,11 @@ const EditorDashboard = () => {
                   <button
                     key={student.user_id}
                     onClick={() => navigate(`/editor/students/${student.user_id}`)}
-                    className="group text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all p-4 space-y-3"
+                    className="group text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all p-3 space-y-2"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="h-10 w-10 shrink-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-9 w-9 shrink-0">
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                             {initials}
                           </AvatarFallback>
@@ -235,7 +253,7 @@ const EditorDashboard = () => {
                     </div>
 
                     {/* Permission chips */}
-                    <div className="flex flex-wrap gap-1 pt-3 border-t border-border">
+                    <div className="flex flex-wrap gap-1 pt-2 border-t border-border">
                       {grantedChips.length === 0 ? (
                         <span className="text-[11px] text-muted-foreground italic">No permissions granted</span>
                       ) : (
