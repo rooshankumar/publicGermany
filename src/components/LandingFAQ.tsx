@@ -1,236 +1,176 @@
 import React, { useState } from "react";
 
 type FAQItem = { q: string; a: React.ReactNode };
-type FAQSection = { title: string; items: FAQItem[] };
+type FAQTab = { key: string; label: string; groups: { title?: string; items: FAQItem[] }[] };
 
-const sections: FAQSection[] = [
+const tabs: FAQTab[] = [
   {
-    title: "General Questions About Studying in Germany",
-    items: [
+    key: "core",
+    label: "Core",
+    groups: [
       {
-        q: "What is publicgermany and how can it assist me?",
-        a: (
-          <>
-            publicgermany is a free platform for Indian students planning to study in Germany. We provide personalized checklists, progress tracking, and guides covering APS certification, university applications, visa processes, and pre-departure support. Optional paid services include one-on-one consultations for APS guidance, university shortlisting, SOP/CV/LOR editing, and visa preparation.
-          </>
-        )
+        title: "General",
+        items: [
+          { q: "Why should I study in Germany?", a: <>Germany offers internationally recognized degrees, affordable education, strong research opportunities, and excellent career prospects.</> },
+          { q: "Is studying in Germany free?", a: <>Most public universities charge no tuition fees, but students must pay a semester contribution and cover living expenses.</> },
+          { q: "Can I study in English?", a: <>Yes. Many Bachelor's and especially Master's programs are taught entirely in English.</> },
+          { q: "Do I need German?", a: <>Not for English-taught programs, but basic German helps with daily life, internships, and part-time jobs.</> },
+          { q: "Do I need an APS Certificate?", a: <>Indian applicants generally require an APS Certificate before applying for a student visa and for many university applications.</> },
+          { q: "Can I work while studying?", a: <>Yes. International students may work according to current German immigration regulations.</> },
+          { q: "How long does the complete process take?", a: <>Typically <strong>8–12 months</strong> from preparation to departure.</> },
+          { q: "Can I stay in Germany after graduation?", a: <>Yes. Graduates can apply for a post-study residence permit to look for qualified employment.</> },
+        ],
       },
       {
-        q: "Do I really need an APS certificate to study in Germany?",
-        a: (
-          <>
-            Yes — the APS certificate is mandatory for all Indian students applying to German universities and for the German student visa, required since November 2022. APS (Akademische Prüfstelle) verifies your Indian academic documents. Without it, German universities won't process your application and VFS won't accept your visa appointment. <strong>New for 2026:</strong> a minimum of <strong>70% in Class XII</strong> is required to be eligible for the APS certificate. Students below 70% must attend a Studienkolleg (preparatory course) first.
-          </>
-        )
+        title: "Intake & Academic Calendar",
+        items: [
+          {
+            q: "Which intakes are available?",
+            a: (
+              <div className="space-y-3">
+                <p>Germany mainly has <strong>two intakes</strong>:</p>
+                <div>
+                  <p className="font-semibold text-foreground">Winter Intake (Main Intake)</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Applications usually open: <strong>April–May</strong></li>
+                    <li>Deadlines: <strong>15 July</strong> (many public universities)</li>
+                    <li>Private universities may accept applications until <strong>August or September</strong></li>
+                    <li>Classes usually begin: <strong>September or October</strong></li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Summer Intake</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Applications usually open: <strong>October–November</strong></li>
+                    <li>Deadlines: <strong>15 January</strong> (many public universities)</li>
+                    <li>Private universities may accept applications until <strong>February</strong></li>
+                    <li>Classes usually begin: <strong>March or April</strong></li>
+                  </ul>
+                </div>
+                <p className="text-xs italic">Exact dates vary by university — always check the official website.</p>
+              </div>
+            ),
+          },
+          {
+            q: "Which intake is better?",
+            a: (
+              <div className="space-y-2">
+                <p>Winter Intake offers more courses, more universities, more scholarships, and better accommodation options.</p>
+                <p>Summer Intake is suitable if you miss Winter deadlines or your preferred course is available then.</p>
+              </div>
+            ),
+          },
+          {
+            q: "When should I start preparing?",
+            a: (
+              <div className="space-y-2">
+                <p>Start <strong>8–12 months</strong> before your intended intake.</p>
+                <p className="text-sm">Example for Winter:</p>
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <li>August–December: Research & profile evaluation</li>
+                  <li>January–March: Language tests & APS</li>
+                  <li>March–June: Applications</li>
+                  <li>June–September: Admission, visa & accommodation</li>
+                  <li>September/October: Fly to Germany</li>
+                </ul>
+              </div>
+            ),
+          },
+        ],
       },
-      {
-        q: "What is the current cost for APS certification?",
-        a: (
-          <>
-            The APS certificate fee is <strong>₹18,000</strong> (non-refundable). Processing takes <strong>3–4 weeks</strong> normally and up to <strong>10 weeks</strong> during peak season (March–June, before the July 15 uni-assist deadline). Apply at <em>aps-india.de</em>. Do not spam APS India with status emails — repeated emails can result in your account being blocked.
-          </>
-        )
-      }
-    ]
+    ],
   },
   {
-    title: "University Applications and Deadlines",
-    items: [
+    key: "bachelors",
+    label: "Bachelor's",
+    groups: [
       {
-        q: "What are the application deadlines for German universities?",
-        a: (
-          <>
-            Germany has two intakes: <strong>Winter Semester</strong> (October start) and <strong>Summer Semester</strong> (April start). Via uni-assist: Winter deadline is <strong>July 15</strong>, Summer deadline is <strong>January 15</strong>. Direct portal deadlines are earlier — TUM: April 30, KIT: May 31, RWTH Aachen: March 15–May 31 (varies by program). Missing the deadline means waiting another 6 months. No exceptions.
-          </>
-        )
+        items: [
+          { q: "Can I study after Class 12?", a: <>Yes. Depending on your qualifications, you may be eligible for direct admission or need Studienkolleg.</> },
+          { q: "What is Studienkolleg?", a: <>A preparatory course for students whose school education does not directly qualify them for German universities.</> },
+          { q: "Is IELTS mandatory?", a: <>Not always. Requirements vary by university.</> },
+          { q: "Which documents are required?", a: <>Academic records, passport, CV, language certificate, APS (for Indian applicants), and any program-specific documents.</> },
+          { q: "Can I apply with pending results?", a: <>Many universities accept provisional applications.</> },
+          { q: "How many universities should I apply to?", a: <>Around <strong>5–10 applications</strong> is common.</> },
+          { q: "Can I work during my Bachelor's?", a: <>Yes, subject to immigration regulations.</> },
+          { q: "What can I do after graduation?", a: <>Continue with a Master's, start working, or apply for a post-study residence permit if eligible.</> },
+        ],
       },
-      {
-        q: "Which documents do I need for university applications?",
-        a: (
-          <ul className="list-disc pl-5 space-y-1">
-            <li>APS certificate</li>
-            <li>Bachelor's degree / transcripts (all semesters)</li>
-            <li>Class X and XII marksheets</li>
-            <li>IELTS/TOEFL (English-taught) or German certificate B2/C1 (German-taught)</li>
-            <li>Statement of Purpose (SOP)</li>
-            <li>CV in Europass or clean format</li>
-            <li>2 Letters of Recommendation (LORs)</li>
-            <li>Valid passport copy</li>
-            <li>Program-specific: portfolio, GRE, or work experience proof</li>
-          </ul>
-        )
-      },
-      {
-        q: "What are the English language requirements for studying in Germany?",
-        a: (
-          <>
-            For English-taught Master's programs: <strong>IELTS Academic 6.0–6.5</strong> (TUM and RWTH Aachen require 6.5 minimum) or <strong>TOEFL iBT 80–95</strong> (TUM requires 95). Some universities waive IELTS if your previous degree was taught in English. For German-taught programs: <strong>TestDaF TDN-4, DSH-2, or Goethe-Zertifikat C1</strong>.
-          </>
-        )
-      },
-      {
-        q: "Should I apply directly to universities or through uni-assist?",
-        a: (
-          <>
-            Most German public universities use <strong>uni-assist</strong> — 170+ universities including FU Berlin, HU Berlin, Heidelberg, Cologne, Hamburg. Fee: €75 for first application + €15–30 per additional in the same semester. Some have their own portals and do <strong>NOT</strong> use uni-assist: <strong>TUM, KIT, RWTH Aachen, TU Berlin</strong>. Submitting to the wrong portal means your application is not received.
-          </>
-        )
-      },
-      {
-        q: "Can I apply to multiple German universities simultaneously?",
-        a: (
-          <>
-            Yes — and you should. Apply to <strong>6–10 universities</strong> across three tiers: 2–3 reach schools (TUM, KIT, RWTH), 4–5 match schools, and 2–3 safety schools (Fachhochschulen).
-          </>
-        )
-      },
-      {
-        q: "How long does the entire process take from APS to university enrollment?",
-        a: (
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Month 1–2: Research and APS application</li>
-            <li>Month 3–4: APS received, university applications submitted</li>
-            <li>Month 5–7: Admission decisions received</li>
-            <li>Month 7–8: Open blocked account, prepare visa documents</li>
-            <li>Month 8–9: Submit visa via CSP + VFS</li>
-            <li>Month 9–10: Visa received, accommodation</li>
-            <li>Month 10–12: Travel and enrollment</li>
-            <li><strong>Total: 9–12 months</strong></li>
-          </ul>
-        )
-      },
-      {
-        q: "What happens if I miss application deadlines?",
-        a: (
-          <>
-            You must wait for the next intake — 6 months or a full year. Use the time to strengthen your profile: improve GPA, gain work experience, earn certifications, or raise your German language level.
-          </>
-        )
-      }
-    ]
+    ],
   },
   {
-    title: "Visa and Financial Requirements",
-    items: [
+    key: "masters",
+    label: "Master's",
+    groups: [
       {
-        q: "How much money do I need in my blocked account for a German student visa?",
-        a: (
-          <>
-            <strong>€11,904 per year (€992/month)</strong> — updated effective September 2024. Approximately ₹10.7–10.9 lakh. The old €10,332 amount is no longer valid and causes automatic rejection. The money is yours — released monthly after you arrive. Recommended providers: <strong>Fintiba</strong> or <strong>Expatrio</strong> — both open fully online within 1–5 business days.
-          </>
-        )
+        items: [
+          { q: "Can I apply with any Bachelor's degree?", a: <>Usually your Bachelor's should be closely related to the Master's program.</> },
+          { q: "Is work experience required?", a: <>Usually no, except for some specialized programs such as certain MBAs.</> },
+          { q: "Is IELTS mandatory?", a: <>It depends on the university.</> },
+          { q: "What is an SOP?", a: <>A Statement of Purpose explaining your background, goals, and motivation.</> },
+          { q: "Can I apply during my final semester?", a: <>Yes. Many universities accept provisional transcripts.</> },
+          { q: "Which documents are required?", a: <>Transcripts, degree/provisional certificate, CV, SOP, language certificate, APS (for Indian applicants), and any required recommendation letters.</> },
+          { q: "Can I work while studying?", a: <>Yes, subject to immigration regulations.</> },
+          { q: "Can I stay and work after graduation?", a: <>Yes. Germany offers a post-study residence permit for eligible graduates.</> },
+        ],
       },
-      {
-        q: "What types of German student visas are available?",
-        a: (
-          <ol className="list-decimal pl-5 space-y-1">
-            <li><strong>Student Visa (Visum zu Studienzwecken)</strong>: for confirmed admits. Valid 3–6 months; converted to a Residence Permit within 90 days of arrival. Requires €11,904/year proof.</li>
-            <li><strong>Student Applicant Visa (Studienbewerbervisa)</strong>: for students still finalizing admission. Requires €1,091/month proof.</li>
-          </ol>
-        )
-      },
-      {
-        q: "How early should I apply for a German student visa?",
-        a: (
-          <>
-            Apply <strong>3–4 months</strong> before arrival. From <strong>January 2025</strong>, all applications must start online at <em>digital.diplo.de</em> (Consular Services Portal / CSP) before booking a VFS appointment. <strong>From July 1, 2025</strong>, Germany abolished the remonstration procedure — Indian students get <strong>one attempt</strong> at the student visa. Fee: €75 (~₹6,800) + VFS charge ₹1,300–2,500. Processing: 6–25 business days after biometrics.
-          </>
-        )
-      }
-    ]
+    ],
   },
-  {
-    title: "Language Requirements and Preparation",
-    items: [
-      {
-        q: "Do I need to learn German to study in Germany?",
-        a: (
-          <>
-            It depends. Bachelor's: mostly German, C1 required (TestDaF TDN-4 or DSH-2). Master's: many are fully English-taught (Engineering, CS, Business). For English-taught programs, German is optional but A1/A2 strongly helps with daily life and jobs. Not required for the visa itself.
-          </>
-        )
-      },
-      {
-        q: "Can I work while studying in Germany?",
-        a: (
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>140 full days or 280 half-days</strong> per year (updated from 120/240 in 2024)</li>
-            <li>~20 hours/week during lecture periods</li>
-            <li>Werkstudent pay: €13–25/hour</li>
-            <li>National minimum wage: €12.82/hour (2025)</li>
-            <li>18-month Job Seeker Visa after graduation</li>
-          </ul>
-        )
-      }
-    ]
-  },
-  {
-    title: "Application Process and Support",
-    items: [
-      {
-        q: "What happens if I get rejected by German universities?",
-        a: (
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>Apply for the next semester — two intakes yearly.</li>
-            <li>Apply to <strong>Fachhochschulen</strong> (universities of applied sciences) — lower competition, industry-practical.</li>
-            <li>Consider a Studienkolleg if Class XII is below 70%.</li>
-            <li>Strengthen profile: certifications, work experience, language improvements.</li>
-          </ol>
-        )
-      },
-      {
-        q: "How much does it cost to study at a German public university?",
-        a: (
-          <>
-            Most public universities charge <strong>zero tuition</strong> — only a semester contribution of <strong>€70–€380</strong> (often includes a public transport pass). Exception: <strong>Baden-Württemberg</strong> universities (Heidelberg, Stuttgart, Freiburg, Tübingen) charge non-EU students <strong>€1,500/semester</strong>. Living costs: €800–€1,200/month depending on city.
-          </>
-        )
-      },
-      {
-        q: "Can I stay in Germany after graduation?",
-        a: (
-          <>
-            Yes — an <strong>18-month Job Seeker Visa</strong>. After 2–3 years of skilled work you can apply for permanent residence. After 5 years you may be eligible for German citizenship.
-          </>
-        )
-      }
-    ]
-  }
 ];
 
 export default function LandingFAQ() {
+  const [activeTab, setActiveTab] = useState(tabs[0].key);
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (key: string) => setOpen(open === key ? null : key);
+  const current = tabs.find((t) => t.key === activeTab)!;
 
   return (
-    <section id="faq" className="py-16 bg-background text-foreground">
-      <div className="container mx-auto max-w-5xl px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">FAQ</h2>
-          <p className="text-muted-foreground mt-2">Answers to common questions about studying in Germany</p>
+    <section id="faq" className="py-16 bg-pg-bg2 text-pg-label">
+      <div className="container mx-auto max-w-4xl px-4">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-pg-label">Germany Study FAQ</h2>
+          <p className="text-pg-label2 mt-2">Everything you need to know — grouped by what you're applying for.</p>
         </div>
 
-        <div className="space-y-10">
-          {sections.map((section, si) => (
-            <div key={si}>
-              <h3 className="text-xl md:text-2xl font-semibold mb-4 text-foreground">{section.title}</h3>
-              <div className="space-y-3">
-                {section.items.map((item, ii) => {
-                  const key = `${si}-${ii}`;
+        {/* Tabs */}
+        <div className="mx-auto mb-6 inline-flex w-full sm:w-auto justify-center rounded-full border border-pg-sep bg-pg-bg p-1 gap-1">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setActiveTab(t.key); setOpen(null); }}
+              className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-full transition ${
+                activeTab === t.key
+                  ? 'bg-pg-label text-pg-bg shadow-sm'
+                  : 'text-pg-label2 hover:text-pg-label'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-8">
+          {current.groups.map((group, gi) => (
+            <div key={gi}>
+              {group.title && (
+                <h3 className="text-lg font-semibold mb-3 text-pg-label">{group.title}</h3>
+              )}
+              <div className="space-y-2">
+                {group.items.map((item, ii) => {
+                  const key = `${current.key}-${gi}-${ii}`;
                   const isOpen = open === key;
                   return (
-                    <div key={key} className="rounded-lg border border-border bg-card/50 backdrop-blur-sm">
+                    <div key={key} className="rounded-[14px] border border-pg-sep bg-pg-bg overflow-hidden">
                       <button
-                        className="w-full flex justify-between items-center px-5 py-4 text-left font-medium text-foreground hover:bg-accent/30 transition"
+                        className="w-full flex justify-between items-center px-4 py-3 text-left font-medium text-pg-label hover:bg-pg-bg2 transition"
                         onClick={() => toggle(key)}
                         aria-expanded={isOpen}
-                        aria-controls={`faq-panel-${key}`}
                       >
-                        <span className="pr-3">{item.q}</span>
-                        <span className={`ml-auto text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+                        <span className="pr-3 text-sm">{item.q}</span>
+                        <span className={`ml-auto text-pg-label3 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                       </button>
                       {isOpen && (
-                        <div id={`faq-panel-${key}`} className="px-5 pb-5 text-muted-foreground text-sm animate-fade-in">
+                        <div className="px-4 pb-4 text-pg-label2 text-sm leading-relaxed border-t border-pg-sep pt-3">
                           {item.a}
                         </div>
                       )}
