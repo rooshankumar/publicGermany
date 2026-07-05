@@ -21,6 +21,7 @@ import {
 import { Link } from 'react-router-dom';
 import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
+import { PgLogoMark } from '@/components/PgLogo';
 
 interface DashboardStats {
   totalStudents: number;
