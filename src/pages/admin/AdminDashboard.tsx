@@ -21,6 +21,7 @@ import {
 import { Link } from 'react-router-dom';
 import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
+import { PgLogoMark } from '@/components/PgLogo';
 
 interface DashboardStats {
   totalStudents: number;
@@ -181,13 +182,19 @@ const AdminDashboard = () => {
 
   // Note: We intentionally avoid blocking UI with a full-screen loader to keep the page feeling responsive.
 
-  return (
+   return (
      <Layout>
        <div className="space-y-4">
          <div className="german-stripe w-full" />
-         <div>
-           <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
-           <p className="text-xs text-muted-foreground">Live overview of all platform activities</p>
+         <div className="flex items-center justify-between gap-3 rounded-[16px] border border-pg-sep bg-pg-bg px-4 py-3">
+           <div className="flex items-center gap-3">
+             <PgLogoMark />
+             <div>
+               <h1 className="text-[17px] font-semibold text-pg-label tracking-tight">Admin Dashboard</h1>
+               <p className="text-[11px] text-pg-label3">Live overview of all platform activities</p>
+             </div>
+           </div>
+           <span className="hidden sm:inline text-[10px] uppercase tracking-[0.15em] text-pg-label3">Admin</span>
          </div>
          
          {/* Key Metrics */}
