@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import PackagesShowcase from '@/components/PackagesShowcase';
 import LandingFAQ from '@/components/LandingFAQ';
 import logos from '@/assets/logos.png';
-import type { ServicePackage } from '@/data/servicePackages';
+import type { ServicePackageRow } from '@/hooks/useServiceData';
 
 const PublicServices: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const PublicServices: React.FC = () => {
     };
   }, []);
 
-  const handleRequest = (pkg: ServicePackage) => {
+  const handleRequest = (pkg: ServicePackageRow) => {
     // Send guests to auth, then back to services with the package preselected.
     const next = encodeURIComponent(`/services?package=${pkg.slug}`);
     navigate(`/auth?next=${next}`);

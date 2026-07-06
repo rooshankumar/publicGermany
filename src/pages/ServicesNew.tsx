@@ -18,7 +18,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
-import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { useServicePackages, useServicesCatalog, type ServicePackageRow } from '@/hooks/useServiceData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,18 +65,8 @@ const ServicesNew: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // ------- Data -------
-  const catalogQuery = useQuery({
-    queryKey: ['services-catalog'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('services_catalog')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_inr', { ascending: true });
-      if (error) throw error;
-      return (data || []) as Service[];
-    },
-  });
+  const catalogQuery = useServicesCatalog();
+  const packagesQuery = useServicePackages();
 
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
@@ -109,10 +99,8 @@ const ServicesNew: React.FC = () => {
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const services = catalogQuery.data || [];
-  const dbPackages = services.filter((s) => s.kind === 'package');
-  const individualServices = services.filter(
-    (s) => s.kind === 'individual' && !/visa\s*application\s*only/i.test(s.name),
-  );
+  const packages = packagesQuery.data || [];
+  const individualServices = services;
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter((r) => r.status === 'completed');
   const totalDeliveredFiles = completedRequests.reduce(
@@ -123,15 +111,15 @@ const ServicesNew: React.FC = () => {
   // Preselect a package via ?package=<slug>
   useEffect(() => {
     const slug = searchParams.get('package');
-    if (!slug) return;
-    const pkg = SERVICE_PACKAGES.find((p) => p.slug === slug);
+    if (!slug || packages.length === 0) return;
+    const pkg = packages.find((p) => p.slug === slug);
     if (pkg) {
-      setPackageRequestName(pkg.name);
+      setPackageRequestName(pkg.title);
       setShowRequestDialog(true);
       searchParams.delete('package');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, packages]);
 
   const filteredServices = useMemo(
     () =>
@@ -154,12 +142,11 @@ const ServicesNew: React.FC = () => {
 
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
-    const dbPkg = dbPackages.find((p) => p.name === packageRequestName);
-    if (dbPkg?.price_inr) return dbPkg.price_inr;
-    return SERVICE_PACKAGES.find((p) => p.name === packageRequestName)?.price || 0;
+    return packages.find((p) => p.title === packageRequestName)?.price || 0;
   };
 
   const totalAmount = extrasTotal + getPackagePrice();
+
 
   // ------- Actions -------
   const handleRequestSubmit = async () => {
@@ -348,47 +335,42 @@ const ServicesNew: React.FC = () => {
             </div>
 
             <div className="pg-carousel flex md:grid md:grid-cols-4 gap-3.5 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2.5 mb-6">
-              {SERVICE_PACKAGES.map((p) => (
+              {packages.map((p) => (
                 <div
                   key={p.id}
                   className={`snap-start shrink-0 w-[240px] md:w-auto bg-pg-bg rounded-[20px] p-[18px] flex flex-col relative border ${
-                    p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
+                    p.highlighted ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
                   }`}
                 >
-                  {p.popular && (
+                  {p.badge && (
                     <span className="absolute -top-[11px] left-[18px] bg-pg-accent text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      Most popular
+                      {p.badge}
                     </span>
                   )}
-                  <div className="text-[14.5px] font-semibold text-pg-label mb-0.5">{p.name}</div>
+                  <div className="text-[14.5px] font-semibold text-pg-label mb-0.5">{p.title}</div>
                   <div className="text-[24px] font-bold text-pg-label leading-none mb-0.5">{p.priceLabel}</div>
-                  <div className="text-[11px] text-pg-label3 mb-3">{p.payment}</div>
+                  <div className="text-[11px] text-pg-label3 mb-3">{p.paymentLabel}</div>
                   <ul className="mb-3.5 space-y-1.5">
-                    {p.included.map((it) => (
-                      <li key={it} className="flex gap-1.5 text-[12px] text-pg-label">
+                    {p.features.map((f) => (
+                      <li key={f.id} className="flex gap-1.5 text-[12px] text-pg-label">
                         <span className="text-pg-green font-bold shrink-0">✓</span>
-                        {it}
+                        {f.feature}
                       </li>
                     ))}
-                    {p.notes?.[0] && (
-                      <li className="flex gap-1.5 text-[12px] italic text-pg-label3">
-                        <span className="shrink-0">+</span>
-                        {p.notes[0]}
-                      </li>
-                    )}
                   </ul>
                   <button
                     onClick={() => {
-                      setPackageRequestName(p.name);
+                      setPackageRequestName(p.title);
                       setShowRequestDialog(true);
                     }}
-                    className={`pg-btn w-full mt-auto ${p.popular ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
+                    className={`pg-btn w-full mt-auto ${p.highlighted ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
                   >
                     Request
                   </button>
                 </div>
               ))}
             </div>
+
 
             {/* Individual services */}
             <div className="flex items-center gap-2.5 mt-11 mb-1">
