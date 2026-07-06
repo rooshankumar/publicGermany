@@ -99,10 +99,8 @@ const ServicesNew: React.FC = () => {
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const services = catalogQuery.data || [];
-  const dbPackages = services.filter((s) => s.kind === 'package');
-  const individualServices = services.filter(
-    (s) => s.kind === 'individual' && !/visa\s*application\s*only/i.test(s.name),
-  );
+  const packages = packagesQuery.data || [];
+  const individualServices = services;
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter((r) => r.status === 'completed');
   const totalDeliveredFiles = completedRequests.reduce(
@@ -113,15 +111,15 @@ const ServicesNew: React.FC = () => {
   // Preselect a package via ?package=<slug>
   useEffect(() => {
     const slug = searchParams.get('package');
-    if (!slug) return;
-    const pkg = SERVICE_PACKAGES.find((p) => p.slug === slug);
+    if (!slug || packages.length === 0) return;
+    const pkg = packages.find((p) => p.slug === slug);
     if (pkg) {
-      setPackageRequestName(pkg.name);
+      setPackageRequestName(pkg.title);
       setShowRequestDialog(true);
       searchParams.delete('package');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, packages]);
 
   const filteredServices = useMemo(
     () =>
@@ -144,12 +142,11 @@ const ServicesNew: React.FC = () => {
 
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
-    const dbPkg = dbPackages.find((p) => p.name === packageRequestName);
-    if (dbPkg?.price_inr) return dbPkg.price_inr;
-    return SERVICE_PACKAGES.find((p) => p.name === packageRequestName)?.price || 0;
+    return packages.find((p) => p.title === packageRequestName)?.price || 0;
   };
 
   const totalAmount = extrasTotal + getPackagePrice();
+
 
   // ------- Actions -------
   const handleRequestSubmit = async () => {
