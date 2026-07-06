@@ -65,18 +65,8 @@ const ServicesNew: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // ------- Data -------
-  const catalogQuery = useQuery({
-    queryKey: ['services-catalog'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('services_catalog')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_inr', { ascending: true });
-      if (error) throw error;
-      return (data || []) as Service[];
-    },
-  });
+  const catalogQuery = useServicesCatalog();
+  const packagesQuery = useServicePackages();
 
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
