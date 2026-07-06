@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
+<<<<<<< HEAD
 import { useServicePackages } from '@/hooks/useServiceData';
+=======
+import { SERVICE_PACKAGES, useServicePackages } from '@/data/servicePackages';
+>>>>>>> eb30697 (ok)
 import { supabase } from '@/integrations/supabase/client';
 
 // April 2024 → now
@@ -251,7 +255,11 @@ const Process: React.FC = () => (
 // ---------- Pricing ----------
 const Pricing: React.FC = () => {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const { data: packages = [] } = useServicePackages();
+=======
+  const { data: packages = SERVICE_PACKAGES } = useServicePackages();
+>>>>>>> eb30697 (ok)
   return (
     <section id="pricing" className="py-[52px]">
       <div className="max-w-[1080px] mx-auto px-6 mb-7">

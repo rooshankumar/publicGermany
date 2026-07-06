@@ -20,9 +20,10 @@ const PromoCard: React.FC<PromoCardProps> = ({ title, description, onClose }) =>
         queryKey: ['services_catalog_active'],
         queryFn: async () => {
           const { data } = await (supabase as any)
-            .from('services_catalog')
-            .select('id, kind, name, description, price_inr, price_range_inr, is_active')
-            .eq('is_active', true);
+            .from('service_packages')
+            .select('id,title,slug,description,price,advance_amount,badge,icon,display_order,is_active')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
           return data || [];
         },
         staleTime: 5 * 60 * 1000,

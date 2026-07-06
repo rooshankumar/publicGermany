@@ -14,27 +14,25 @@ import {
   Trash2,
   X,
   AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  Sparkles,
+  CircleAlert,
+  ChevronRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
+<<<<<<< HEAD
 import { useServicePackages, useServicesCatalog, type ServicePackageRow } from '@/hooks/useServiceData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+=======
+import { useIndividualServices, useServicePackages, type IndividualService, type ServicePackage } from '@/data/servicePackages';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+>>>>>>> eb30697 (ok)
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Service {
-  id: string;
-  name: string;
-  description: string | null;
-  price_inr: number | null;
-  price_range_inr: string | null;
-  is_active: boolean;
-  kind: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface ServiceRequest {
   id: string;
@@ -63,10 +61,19 @@ const ServicesNew: React.FC = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
+  const [selectedService, setSelectedService] = useState<IndividualService | null>(null);
+  const { data: packageRows = [] } = useServicePackages();
+  const { data: serviceRows = [] } = useIndividualServices();
 
+<<<<<<< HEAD
   // ------- Data -------
   const catalogQuery = useServicesCatalog();
   const packagesQuery = useServicePackages();
+=======
+  const packages = useMemo(() => packageRows.slice(0, 4), [packageRows]);
+  const individualServices = useMemo(() => serviceRows.filter((service) => service.isActive), [serviceRows]);
+>>>>>>> eb30697 (ok)
 
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
@@ -98,9 +105,12 @@ const ServicesNew: React.FC = () => {
     };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+<<<<<<< HEAD
   const services = catalogQuery.data || [];
   const packages = packagesQuery.data || [];
   const individualServices = services;
+=======
+>>>>>>> eb30697 (ok)
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter((r) => r.status === 'completed');
   const totalDeliveredFiles = completedRequests.reduce(
@@ -111,8 +121,13 @@ const ServicesNew: React.FC = () => {
   // Preselect a package via ?package=<slug>
   useEffect(() => {
     const slug = searchParams.get('package');
+<<<<<<< HEAD
     if (!slug || packages.length === 0) return;
     const pkg = packages.find((p) => p.slug === slug);
+=======
+    if (!slug) return;
+    const pkg = packages.find((item) => item.slug === slug);
+>>>>>>> eb30697 (ok)
     if (pkg) {
       setPackageRequestName(pkg.title);
       setShowRequestDialog(true);
@@ -124,9 +139,9 @@ const ServicesNew: React.FC = () => {
   const filteredServices = useMemo(
     () =>
       individualServices.filter(
-        (s) =>
-          s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (s.description || '').toLowerCase().includes(searchTerm.toLowerCase()),
+        (service) =>
+          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()),
       ),
     [individualServices, searchTerm],
   );
@@ -136,13 +151,17 @@ const ServicesNew: React.FC = () => {
   };
 
   const extrasTotal = selectedServices.reduce((total, id) => {
-    const s = services.find((x) => x.id === id);
-    return total + (s?.price_inr || 0);
+    const service = individualServices.find((item) => item.id === id);
+    return total + (service?.price || 0);
   }, 0);
 
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
+<<<<<<< HEAD
     return packages.find((p) => p.title === packageRequestName)?.price || 0;
+=======
+    return packages.find((item) => item.name === packageRequestName)?.price || 0;
+>>>>>>> eb30697 (ok)
   };
 
   const totalAmount = extrasTotal + getPackagePrice();
@@ -161,7 +180,7 @@ const ServicesNew: React.FC = () => {
     if (!user) return;
 
     const extras = selectedServices
-      .map((id) => services.find((s) => s.id === id)?.name)
+      .map((id) => individualServices.find((service) => service.id === id)?.name)
       .filter(Boolean) as string[];
     const serviceNames = packageRequestName
       ? [packageRequestName, ...(extras.length ? [`Extras: ${extras.join(', ')}`] : [])].join(' | ')
@@ -295,18 +314,19 @@ const ServicesNew: React.FC = () => {
   // ----------------- UI -----------------
   return (
     <Layout>
-      <div className="max-w-[1080px] mx-auto px-1 sm:px-2 pb-24">
-        {/* Page head */}
+      <div className="max-w-[1080px] mx-auto px-3 sm:px-4 pb-24">
         <div className="pt-2">
-          <div className="flex justify-between items-center flex-wrap gap-2.5 mb-4">
-            <h1 className="text-[26px] font-bold text-pg-label tracking-tight">Services</h1>
+          <div className="flex items-center justify-between flex-wrap gap-2.5 mb-4">
+            <div>
+              <h1 className="text-[24px] sm:text-[26px] font-bold text-pg-label tracking-tight">Services</h1>
+              <p className="text-[13px] text-pg-label3 mt-1">Choose a package or request a focused service.</p>
+            </div>
             <div className="text-[12.5px] text-pg-label3">
               {requests.length} requests · {totalDeliveredFiles} files
             </div>
           </div>
 
-          {/* Segmented control */}
-          <div className="flex bg-pg-bg2 rounded-[10px] p-[3px] mb-8 max-w-[340px]">
+          <div className="flex bg-pg-bg2 rounded-[10px] p-[3px] mb-6 max-w-[340px]">
             {(['browse', 'requests', 'delivered'] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -325,9 +345,9 @@ const ServicesNew: React.FC = () => {
           </div>
         </div>
 
-        {/* ========= BROWSE ========= */}
         {tab === 'browse' && (
           <>
+<<<<<<< HEAD
             <div className="mb-5">
               <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Packages</div>
               <h2 className="text-[22px] font-bold text-pg-label mb-1">Pick a package</h2>
@@ -376,167 +396,152 @@ const ServicesNew: React.FC = () => {
             <div className="flex items-center gap-2.5 mt-11 mb-1">
               <div className="w-[34px] h-[34px] rounded-[9px] bg-pg-bg2 flex items-center justify-center">
                 <Plus className="w-4 h-4 text-pg-label" strokeWidth={2.2} />
+=======
+            <section className="mb-6">
+              <div className="mb-3">
+                <div className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Our Core Packages</div>
+                <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label mb-1">Choose the package that best matches your journey.</h2>
+                <p className="text-[13.5px] sm:text-[14px] text-pg-label2">Every package includes personalized guidance from our team.</p>
+>>>>>>> eb30697 (ok)
               </div>
-              <h2 className="text-[22px] font-bold text-pg-label">Individual services</h2>
-            </div>
-            <p className="text-pg-label2 text-[14px] mb-4.5">Swipe through, tap a card to preview and add.</p>
 
-            <div className="relative mb-4">
-              <Search className="w-4 h-4 text-pg-label3 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search services…"
-                className="w-full pl-10 pr-3.5 py-3 bg-pg-bg2 rounded-[12px] text-[15px] text-pg-label placeholder:text-pg-label3 border-0 outline-none focus:ring-2 focus:ring-pg-accent focus:ring-offset-1"
-              />
-            </div>
-
-            {filteredServices.length === 0 ? (
-              <div className="pg-group px-5 py-10 text-center text-pg-label3 text-[14px]">No services found</div>
-            ) : (
-              <>
-                {/* Horizontal snap carousel of service tiles */}
-                <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory pb-3 -mx-1 px-1">
-                  {filteredServices.map((s) => {
-                    const selected = selectedServices.includes(s.id);
-                    const expanded = expandedServiceId === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setExpandedServiceId(expanded ? null : s.id)}
-                        className={`snap-start shrink-0 w-[220px] text-left bg-pg-bg rounded-[16px] p-4 border transition-all ${
-                          expanded
-                            ? 'border-pg-accent shadow-[0_12px_28px_-14px_rgba(0,0,0,0.25)]'
-                            : selected
-                            ? 'border-pg-accent/60'
-                            : 'border-pg-sep'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="text-[14px] font-semibold text-pg-label leading-tight line-clamp-2">
-                            {s.name}
-                          </div>
-                          {selected && (
-                            <span className="w-[18px] h-[18px] rounded-full bg-pg-accent text-white flex items-center justify-center shrink-0">
-                              <CheckCircle className="w-2.5 h-2.5" strokeWidth={3} />
-                            </span>
-                          )}
-                        </div>
-                        {s.description && (
-                          <div className="text-[12px] text-pg-label3 line-clamp-3 mb-3 min-h-[48px]">
-                            {s.description}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className="text-[15px] font-bold text-pg-label">
-                            ₹{s.price_inr?.toLocaleString() || '—'}
-                          </div>
-                          <div className="text-[11px] font-medium text-pg-accent">
-                            {expanded ? 'Hide' : 'Preview'}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Inline expanded detail — like the testimonials expanded card */}
-                {expandedServiceId && (() => {
-                  const s = filteredServices.find((x) => x.id === expandedServiceId);
-                  if (!s) return null;
-                  const selected = selectedServices.includes(s.id);
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {packages.map((pkg) => {
+                  const selected = packageRequestName === pkg.name;
+                  const badge = pkg.badge || (pkg.highlight ? 'Popular' : null);
                   return (
-                    <div className="mb-6 bg-pg-bg rounded-[20px] border border-pg-sep p-5 md:p-6 animate-fade-in-up">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <div className="text-[11.5px] uppercase tracking-[0.06em] text-pg-accent font-semibold mb-1">
-                            Service preview
-                          </div>
-                          <h3 className="text-[19px] font-bold text-pg-label leading-tight">{s.name}</h3>
-                        </div>
-                        <button
-                          onClick={() => setExpandedServiceId(null)}
-                          className="p-1.5 rounded-full text-pg-label3 hover:text-pg-label hover:bg-pg-bg2"
-                          aria-label="Close preview"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {s.description && (
-                        <p className="text-[14px] text-pg-label2 leading-[1.55] mb-4 whitespace-pre-line">
-                          {s.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between bg-pg-bg2 rounded-[12px] px-4 py-3 mb-4">
-                        <div>
-                          <div className="text-[11px] uppercase tracking-wide text-pg-label3">Price</div>
-                          <div className="text-[20px] font-bold text-pg-label">
-                            ₹{s.price_inr?.toLocaleString() || '—'}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[11px] uppercase tracking-wide text-pg-label3">Delivery</div>
-                          <div className="text-[13px] font-medium text-pg-label">Discussed on request</div>
-                        </div>
-                      </div>
+                    <div
+                      key={pkg.id}
+                      className={`rounded-[18px] border p-3 sm:p-4 flex flex-col gap-3 ${
+                        pkg.highlight ? 'border-pg-accent/50 bg-gradient-to-br from-pg-accent/8 to-pg-bg shadow-[0_10px_30px_-16px_rgba(0,0,0,0.25)]' : 'border-pg-sep bg-pg-bg'
+                      }`}
+                    >
                       <div className="flex flex-wrap gap-2">
+                        {badge && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-accent/10 px-2.5 py-1 text-[10px] font-semibold text-pg-accent">
+                            <Sparkles className="h-3 w-3" /> {badge}
+                          </span>
+                        )}
+                        {pkg.highlight && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-green/10 px-2.5 py-1 text-[10px] font-semibold text-pg-green">
+                            <ShieldCheck className="h-3 w-3" /> Risk-Free
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-[15px] font-semibold text-pg-label leading-tight">{pkg.name}</h3>
+                        <div className="mt-2 text-[22px] font-bold text-pg-label">{pkg.priceLabel}</div>
+                        <p className="mt-1 text-[12.5px] text-pg-label2">{pkg.paymentSummary}</p>
+                      </div>
+                      <ul className="space-y-1.5 text-[12px] text-pg-label2">
+                        {pkg.includedFeatures.slice(0, 3).map((feature) => (
+                          <li key={feature} className="flex items-start gap-1.5">
+                            <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pg-green" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-auto flex flex-col gap-2">
                         <button
-                          onClick={() => toggleService(s.id)}
-                          className={`pg-btn ${selected ? 'pg-btn-secondary' : 'pg-btn-secondary'}`}
+                          onClick={() => setSelectedPackage(pkg)}
+                          className="flex items-center justify-center gap-1 text-[13px] font-semibold text-pg-accent"
                         >
-                          {selected ? 'Remove from bundle' : 'Add to bundle'}
+                          View Details <ChevronRight className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => {
-                            if (!selected) toggleService(s.id);
+                            setPackageRequestName(pkg.name);
                             setShowRequestDialog(true);
                           }}
-                          className="pg-btn pg-btn-primary"
+                          className={`pg-btn ${selected ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
                         >
-                          Request now
+                          Request
                         </button>
                       </div>
                     </div>
                   );
-                })()}
+                })}
+              </div>
+            </section>
 
-                {/* Full grouped list for quick multi-select */}
-                <div className="pg-group">
-                  {filteredServices.map((s) => {
-                    const selected = selectedServices.includes(s.id);
+            <div className="mb-6 rounded-[18px] border border-pg-accent/20 bg-pg-accent/8 p-4 text-[13px] text-pg-label2">
+              <div className="flex items-center gap-2 mb-2 font-semibold text-pg-label">
+                <CircleAlert className="h-4 w-4 text-pg-accent" /> Important Information
+              </div>
+              <ul className="space-y-1.5 pl-1">
+                <li>• University application fees are paid directly to the respective university by the student.</li>
+                <li>• APS, TestAS, IELTS/PTE, blocked account, health insurance, visa fee, VFS fee, and courier charges are not included unless explicitly stated.</li>
+                <li>• PublicGermany service fees cover consultation, documentation, application, and process support only.</li>
+              </ul>
+            </div>
+
+            <section>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Individual Services</div>
+                  <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label">Focused support for specific needs</h2>
+                </div>
+              </div>
+              <div className="relative mb-3">
+                <Search className="w-4 h-4 text-pg-label3 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search services…"
+                  className="w-full pl-10 pr-3.5 py-3 bg-pg-bg2 rounded-[12px] text-[15px] text-pg-label placeholder:text-pg-label3 border-0 outline-none focus:ring-2 focus:ring-pg-accent focus:ring-offset-1"
+                />
+              </div>
+
+              {filteredServices.length === 0 ? (
+                <div className="pg-group px-5 py-10 text-center text-pg-label3 text-[14px]">No services found</div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredServices.map((service) => {
+                    const selected = selectedServices.includes(service.id);
                     return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => toggleService(s.id)}
-                        className="w-full flex items-center gap-3.5 px-[18px] py-3.5 text-left active:bg-pg-bg3 transition-colors"
-                      >
-                        <span
-                          className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] shrink-0 ${
-                            selected ? 'bg-pg-accent border-pg-accent text-white' : 'border-pg-label3/50 bg-pg-bg'
-                          }`}
+                      <div key={service.id} className="flex items-center justify-between gap-3 rounded-[14px] border border-pg-sep bg-pg-bg px-3.5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedService(service)}
+                          className="flex-1 min-w-0 text-left"
                         >
-                          {selected && <CheckCircle className="w-3 h-3" strokeWidth={3} />}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[14.5px] font-medium text-pg-label truncate">{s.name}</div>
-                          {s.description && (
-                            <div className="text-[12.5px] text-pg-label3 line-clamp-1">{s.description}</div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <div className="text-[14px] font-semibold text-pg-label">{service.name}</div>
+                            {service.category && (
+                              <span className="rounded-full bg-pg-bg2 px-2 py-0.5 text-[10px] uppercase tracking-wide text-pg-label3">
+                                {service.category}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 text-[12.5px] text-pg-label2 line-clamp-1">{service.shortDescription}</div>
+                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-[13px] font-semibold text-pg-label">{service.priceLabel}</div>
+                          <button
+                            onClick={() => setSelectedService(service)}
+                            className="rounded-full bg-pg-bg2 px-3 py-1.5 text-[12px] font-semibold text-pg-label"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!selected) toggleService(service.id);
+                              setShowRequestDialog(true);
+                            }}
+                            className="rounded-full bg-pg-accent px-3 py-1.5 text-[12px] font-semibold text-white"
+                          >
+                            Request
+                          </button>
                         </div>
-                        <div className="text-[14px] font-semibold text-pg-label whitespace-nowrap">
-                          ₹{s.price_inr?.toLocaleString() || '—'}
-                        </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
-              </>
-            )}
+              )}
+            </section>
 
-            {/* Sticky selection bar */}
             {selectedServices.length > 0 && (
               <div className="sticky bottom-4 mt-5 bg-pg-label text-pg-bg rounded-[16px] px-5 py-3.5 flex items-center justify-between gap-3.5 flex-wrap shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
                 <div>
@@ -715,6 +720,121 @@ const ServicesNew: React.FC = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={Boolean(selectedPackage)} onOpenChange={(open) => !open && setSelectedPackage(null)}>
+        <DialogContent className="sm:max-w-[680px] max-h-[90dvh] overflow-y-auto rounded-[20px]">
+          <DialogHeader>
+            <DialogTitle className="text-[20px] font-bold text-pg-label">{selectedPackage?.name}</DialogTitle>
+            <DialogDescription className="text-[14px] text-pg-label2">{selectedPackage?.shortDescription}</DialogDescription>
+          </DialogHeader>
+          {selectedPackage && (
+            <div className="space-y-5">
+              <div className="rounded-[14px] bg-pg-bg2 p-4">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-2">Package Overview</div>
+                <p className="text-[14px] text-pg-label2 leading-[1.6]">{selectedPackage.fullDescription}</p>
+              </div>
+              <div>
+                <div className="text-[13px] font-semibold text-pg-label mb-2">What&apos;s Included</div>
+                <ul className="space-y-2 text-[13px] text-pg-label2">
+                  {selectedPackage.includedFeatures.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-pg-green" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="grid gap-3 rounded-[14px] border border-pg-sep p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pg-label3">Payment Terms</div>
+                  <p className="mt-2 text-[13px] text-pg-label2">{selectedPackage.paymentTerms}</p>
+                </div>
+                <div>
+                  <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pg-label3">Application Process</div>
+                  <ol className="mt-2 space-y-1 text-[13px] text-pg-label2">
+                    {selectedPackage.processSteps.map((step) => (
+                      <li key={step} className="flex items-start gap-2">
+                        <span className="mt-0.5 text-pg-accent">•</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+              <div>
+                <div className="text-[13px] font-semibold text-pg-label mb-2">What&apos;s Not Included</div>
+                <ul className="space-y-2 text-[13px] text-pg-label2">
+                  {selectedPackage.exclusions.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-pg-gold" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {selectedPackage.faqs.length > 0 && (
+                <div>
+                  <div className="text-[13px] font-semibold text-pg-label mb-2">FAQs</div>
+                  <div className="space-y-2">
+                    {selectedPackage.faqs.map((faq) => (
+                      <div key={faq.question} className="rounded-[12px] bg-pg-bg2 p-3">
+                        <div className="text-[13px] font-semibold text-pg-label">{faq.question}</div>
+                        <div className="mt-1 text-[13px] text-pg-label2">{faq.answer}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setPackageRequestName(selectedPackage.name);
+                    setShowRequestDialog(true);
+                  }}
+                  className="pg-btn pg-btn-primary"
+                >
+                  Request This Package
+                </button>
+                <button onClick={() => setSelectedPackage(null)} className="pg-btn pg-btn-secondary">
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(selectedService)} onOpenChange={(open) => !open && setSelectedService(null)}>
+        <DialogContent className="sm:max-w-[560px] max-h-[90dvh] overflow-y-auto rounded-[20px]">
+          <DialogHeader>
+            <DialogTitle className="text-[20px] font-bold text-pg-label">{selectedService?.name}</DialogTitle>
+            <DialogDescription className="text-[14px] text-pg-label2">{selectedService?.shortDescription}</DialogDescription>
+          </DialogHeader>
+          {selectedService && (
+            <div className="space-y-4">
+              <p className="text-[14px] text-pg-label2 leading-[1.6]">{selectedService.fullDescription}</p>
+              <div className="rounded-[14px] bg-pg-bg2 p-4 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.06em] text-pg-label3">Price</div>
+                  <div className="text-[18px] font-bold text-pg-label">{selectedService.priceLabel}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!selectedServices.includes(selectedService.id)) toggleService(selectedService.id);
+                    setShowRequestDialog(true);
+                  }}
+                  className="pg-btn pg-btn-primary"
+                >
+                  Request Service
+                </button>
+              </div>
+              <button onClick={() => setSelectedService(null)} className="pg-btn pg-btn-secondary w-full">
+                Close
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Request Dialog */}
       <Dialog

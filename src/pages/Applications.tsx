@@ -84,6 +84,9 @@ const Applications = () => {
         application_method: row.application_method,
         required_tests: row.required_tests,
         portal_link: row.portal_link,
+        portal_login_id: row.portal_login_id || null,
+        portal_password: row.portal_password || null,
+        show_credentials_to_student: Boolean(row.show_credentials_to_student),
         notes: row.notes,
         status: row.status || 'draft'
       }));
@@ -151,6 +154,9 @@ const Applications = () => {
         application_method: editValues.application_method === 'none' ? null : editValues.application_method,
         required_tests: editValues.required_tests || null,
         portal_link: editValues.portal_link || null,
+        portal_login_id: editValues.portal_login_id || null,
+        portal_password: editValues.portal_password || null,
+        show_credentials_to_student: editApp.show_credentials_to_student,
         notes: editValues.notes || null,
         status: editValues.status || editApp.status,
       };
@@ -197,6 +203,9 @@ const Applications = () => {
       application_method: formData.get('application_method') as string || null,
       required_tests: formData.get('required_tests') as string || null,
       portal_link: formData.get('portal_link') as string || null,
+      portal_login_id: formData.get('portal_login_id') as string || null,
+      portal_password: formData.get('portal_password') as string || null,
+      show_credentials_to_student: false,
       status: 'draft' as const,
       notes: formData.get('notes') as string || null,
     };
@@ -292,6 +301,8 @@ const Applications = () => {
                     <div className="space-y-1"><Label className="text-xs">Start Date</Label><Input name="application_start_date" type="date" className="h-8 text-xs" /></div>
                     <div className="space-y-1"><Label className="text-xs">End Date</Label><Input name="application_end_date" type="date" className="h-8 text-xs" /></div>
                     <div className="col-span-2 space-y-1"><Label className="text-xs">Portal Link</Label><Input name="portal_link" type="url" className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">Portal Login ID</Label><Input name="portal_login_id" className="h-8 text-xs" /></div>
+                    <div className="space-y-1"><Label className="text-xs">Portal Password</Label><Input name="portal_password" className="h-8 text-xs" /></div>
                     <div className="col-span-2 space-y-1"><Label className="text-xs">Notes</Label><Input name="notes" className="h-8 text-xs" /></div>
                   </div>
                   <div className="flex justify-end gap-2">
@@ -329,8 +340,8 @@ const Applications = () => {
                    </TableHeader>
                    <TableBody>
                      {sortedApplications.map((app) => {
-                       const hasCredentials = app.show_credentials_to_student && 
-                         (app.portal_link || app.portal_login_id || app.portal_password);
+                       const canShowPortalAccess = Boolean(app.show_credentials_to_student && (app.portal_link || app.portal_login_id || app.portal_password));
+                       const hasPortalData = Boolean(app.portal_link || app.portal_login_id || app.portal_password);
                        const isSubmitted = ['submitted', 'Applied'].includes(app.status);
                        
                        return (
@@ -341,11 +352,9 @@ const Applications = () => {
                                  {isSubmitted && (
                                    <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
                                  )}
-                                 {hasCredentials && (
-                                   <Button size="icon" variant="ghost" onClick={() => toggleRowExpand(app.id)} className="h-5 w-5 p-0">
-                                     {expandedRows.has(app.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                   </Button>
-                                 )}
+                                 <Button size="icon" variant="ghost" onClick={() => toggleRowExpand(app.id)} className="h-5 w-5 p-0">
+                                   {expandedRows.has(app.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                 </Button>
                                </div>
                              </TableCell>
                              <TableCell className="font-medium whitespace-nowrap">{app.university_name}</TableCell>
@@ -386,15 +395,40 @@ const Applications = () => {
                                </div>
                              </TableCell>
                           </TableRow>
-                          {hasCredentials && expandedRows.has(app.id) && (
+                          {expandedRows.has(app.id) && (
                             <TableRow key={`${app.id}-creds`} className="bg-muted/30">
                               <TableCell colSpan={10} className="py-0">
-                                <StudentPortalCredentials
-                                  portalLink={app.portal_link}
-                                  loginId={app.portal_login_id}
-                                  password={app.portal_password}
-                                  showCredentials={app.show_credentials_to_student}
-                                />
+                                <div className="rounded-lg border border-dashed bg-background/70 p-3 space-y-3">
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="space-y-1 text-sm">
+                                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">University details</div>
+                                      <div className="font-medium text-foreground">{app.university_name}</div>
+                                      <div className="text-muted-foreground">{app.program_name || 'Program not set'}</div>
+                                      <div className="text-muted-foreground">Deadline: {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB') : 'Not set'}</div>
+                                      <div className="text-muted-foreground">Method: {app.application_method || 'Not set'}</div>
+                                    </div>
+                                    <div className="space-y-1 text-sm">
+                                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Application notes</div>
+                                      <div className="text-muted-foreground">{app.notes || 'No notes added yet.'}</div>
+                                    </div>
+                                  </div>
+                                  {canShowPortalAccess ? (
+                                    <StudentPortalCredentials
+                                      portalLink={app.portal_link}
+                                      loginId={app.portal_login_id}
+                                      password={app.portal_password}
+                                      showCredentials={app.show_credentials_to_student}
+                                    />
+                                  ) : hasPortalData ? (
+                                    <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                                      Portal details are saved, but they are not shared with the student yet.
+                                    </div>
+                                  ) : (
+                                    <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                                      No portal access has been added yet for this university.
+                                    </div>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           )}
@@ -430,6 +464,18 @@ const Applications = () => {
                   <div className="space-y-2">
                     <Label>End Date</Label>
                     <Input type="date" value={editValues.application_end_date} onChange={e => setEditValues({...editValues, application_end_date: e.target.value})} />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Portal Link</Label>
+                    <Input value={editValues.portal_link || ''} onChange={e => setEditValues({...editValues, portal_link: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Portal Login ID</Label>
+                    <Input value={editValues.portal_login_id || ''} onChange={e => setEditValues({...editValues, portal_login_id: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Portal Password</Label>
+                    <Input value={editValues.portal_password || ''} onChange={e => setEditValues({...editValues, portal_password: e.target.value})} />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label>Notes</Label>
