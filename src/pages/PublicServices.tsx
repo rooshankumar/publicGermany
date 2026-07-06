@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import PackagesShowcase from '@/components/PackagesShowcase';
 import LandingFAQ from '@/components/LandingFAQ';
 import logos from '@/assets/logos.png';
-import type { ServicePackage } from '@/data/servicePackages';
+import type { ServicePackageRow } from '@/hooks/useServiceData';
 
 const PublicServices: React.FC = () => {
   const navigate = useNavigate();
