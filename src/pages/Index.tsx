@@ -251,6 +251,7 @@ const Process: React.FC = () => (
 // ---------- Pricing ----------
 const Pricing: React.FC = () => {
   const navigate = useNavigate();
+  const { data: packages = [] } = useServicePackages();
   return (
     <section id="pricing" className="py-[52px]">
       <div className="max-w-[1080px] mx-auto px-6 mb-7">
@@ -261,38 +262,32 @@ const Pricing: React.FC = () => {
         </div>
       </div>
       <div className="pg-carousel flex md:grid md:grid-cols-4 gap-3.5 overflow-x-auto md:overflow-visible snap-x snap-mandatory px-6 pb-2.5 max-w-[1080px] mx-auto">
-        {SERVICE_PACKAGES.map((p) => (
+        {packages.map((p) => (
           <div
             key={p.id}
             className={`snap-start shrink-0 w-[250px] md:w-auto bg-pg-bg rounded-[20px] p-5 flex flex-col relative border ${
-              p.popular ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
+              p.highlighted ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
             }`}
           >
-            {p.popular && (
+            {p.badge && (
               <span className="absolute -top-[11px] left-5 bg-pg-accent text-white text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
-                Most popular
+                {p.badge}
               </span>
             )}
-            <div className="text-[15px] font-semibold mb-1 text-pg-label">{p.name}</div>
+            <div className="text-[15px] font-semibold mb-1 text-pg-label">{p.title}</div>
             <div className="text-[26px] font-bold text-pg-label leading-none mb-0.5">{p.priceLabel}</div>
-            <div className="text-[11.5px] text-pg-label3 mb-3.5">{p.payment}</div>
+            <div className="text-[11.5px] text-pg-label3 mb-3.5">{p.paymentLabel}</div>
             <ul className="mb-4 space-y-1.5">
-              {p.included.slice(0, 3).map((it) => (
-                <li key={it} className="flex gap-1.5 text-[12.5px] text-pg-label">
+              {p.features.slice(0, 4).map((f) => (
+                <li key={f.id} className="flex gap-1.5 text-[12.5px] text-pg-label">
                   <span className="text-pg-green font-bold shrink-0">✓</span>
-                  {it}
+                  {f.feature}
                 </li>
               ))}
-              {p.notes?.[0] && (
-                <li className="flex gap-1.5 text-[12.5px] italic text-pg-label3">
-                  <span className="shrink-0">+</span>
-                  {p.notes[0]}
-                </li>
-              )}
             </ul>
             <button
               onClick={() => navigate(`/services?package=${p.slug}`)}
-              className={`pg-btn pg-btn-sm mt-auto w-full ${p.popular ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
+              className={`pg-btn pg-btn-sm mt-auto w-full ${p.highlighted ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
             >
               Request
             </button>
@@ -303,6 +298,7 @@ const Pricing: React.FC = () => {
     </section>
   );
 };
+
 
 // ---------- FAQ ----------
 const FAQS = [
