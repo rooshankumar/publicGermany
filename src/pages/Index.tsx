@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
-import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { useServicePackages } from '@/hooks/useServiceData';
 import { supabase } from '@/integrations/supabase/client';
 
 // April 2024 → now
