@@ -46,7 +46,7 @@ const PublicServices: React.FC = () => {
     };
   }, []);
 
-  const handleRequest = (pkg: ServicePackage) => {
+  const handleRequest = (pkg: ServicePackageRow) => {
     // Send guests to auth, then back to services with the package preselected.
     const next = encodeURIComponent(`/services?package=${pkg.slug}`);
     navigate(`/auth?next=${next}`);
