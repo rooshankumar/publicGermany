@@ -849,6 +849,38 @@ export type Database = {
         }
         Relationships: []
       }
+      package_features: {
+        Row: {
+          created_at: string
+          display_order: number
+          feature: string
+          id: string
+          package_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          feature: string
+          id?: string
+          package_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          feature?: string
+          id?: string
+          package_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_features_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "service_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1572,6 +1604,51 @@ export type Database = {
           },
         ]
       }
+      service_packages: {
+        Row: {
+          advance_amount: number | null
+          badge: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          price: number
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advance_amount?: number | null
+          badge?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          price: number
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advance_amount?: number | null
+          badge?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          price?: number
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_payments: {
         Row: {
           admin_note: string | null
@@ -1742,36 +1819,48 @@ export type Database = {
       }
       services_catalog: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
+          display_order: number
+          icon: string | null
           id: string
           is_active: boolean
           kind: string
           name: string
           price_inr: number | null
           price_range_inr: string | null
+          slug: string | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number
+          icon?: string | null
           id?: string
           is_active?: boolean
           kind: string
           name: string
           price_inr?: number | null
           price_range_inr?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number
+          icon?: string | null
           id?: string
           is_active?: boolean
           kind?: string
           name?: string
           price_inr?: number | null
           price_range_inr?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Relationships: []
