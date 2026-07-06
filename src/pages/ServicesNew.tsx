@@ -5,31 +5,19 @@ import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import {
   Search,
-  Plus,
   Clock,
   CheckCircle,
   FileText,
   Download,
   Eye,
   Trash2,
-  X,
-  AlertCircle,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  CircleAlert,
-  ChevronRight,
+  X,  AlertCircle, Sparkles, ShieldCheck, ChevronRight, CircleAlert,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
-<<<<<<< HEAD
-import { useServicePackages, useServicesCatalog, type ServicePackageRow } from '@/hooks/useServiceData';
+import { useServicePackages, useServicesCatalog, type ServicePackageRow, type CatalogService } from '@/hooks/useServiceData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-=======
-import { useIndividualServices, useServicePackages, type IndividualService, type ServicePackage } from '@/data/servicePackages';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
->>>>>>> eb30697 (ok)
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -47,12 +35,11 @@ interface ServiceRequest {
   created_at: string;
 }
 
-type Tab = 'browse' | 'requests' | 'delivered';
+type Tab = 'browse' | 'faq' | 'requests' | 'delivered';
 
 const ServicesNew: React.FC = () => {
   const [tab, setTab] = useState<Tab>('browse');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [packageRequestName, setPackageRequestName] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string>('');
@@ -61,19 +48,11 @@ const ServicesNew: React.FC = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
-  const [selectedService, setSelectedService] = useState<IndividualService | null>(null);
-  const { data: packageRows = [] } = useServicePackages();
-  const { data: serviceRows = [] } = useIndividualServices();
+  const [selectedPackage, setSelectedPackage] = useState<ServicePackageRow | null>(null);
+  const [selectedService, setSelectedService] = useState<CatalogService | null>(null);
 
-<<<<<<< HEAD
-  // ------- Data -------
-  const catalogQuery = useServicesCatalog();
-  const packagesQuery = useServicePackages();
-=======
-  const packages = useMemo(() => packageRows.slice(0, 4), [packageRows]);
-  const individualServices = useMemo(() => serviceRows.filter((service) => service.isActive), [serviceRows]);
->>>>>>> eb30697 (ok)
+  const { data: packages = [] } = useServicePackages();
+  const { data: services = [] } = useServicesCatalog();
 
   const requestsQuery = useQuery({
     queryKey: ['my-service-requests', user?.id],
@@ -105,12 +84,6 @@ const ServicesNew: React.FC = () => {
     };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-<<<<<<< HEAD
-  const services = catalogQuery.data || [];
-  const packages = packagesQuery.data || [];
-  const individualServices = services;
-=======
->>>>>>> eb30697 (ok)
   const requests = requestsQuery.data || [];
   const completedRequests = requests.filter((r) => r.status === 'completed');
   const totalDeliveredFiles = completedRequests.reduce(
@@ -121,13 +94,8 @@ const ServicesNew: React.FC = () => {
   // Preselect a package via ?package=<slug>
   useEffect(() => {
     const slug = searchParams.get('package');
-<<<<<<< HEAD
     if (!slug || packages.length === 0) return;
     const pkg = packages.find((p) => p.slug === slug);
-=======
-    if (!slug) return;
-    const pkg = packages.find((item) => item.slug === slug);
->>>>>>> eb30697 (ok)
     if (pkg) {
       setPackageRequestName(pkg.title);
       setShowRequestDialog(true);
@@ -136,12 +104,17 @@ const ServicesNew: React.FC = () => {
     }
   }, [searchParams, setSearchParams, packages]);
 
+  const individualServices = useMemo(
+    () => services.filter((s) => s.kind === 'individual'),
+    [services],
+  );
+
   const filteredServices = useMemo(
     () =>
       individualServices.filter(
-        (service) =>
-          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          service.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()),
+        (s) =>
+          s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()),
       ),
     [individualServices, searchTerm],
   );
@@ -151,21 +124,16 @@ const ServicesNew: React.FC = () => {
   };
 
   const extrasTotal = selectedServices.reduce((total, id) => {
-    const service = individualServices.find((item) => item.id === id);
-    return total + (service?.price || 0);
+    const service = individualServices.find((s) => s.id === id);
+    return total + (service?.price_inr || 0);
   }, 0);
 
   const getPackagePrice = () => {
     if (!packageRequestName) return 0;
-<<<<<<< HEAD
     return packages.find((p) => p.title === packageRequestName)?.price || 0;
-=======
-    return packages.find((item) => item.name === packageRequestName)?.price || 0;
->>>>>>> eb30697 (ok)
   };
 
   const totalAmount = extrasTotal + getPackagePrice();
-
 
   // ------- Actions -------
   const handleRequestSubmit = async () => {
@@ -180,7 +148,7 @@ const ServicesNew: React.FC = () => {
     if (!user) return;
 
     const extras = selectedServices
-      .map((id) => individualServices.find((service) => service.id === id)?.name)
+      .map((id) => individualServices.find((s) => s.id === id)?.name)
       .filter(Boolean) as string[];
     const serviceNames = packageRequestName
       ? [packageRequestName, ...(extras.length ? [`Extras: ${extras.join(', ')}`] : [])].join(' | ')
@@ -200,7 +168,7 @@ const ServicesNew: React.FC = () => {
       ]);
       if (error) throw error;
 
-      toast({ title: 'Request submitted', description: "Our team will contact you shortly." });
+      toast({ title: 'Request submitted', description: 'Our team will contact you shortly.' });
 
       try {
         const studentName = profile?.full_name || user.email?.split('@')[0] || 'Student';
@@ -212,7 +180,7 @@ const ServicesNew: React.FC = () => {
             `<p>New service request from ${studentName}</p>
              <p><strong>Email:</strong> ${studentEmail}<br/>
              <strong>Services:</strong> ${serviceNames}<br/>
-             <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
+             <strong>Total:</strong> \u20B9${totalAmount.toLocaleString()}<br/>
              <strong>Timeline:</strong> ${timeline}</p>`,
           ),
           studentEmail
@@ -223,9 +191,9 @@ const ServicesNew: React.FC = () => {
                    <p>Hi ${studentName},</p>
                    <p>We've received your service request. Our team will reach out shortly.</p>
                    <p><strong>Services:</strong> ${serviceNames}<br/>
-                   <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
+                   <strong>Total:</strong> \u20B9${totalAmount.toLocaleString()}<br/>
                    <strong>Timeline:</strong> ${timeline}</p>
-                   <p>— publicgermany</p>
+                   <p>\u2014 publicgermany</p>
                  </div>`,
               )
             : Promise.resolve(),
@@ -322,12 +290,12 @@ const ServicesNew: React.FC = () => {
               <p className="text-[13px] text-pg-label3 mt-1">Choose a package or request a focused service.</p>
             </div>
             <div className="text-[12.5px] text-pg-label3">
-              {requests.length} requests · {totalDeliveredFiles} files
+              {requests.length} requests &middot; {totalDeliveredFiles} files
             </div>
           </div>
 
-          <div className="flex bg-pg-bg2 rounded-[10px] p-[3px] mb-6 max-w-[340px]">
-            {(['browse', 'requests', 'delivered'] as Tab[]).map((t) => (
+          <div className="flex bg-pg-bg2 rounded-[10px] p-[3px] mb-6 max-w-[420px]">
+            {(['browse', 'faq', 'requests', 'delivered'] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -337,6 +305,8 @@ const ServicesNew: React.FC = () => {
               >
                 {t === 'browse'
                   ? 'Browse'
+                  : t === 'faq'
+                  ? 'FAQs'
                   : t === 'requests'
                   ? `Requests${requests.length ? ` (${requests.length})` : ''}`
                   : `Delivered${completedRequests.length ? ` (${completedRequests.length})` : ''}`}
@@ -347,93 +317,49 @@ const ServicesNew: React.FC = () => {
 
         {tab === 'browse' && (
           <>
-<<<<<<< HEAD
-            <div className="mb-5">
-              <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Packages</div>
-              <h2 className="text-[22px] font-bold text-pg-label mb-1">Pick a package</h2>
-              <p className="text-pg-label2 text-[14.5px]">Fixed pricing, staged payment, no surprises.</p>
-            </div>
-
-            <div className="pg-carousel flex md:grid md:grid-cols-4 gap-3.5 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-2.5 mb-6">
-              {packages.map((p) => (
-                <div
-                  key={p.id}
-                  className={`snap-start shrink-0 w-[240px] md:w-auto bg-pg-bg rounded-[20px] p-[18px] flex flex-col relative border ${
-                    p.highlighted ? 'border-[1.5px] border-pg-accent shadow-[0_16px_32px_-12px_rgba(0,0,0,0.14)]' : 'border-pg-sep'
-                  }`}
-                >
-                  {p.badge && (
-                    <span className="absolute -top-[11px] left-[18px] bg-pg-accent text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      {p.badge}
-                    </span>
-                  )}
-                  <div className="text-[14.5px] font-semibold text-pg-label mb-0.5">{p.title}</div>
-                  <div className="text-[24px] font-bold text-pg-label leading-none mb-0.5">{p.priceLabel}</div>
-                  <div className="text-[11px] text-pg-label3 mb-3">{p.paymentLabel}</div>
-                  <ul className="mb-3.5 space-y-1.5">
-                    {p.features.map((f) => (
-                      <li key={f.id} className="flex gap-1.5 text-[12px] text-pg-label">
-                        <span className="text-pg-green font-bold shrink-0">✓</span>
-                        {f.feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => {
-                      setPackageRequestName(p.title);
-                      setShowRequestDialog(true);
-                    }}
-                    className={`pg-btn w-full mt-auto ${p.highlighted ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
-                  >
-                    Request
-                  </button>
-                </div>
-              ))}
-            </div>
-
-
-            {/* Individual services */}
-            <div className="flex items-center gap-2.5 mt-11 mb-1">
-              <div className="w-[34px] h-[34px] rounded-[9px] bg-pg-bg2 flex items-center justify-center">
-                <Plus className="w-4 h-4 text-pg-label" strokeWidth={2.2} />
-=======
+            {/* ===== SECTION: Our Core Packages ===== */}
             <section className="mb-6">
-              <div className="mb-3">
+              <div className="mb-4">
                 <div className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1">Our Core Packages</div>
-                <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label mb-1">Choose the package that best matches your journey.</h2>
+                <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label mb-1">Choose the package that best matches your study abroad journey.</h2>
                 <p className="text-[13.5px] sm:text-[14px] text-pg-label2">Every package includes personalized guidance from our team.</p>
->>>>>>> eb30697 (ok)
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 {packages.map((pkg) => {
-                  const selected = packageRequestName === pkg.name;
-                  const badge = pkg.badge || (pkg.highlight ? 'Popular' : null);
+                  const selected = packageRequestName === pkg.title;
                   return (
                     <div
                       key={pkg.id}
-                      className={`rounded-[18px] border p-3 sm:p-4 flex flex-col gap-3 ${
-                        pkg.highlight ? 'border-pg-accent/50 bg-gradient-to-br from-pg-accent/8 to-pg-bg shadow-[0_10px_30px_-16px_rgba(0,0,0,0.25)]' : 'border-pg-sep bg-pg-bg'
+                      className={`rounded-[18px] border p-3.5 sm:p-4 flex flex-col gap-3 ${
+                        pkg.highlighted
+                          ? 'border-pg-accent/50 bg-gradient-to-br from-pg-accent/[0.06] to-pg-bg shadow-[0_10px_30px_-16px_rgba(0,0,0,0.25)]'
+                          : 'border-pg-sep bg-pg-bg'
                       }`}
                     >
-                      <div className="flex flex-wrap gap-2">
-                        {badge && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-accent/10 px-2.5 py-1 text-[10px] font-semibold text-pg-accent">
-                            <Sparkles className="h-3 w-3" /> {badge}
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+                        {pkg.popular && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold text-pg-accent">
+                            <Sparkles className="h-3 w-3" /> Popular
                           </span>
                         )}
-                        {pkg.highlight && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-green/10 px-2.5 py-1 text-[10px] font-semibold text-pg-green">
+                        {pkg.riskFree && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-pg-green/10 px-2.5 py-0.5 text-[10px] font-semibold text-pg-green">
                             <ShieldCheck className="h-3 w-3" /> Risk-Free
                           </span>
                         )}
                       </div>
+
+                      {/* Name & Price */}
                       <div>
-                        <h3 className="text-[15px] font-semibold text-pg-label leading-tight">{pkg.name}</h3>
-                        <div className="mt-2 text-[22px] font-bold text-pg-label">{pkg.priceLabel}</div>
-                        <p className="mt-1 text-[12.5px] text-pg-label2">{pkg.paymentSummary}</p>
+                        <h3 className="text-[15px] font-semibold text-pg-label leading-tight">{pkg.title}</h3>
+                        <div className="mt-1.5 text-[22px] font-bold text-pg-label">{pkg.priceLabel}</div>
+                        <p className="mt-0.5 text-[12px] text-pg-label2">{pkg.paymentSummary}</p>
                       </div>
-                      <ul className="space-y-1.5 text-[12px] text-pg-label2">
+
+                      {/* Highlights */}
+                      <ul className="space-y-1 text-[12px] text-pg-label2">
                         {pkg.includedFeatures.slice(0, 3).map((feature) => (
                           <li key={feature} className="flex items-start gap-1.5">
                             <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pg-green" />
@@ -441,19 +367,21 @@ const ServicesNew: React.FC = () => {
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-auto flex flex-col gap-2">
+
+                      {/* Actions */}
+                      <div className="mt-auto flex flex-col gap-1.5">
                         <button
                           onClick={() => setSelectedPackage(pkg)}
-                          className="flex items-center justify-center gap-1 text-[13px] font-semibold text-pg-accent"
+                          className="flex items-center justify-center gap-1 text-[12.5px] font-semibold text-pg-accent hover:underline py-1"
                         >
-                          View Details <ChevronRight className="h-4 w-4" />
+                          View Details <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => {
-                            setPackageRequestName(pkg.name);
+                            setPackageRequestName(pkg.title);
                             setShowRequestDialog(true);
                           }}
-                          className={`pg-btn ${selected ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
+                          className={`pg-btn text-[12.5px] ${pkg.highlighted ? 'pg-btn-primary' : 'pg-btn-secondary'}`}
                         >
                           Request
                         </button>
@@ -464,17 +392,7 @@ const ServicesNew: React.FC = () => {
               </div>
             </section>
 
-            <div className="mb-6 rounded-[18px] border border-pg-accent/20 bg-pg-accent/8 p-4 text-[13px] text-pg-label2">
-              <div className="flex items-center gap-2 mb-2 font-semibold text-pg-label">
-                <CircleAlert className="h-4 w-4 text-pg-accent" /> Important Information
-              </div>
-              <ul className="space-y-1.5 pl-1">
-                <li>• University application fees are paid directly to the respective university by the student.</li>
-                <li>• APS, TestAS, IELTS/PTE, blocked account, health insurance, visa fee, VFS fee, and courier charges are not included unless explicitly stated.</li>
-                <li>• PublicGermany service fees cover consultation, documentation, application, and process support only.</li>
-              </ul>
-            </div>
-
+            {/* ===== SECTION: Individual Services ===== */}
             <section>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
@@ -482,6 +400,8 @@ const ServicesNew: React.FC = () => {
                   <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label">Focused support for specific needs</h2>
                 </div>
               </div>
+
+              {/* Search */}
               <div className="relative mb-3">
                 <Search className="w-4 h-4 text-pg-label3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -489,38 +409,41 @@ const ServicesNew: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search services…"
-                  className="w-full pl-10 pr-3.5 py-3 bg-pg-bg2 rounded-[12px] text-[15px] text-pg-label placeholder:text-pg-label3 border-0 outline-none focus:ring-2 focus:ring-pg-accent focus:ring-offset-1"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-pg-bg2 rounded-[10px] text-[14px] text-pg-label placeholder:text-pg-label3 border-0 outline-none focus:ring-2 focus:ring-pg-accent"
                 />
               </div>
 
               {filteredServices.length === 0 ? (
-                <div className="pg-group px-5 py-10 text-center text-pg-label3 text-[14px]">No services found</div>
+                <div className="py-10 text-center text-pg-label3 text-[14px]">No services found</div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {filteredServices.map((service) => {
                     const selected = selectedServices.includes(service.id);
                     return (
-                      <div key={service.id} className="flex items-center justify-between gap-3 rounded-[14px] border border-pg-sep bg-pg-bg px-3.5 py-3">
+                      <div
+                        key={service.id}
+                        className="flex items-center justify-between gap-3 rounded-[12px] border border-pg-sep bg-pg-bg px-3.5 py-2.5 min-h-[64px]"
+                      >
                         <button
                           type="button"
                           onClick={() => setSelectedService(service)}
                           className="flex-1 min-w-0 text-left"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="text-[14px] font-semibold text-pg-label">{service.name}</div>
+                            <div className="text-[13.5px] font-semibold text-pg-label">{service.name}</div>
                             {service.category && (
-                              <span className="rounded-full bg-pg-bg2 px-2 py-0.5 text-[10px] uppercase tracking-wide text-pg-label3">
+                              <span className="rounded-full bg-pg-bg2 px-2 py-0.5 text-[9.5px] uppercase tracking-wide text-pg-label3">
                                 {service.category}
                               </span>
                             )}
                           </div>
-                          <div className="mt-1 text-[12.5px] text-pg-label2 line-clamp-1">{service.shortDescription}</div>
+                          <div className="mt-0.5 text-[12px] text-pg-label2 line-clamp-1">{service.shortDescription}</div>
                         </button>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="text-[13px] font-semibold text-pg-label">{service.priceLabel}</div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="text-[12.5px] font-semibold text-pg-label whitespace-nowrap">{service.priceLabel}</div>
                           <button
                             onClick={() => setSelectedService(service)}
-                            className="rounded-full bg-pg-bg2 px-3 py-1.5 text-[12px] font-semibold text-pg-label"
+                            className="rounded-full bg-pg-bg2 px-2.5 py-1 text-[11.5px] font-semibold text-pg-label"
                           >
                             View
                           </button>
@@ -530,7 +453,7 @@ const ServicesNew: React.FC = () => {
                               if (!selected) toggleService(service.id);
                               setShowRequestDialog(true);
                             }}
-                            className="rounded-full bg-pg-accent px-3 py-1.5 text-[12px] font-semibold text-white"
+                            className="rounded-full bg-pg-accent px-2.5 py-1 text-[11.5px] font-semibold text-white"
                           >
                             Request
                           </button>
@@ -542,15 +465,16 @@ const ServicesNew: React.FC = () => {
               )}
             </section>
 
+            {/* Sticky Bottom Bar */}
             {selectedServices.length > 0 && (
-              <div className="sticky bottom-4 mt-5 bg-pg-label text-pg-bg rounded-[16px] px-5 py-3.5 flex items-center justify-between gap-3.5 flex-wrap shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
+              <div className="sticky bottom-4 mt-5 bg-pg-label text-pg-bg rounded-[14px] px-4 py-3 flex items-center justify-between gap-3 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
                 <div>
-                  <div className="text-[12px] text-pg-label3">{selectedServices.length} selected</div>
-                  <div className="text-[18px] font-bold">₹{extrasTotal.toLocaleString('en-IN')}</div>
+                  <div className="text-[11px] text-pg-label3">{selectedServices.length} selected</div>
+                  <div className="text-[17px] font-bold">\u20B9{extrasTotal.toLocaleString('en-IN')}</div>
                 </div>
                 <button
                   onClick={() => setShowRequestDialog(true)}
-                  className="pg-btn"
+                  className="pg-btn text-[12.5px]"
                   style={{ background: 'var(--pg-gold)', color: '#fff' }}
                 >
                   Request selected
@@ -560,11 +484,11 @@ const ServicesNew: React.FC = () => {
           </>
         )}
 
-        {/* ========= REQUESTS ========= */}
+        {/* ========= TAB: REQUESTS ========= */}
         {tab === 'requests' && (
           <div className="space-y-3">
             {requests.length === 0 ? (
-              <div className="pg-group px-6 py-14 text-center">
+              <div className="px-6 py-14 text-center">
                 <Clock className="w-8 h-8 text-pg-label3 mx-auto mb-3" />
                 <p className="text-[14px] text-pg-label2 mb-4">No requests yet</p>
                 <button onClick={() => setTab('browse')} className="pg-btn pg-btn-secondary pg-btn-sm">
@@ -573,11 +497,11 @@ const ServicesNew: React.FC = () => {
               </div>
             ) : (
               requests.map((r) => (
-                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
-                      <div className="text-[12px] text-pg-label3 mt-0.5">
+                      <div className="font-semibold text-pg-label text-[14px] sm:text-[15px] truncate">{r.service_type}</div>
+                      <div className="text-[11.5px] text-pg-label3 mt-0.5">
                         Requested {new Date(r.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -589,20 +513,20 @@ const ServicesNew: React.FC = () => {
                           className="p-1.5 rounded-full text-pg-label3 hover:text-pg-accent hover:bg-pg-bg2"
                           aria-label="Delete request"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
                   {r.request_details && (
-                    <p className="text-[13px] text-pg-label2 mt-2">{r.request_details}</p>
+                    <p className="text-[12.5px] text-pg-label2 mt-2">{r.request_details}</p>
                   )}
                   {r.preferred_timeline && (
-                    <p className="text-[12.5px] text-pg-label3 mt-1">Timeline: {r.preferred_timeline}</p>
+                    <p className="text-[12px] text-pg-label3 mt-1">Timeline: {r.preferred_timeline}</p>
                   )}
                   {r.admin_response && (
-                    <div className="mt-3 bg-pg-bg2 rounded-[10px] px-3.5 py-2.5 text-[13px] text-pg-label">
-                      <div className="text-[11px] font-medium text-pg-label3 mb-1">Admin response</div>
+                    <div className="mt-3 bg-pg-bg2 rounded-[10px] px-3.5 py-2.5 text-[12.5px] text-pg-label">
+                      <div className="text-[10.5px] font-medium text-pg-label3 mb-1">Admin response</div>
                       {r.admin_response}
                     </div>
                   )}
@@ -615,7 +539,7 @@ const ServicesNew: React.FC = () => {
                     const curr = (r as any).target_currency || r.service_currency || 'INR';
                     const remaining = Math.max(0, target - received);
                     return (
-                      <div className="mt-3 grid grid-cols-3 gap-2.5 text-[12px] bg-pg-bg2 rounded-[10px] p-3">
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px] bg-pg-bg2 rounded-[10px] p-3">
                         <div>
                           <div className="text-pg-label3 mb-0.5">Total</div>
                           <div className="font-semibold text-pg-label">{curr} {target.toLocaleString()}</div>
@@ -633,13 +557,13 @@ const ServicesNew: React.FC = () => {
                   })()}
                   {r.status === 'completed' && r.deliverable_urls?.length ? (
                     <div className="mt-3 pt-3 border-t border-pg-sep">
-                      <div className="text-[12px] font-medium text-pg-green mb-2 flex items-center gap-1.5">
+                      <div className="text-[11.5px] font-medium text-pg-green mb-2 flex items-center gap-1.5">
                         <CheckCircle className="w-3.5 h-3.5" />
                         {r.deliverable_urls.length} file{r.deliverable_urls.length > 1 ? 's' : ''} delivered
                       </div>
                       <div className="space-y-1.5">
                         {r.deliverable_urls.map((url, i) => (
-                          <div key={i} className="flex items-center justify-between gap-2 text-[12.5px]">
+                          <div key={i} className="flex items-center justify-between gap-2 text-[12px]">
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <FileText className="w-3.5 h-3.5 text-pg-label3 shrink-0" />
                               <span className="truncate text-pg-label">{getFileNameFromUrl(url)}</span>
@@ -671,48 +595,104 @@ const ServicesNew: React.FC = () => {
           </div>
         )}
 
-        {/* ========= DELIVERED ========= */}
+        {/* ========= TAB: FAQS ========= */}
+        {tab === 'faq' && (
+          <div className="space-y-3">
+            <h2 className="text-[20px] sm:text-[22px] font-bold text-pg-label mb-1">Frequently Asked Questions</h2>
+            <p className="text-[13.5px] text-pg-label2 mb-4">Common questions about our services and process.</p>
+            <div className="space-y-2">
+              {[
+                {
+                  q: 'What does my service fee cover and what costs are not included?',
+                  a: 'Our service fee covers consultation, documentation, applications, and process support. Costs you pay directly include: university application fees (to each university), APS certificate fee, TestAS exam fee, IELTS/PTE exam fee, visa application and VFS service fee, blocked account setup, health insurance, and courier charges.',
+                },
+                {
+                  q: 'When do I pay the remaining amount?',
+                  a: 'Payment milestones are clearly outlined in your contract. For our Pay After packages, you pay a small advance to begin and the balance is due only after you receive an admission offer (Pay After Admission) or after your visa is approved (Pay After Visa).',
+                },
+                {
+                  q: 'Are university application fees included in your packages?',
+                  a: 'No, university application fees are paid directly by you to each university. Our service fee covers consultation, documentation, application support, and process guidance only.',
+                },
+                {
+                  q: 'What do I get with a service package?',
+                  a: 'Every package includes personalized guidance from our team. This covers profile evaluation, document preparation (SOP, LOR, CV), university shortlisting and applications, admission support, and visa process guidance where applicable.',
+                },
+                {
+                  q: 'How many universities will you apply to?',
+                  a: 'We typically apply to 7-8 universities per student, selected based on your profile, preferences, and chances of admission.',
+                },
+                {
+                  q: 'Can I change my university preferences after submitting?',
+                  a: 'Yes, you can update your preferences during the shortlisting phase. Changes after applications have been submitted may incur additional university application fees.',
+                },
+                {
+                  q: 'How long does the whole process take?',
+                  a: 'The timeline depends on your profile and the package you choose. Our team provides a personalized timeline after the initial profile evaluation. Generally, the full process from evaluation to visa can take 4-8 months.',
+                },
+                {
+                  q: 'Is the advance amount refundable?',
+                  a: 'No, the advance amount is not refundable. It covers the initial work we do for you, including profile evaluation and document preparation.',
+                },
+                {
+                  q: 'Do you help with blocked account and health insurance?',
+                  a: 'We provide guidance on how to set up your blocked account and choose health insurance, but the actual costs and arrangements are handled by you directly.',
+                },
+              ].map((faq) => (
+                <details key={faq.q} className="rounded-[12px] border border-pg-sep bg-pg-bg overflow-hidden group">
+                  <summary className="px-4 py-3.5 text-[13.5px] font-semibold text-pg-label cursor-pointer hover:bg-pg-bg2 transition-colors list-none flex items-center justify-between">
+                    {faq.q}
+                    <ChevronRight className="h-4 w-4 text-pg-label3 shrink-0 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="px-4 pb-4 text-[13px] text-pg-label2 leading-[1.6]">{faq.a}</div>
+                </details>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ========= TAB: DELIVERED ========= */}
         {tab === 'delivered' && (
           <div className="space-y-3">
             {completedRequests.length === 0 ? (
-              <div className="pg-group px-6 py-14 text-center">
+              <div className="px-6 py-14 text-center">
                 <FileText className="w-8 h-8 text-pg-label3 mx-auto mb-3" />
                 <p className="text-[14px] text-pg-label2">No delivered files yet</p>
               </div>
             ) : (
               completedRequests.map((r) => (
-                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-5">
+                <div key={r.id} className="bg-pg-bg border border-pg-sep rounded-[16px] p-4 sm:p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-pg-green" />
-                    <div className="font-semibold text-pg-label text-[15px] truncate">{r.service_type}</div>
+                    <div className="font-semibold text-pg-label text-[14px] sm:text-[15px] truncate">{r.service_type}</div>
                   </div>
                   {r.deliverable_urls?.length ? (
-                    <div className="pg-group">
+                    <div>
                       {r.deliverable_urls.map((url, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div key={i} className="flex items-center justify-between gap-3 px-1 py-2.5 border-t border-pg-sep/50 first:border-t-0">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <FileText className="w-4 h-4 text-pg-label3 shrink-0" />
-                            <span className="text-[13.5px] text-pg-label truncate">{getFileNameFromUrl(url)}</span>
+                            <span className="text-[13px] text-pg-label truncate">{getFileNameFromUrl(url)}</span>
                           </div>
                           <div className="flex gap-1 shrink-0">
                             <button
                               onClick={() => openFile(url, false)}
-                              className="pg-btn pg-btn-sm pg-btn-secondary"
+                              className="pg-btn pg-btn-sm pg-btn-secondary text-[11px]"
                             >
-                              <Eye className="w-3.5 h-3.5" /> View
+                              <Eye className="w-3 h-3" /> View
                             </button>
                             <button
                               onClick={() => openFile(url, true)}
-                              className="pg-btn pg-btn-sm pg-btn-secondary"
+                              className="pg-btn pg-btn-sm pg-btn-secondary text-[11px]"
                             >
-                              <Download className="w-3.5 h-3.5" />
+                              <Download className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-pg-label3">No files attached</p>
+                    <p className="text-[12.5px] text-pg-label3">No files attached</p>
                   )}
                 </div>
               ))
@@ -721,77 +701,71 @@ const ServicesNew: React.FC = () => {
         )}
       </div>
 
+      {/* ===== PACKAGE DETAIL DIALOG ===== */}
       <Dialog open={Boolean(selectedPackage)} onOpenChange={(open) => !open && setSelectedPackage(null)}>
-        <DialogContent className="sm:max-w-[680px] max-h-[90dvh] overflow-y-auto rounded-[20px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90dvh] overflow-y-auto rounded-[20px]">
           <DialogHeader>
-            <DialogTitle className="text-[20px] font-bold text-pg-label">{selectedPackage?.name}</DialogTitle>
-            <DialogDescription className="text-[14px] text-pg-label2">{selectedPackage?.shortDescription}</DialogDescription>
+            <DialogTitle className="text-[20px] font-bold text-pg-label">{selectedPackage?.title}</DialogTitle>
+            <p className="text-[13px] text-pg-label2 mt-1">{selectedPackage?.fullDescription}</p>
           </DialogHeader>
           {selectedPackage && (
-            <div className="space-y-5">
-              <div className="rounded-[14px] bg-pg-bg2 p-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-2">Package Overview</div>
-                <p className="text-[14px] text-pg-label2 leading-[1.6]">{selectedPackage.fullDescription}</p>
-              </div>
-              <div>
-                <div className="text-[13px] font-semibold text-pg-label mb-2">What&apos;s Included</div>
-                <ul className="space-y-2 text-[13px] text-pg-label2">
+            <div className="space-y-4">
+              {/* What's Included */}
+              <div className="rounded-[12px] bg-pg-bg2 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-2">Includes</div>
+                <div className="flex flex-wrap gap-1.5">
                   {selectedPackage.includedFeatures.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-pg-green" />
-                      <span>{feature}</span>
-                    </li>
+                    <span key={feature} className="inline-flex items-center gap-1 rounded-full bg-pg-green/10 px-2.5 py-1 text-[11.5px] font-medium text-pg-green">
+                      <CheckCircle className="w-3 h-3" /> {feature}
+                    </span>
                   ))}
-                </ul>
-              </div>
-              <div className="grid gap-3 rounded-[14px] border border-pg-sep p-4 sm:grid-cols-2">
-                <div>
-                  <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pg-label3">Payment Terms</div>
-                  <p className="mt-2 text-[13px] text-pg-label2">{selectedPackage.paymentTerms}</p>
                 </div>
-                <div>
-                  <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-pg-label3">Application Process</div>
-                  <ol className="mt-2 space-y-1 text-[13px] text-pg-label2">
-                    {selectedPackage.processSteps.map((step) => (
-                      <li key={step} className="flex items-start gap-2">
-                        <span className="mt-0.5 text-pg-accent">•</span>
-                        <span>{step}</span>
-                      </li>
+              </div>
+
+              {/* Payment & Process */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[12px] bg-pg-bg2 p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-label3 mb-1.5">Payment</div>
+                  <p className="text-[12.5px] text-pg-label2 leading-[1.5]">
+                    {selectedPackage.paymentTerms.split('\n').map((line, i) => (
+                      <span key={i}>{line}<br /></span>
                     ))}
-                  </ol>
+                  </p>
                 </div>
-              </div>
-              <div>
-                <div className="text-[13px] font-semibold text-pg-label mb-2">What&apos;s Not Included</div>
-                <ul className="space-y-2 text-[13px] text-pg-label2">
-                  {selectedPackage.exclusions.map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-pg-gold" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {selectedPackage.faqs.length > 0 && (
-                <div>
-                  <div className="text-[13px] font-semibold text-pg-label mb-2">FAQs</div>
-                  <div className="space-y-2">
-                    {selectedPackage.faqs.map((faq) => (
-                      <div key={faq.question} className="rounded-[12px] bg-pg-bg2 p-3">
-                        <div className="text-[13px] font-semibold text-pg-label">{faq.question}</div>
-                        <div className="mt-1 text-[13px] text-pg-label2">{faq.answer}</div>
-                      </div>
+                <div className="rounded-[12px] bg-pg-bg2 p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-label3 mb-1.5">Process</div>
+                  <div className="flex flex-wrap items-center gap-1 text-[12px] text-pg-label2">
+                    {selectedPackage.processSteps.map((step, i) => (
+                      <span key={step} className="inline-flex items-center gap-1">
+                        {i > 0 && <span className="text-pg-accent mx-0.5">&rarr;</span>}
+                        <span>{step}</span>
+                      </span>
                     ))}
                   </div>
                 </div>
-              )}
-              <div className="flex flex-wrap gap-2">
+              </div>
+
+              {/* Not Included */}
+              <div className="rounded-[12px] border border-pg-gold/20 bg-pg-gold/[0.04] p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-pg-gold mb-1.5">Not Included (paid by you)</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedPackage.exclusions.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1 rounded-full bg-pg-gold/10 px-2 py-0.5 text-[11px] font-medium text-pg-gold">
+                      <CircleAlert className="w-3 h-3" /> {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => {
-                    setPackageRequestName(selectedPackage.name);
+                    setPackageRequestName(selectedPackage.title);
+                    setSelectedPackage(null);
                     setShowRequestDialog(true);
                   }}
-                  className="pg-btn pg-btn-primary"
+                  className="pg-btn pg-btn-primary flex-1"
                 >
                   Request This Package
                 </button>
@@ -804,11 +778,11 @@ const ServicesNew: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ===== SERVICE DETAIL DIALOG ===== */}
       <Dialog open={Boolean(selectedService)} onOpenChange={(open) => !open && setSelectedService(null)}>
         <DialogContent className="sm:max-w-[560px] max-h-[90dvh] overflow-y-auto rounded-[20px]">
           <DialogHeader>
             <DialogTitle className="text-[20px] font-bold text-pg-label">{selectedService?.name}</DialogTitle>
-            <DialogDescription className="text-[14px] text-pg-label2">{selectedService?.shortDescription}</DialogDescription>
           </DialogHeader>
           {selectedService && (
             <div className="space-y-4">
@@ -821,6 +795,7 @@ const ServicesNew: React.FC = () => {
                 <button
                   onClick={() => {
                     if (!selectedServices.includes(selectedService.id)) toggleService(selectedService.id);
+                    setSelectedService(null);
                     setShowRequestDialog(true);
                   }}
                   className="pg-btn pg-btn-primary"
@@ -836,7 +811,7 @@ const ServicesNew: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Request Dialog */}
+      {/* ===== REQUEST DIALOG ===== */}
       <Dialog
         open={showRequestDialog}
         onOpenChange={(open) => {
@@ -866,13 +841,13 @@ const ServicesNew: React.FC = () => {
                 </div>
               )}
               {selectedServices.length > 0 && (
-                <div className="text-[12.5px] text-pg-label2 mb-2">
+                <div className="text-[12px] text-pg-label2 mb-2">
                   + {selectedServices.length} individual service{selectedServices.length > 1 ? 's' : ''}
                 </div>
               )}
               <div className="flex justify-between items-center pt-2 border-t border-pg-sep">
-                <div className="text-[13px] text-pg-label2">Estimated total</div>
-                <div className="text-[18px] font-bold text-pg-label">₹{totalAmount.toLocaleString()}</div>
+                <div className="text-[12.5px] text-pg-label2">Estimated total</div>
+                <div className="text-[18px] font-bold text-pg-label">\u20B9{totalAmount.toLocaleString()}</div>
               </div>
             </div>
 
@@ -903,10 +878,7 @@ const ServicesNew: React.FC = () => {
             </div>
 
             <div className="flex gap-2 justify-end pt-2">
-              <button
-                onClick={() => setShowRequestDialog(false)}
-                className="pg-btn pg-btn-secondary"
-              >
+              <button onClick={() => setShowRequestDialog(false)} className="pg-btn pg-btn-secondary">
                 Cancel
               </button>
               <button onClick={handleRequestSubmit} className="pg-btn pg-btn-primary">
