@@ -18,7 +18,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { sendEmail } from '@/lib/sendEmail';
 import { useAuth } from '@/hooks/useAuth';
-import { SERVICE_PACKAGES } from '@/data/servicePackages';
+import { useServicePackages, useServicesCatalog, type ServicePackageRow } from '@/hooks/useServiceData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
