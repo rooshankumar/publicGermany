@@ -186,6 +186,9 @@ export default function Editors() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => window.location.assign(`/admin/editors/${editor.user_id}`)}>
+                          View Profile
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => {
                           setSelectedEditor(editor);
                           setAssignDialogOpen(true);
