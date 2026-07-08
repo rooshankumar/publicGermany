@@ -53,6 +53,8 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const EditorDashboard = lazy(() => import("./pages/editor/EditorDashboard"));
 const EditorStudentProfile = lazy(() => import("./pages/editor/EditorStudentProfile"));
+const ReferralDetails = lazy(() => import("./pages/editor/ReferralDetails"));
+const AdminEditorProfile = lazy(() => import("./pages/admin/EditorProfile"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -269,9 +271,19 @@ const AppRoutes = () => {
             <EditorDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/admin/editors/:editorId" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminEditorProfile />
+          </ProtectedRoute>
+        } />
         <Route path="/editor/students/:studentId" element={
           <ProtectedRoute requiredRole="editor">
             <EditorStudentProfile />
+          </ProtectedRoute>
+        } />
+        <Route path="/editor/referrals/:id" element={
+          <ProtectedRoute requiredRole="editor">
+            <ReferralDetails />
           </ProtectedRoute>
         } />
         <Route path="/documents" element={
