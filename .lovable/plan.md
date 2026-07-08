@@ -1,70 +1,85 @@
 
-# iOS-style Redesign — publicgermany
+# Editor Referral CRM
 
-You've given me two reference HTMLs (homepage + services) and asked me to rebuild the entire app around that design system, keeping all logic and routes untouched. That's a large surface area, so I want to do it in clear phases and confirm the approach before touching every page.
+Turn the existing Editors module into a full referral CRM. Referrals live separate from official Students until an admin converts them. Both admin and editor sides get new workspaces.
 
-## Design system (applied globally, phase 0)
+## 1. Database (single migration)
 
-Locked from your HTML. No emojis in UI chrome — replaced with `lucide-react` icons (Check, Search, ChevronRight, Menu, etc.). Emojis stay only where they're content (testimonial names, blog text).
+New tables (all in `public`, RLS on, service_role ALL, standard grants):
 
-- Background: `#FFFFFF` / `#F5F5F7` / `#EFEFF1`
-- Text: `#1D1D1F` (label) / `#6E6E73` (label2) / `#AEAEB2` (label3)
-- Accent red: `#B23A2E` (hover `#8f2f24`)
-- Accent gold: `#B8862E` (used only for "most popular" tag + highlight)
-- Success green: `#3F8558`
-- Radii: cards 14–20px, buttons full pill (`rounded-full`)
-- Font: `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif` — set on `body`, overrides any current serif/decorative fonts
-- Nav: sticky, `backdrop-blur` + 78% white
-- List pattern: one rounded container, thin dividers between rows (FAQs, service lists, settings sections)
-- Cards: white or `bg2`, subtle 1px border, no gradients, no glow
+- **referrals** — owner_editor_id, full_name, phone, whatsapp, email, city, state, qualification, percentage, passing_year, passport_available (bool), german_level, preferred_intake, lead_source, current_status (enum-like text), priority (low/medium/high), next_followup_date, remarks, commission_status (pending/paid), converted_student_id (nullable FK profiles.user_id), converted_at, created_at, updated_at.
+- **referral_services** — referral_id, service_key (german_course, admission, visa, blocked_account, accommodation, aps, insurance, sop, other). Unique(referral_id, service_key).
+- **referral_activities** — referral_id, actor_user_id, type (created, note, call, whatsapp, message, demo, docs, status_change, converted, task, other), title, body, meta jsonb, created_at. Append-only.
+- **referral_tasks** — referral_id, owner_editor_id, title, due_date, status (open/done/cancelled), created_at, updated_at.
+- **referral_documents** — referral_id, uploaded_by, category (passport/academic/cv/language/other), file_name, file_url, mime, size, created_at.
 
-These become CSS tokens in `src/index.css` + `tailwind.config.ts` (extending, not replacing, existing shadcn tokens so all the existing UI keeps working).
+Storage: reuse `documents` bucket under path `referrals/{referral_id}/...`.
 
-## Phase 1 — Foundation (do first)
+RLS:
+- Editors: full CRUD on their own referrals + children.
+- Admins (`is_admin`): full read/write on everything.
+- Students/anon: no access.
 
-1. Add design tokens to `index.css` (HSL vars: `--pg-bg`, `--pg-bg2`, `--pg-label`, `--pg-accent`, `--pg-gold`, `--pg-green`, `--pg-sep`) and matching Tailwind colors under a `pg` namespace (already partially there — I'll align it to the new palette).
-2. Set the system font stack on `body` in `index.css`, remove any competing serif imports.
-3. Rewrite `LandingHero`, `LandingFeatures`, `LandingHowItWorks`, `LandingFAQ`, `LandingFooter`, plus `Index.tsx` composition, to match `homepage.html` section-for-section: hero → features grid → testimonial scroll-snap carousel → 4-step process strip → pricing scroll-snap carousel → grouped FAQ list → dark final CTA → minimal footer. No comparison table.
-4. Rebuild the logged-in `ServicesEntry.tsx` (and `ServicesNew.tsx` if that's the live one — I'll confirm from the router) to match `services.html`: sticky app bar, segmented Browse/Requests/Delivered, pricing carousel, individual-services grouped list with radio-style checkbox, live-total sticky bottom bar, search field. Wired to your existing services data + request handlers — no logic changes.
+Triggers:
+- `updated_at` on referrals and tasks.
+- On referral insert → activity `created`.
+- On `current_status` change → activity `status_change` (meta: from/to).
 
-## Phase 2 — Shared shell
+Indexes: referrals(owner_editor_id, current_status, next_followup_date, priority); activities(referral_id, created_at desc); tasks(owner_editor_id, status, due_date).
 
-5. New `AppShell` / update `Layout.tsx` so every authenticated page uses the same iOS-style sticky app bar + avatar + hamburger (from `services.html`). Mobile bottom nav (`StudentMobileBottomNav`, `AdminMobileBottomNav`) restyled to match — flat white with blur, no gradients, lucide icons.
-6. Restyle shadcn primitives that we use most (`button`, `card`, `input`, `tabs`, `accordion`, `dialog`, `badge`) via variants — no API changes, so no page needs to be rewritten to pick up the look.
+## 2. Admin — Editors module
 
-## Phase 3 — Interior pages (bulk restyle, no logic changes)
+`src/pages/admin/Editors.tsx` becomes a workspace list. Each editor card shows: avatar, name, email, status, and 3 counters (Assigned Students, Manual Referrals, Qualified Leads).
 
-Applied top-down as time allows, in this order:
+New `src/pages/admin/EditorProfile.tsx` with tabs:
+- **Overview** — profile info + stats (Assigned / Referrals / Qualified / Converted).
+- **Assigned Students** — reuse existing editor_permissions join; clicking a row → `/admin/students/:id`.
+- **Manual Referrals** — table with actions: View, Edit, Convert to Student, Reject, Merge.
+- **Qualified Leads** — same table filtered to statuses (`interested`, `documents_pending`, `documents_received`, `application_started`).
+- **Activity** — global timeline for this editor's referrals, newest first.
 
-- Dashboard
-- Applications (student + admin)
-- Documents
-- Profile / StudentProfileForm
-- Payments (student + admin)
-- Blog + BlogPost
-- Contact, Help, Privacy, Terms, Reviews, Resources
-- Auth pages (Auth, ResetPassword)
-- Admin pages (Students, Universities, Requests, PaymentStudents, Blog admin, etc.)
+Convert flow: creates auth-less profile row placeholder or links to an existing one, sets `referrals.converted_student_id`, adds activity `converted`.
 
-Each page: swap current wrapper cards/gradients for the new token classes, replace emoji chrome with lucide icons, convert vertical stacks of repeated rows into grouped-list cards where it matches your HTML pattern (FAQ, settings, service lists). Route paths and data queries stay identical.
+## 3. Editor dashboard
+
+Replace `src/pages/editor/EditorDashboard.tsx` with a shell using tabs / bottom nav:
+Dashboard · My Referrals · Assigned Students · Tasks · Profile.
+
+**Dashboard cards**: Assigned Students, My Referrals, Today's Follow-ups, Overdue Follow-ups, Qualified Leads, Converted, Pending Tasks. Compact grid, pg-tokens, no gradients.
+
+**My Referrals** (`/editor/referrals`) — search, filters (status, priority, service), Add Referral button. Table columns: Name, Interested Services (chips), Status, Priority, Next Follow-up, Last Activity.
+
+**Add Referral form** — sectioned inline form:
+1. Personal (name, phone, whatsapp, email, city, state)
+2. Education (qualification, %/CGPA, passing year, passport, german level, intake)
+3. Interested Services (multi-select chips)
+4. Lead (source dropdown)
+5. Follow-up (status, priority, next date, remarks)
+6. Documents (multi-upload via existing `MultiFileUpload`)
+
+**Referral Details** (`/editor/referrals/:id`) — tabs: Overview, Timeline, Tasks, Notes, Documents. Timeline is append-only; each status change / note / call logs a new activity. Task list with quick-add and overdue badge.
+
+**Assigned Students** — keep existing list, but simplified into the tab.
+
+**Tasks** — cross-referral task inbox grouped by Today / Overdue / Upcoming.
+
+## 4. Shared
+
+- Constants file `src/lib/referralConstants.ts` (services, statuses, sources, priorities, colors).
+- Hook `src/hooks/useReferrals.ts` (list + single + mutations) using React Query.
+- Hook `src/hooks/useReferralTasks.ts`, `useReferralActivities.ts`.
+- Reuse existing primitives (Card, Badge, Tabs, Table). No new dependencies.
 
 ## Out of scope
 
-- Backend, RLS, edge functions, DB schema — untouched.
-- Route names, URLs, auth flow — untouched.
-- Content copy on interior pages — untouched unless the layout requires condensing.
+- No commission math, no payments, no notifications beyond existing notifications table (skip for v1).
+- Merge action wired as UI stub calling admin RPC placeholder (returns "coming soon" toast) unless trivial.
+- Referral → Student conversion creates a lightweight linkage only; auth user creation stays manual.
 
-## Technical notes
+## Delivery order
 
-- Tailwind tokens go under a `pg.*` namespace so `bg-pg-bg2`, `text-pg-label`, `border-pg-sep`, `bg-pg-accent`, `text-pg-accent`, `bg-pg-gold` are usable everywhere. Existing shadcn semantic tokens (`--primary`, `--background`, etc.) will be re-pointed to the same palette so any un-touched component picks up the theme automatically.
-- Carousels use native CSS `overflow-x-auto` + `scroll-snap` — no new dependency.
-- Icons come from the already-installed `lucide-react`.
-- Blur header uses Tailwind's `backdrop-blur` (already enabled).
-
-## What I need from you
-
-**One decision** before I start:
-
-Do you want me to do Phase 1 (homepage + logged-in Services page + design tokens) as a single deliverable first — so you can review the exact look on the two reference pages — and then I proceed to Phases 2 and 3? Or do you want me to push through all three phases in one go and hand back the full app restyled at once (larger diff, slower to review)?
-
-Reply "phased" or "all at once" and I'll start.
+1. Migration (tables, RLS, triggers, indexes, grants).
+2. Constants + hooks.
+3. Editor dashboard shell + Referrals list + Add form + Details tabs + Tasks.
+4. Admin Editors list refresh + EditorProfile tabs + convert/reject actions.
+5. QA pass: types regen, build check, spot-check RLS via linter.
