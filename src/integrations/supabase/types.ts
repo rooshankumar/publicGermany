@@ -1445,6 +1445,242 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_activities: {
+        Row: {
+          actor_user_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          meta: Json
+          referral_id: string
+          title: string | null
+          type: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          referral_id: string
+          title?: string | null
+          type: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          referral_id?: string
+          title?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_activities_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_documents: {
+        Row: {
+          category: string | null
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          mime: string | null
+          referral_id: string
+          size: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          mime?: string | null
+          referral_id: string
+          size?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          mime?: string | null
+          referral_id?: string
+          size?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_documents_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_services: {
+        Row: {
+          created_at: string
+          id: string
+          referral_id: string
+          service_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_id: string
+          service_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_id?: string
+          service_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_services_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          owner_editor_id: string
+          referral_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_editor_id: string
+          referral_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_editor_id?: string
+          referral_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_tasks_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          city: string | null
+          commission_status: string
+          converted_at: string | null
+          converted_student_id: string | null
+          created_at: string
+          current_status: string
+          email: string | null
+          full_name: string
+          german_level: string | null
+          id: string
+          lead_source: string | null
+          next_followup_date: string | null
+          owner_editor_id: string
+          passing_year: string | null
+          passport_available: boolean | null
+          percentage: string | null
+          phone: string | null
+          preferred_intake: string | null
+          priority: string
+          qualification: string | null
+          remarks: string | null
+          state: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          commission_status?: string
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          current_status?: string
+          email?: string | null
+          full_name: string
+          german_level?: string | null
+          id?: string
+          lead_source?: string | null
+          next_followup_date?: string | null
+          owner_editor_id: string
+          passing_year?: string | null
+          passport_available?: boolean | null
+          percentage?: string | null
+          phone?: string | null
+          preferred_intake?: string | null
+          priority?: string
+          qualification?: string | null
+          remarks?: string | null
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          commission_status?: string
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          current_status?: string
+          email?: string | null
+          full_name?: string
+          german_level?: string | null
+          id?: string
+          lead_source?: string | null
+          next_followup_date?: string | null
+          owner_editor_id?: string
+          passing_year?: string | null
+          passport_available?: boolean | null
+          percentage?: string | null
+          phone?: string | null
+          preferred_intake?: string | null
+          priority?: string
+          qualification?: string | null
+          remarks?: string | null
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           category: string
