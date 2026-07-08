@@ -1,10 +1,11 @@
 import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Users, FileText, GraduationCap, CreditCard, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Users, FileText, GraduationCap, CreditCard, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
@@ -16,7 +17,7 @@ interface DashboardStats {
   pendingDocuments: number; recentStudents: any[];
 }
 
-const AdminDashboard = () => {
+export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[]});
   const [loading, setLoading] = useState(true);
   const initialLoadDoneRef = useRef(false);
@@ -56,19 +57,19 @@ const AdminDashboard = () => {
         supabase.from('documents' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('id, full_name, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
       ]);
-      let totalRevenue = (receivedRowsRes.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
-      try {
-        const { data: manualReceived } = await (supabase as any).from('manual_payments').select('amount').eq('status', 'received');
-        totalRevenue += ((manualReceived || []) as any[]).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
-      } catch {}
-      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: recentPaymentsRes.data || [], urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
+      const totalRevenue = (receivedRowsRes.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      setStats({
+        totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0,
+        pendingRequests: requestsCountRes.count || 0, totalRevenue,
+        recentPayments: recentPaymentsRes.data || [], urgentTasks: urgentAppsRes.data || [],
+        pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0,
+        pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || []
+      });
     } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
     finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }
   };
 
-  const getDaysUntilDeadline = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
-  const SIC = ({ status }: { status: string }) => {
+  const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'received': return <CheckCircle className="h-3.5 w-3.5 text-success" />;
       case 'pending': return <Clock className="h-3.5 w-3.5 text-warning" />;
@@ -76,6 +77,8 @@ const AdminDashboard = () => {
       default: return <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />;
     }
   };
+
+  const getDaysUntilDeadline = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   return (
     <Layout>
@@ -106,7 +109,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-1.5 text-[11px] font-semibold"><TrendingUp className="h-3.5 w-3.5" /> Recent Payments</div>
             {stats.recentPayments.length === 0 ? <p className="text-center text-muted-foreground py-3 text-[11px]">No payments yet</p> : stats.recentPayments.map((p: any) => (
               <div key={p.id} className="flex items-center justify-between p-1.5 border rounded text-[11px]">
-                <div className="flex items-center gap-2"><SIC status={p.status} /><div><p className="font-medium text-[11px]">₹{p.amount?.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</p></div></div>
+                <div className="flex items-center gap-2">{getStatusIcon(p.status)}<div><p className="font-medium text-[11px]">₹{p.amount?.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</p></div></div>
                 <Badge variant={p.status === 'received' ? 'default' : p.status === 'pending' ? 'secondary' : 'destructive'} className="text-[9px] px-1.5 py-0">{p.status}</Badge>
               </div>
             ))}
@@ -132,6 +135,4 @@ const AdminDashboard = () => {
       </div>
     </Layout>
   );
-};
-
-export default AdminDashboard;
+}

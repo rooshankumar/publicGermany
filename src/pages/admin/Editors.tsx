@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -149,100 +149,52 @@ export default function Editors() {
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-3 max-w-5xl mx-auto space-y-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Manage Editors</h1>
-            <p className="text-sm text-muted-foreground">Add editors, assign students and control permissions</p>
-          </div>
-          <Button onClick={() => setAddEditorDialogOpen(true)} size="sm">
-            <UserPlus className="h-4 w-4 mr-1" /> Add Editor
-          </Button>
+          <div><h1 className="text-base font-bold text-foreground">Manage Editors</h1><p className="text-[10px] text-muted-foreground">Add editors, assign students and control permissions</p></div>
+          <Button onClick={() => setAddEditorDialogOpen(true)} size="sm" className="h-7 text-[11px]"><UserPlus className="h-3.5 w-3.5 mr-1" /> Add Editor</Button>
         </div>
 
         {loading ? <InlineLoader /> : editors.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center space-y-3">
-              <p className="text-muted-foreground text-sm">No editors yet. Click "Add Editor" to promote a student to editor role.</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="py-6 text-center"><p className="text-xs text-muted-foreground">No editors yet.</p></CardContent></Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {editors.map(editor => {
               const perms = editorPerms(editor.user_id);
               return (
-                <Card key={editor.user_id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {editor.full_name?.charAt(0) || 'E'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-base">{editor.full_name || 'Editor'}</CardTitle>
-                          <p className="text-xs text-muted-foreground">Editor · {perms.length} students</p>
-                        </div>
-                      </div>
+                <Card key={editor.user_id} className="shadow-none">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => window.location.assign(`/admin/editors/${editor.user_id}`)}>
-                          View Profile
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => {
-                          setSelectedEditor(editor);
-                          setAssignDialogOpen(true);
-                        }}>
-                          <Plus className="h-3.5 w-3.5 mr-1" /> Assign Student
-                        </Button>
+                        <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/10 text-primary text-[10px]">{editor.full_name?.charAt(0) || 'E'}</AvatarFallback></Avatar>
+                        <div><p className="text-[12px] font-semibold">{editor.full_name || 'Editor'}</p><p className="text-[9px] text-muted-foreground">{perms.length} students</p></div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="secondary" className="h-6 text-[9px] px-2" onClick={() => window.location.assign(`/admin/editors/${editor.user_id}`)}>Profile</Button>
+                        <Button size="sm" variant="outline" className="h-6 text-[9px] px-2" onClick={() => { setSelectedEditor(editor); setAssignDialogOpen(true); }}><Plus className="h-3 w-3 mr-0.5" /> Assign</Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="ghost" className="text-destructive h-8 px-2">
-                              <UserMinus className="h-4 w-4" />
-                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive"><UserMinus className="h-3.5 w-3.5" /></Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove Editor</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will revoke {editor.full_name || 'this editor'}'s editor access, remove all student assignments, and revert them to a student account.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => demoteEditor(editor.user_id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Remove Editor
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
+                          <AlertDialogContent><AlertDialogHeader><AlertDialogTitle className="text-sm">Remove Editor</AlertDialogTitle><AlertDialogDescription className="text-xs">Revoke {editor.full_name || 'this editor'}'s access and revert to student.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="h-7 text-[11px]">Cancel</AlertDialogCancel><AlertDialogAction onClick={() => demoteEditor(editor.user_id)} className="h-7 text-[11px]">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
                     {perms.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No students assigned</p>
+                      <p className="text-[10px] text-muted-foreground text-center py-2">No students assigned</p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         {perms.map(perm => (
-                          <div key={perm.id} className="border rounded-lg p-3 space-y-2">
+                          <div key={perm.id} className="border rounded p-2 space-y-1">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{getStudentName(perm.student_user_id)}</p>
-                              <Button size="sm" variant="ghost" className="h-7 text-destructive" onClick={() => removeAssignment(perm.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              <p className="text-[11px] font-medium">{getStudentName(perm.student_user_id)}</p>
+                              <Button size="sm" variant="ghost" className="h-6 p-0 text-destructive" onClick={() => removeAssignment(perm.id)}><Trash2 className="h-3 w-3" /></Button>
                             </div>
-                            <div className="flex flex-wrap gap-x-4 gap-y-2">
-                              {(['can_view_profile', 'can_view_documents', 'can_view_applications', 'can_view_payments', 'can_view_contracts'] as const).map(field => (
-                                <div key={field} className="flex items-center gap-1.5">
-                                  <Switch
-                                    checked={(perm as any)[field]}
-                                    onCheckedChange={() => togglePermission(perm, field)}
-                                    className="scale-75"
-                                  />
-                                  <Label className="text-xs capitalize cursor-pointer">
-                                    {field.replace('can_view_', '')}
-                                  </Label>
+                            <div className="flex flex-wrap gap-2">
+                              {(['can_view_profile','can_view_documents','can_view_applications','can_view_payments','can_view_contracts'] as const).map(field => (
+                                <div key={field} className="flex items-center gap-1">
+                                  <Switch checked={(perm as any)[field]} onCheckedChange={() => togglePermission(perm, field)} className="scale-[0.6]" />
+                                  <Label className="text-[9px] cursor-pointer capitalize">{field.replace('can_view_', '')}</Label>
                                 </div>
                               ))}
                             </div>
@@ -257,54 +209,36 @@ export default function Editors() {
           </div>
         )}
 
-        {/* Assign Student Dialog */}
         <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Assign Student to {selectedEditor?.full_name}</DialogTitle>
-              <DialogDescription>Select a student to assign to this editor.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
+          <DialogContent className="max-w-md p-4">
+            <DialogHeader><DialogTitle className="text-sm">Assign Student</DialogTitle></DialogHeader>
+            <div className="space-y-3 pt-1">
               <Select value={selectedStudentToAssign} onValueChange={setSelectedStudentToAssign}>
-                <SelectTrigger><SelectValue placeholder="Select a student" /></SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select a student" /></SelectTrigger>
                 <SelectContent>
-                  {allStudents
-                    .filter(s => !editorPerms(selectedEditor?.user_id || '').some(p => p.student_user_id === s.user_id))
-                    .map(s => (
-                      <SelectItem key={s.user_id} value={s.user_id}>{s.full_name || s.user_id}</SelectItem>
-                    ))}
+                  {allStudents.filter(s => !editorPerms(selectedEditor?.user_id || '').some(p => p.student_user_id === s.user_id)).map(s => (
+                    <SelectItem key={s.user_id} value={s.user_id} className="text-xs">{s.full_name || s.user_id}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Button onClick={assignStudent} disabled={!selectedStudentToAssign || saving} className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                Assign
-              </Button>
+              <Button onClick={assignStudent} disabled={!selectedStudentToAssign || saving} className="w-full h-7 text-xs">{saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}Assign</Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Add New Editor Dialog */}
         <Dialog open={addEditorDialogOpen} onOpenChange={setAddEditorDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Editor</DialogTitle>
-              <DialogDescription>Promote a student account to editor role. They'll get their own editor dashboard.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
+          <DialogContent className="max-w-md p-4">
+            <DialogHeader><DialogTitle className="text-sm">Add New Editor</DialogTitle></DialogHeader>
+            <div className="space-y-3 pt-1">
               <Select value={selectedUserToPromote} onValueChange={setSelectedUserToPromote}>
-                <SelectTrigger><SelectValue placeholder="Select a user to promote" /></SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select a user" /></SelectTrigger>
                 <SelectContent>
-                  {allUsers
-                    .filter(u => !editors.some(e => e.user_id === u.user_id))
-                    .map(u => (
-                      <SelectItem key={u.user_id} value={u.user_id}>{u.full_name || u.user_id}</SelectItem>
-                    ))}
+                  {allUsers.filter(u => !editors.some(e => e.user_id === u.user_id)).map(u => (
+                    <SelectItem key={u.user_id} value={u.user_id} className="text-xs">{u.full_name || u.user_id}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Button onClick={promoteToEditor} disabled={!selectedUserToPromote || saving} className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                Promote to Editor
-              </Button>
+              <Button onClick={promoteToEditor} disabled={!selectedUserToPromote || saving} className="w-full h-7 text-xs">{saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}Promote to Editor</Button>
             </div>
           </DialogContent>
         </Dialog>

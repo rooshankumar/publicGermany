@@ -1,5 +1,5 @@
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -179,82 +179,31 @@ export default function Exports() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Data Export Center</h1>
-            <p className="text-muted-foreground">Export your data in CSV or JSON format for offline analysis</p>
-          </div>
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-base font-bold text-foreground">Data Export Center</h1>
+          <p className="text-[10px] text-muted-foreground">Export your data in CSV or JSON format</p>
         </div>
 
-        {/* Date Range Filter */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Export Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">From Date</label>
-                <Input
-                  type="date"
-                  value={dateRange.from}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">To Date</label>
-                <Input
-                  type="date"
-                  value={dateRange.to}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Date range applies to Applications, Service Requests, and Payments exports
-            </p>
-          </CardContent>
-        </Card>
+        <Card className="shadow-none"><CardContent className="p-3 space-y-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Filter className="h-3.5 w-3.5" /> Export Filters</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="text-[10px] font-medium">From</label><Input type="date" value={dateRange.from} onChange={(e) => setDateRange(p => ({ ...p, from: e.target.value }))} className="h-7 text-xs mt-0.5" /></div>
+            <div><label className="text-[10px] font-medium">To</label><Input type="date" value={dateRange.to} onChange={(e) => setDateRange(p => ({ ...p, to: e.target.value }))} className="h-7 text-xs mt-0.5" /></div>
+          </div>
+        </CardContent></Card>
 
-        {/* Export Options */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {exportOptions.map((option) => {
             const Icon = option.icon;
             return (
-              <Card key={option.type} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-3 text-base md:text-lg">
-                    <Icon className={`h-5 w-5 md:h-6 md:w-6 ${option.color}`} />
-                    <span className="truncate">{option.title}</span>
-                  </CardTitle>
-                  <p className="text-xs md:text-sm text-muted-foreground">{option.description}</p>
-                </CardHeader>
-                <CardContent className="space-y-3 p-4 md:p-6">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      onClick={() => exportData(option.type, 'csv')}
-                      disabled={loading}
-                      className="flex-1 text-xs md:text-sm"
-                      variant="outline"
-                    >
-                      <FileSpreadsheet className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      Export CSV
-                    </Button>
-                    <Button
-                      onClick={() => exportData(option.type, 'json')}
-                      disabled={loading}
-                      className="flex-1 text-xs md:text-sm"
-                      variant="outline"
-                    >
-                      <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                      Export JSON
-                    </Button>
+              <Card key={option.type} className="shadow-none hover:shadow transition-shadow">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-[12px] font-semibold"><Icon className={`h-4 w-4 ${option.color}`} /><span className="truncate">{option.title}</span></div>
+                  <p className="text-[10px] text-muted-foreground">{option.description}</p>
+                  <div className="flex gap-1.5">
+                    <Button onClick={() => exportData(option.type, 'csv')} disabled={loading} className="flex-1 h-7 text-[10px]" variant="outline"><FileSpreadsheet className="h-3 w-3 mr-1" /> CSV</Button>
+                    <Button onClick={() => exportData(option.type, 'json')} disabled={loading} className="flex-1 h-7 text-[10px]" variant="outline"><FileText className="h-3 w-3 mr-1" /> JSON</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -262,35 +211,10 @@ export default function Exports() {
           })}
         </div>
 
-        {/* Quick Export All */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              Quick Export All Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <p className="text-sm text-muted-foreground mb-4">
-              Export all data types at once for comprehensive backup (Students, Applications, Service Requests)
-            </p>
-            <Button
-              onClick={async () => {
-                await Promise.all([
-                  exportData('students', 'csv'),
-                  exportData('applications', 'csv'),
-                  exportData('requests', 'csv'),
-                ]);
-              }}
-              disabled={loading}
-              size="lg"
-              className="w-full"
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Export All Data (CSV)
-            </Button>
-          </CardContent>
-        </Card>
+        <Card className="shadow-none"><CardContent className="p-3">
+          <p className="text-[10px] text-muted-foreground mb-2">Export all data types at once (Students, Applications, Service Requests)</p>
+          <Button onClick={async () => { await Promise.all([exportData('students','csv'), exportData('applications','csv'), exportData('requests','csv')]); }} disabled={loading} className="w-full h-7 text-[10px]"><Download className="h-3.5 w-3.5 mr-1" /> Export All Data (CSV)</Button>
+        </CardContent></Card>
       </div>
     </Layout>
   );

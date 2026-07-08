@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useMemo, useState } from 'react';
@@ -75,60 +75,47 @@ export default function EmailLogs() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Email Logs</h1>
-            <p className="text-muted-foreground">Latest 200 email attempts from the platform</p>
+            <h1 className="text-base font-bold text-foreground">Email Logs</h1>
+            <p className="text-[10px] text-muted-foreground">Latest 200 email attempts</p>
           </div>
-          <div className="w-full sm:w-80">
-            <Input placeholder="Search by email, subject, or status..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+          <Input placeholder="Search by email, subject, or status..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-56 h-7 text-xs" />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Emails ({filtered.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <InlineLoader label="Loading emails" />
-            ) : filtered.length === 0 ? (
-              <p className="text-muted-foreground">No emails found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Time</th>
-                      <th className="text-left p-3 font-medium">To</th>
-                      <th className="text-left p-3 font-medium">Subject</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Error</th>
+        <Card className="shadow-none"><CardContent className="p-0">
+          {loading ? (
+            <div className="p-3"><InlineLoader label="Loading emails" /></div>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-3">No emails found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[11px]">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-1.5 font-medium text-[10px]">Time</th>
+                    <th className="text-left p-1.5 font-medium text-[10px]">To</th>
+                    <th className="text-left p-1.5 font-medium text-[10px]">Subject</th>
+                    <th className="text-left p-1.5 font-medium text-[10px]">Status</th>
+                    <th className="text-left p-1.5 font-medium text-[10px]">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((log) => (
+                    <tr key={log.id} className="border-b hover:bg-muted/30">
+                      <td className="p-1.5 whitespace-nowrap text-[10px]">{new Date(log.created_at).toLocaleString()}</td>
+                      <td className="p-1.5 whitespace-nowrap text-[10px]">{log.to_email}</td>
+                      <td className="p-1.5 text-[10px]">{log.subject}</td>
+                      <td className="p-1.5"><Badge variant={log.status === 'success' ? 'default' : 'destructive'} className="text-[8px] px-1 py-0 h-4">{log.status}</Badge></td>
+                      <td className="p-1.5 max-w-[200px] truncate text-[10px]" title={log.error || ''}>{log.error}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((log) => (
-                      <tr key={log.id} className="border-b hover:bg-muted/30">
-                        <td className="p-3 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
-                        <td className="p-3 whitespace-nowrap">{log.to_email}</td>
-                        <td className="p-3">{log.subject}</td>
-                        <td className="p-3">
-                          <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
-                            {log.status}
-                          </Badge>
-                        </td>
-                        <td className="p-3 max-w-[360px] truncate" title={log.error || ''}>
-                          {log.error}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent></Card>
       </div>
     </Layout>
   );

@@ -358,75 +358,47 @@ export default function Universities() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Universities Management</h1>
-            <p className="text-muted-foreground">Manage university database for student applications</p>
+            <h1 className="text-base font-bold text-foreground">Universities</h1>
+            <p className="text-[10px] text-muted-foreground">Database for student applications</p>
           </div>
-          
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add University
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New University</DialogTitle>
-                <DialogDescription>
-                  Add a new university to the database
-                </DialogDescription>
-              </DialogHeader>
-              <UniversityForm onSubmit={handleAddUniversity} />
-            </DialogContent>
-          </Dialog>
-
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import CSV/Excel
-          </Button>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="hidden" />
+          <div className="flex items-center gap-1.5">
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-7 text-[10px]">
+                  <Plus className="mr-1 h-3 w-3" /> Add
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Add University</DialogTitle><DialogDescription>Add a new university to the database</DialogDescription></DialogHeader>
+                <UniversityForm onSubmit={handleAddUniversity} />
+              </DialogContent>
+            </Dialog>
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-1 h-3 w-3" /> Import
+            </Button>
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="hidden" />
+          </div>
         </div>
 
-        {/* Search and Filter */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                placeholder="Search universities or cities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
-              <Select value={countryFilter} onValueChange={setCountryFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Countries</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
-                  <SelectItem value="Austria">Austria</SelectItem>
-                  <SelectItem value="Switzerland">Switzerland</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <Card className="shadow-none"><CardContent className="p-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <Input placeholder="Search universities or cities..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-7 text-xs" />
+            <Select value={countryFilter} onValueChange={setCountryFilter}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Country" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Countries</SelectItem>
+                <SelectItem value="Germany">Germany</SelectItem>
+                <SelectItem value="Austria">Austria</SelectItem>
+                <SelectItem value="Switzerland">Switzerland</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent></Card>
 
-        {/* Universities List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Universities ({filteredUniversities.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
+        <Card className="shadow-none"><CardContent className="p-0">
             {loading ? (
               <InlineLoader label="Loading universities" />
             ) : filteredUniversities.length === 0 ? (

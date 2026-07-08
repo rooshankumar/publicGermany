@@ -27,6 +27,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminMobileBottomNav from '@/components/AdminMobileBottomNav';
 import StudentMobileBottomNav from '@/components/StudentMobileBottomNav';
+import EditorMobileBottomNav from '@/components/EditorMobileBottomNav';
 
 interface LayoutProps {
   children: ReactNode;
@@ -104,6 +105,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/resources', label: 'Resources', icon: BookOpen },
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
+    { href: '/german-course', label: 'German Course', icon: Youtube },
   ];
 
   const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
@@ -685,7 +687,7 @@ const Layout = ({ children }: LayoutProps) => {
         <main className="p-3 sm:p-4 max-w-full pb-[calc(env(safe-area-inset-bottom)+4.5rem)] overflow-x-hidden">
           {children}
         </main>
-        {isAdmin ? <AdminMobileBottomNav /> : isEditor ? null : <StudentMobileBottomNav />}
+        {isAdmin ? <AdminMobileBottomNav /> : isEditor ? <EditorMobileBottomNav /> : <StudentMobileBottomNav />}
       </div>
     </div>
   );

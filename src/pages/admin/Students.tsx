@@ -226,272 +226,122 @@ export default function Students() {
 
   return (
     <Layout>
-      <div className="space-y-5 max-w-7xl mx-auto">
+      <div className="space-y-3 max-w-7xl mx-auto">
          <div className="german-stripe w-full" />
          <div>
-           <h1 className="text-xl font-bold text-foreground">Student Management</h1>
-           <p className="text-xs text-muted-foreground">Manage and track all student profiles</p>
+           <h1 className="text-base font-bold text-foreground">Student Management</h1>
+           <p className="text-[10px] text-muted-foreground">Manage and track all student profiles</p>
         </div>
 
-        {/* Search and Filters */}
-        <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Search & Filter Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 p-3 md:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              <Input
-                placeholder="Search by name, student ID, or user ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-8"
-              />
-              <Select value={apsFilter} onValueChange={setApsFilter}>
-                <SelectTrigger className="w-full h-8">
-                  <SelectValue placeholder="APS Pathway" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All APS Status</SelectItem>
-                  <SelectItem value="stk">STK</SelectItem>
-                  <SelectItem value="bachelor_2_semesters">Bachelor 2 Semesters</SelectItem>
-                  <SelectItem value="master_applicants">Master Applicants</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={germanFilter} onValueChange={setGermanFilter}>
-                <SelectTrigger className="w-full h-8">
-                  <SelectValue placeholder="German Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="a1">A1</SelectItem>
-                  <SelectItem value="a2">A2</SelectItem>
-                  <SelectItem value="b1">B1</SelectItem>
-                  <SelectItem value="b2">B2</SelectItem>
-                  <SelectItem value="c1">C1</SelectItem>
-                  <SelectItem value="c2">C2</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full h-8">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <p>Showing {filteredStudents.length} of {students.length} students</p>
-              <p className="text-xs">Sorted by: <span className="font-medium">{sortBy === 'newest' ? 'Newest First' : 'Oldest First'}</span></p>
-            </div>
-          </CardContent>
-        </Card>
+        <Card className="shadow-none"><CardContent className="p-2.5 space-y-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Filter className="h-3.5 w-3.5" /> Search & Filter</div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5">
+            <Input placeholder="Search by name or user ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-7 text-xs" />
+            <Select value={apsFilter} onValueChange={setApsFilter}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="APS Pathway" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">All APS</SelectItem>
+                <SelectItem value="stk" className="text-xs">STK</SelectItem>
+                <SelectItem value="bachelor_2_semesters" className="text-xs">Bachelor 2 Sem</SelectItem>
+                <SelectItem value="master_applicants" className="text-xs">Master Applicants</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={germanFilter} onValueChange={setGermanFilter}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="German Level" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">All Levels</SelectItem>
+                <SelectItem value="none" className="text-xs">None</SelectItem>
+                <SelectItem value="a1" className="text-xs">A1</SelectItem>
+                <SelectItem value="a2" className="text-xs">A2</SelectItem>
+                <SelectItem value="b1" className="text-xs">B1</SelectItem>
+                <SelectItem value="b2" className="text-xs">B2</SelectItem>
+                <SelectItem value="c1" className="text-xs">C1</SelectItem>
+                <SelectItem value="c2" className="text-xs">C2</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Sort" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest" className="text-xs">Newest First</SelectItem>
+                <SelectItem value="oldest" className="text-xs">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Showing {filteredStudents.length} of {students.length} students</p>
+        </CardContent></Card>
 
-        {/* Students List */}
-        <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="flex items-center justify-between">
-              <span>Student Profiles ({filteredStudents.length})</span>
-              <span className="hidden lg:inline text-xs text-muted-foreground">Tip: Scroll horizontally to view more columns</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 md:p-4">
-            {loading ? (
-              <InlineLoader label="Loading students" />
-            ) : filteredStudents.length === 0 ? (
-              <div className="text-center py-8">
-                <UserX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No students found matching your criteria</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto max-h-[70vh]">
-                <table className="w-full border-collapse text-[13px]">
-                  <thead className="sticky top-0 bg-card z-10">
-                    <tr className="border-b text-muted-foreground">
-                      <th className="text-left p-1.5 font-medium whitespace-nowrap">Student</th>
-                      <th className="text-left p-1.5 font-medium hidden sm:table-cell whitespace-nowrap">Student ID</th>
-                      <th className="text-left p-1.5 font-medium hidden md:table-cell whitespace-nowrap">APS Pathway</th>
-                      <th className="text-left p-1.5 font-medium hidden md:table-cell whitespace-nowrap">German Level</th>
-                      <th className="text-left p-1.5 font-medium hidden lg:table-cell whitespace-nowrap">Progress</th>
-                      <th className="text-left p-1.5 font-medium hidden lg:table-cell whitespace-nowrap">Applications</th>
-                      <th className="text-left p-1.5 font-medium whitespace-nowrap">Documents</th>
-                      <th className="text-left p-1.5 font-medium hidden sm:table-cell whitespace-nowrap">Joined</th>
-                      <th className="text-left p-1.5 font-medium whitespace-nowrap">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="align-middle">
-                    {filteredStudents.map((student) => {
-                      const progress = getProgressPercentage(student);
-                      return (
-                        <tr key={student.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="p-1.5 min-w-[200px]">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center">
-                                <UserCheck className="h-3.5 w-3.5 text-primary" />
-                              </div>
-                              <div className="max-w-[230px]">
-                                <p className="font-medium truncate" title={student.full_name || undefined}>{student.full_name || 'Unnamed Student'}</p>
-                                <p className="text-xs text-muted-foreground">ID: {student.user_id.slice(0, 8)}...</p>
-                              </div>
+        <Card className="shadow-none"><CardContent className="p-0">
+          {loading ? (
+            <div className="p-4"><InlineLoader label="Loading students" /></div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-6"><p className="text-xs text-muted-foreground">No students found</p></div>
+          ) : (
+            <div className="overflow-x-auto max-h-[70vh]">
+              <table className="w-full border-collapse text-[11px]">
+                <thead className="sticky top-0 bg-card z-10">
+                  <tr className="border-b text-muted-foreground">
+                    <th className="text-left p-1 font-medium text-[10px] whitespace-nowrap">Student</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden sm:table-cell whitespace-nowrap">ID</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden md:table-cell whitespace-nowrap">APS</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden md:table-cell whitespace-nowrap">German</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden lg:table-cell whitespace-nowrap">Prog.</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden lg:table-cell whitespace-nowrap">Apps</th>
+                    <th className="text-left p-1 font-medium text-[10px] whitespace-nowrap">Docs</th>
+                    <th className="text-left p-1 font-medium text-[10px] hidden sm:table-cell whitespace-nowrap">Joined</th>
+                    <th className="text-left p-1 font-medium text-[10px] whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="align-middle">
+                  {filteredStudents.map((student) => {
+                    const progress = getProgressPercentage(student);
+                    return (
+                      <tr key={student.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="p-1 min-w-[140px]">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                              <UserCheck className="h-3 w-3 text-primary" />
                             </div>
-                          </td>
-                          <td className="p-1.5 hidden sm:table-cell">
-                            <Badge variant="outline" className="font-mono">
-                              {generateStudentId(students.indexOf(student) + 1)}
-                            </Badge>
-                          </td>
-                          <td className="p-1.5 hidden md:table-cell">
-                            <Badge className={getAPSStatusColor(student.aps_pathway)}>
-                              {student.aps_pathway?.replace('_', ' ').toUpperCase() || 'Not Set'}
-                            </Badge>
-                          </td>
-                          <td className="p-1.5 hidden md:table-cell">
-                            <Badge className={getGermanLevelColor(student.german_level)}>
-                              {student.german_level?.toUpperCase() || 'None'}
-                            </Badge>
-                          </td>
-                          <td className="p-1.5 hidden lg:table-cell">
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 bg-muted rounded-full h-1.5">
-                                <div 
-                                  className="bg-primary h-1.5 rounded-full transition-all"
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                              <span className="text-sm text-muted-foreground">{progress}%</span>
+                            <div className="max-w-[160px]">
+                              <p className="font-medium text-[11px] truncate" title={student.full_name || undefined}>{student.full_name || 'Unnamed'}</p>
+                              <p className="text-[9px] text-muted-foreground">{student.user_id.slice(0, 8)}...</p>
                             </div>
-                          </td>
-                          <td className="p-1.5 hidden lg:table-cell">
-                            <div className="flex items-center gap-1">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{student.applications?.length || 0}</span>
-                            </div>
-                          </td>
-                          <td className="p-1.5">
-                            <div className="flex items-center gap-2">
-                              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{student.documents?.length || 0}</span>
-                              {student.documents && student.documents.length > 0 ? (
-                                <Button size="sm" variant="outline" className="h-7" onClick={() => {
-                                  setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [] });
-                                  setDocsOpen(true);
-                                }}>View</Button>
-                              ) : null}
-                            </div>
-                          </td>
-                          <td className="p-1.5 hidden sm:table-cell">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm whitespace-nowrap">
-                                {new Date(student.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-1.5">
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" className="h-7" asChild>
-                                <Link to={`/admin/students/${student.user_id}`}>
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  View Profile
-                                </Link>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                className="h-7"
-                                onClick={() => {
-                                  // Quick edit functionality can be added here
-                                  toast({
-                                    title: "Quick Edit",
-                                    description: "Quick edit feature coming soon",
-                                  });
-                                }}
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                          </div>
+                        </td>
+                        <td className="p-1 hidden sm:table-cell"><Badge variant="outline" className="font-mono text-[8px] px-1 py-0 h-4">{generateStudentId(students.indexOf(student) + 1)}</Badge></td>
+                        <td className="p-1 hidden md:table-cell"><Badge className={`${getAPSStatusColor(student.aps_pathway)} text-[8px] px-1 py-0`}>{student.aps_pathway?.replace('_', ' ').toUpperCase() || '—'}</Badge></td>
+                        <td className="p-1 hidden md:table-cell"><Badge className={`${getGermanLevelColor(student.german_level)} text-[8px] px-1 py-0`}>{student.german_level?.toUpperCase() || '—'}</Badge></td>
+                        <td className="p-1 hidden lg:table-cell"><div className="flex items-center gap-1"><div className="w-12 bg-muted rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }} /></div><span className="text-[10px] text-muted-foreground">{progress}%</span></div></td>
+                        <td className="p-1 hidden lg:table-cell"><span className="text-[11px]">{student.applications?.length || 0}</span></td>
+                        <td className="p-1"><div className="flex items-center gap-1"><GraduationCap className="h-3 w-3 text-muted-foreground" /><span className="text-[11px]">{student.documents?.length || 0}</span>{student.documents && student.documents.length > 0 ? <Button size="sm" variant="outline" className="h-5 text-[8px] px-1" onClick={() => { setDocsForStudent({ full_name: student.full_name, documents: (student.documents as any) || [] }); setDocsOpen(true); }}>View</Button> : null}</div></td>
+                        <td className="p-1 hidden sm:table-cell"><span className="text-[10px] whitespace-nowrap">{new Date(student.created_at).toLocaleDateString()}</span></td>
+                        <td className="p-1"><div className="flex items-center gap-1"><Button size="sm" variant="outline" className="h-6 text-[9px] px-1.5" asChild><Link to={`/admin/students/${student.user_id}`}><Eye className="h-3 w-3 mr-0.5" />View</Link></Button></div></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent></Card>
       </div>
 
-      {/* Documents Dialog */}
       <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-            {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded.</p>
-            )}
-            {docsForStudent?.documents?.map((doc: any) => {
-              const handleOpen = async () => {
-                try {
-                  const { data } = await supabase.storage
-                    .from('documents')
-                    .createSignedUrl(doc.upload_path, 300);
-                  if (data?.signedUrl) {
-                    window.open(data.signedUrl, '_blank');
-                  }
-                } catch (e) {
-                  console.error('Error opening document:', e);
-                }
-              };
-              const handleDownload = async () => {
-                try {
-                  const { data } = await supabase.storage
-                    .from('documents')
-                    .createSignedUrl(doc.upload_path, 300);
-                  if (data?.signedUrl) {
-                    const link = document.createElement('a');
-                    link.href = data.signedUrl;
-                    link.download = doc.file_name || 'document';
-                    link.click();
-                  }
-                } catch (e) {
-                  console.error('Error downloading document:', e);
-                }
-              };
-              return (
-                <div key={`doc-${doc.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm break-words whitespace-normal">{doc.file_name || 'Document'}</p>
-                      <Badge 
-                        variant={
-                          doc.status === 'approved' ? 'secondary' : 
-                          doc.status === 'rejected' ? 'destructive' : 
-                          'outline'
-                        } 
-                        className="capitalize text-xs"
-                      >
-                        {doc.status || 'pending'}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground break-words whitespace-normal">
-                      {doc.module === 'additional_documents' ? 'Additional Document' : doc.category || 'APS Required'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                    <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpen}>Open</Button>
-                    <Button size="sm" variant="ghost" className="w-full sm:w-auto" onClick={handleDownload}>Download</Button>
-                  </div>
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl p-4">
+          <DialogHeader><DialogTitle className="text-sm">Documents {docsForStudent?.full_name ? `— ${docsForStudent.full_name}` : ''}</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {(!docsForStudent?.documents || docsForStudent.documents.length === 0) && <p className="text-xs text-muted-foreground text-center py-3">No documents uploaded.</p>}
+            {docsForStudent?.documents?.map((doc: any) => (
+              <div key={`doc-${doc.id}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2.5 border rounded-lg">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5"><p className="font-medium text-[11px] break-words">{doc.file_name || 'Document'}</p><Badge variant={doc.status === 'approved' ? 'secondary' : doc.status === 'rejected' ? 'destructive' : 'outline'} className="text-[8px] px-1 py-0 capitalize">{doc.status || 'pending'}</Badge></div>
+                  <p className="text-[9px] text-muted-foreground">{doc.module === 'additional_documents' ? 'Additional' : doc.category || 'APS Required'}</p>
                 </div>
-              );
-            })}
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" variant="outline" className="h-6 text-[9px] px-2" onClick={async () => { const { data } = await supabase.storage.from('documents').createSignedUrl(doc.upload_path, 300); if (data?.signedUrl) window.open(data.signedUrl, '_blank'); }}>Open</Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2" onClick={async () => { const { data } = await supabase.storage.from('documents').createSignedUrl(doc.upload_path, 300); if (data?.signedUrl) { const a = document.createElement('a'); a.href = data.signedUrl; a.download = doc.file_name; a.click(); } }}>Download</Button>
+                </div>
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>

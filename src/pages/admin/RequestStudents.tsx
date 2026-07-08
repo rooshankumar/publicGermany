@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,105 +149,55 @@ export default function RequestStudents() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/admin')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Request Management</h1>
-            <p className="text-muted-foreground">View service requests by student</p>
+            <h1 className="text-base font-bold text-foreground">Request Management</h1>
+            <p className="text-[10px] text-muted-foreground">View service requests by student</p>
           </div>
         </div>
 
-        {/* Search */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Students</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            <Input
-              placeholder="Search by student name, email, or user ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
+        <Card className="shadow-none"><CardContent className="p-2.5">
+          <Input placeholder="Search by student name, email, or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-7 text-xs" />
+        </CardContent></Card>
 
-        {/* Student List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Students ({filteredStudents.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            {loading ? (
-              <InlineLoader label="Loading students" />
-            ) : filteredStudents.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No students found</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredStudents.map((student) => (
-                  <div
-                    key={student.user_id}
-                    onClick={() => navigate(`/admin/requests/${student.user_id}`)}
-                    className="p-4 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="font-semibold text-lg truncate">{student.full_name}</h3>
-                          {getStatusBadge(student)}
-                          <Badge variant="outline" className="text-xs">
-                            {student.total_requests} total
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate mb-3">{student.email}</p>
-                        
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Total: </span>
-                            <span className="font-medium">{student.total_requests}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Pending: </span>
-                            <span className="font-medium text-yellow-600 dark:text-yellow-400">
-                              {student.pending_requests}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">In Progress: </span>
-                            <span className="font-medium text-blue-600 dark:text-blue-400">
-                              {student.in_progress_requests}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Completed: </span>
-                            <span className="font-medium text-green-600 dark:text-green-400">
-                              {student.completed_requests}
-                            </span>
-                          </div>
-                        </div>
+        <Card className="shadow-none"><CardContent className="p-0">
+          {loading ? (
+            <div className="p-4 text-center"><InlineLoader label="Loading students" /></div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-6"><p className="text-xs text-muted-foreground">No students found</p></div>
+          ) : (
+            <div className="divide-y">
+              {filteredStudents.map((student) => (
+                <div key={student.user_id} onClick={() => navigate(`/admin/requests/${student.user_id}`)}
+                  className="p-2.5 hover:bg-muted/20 transition-colors cursor-pointer group">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <h3 className="font-semibold text-[12px] truncate">{student.full_name}</h3>
+                        {getStatusBadge(student)}
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">{student.total_requests} total</Badge>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-1" />
+                      <p className="text-[10px] text-muted-foreground truncate mb-1.5">{student.email}</p>
+                      <div className="flex gap-2 text-[10px]">
+                        <span>Pending: <span className="font-medium text-yellow-600">{student.pending_requests}</span></span>
+                        <span>In Progress: <span className="font-medium text-blue-600">{student.in_progress_requests}</span></span>
+                        <span>Completed: <span className="font-medium text-green-600">{student.completed_requests}</span></span>
+                      </div>
                     </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent></Card>
       </div>
     </Layout>
   );

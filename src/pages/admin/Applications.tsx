@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -227,38 +227,20 @@ export default function Applications() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Applications Management</h1>
-            <p className="text-muted-foreground">Track and manage all student university applications with live updates</p>
-          </div>
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-base font-bold text-foreground">Applications</h1>
+          <p className="text-[10px] text-muted-foreground">Track and manage student applications</p>
         </div>
 
         {/* Search and Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Search & Filter Applications
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by student name, university, or program..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+        <Card className="shadow-none"><CardContent className="p-2.5 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              <Input placeholder="Search by name or university..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-7 text-xs" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
                   <SelectItem value="under_review">Under Review</SelectItem>
@@ -268,51 +250,39 @@ export default function Applications() {
                 </SelectContent>
               </Select>
               <Select value={universityFilter} onValueChange={setUniversityFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="University" />
-                </SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="University" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Universities</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {uniqueUniversities.map(uni => uni && (
                     <SelectItem key={uni} value={uni}>{uni}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredApplications.length} of {applications.length} applications
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="text-[10px] text-muted-foreground">Showing {filteredApplications.length} of {applications.length}</p>
+          </CardContent></Card>
 
-        {/* Applications List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>University Applications ({filteredApplications.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
+        <Card className="shadow-none"><CardContent className="p-0">
             {loading ? (
               <InlineLoader label="Loading applications" />
             ) : filteredApplications.length === 0 ? (
               <div className="text-center py-8">
-                <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No applications found matching your criteria</p>
+                <GraduationCap className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-[11px] text-muted-foreground">No applications found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Student</th>
-                      <th className="text-left p-3 font-medium">University</th>
-                      <th className="text-left p-3 font-medium">Program</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Deadline</th>
-                      <th className="text-left p-3 font-medium">Fees</th>
-                      <th className="text-left p-3 font-medium">Applied</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                <table className="w-full text-[11px]">
+                  <thead className="bg-muted/50 text-muted-foreground border-y">
+                    <tr>
+                      <th className="text-left p-1.5 font-medium">Student</th>
+                      <th className="text-left p-1.5 font-medium">University</th>
+                      <th className="text-left p-1.5 font-medium">Program</th>
+                      <th className="text-left p-1.5 font-medium">Status</th>
+                      <th className="text-left p-1.5 font-medium">Deadline</th>
+                      <th className="text-left p-1.5 font-medium">Fees</th>
+                      <th className="text-left p-1.5 font-medium">Applied</th>
+                      <th className="text-left p-1.5 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -320,75 +290,42 @@ export default function Applications() {
                       const daysUntilDeadline = getDaysUntilDeadline((app as any).application_end_date);
                       return (
                         <tr key={app.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="p-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
+                          <td className="p-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                                <User className="h-3 w-3 text-primary" />
                               </div>
-                              <div>
-                                <p className="font-medium">{app.profiles?.full_name || 'Unknown Student'}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  ID: {app.profiles?.user_id?.slice(0, 8)}...
-                                </p>
+                              <div className="max-w-[120px]">
+                                <p className="text-[11px] font-medium truncate">{app.profiles?.full_name || 'Unknown'}</p>
+                                <p className="text-[9px] text-muted-foreground truncate">{app.profiles?.user_id?.slice(0, 8)}...</p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium truncate max-w-[160px] md:max-w-[220px]">{app.university_name}</span>
-                            </div>
+                          <td className="p-1.5">
+                            <span className="text-[11px] truncate block max-w-[120px]">{app.university_name}</span>
                           </td>
-                          <td className="p-3">
-                            <span className="text-sm truncate block max-w-[160px] md:max-w-[220px]">{app.program_name}</span>
+                          <td className="p-1.5">
+                            <span className="text-[11px] truncate block max-w-[120px]">{app.program_name}</span>
                           </td>
-                          <td className="p-3">
-                            <Badge className={`${getStatusColor(app.status)} flex items-center gap-1`}>
-                              {getStatusIcon(app.status)}
-                              {app.status?.replace('_', ' ').toUpperCase()}
+                          <td className="p-1.5">
+                            <Badge className={`${getStatusColor(app.status)} text-[8px] px-1 py-0 h-4`}>
+                              {app.status?.replace('_', ' ')}
                             </Badge>
                           </td>
-                          <td className="p-3">
-                            {(app as any).application_end_date ? (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <p className="text-sm">{new Date((app as any).application_end_date).toLocaleDateString()}</p>
-                                  <p className={`text-xs ${getDeadlineColor(daysUntilDeadline)}`}>
-                                    {daysUntilDeadline !== null && (
-                                      daysUntilDeadline < 0 ? 'Overdue' :
-                                      daysUntilDeadline === 0 ? 'Today' :
-                                      `${daysUntilDeadline} days`
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No deadline set</span>
-                            )}
-                          </td>
-                          <td className="p-3">
-                            <span className="text-sm font-medium">
-                              {app.fees_eur ? `€${app.fees_eur}` : 'Not set'}
+                          <td className="p-1.5">
+                            <span className="text-[10px] whitespace-nowrap">
+                              {(app as any).application_end_date ? new Date((app as any).application_end_date).toLocaleDateString() : '—'}
                             </span>
                           </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">
-                                {new Date(app.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
+                          <td className="p-1.5">
+                            <span className="text-[10px]">{app.fees_eur ? `€${app.fees_eur}` : '—'}</span>
                           </td>
-                          <td className="p-3">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedApp(app);
-                                setNotes(app.notes || '');
-                              }}
-                            >
+                          <td className="p-1.5">
+                            <span className="text-[10px] whitespace-nowrap">{new Date(app.created_at).toLocaleDateString()}</span>
+                          </td>
+                          <td className="p-1.5">
+                            <Button size="sm" variant="outline" className="h-6 text-[9px] px-1.5"
+                              onClick={() => { setSelectedApp(app); setNotes(app.notes || ''); }}>
                               Manage
                             </Button>
                           </td>
@@ -402,74 +339,34 @@ export default function Applications() {
           </CardContent>
         </Card>
 
-        {/* Application Management Modal/Panel */}
         {selectedApp && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Application - {selectedApp.university_name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4 md:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Application Details</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Student:</strong> {selectedApp.profiles?.full_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>University:</strong> {selectedApp.university_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Program:</strong> {selectedApp.program_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Fees:</strong> {selectedApp.fees_eur ? `€${selectedApp.fees_eur}` : 'Not set'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Deadline:</strong> {(selectedApp as any).application_end_date ? 
-                      new Date((selectedApp as any).application_end_date).toLocaleDateString() : 'Not set'}
-                  </p>
+          <Card className="shadow-none">
+            <CardContent className="p-2.5 space-y-2">
+              <p className="text-[11px] font-semibold">Manage - {selectedApp.university_name}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                <div className="space-y-1 text-muted-foreground">
+                  <p><strong>Student:</strong> {selectedApp.profiles?.full_name}</p>
+                  <p><strong>University:</strong> {selectedApp.university_name}</p>
+                  <p><strong>Program:</strong> {selectedApp.program_name}</p>
+                  <p><strong>Fees:</strong> {selectedApp.fees_eur ? `€${selectedApp.fees_eur}` : '—'}</p>
+                  <p><strong>Deadline:</strong> {(selectedApp as any).application_end_date ? new Date((selectedApp as any).application_end_date).toLocaleDateString() : '—'}</p>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-2">Update Status & Notes</h4>
-                  <div className="space-y-3">
-                    <Select 
-                      value={selectedApp.status}
-                      onValueChange={(status) => updateApplicationStatus(selectedApp.id, status)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="submitted">Submitted</SelectItem>
-                        <SelectItem value="under_review">Under Review</SelectItem>
-                        <SelectItem value="accepted">Accepted</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="waitlisted">Waitlisted</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Textarea
-                      placeholder="Add admin notes (visible to student)..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => updateApplicationStatus(selectedApp.id, selectedApp.status, notes)}
-                      >
-                        Save Notes
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSelectedApp(null);
-                          setNotes('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                <div className="space-y-1.5">
+                  <Select value={selectedApp.status} onValueChange={(status) => updateApplicationStatus(selectedApp.id, status)}>
+                    <SelectTrigger className="h-7 text-[10px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="submitted">Submitted</SelectItem>
+                      <SelectItem value="under_review">Under Review</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="waitlisted">Waitlisted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Textarea placeholder="Admin notes..." value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[60px] text-[10px]" />
+                  <div className="flex gap-1">
+                    <Button size="sm" className="h-6 text-[9px]" onClick={() => updateApplicationStatus(selectedApp.id, selectedApp.status, notes)}>Save</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[9px]" onClick={() => { setSelectedApp(null); setNotes(''); }}>Cancel</Button>
                   </div>
                 </div>
               </div>

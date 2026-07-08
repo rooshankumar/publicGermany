@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -149,89 +149,59 @@ export default function AdminReviews() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold">Reviews Moderation</h1>
-            <p className="text-muted-foreground">Approve, feature, or remove student reviews</p>
+            <h1 className="text-base font-bold">Reviews Moderation</h1>
+            <p className="text-[10px] text-muted-foreground">Approve, feature, or remove student reviews</p>
           </div>
           <div className="flex w-full sm:w-auto gap-2">
-            <Input className="flex-1" placeholder="Search (name, text, service)" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="h-7 text-xs flex-1" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-              <SelectTrigger className="w-44">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                <SelectItem value="approved" className="text-xs">Approved</SelectItem>
+                <SelectItem value="featured" className="text-xs">Featured</SelectItem>
+                <SelectItem value="all" className="text-xs">All</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {loading ? (
-            <Card>
-              <CardContent className="p-6">
-                <InlineLoader label="Loading reviews" />
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4"><InlineLoader label="Loading reviews" /></CardContent></Card>
           ) : filtered.length === 0 ? (
-            <Card><CardContent className="p-6 text-muted-foreground">No reviews found.</CardContent></Card>
+            <Card><CardContent className="p-4 text-xs text-muted-foreground">No reviews found.</CardContent></Card>
           ) : filtered.map((r) => (
-            <Card key={r.id} className="border-border/60">
-              <CardHeader>
+            <Card key={r.id} className="border-border/60 shadow-none">
+              <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base truncate">{r.profile?.full_name || 'Anonymous'}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {r.is_approved ? (
-                      <Badge variant="secondary">Approved</Badge>
-                    ) : (
-                      <Badge variant="outline">Pending</Badge>
-                    )}
-                    {r.is_featured ? <Badge>Featured</Badge> : null}
+                  <p className="text-[12px] font-semibold truncate">{r.profile?.full_name || 'Anonymous'}</p>
+                  <div className="flex items-center gap-1">
+                    {r.is_approved ? <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4">Approved</Badge> : <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">Pending</Badge>}
+                    {r.is_featured ? <Badge className="text-[8px] px-1 py-0 h-4">Featured</Badge> : null}
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-muted-foreground">{new Date(r.created_at as any).toLocaleDateString()}</div>
-                <div className="text-sm">Rating: {r.rating}</div>
-                {r.service_type && (
-                  <div className="text-xs">
-                    <Badge variant="outline" className="capitalize">{r.service_type}</Badge>
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    'text-sm break-words whitespace-pre-wrap',
-                    expanded[r.id] ? '' : 'max-h-24 overflow-hidden'
-                  )}
-                >
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>{new Date(r.created_at as any).toLocaleDateString()}</span>
+                  <span>· Rating: {r.rating}</span>
+                  {r.service_type && <Badge variant="outline" className="text-[8px] px-1 py-0 capitalize">{r.service_type}</Badge>}
+                </div>
+                <div className={cn('text-[11px] break-words whitespace-pre-wrap', expanded[r.id] ? '' : 'max-h-16 overflow-hidden')}>
                   {r.review_text}
                 </div>
                 {(r.review_text?.length ?? 0) > 120 && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="px-0"
-                    onClick={() => setExpanded((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
-                  >
+                  <Button variant="link" size="sm" className="px-0 h-5 text-[10px]" onClick={() => setExpanded((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}>
                     {expanded[r.id] ? 'Show less' : 'Read more'}
                   </Button>
                 )}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {!r.is_approved && (
-                    <Button size="sm" onClick={() => approve(r.id)}>Approve</Button>
-                  )}
-                  {r.is_approved && (
-                    <Button size="sm" variant="secondary" onClick={() => hide(r.id)}>Hide</Button>
-                  )}
-                  <Button size="sm" variant="outline" onClick={() => toggleFeatured(r.id, r.is_featured || false)}>
-                    {r.is_featured ? 'Unfeature' : 'Feature'}
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => reject(r.id)}>Reject</Button>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {!r.is_approved && <Button size="sm" className="h-6 text-[10px] px-2" onClick={() => approve(r.id)}>Approve</Button>}
+                  {r.is_approved && <Button size="sm" variant="secondary" className="h-6 text-[10px] px-2" onClick={() => hide(r.id)}>Hide</Button>}
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => toggleFeatured(r.id, r.is_featured || false)}>{r.is_featured ? 'Unfeature' : 'Feature'}</Button>
+                  <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => reject(r.id)}>Reject</Button>
                 </div>
               </CardContent>
             </Card>

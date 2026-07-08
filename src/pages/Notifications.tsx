@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,48 +68,40 @@ export default function Notifications() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
-            <p className="text-muted-foreground">You have {unseen} unread</p>
+            <h1 className="text-base font-bold">Notifications</h1>
+            <p className="text-[10px] text-muted-foreground">{unseen} unread · {items.length} total</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={markAll} disabled={marking || unseen === 0}>{marking ? 'Marking…' : 'Mark all as read'}</Button>
-            <Button variant="ghost" size="sm" onClick={fetchNotifs}>Refresh</Button>
-          </div>
+          <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={markAll} disabled={marking || unseen === 0}>{marking ? '…' : 'Mark all read'}</Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent ({items.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="shadow-none"><CardContent className="p-0">
             {loading ? (
               <InlineLoader label="Loading notifications" />
             ) : items.length === 0 ? (
-              <p className="text-muted-foreground">No notifications yet.</p>
+              <p className="p-4 text-[11px] text-muted-foreground">No notifications yet.</p>
             ) : (
               <div className="divide-y">
                 {items.map((n) => (
-                  <div key={n.id} className="py-3 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        {!n.seen && <span className="inline-block h-2 w-2 rounded-full bg-destructive" aria-hidden />}
-                        <div className="font-medium break-words whitespace-normal">{n.title}</div>
+                  <div key={n.id} className="p-2 flex items-start justify-between gap-2 hover:bg-muted/30">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        {!n.seen && <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />}
+                        <div className="text-[11px] font-medium break-words">{n.title}</div>
                         {typeBadge(n.type)}
                       </div>
-                      <div className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{new Date(n.created_at).toLocaleString()}</div>
                     </div>
                     {!n.seen && (
-                      <Button size="sm" variant="ghost" onClick={() => markOne(n.id)}>Mark read</Button>
+                      <Button size="sm" variant="ghost" onClick={() => markOne(n.id)} className="h-6 text-[9px] px-1.5">Read</Button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </CardContent></Card>
       </div>
     </Layout>
   );

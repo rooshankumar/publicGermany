@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Search, Trash2, Loader2 } from 'lucide-react';
 import {
   REFERRAL_STATUSES,
   REFERRAL_PRIORITIES,
@@ -16,16 +17,20 @@ import {
   statusColor,
   priorityColor,
 } from '@/lib/referralConstants';
-import { useMyReferrals } from '@/hooks/useReferrals';
+import { useMyReferrals, useDeleteReferral } from '@/hooks/useReferrals';
 import AddReferralForm from './AddReferralForm';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MyReferralsPanel() {
   const { data = [], isLoading } = useMyReferrals();
+  const deleteReferral = useDeleteReferral();
+  const { toast } = useToast();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<string>('all');
   const [priority, setPriority] = useState<string>('all');
   const [service, setService] = useState<string>('all');
   const [adding, setAdding] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
@@ -98,13 +103,14 @@ export default function MyReferralsPanel() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Next Follow-up</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Loading...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">No referrals found</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">No referrals found</TableCell></TableRow>
                 ) : filtered.map(r => (
                   <TableRow key={r.id} className="cursor-pointer" onClick={() => navigate(`/editor/referrals/${r.id}`)}>
                     <TableCell>
@@ -129,6 +135,15 @@ export default function MyReferralsPanel() {
                     </TableCell>
                     <TableCell className="text-sm">{r.next_followup_date || '—'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeleteId(r.id); }}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Delete referral"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -136,6 +151,37 @@ export default function MyReferralsPanel() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Referral</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this referral? This will permanently remove all associated activities, tasks, and documents. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deleteId) return;
+                try {
+                  await deleteReferral.mutateAsync(deleteId);
+                  toast({ title: 'Referral deleted' });
+                } catch (e: any) {
+                  toast({ title: 'Failed to delete', description: e.message, variant: 'destructive' });
+                }
+                setDeleteId(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteReferral.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Shield, ArrowLeft } from 'lucide-react';
+import Layout from '@/components/Layout';
 
 const Converter = () => {
   const { profile } = useAuth();
@@ -116,6 +117,164 @@ const Converter = () => {
     setEctsCredits(null);
   };
 
+  const converterContent = (
+    <>
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => window.history.back()}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-lg font-bold text-foreground mb-1">German Grade & Credit Converter</h1>
+          <p className="text-muted-foreground">Official TUM formulas for grade and credit conversion</p>
+        </div>
+
+        <Card className="glass-morphism border-glass mb-3"><CardContent className="p-2.5 space-y-2">
+            <p className="text-[11px] font-semibold flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" /> German Grade Converter</p>
+            <p className="text-[9px] text-muted-foreground">Modified Bavarian Formula (TUM)</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="maxMarks">Maximum Grade at Your University</Label>
+                <Input
+                  id="maxMarks"
+                  type="number"
+                  placeholder="e.g., 100"
+                  value={maxMarks}
+                  onChange={(e) => handleMaxMarksChange(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minMarks">Minimum Passing Grade</Label>
+                <Input
+                  id="minMarks"
+                  type="number"
+                  placeholder="e.g., 40"
+                  value={minMarks}
+                  onChange={(e) => handleMinMarksChange(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="yourMarks">Your Obtained Grade</Label>
+                <Input
+                  id="yourMarks"
+                  type="number"
+                  placeholder="e.g., 85"
+                  value={yourMarks}
+                  onChange={(e) => handleYourMarksChange(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <p className="text-[9px] text-muted-foreground italic">Formula as per TUM – non-binding estimation.</p>
+            <Button onClick={resetGradeConverter} variant="outline" size="sm" className="h-6 text-[9px]">Reset</Button>
+
+            <AnimatePresence>
+              {germanGrade !== null && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  className="p-2 rounded-lg bg-primary/10 border border-primary/20"
+                >
+                  <p className="text-[9px] text-muted-foreground mb-0.5">Your German Grade</p>
+                  <p className="text-xl font-bold text-primary">{germanGrade.toFixed(2)}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-morphism border-glass mb-3"><CardContent className="p-2.5 space-y-2">
+            <p className="text-[11px] font-semibold flex items-center gap-1.5"><Calculator className="h-3.5 w-3.5" /> Credit to ECTS Converter</p>
+            <p className="text-[9px] text-muted-foreground">Convert Indian CP to ECTS (TUM Formula)</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="courseCredits">Course Credit Points (CP)</Label>
+                <Input
+                  id="courseCredits"
+                  type="number"
+                  placeholder="e.g., 3"
+                  value={courseCredits}
+                  onChange={(e) => handleCourseCreditsChange(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="degreeYears">Duration of Degree (Years)</Label>
+                <Input
+                  id="degreeYears"
+                  type="number"
+                  placeholder="e.g., 4"
+                  value={degreeYears}
+                  onChange={(e) => handleDegreeYearsChange(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="totalCredits">Total Credits of Degree</Label>
+                <Input
+                  id="totalCredits"
+                  type="number"
+                  placeholder="e.g., 120"
+                  value={totalCredits}
+                  onChange={(e) => handleTotalCreditsChange(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <p className="text-[9px] text-muted-foreground italic">Formula as per TUM – non-binding estimation.</p>
+            <Button onClick={resetECTSConverter} variant="outline" size="sm" className="h-6 text-[9px]">Reset</Button>
+
+            <AnimatePresence>
+              {ectsCredits !== null && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  className="p-2 rounded-lg bg-primary/10 border border-primary/20"
+                >
+                  <p className="text-[9px] text-muted-foreground mb-0.5">ECTS Equivalent</p>
+                  <p className="text-xl font-bold text-primary">{ectsCredits.toFixed(2)}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent></Card>
+
+        <Card className="glass-morphism border-glass"><CardContent className="p-2.5 space-y-1.5">
+            <p className="text-[11px] font-semibold flex items-center gap-1.5"><Info className="h-3.5 w-3.5" /> About the Formulas</p>
+            <div className="text-[10px] text-muted-foreground space-y-1.5">
+              <p className="font-medium text-foreground">Modified Bavarian Formula</p>
+              <div className="p-1.5 rounded bg-muted/50 font-mono text-[9px]">German Grade = 1 + 3 × (Max - Obtained) / (Max - Pass)</div>
+              <p className="font-medium text-foreground">Credit to ECTS Formula (TUM)</p>
+              <div className="p-1.5 rounded bg-muted/50 font-mono text-[9px]">ECTS = CP × (60 × Years) / Total Credits</div>
+              <p className="text-[9px] italic pt-1 border-t">These are approximations per TUM guidelines. Always verify with your target university.</p>
+            </div>
+          </CardContent></Card>
+      </motion.div>
+    </>
+  );
+
+  // For editors, show within Layout with editor nav
+  if (profile?.role === 'editor') {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          {converterContent}
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header - Different for authenticated vs public users */}
@@ -202,196 +361,7 @@ const Converter = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        
-        {/* Back Button */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => window.history.back()}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">German Grade & Credit Converter</h1>
-            <p className="text-muted-foreground">Official TUM formulas for grade and credit conversion</p>
-          </div>
-
-          <Card className="glass-morphism border-glass mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                German Grade Converter
-              </CardTitle>
-              <CardDescription>Modified Bavarian Formula (TUM)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maxMarks">Maximum Grade at Your University</Label>
-                  <Input
-                    id="maxMarks"
-                    type="number"
-                    placeholder="e.g., 100"
-                    value={maxMarks}
-                    onChange={(e) => handleMaxMarksChange(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="minMarks">Minimum Passing Grade</Label>
-                  <Input
-                    id="minMarks"
-                    type="number"
-                    placeholder="e.g., 40"
-                    value={minMarks}
-                    onChange={(e) => handleMinMarksChange(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="yourMarks">Your Obtained Grade</Label>
-                  <Input
-                    id="yourMarks"
-                    type="number"
-                    placeholder="e.g., 85"
-                    value={yourMarks}
-                    onChange={(e) => handleYourMarksChange(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground italic">
-                Formula as per TUM (Technical University of Munich) – non-binding estimation.
-              </p>
-
-              <Button onClick={resetGradeConverter} variant="outline" size="sm">
-                Reset
-              </Button>
-
-              {/* Results */}
-              <AnimatePresence>
-                {germanGrade !== null && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3 }}
-                    className="p-4 rounded-lg bg-primary/10 border border-primary/20"
-                  >
-                    <p className="text-sm text-muted-foreground mb-1">Your German Grade</p>
-                    <p className="text-4xl font-bold text-primary">{germanGrade.toFixed(2)}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-morphism border-glass mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Credit to ECTS Converter
-              </CardTitle>
-              <CardDescription>Convert Indian CP to ECTS (TUM Formula)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="courseCredits">Course Credit Points (CP)</Label>
-                  <Input
-                    id="courseCredits"
-                    type="number"
-                    placeholder="e.g., 3"
-                    value={courseCredits}
-                    onChange={(e) => handleCourseCreditsChange(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="degreeYears">Duration of Degree (Years)</Label>
-                  <Input
-                    id="degreeYears"
-                    type="number"
-                    placeholder="e.g., 4"
-                    value={degreeYears}
-                    onChange={(e) => handleDegreeYearsChange(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="totalCredits">Total Credits of Degree</Label>
-                  <Input
-                    id="totalCredits"
-                    type="number"
-                    placeholder="e.g., 120"
-                    value={totalCredits}
-                    onChange={(e) => handleTotalCreditsChange(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground italic">
-                Formula as per TUM (Technical University of Munich) – non-binding estimation.
-              </p>
-
-              <Button onClick={resetECTSConverter} variant="outline" size="sm">
-                Reset
-              </Button>
-
-              {/* Results */}
-              <AnimatePresence>
-                {ectsCredits !== null && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3 }}
-                    className="p-4 rounded-lg bg-primary/10 border border-primary/20"
-                  >
-                    <p className="text-sm text-muted-foreground mb-1">ECTS Equivalent</p>
-                    <p className="text-4xl font-bold text-primary">{ectsCredits.toFixed(2)}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-
-
-          {/* Info Card */}
-          <Card className="glass-morphism border-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                About the Formulas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div>
-                <p className="font-medium text-foreground mb-2">Modified Bavarian Formula (German Grade)</p>
-                <div className="p-3 rounded-md bg-muted/50 font-mono text-xs mb-2">
-                  German Grade = 1 + 3 × (Max - Obtained) / (Max - Pass)
-                </div>
-                <p>Used to convert grades from different grading systems to the German grading scale (1.0 to 4.0).</p>
-              </div>
-              
-              <div>
-                <p className="font-medium text-foreground mb-2">Credit to ECTS Formula (TUM)</p>
-                <div className="p-3 rounded-md bg-muted/50 font-mono text-xs mb-2">
-                  ECTS = CP × (60 × Years) / Total Credits
-                </div>
-                <p>Used to convert Indian Credit Points to European Credit Transfer System (ECTS).</p>
-              </div>
-
-              <p className="text-xs italic pt-2 border-t border-border">
-                Note: These are approximations as per TUM guidelines. Always verify with your target university for exact conversion requirements.
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {converterContent}
       </div>
     </div>
   );

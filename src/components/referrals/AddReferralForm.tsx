@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   REFERRAL_SERVICES,
   REFERRAL_STATUSES,
@@ -13,7 +12,8 @@ import {
 } from '@/lib/referralConstants';
 import { useCreateReferral } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Phone, Mail, MapPin, Globe, User, Tag, Star, CalendarDays, IndianRupee, StickyNote } from 'lucide-react';
 
 interface Props {
   onCreated?: (id: string) => void;
@@ -26,19 +26,15 @@ const emptyForm = {
   whatsapp: '',
   email: '',
   city: '',
-  state: '',
-  qualification: '',
-  percentage: '',
-  passing_year: '',
-  passport_available: false,
-  german_level: '',
-  preferred_intake: '',
   lead_source: '',
   current_status: 'new',
   priority: 'medium',
   next_followup_date: '',
+  total_fees: '',
   remarks: '',
 };
+
+const inputClass = "h-8 text-xs bg-background";
 
 export default function AddReferralForm({ onCreated, onCancel }: Props) {
   const [form, setForm] = useState<any>(emptyForm);
@@ -58,7 +54,23 @@ export default function AddReferralForm({ onCreated, onCancel }: Props) {
     try {
       const payload = { ...form };
       if (!payload.next_followup_date) payload.next_followup_date = null;
-      const r = await create.mutateAsync({ referral: payload, services });
+      if (!payload.remarks) payload.remarks = null;
+      ['phone', 'whatsapp', 'email', 'city', 'lead_source'].forEach(k => {
+        if (!payload[k]) payload[k] = null;
+      });
+
+      const dbPayload = { ...payload };
+      const totalFeesValue = dbPayload.total_fees;
+      delete dbPayload.total_fees;
+
+      const r = await create.mutateAsync({ referral: dbPayload, services });
+
+      if (totalFeesValue) {
+        try {
+          await (supabase as any).from('referrals').update({ total_fees: totalFeesValue }).eq('id', r.id);
+        } catch { /* column migration not yet applied */ }
+      }
+
       toast({ title: 'Referral created' });
       onCreated?.(r.id);
       setForm(emptyForm);
@@ -70,46 +82,47 @@ export default function AddReferralForm({ onCreated, onCancel }: Props) {
 
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const Section = ({ title, children }: any) => (
-    <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{children}</div>
-    </div>
-  );
-
-  const Field = ({ label, children }: any) => (
-    <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
-      {children}
-    </div>
-  );
-
   return (
-    <div className="space-y-6">
-      <Section title="Personal">
-        <Field label="Full Name *"><Input value={form.full_name} onChange={e => set('full_name', e.target.value)} /></Field>
-        <Field label="Phone"><Input value={form.phone} onChange={e => set('phone', e.target.value)} /></Field>
-        <Field label="WhatsApp"><Input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} /></Field>
-        <Field label="Email"><Input type="email" value={form.email} onChange={e => set('email', e.target.value)} /></Field>
-        <Field label="City"><Input value={form.city} onChange={e => set('city', e.target.value)} /></Field>
-        <Field label="State"><Input value={form.state} onChange={e => set('state', e.target.value)} /></Field>
-      </Section>
-
-      <Section title="Education">
-        <Field label="Qualification"><Input value={form.qualification} onChange={e => set('qualification', e.target.value)} /></Field>
-        <Field label="Percentage / CGPA"><Input value={form.percentage} onChange={e => set('percentage', e.target.value)} /></Field>
-        <Field label="Passing Year"><Input value={form.passing_year} onChange={e => set('passing_year', e.target.value)} /></Field>
-        <Field label="German Level"><Input placeholder="A1, A2, B1..." value={form.german_level} onChange={e => set('german_level', e.target.value)} /></Field>
-        <Field label="Preferred Intake"><Input placeholder="Summer/Winter 2026" value={form.preferred_intake} onChange={e => set('preferred_intake', e.target.value)} /></Field>
-        <div className="flex items-center gap-2 pt-6">
-          <Checkbox id="passport" checked={form.passport_available} onCheckedChange={v => set('passport_available', !!v)} />
-          <Label htmlFor="passport" className="text-sm">Passport Available</Label>
+    <div className="space-y-4">
+      {/* — Personal Information — */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <User className="h-3.5 w-3.5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Personal Information</p>
         </div>
-      </Section>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+              <span className="text-destructive">*</span> Full Name
+            </Label>
+            <Input value={form.full_name} onChange={e => set('full_name', e.target.value)} placeholder="Lead name" className={inputClass} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</Label>
+            <Input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="Optional" className={inputClass} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> WhatsApp</Label>
+            <Input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} placeholder="Optional" className={inputClass} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> Email</Label>
+            <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="Optional" className={inputClass} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" /> City</Label>
+            <Input value={form.city} onChange={e => set('city', e.target.value)} placeholder="Optional" className={inputClass} />
+          </div>
+        </div>
+      </div>
 
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Interested Services</p>
-        <div className="flex flex-wrap gap-2">
+      {/* — Interested Services — */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Globe className="h-3.5 w-3.5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Interested Services</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {REFERRAL_SERVICES.map(s => {
             const active = services.includes(s.key);
             return (
@@ -117,10 +130,10 @@ export default function AddReferralForm({ onCreated, onCancel }: Props) {
                 type="button"
                 key={s.key}
                 onClick={() => toggleService(s.key)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
                   active
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background hover:bg-muted border-border'
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                    : 'bg-background hover:bg-muted border-border text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {s.label}
@@ -130,39 +143,81 @@ export default function AddReferralForm({ onCreated, onCancel }: Props) {
         </div>
       </div>
 
-      <Section title="Lead & Follow-up">
-        <Field label="Lead Source">
-          <Select value={form.lead_source} onValueChange={v => set('lead_source', v)}>
-            <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
-            <SelectContent>{LEAD_SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-        </Field>
-        <Field label="Current Status">
-          <Select value={form.current_status} onValueChange={v => set('current_status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </Field>
-        <Field label="Priority">
-          <Select value={form.priority} onValueChange={v => set('priority', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </Field>
-        <Field label="Next Follow-up">
-          <Input type="date" value={form.next_followup_date} onChange={e => set('next_followup_date', e.target.value)} />
-        </Field>
-        <div className="md:col-span-2">
-          <Field label="Remarks">
-            <Textarea rows={3} value={form.remarks} onChange={e => set('remarks', e.target.value)} />
-          </Field>
+      {/* — Lead & Fees (inline) — */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Tag className="h-3.5 w-3.5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Lead &amp; Fees</p>
         </div>
-      </Section>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground">Lead Source</Label>
+            <Select value={form.lead_source} onValueChange={v => set('lead_source', v)}>
+              <SelectTrigger className={`${inputClass} text-[11px]`}><SelectValue placeholder="Select source" /></SelectTrigger>
+              <SelectContent>
+                {LEAD_SOURCES.map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Star className="h-3 w-3" /> Status</Label>
+            <Select value={form.current_status} onValueChange={v => set('current_status', v)}>
+              <SelectTrigger className={`${inputClass} text-[11px]`}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key} className="text-xs">{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground">Priority</Label>
+            <Select value={form.priority} onValueChange={v => set('priority', v)}>
+              <SelectTrigger className={`${inputClass} text-[11px]`}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key} className="text-xs">{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Follow-up</Label>
+            <Input type="date" value={form.next_followup_date} onChange={e => set('next_followup_date', e.target.value)} className={inputClass} />
+          </div>
+          <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+            <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><IndianRupee className="h-3 w-3" /> Total Fees (Optional)</Label>
+            <Input
+              type="text"
+              value={form.total_fees}
+              onChange={e => set('total_fees', e.target.value)}
+              placeholder="e.g. ₹5,000 or EUR 500"
+              className={inputClass + " max-w-xs"}
+            />
+          </div>
+        </div>
+      </div>
 
-      <div className="flex justify-end gap-2 pt-2 border-t border-border">
-        {onCancel && <Button variant="ghost" onClick={onCancel}>Cancel</Button>}
-        <Button onClick={submit} disabled={create.isPending}>
-          {create.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+      {/* — Notes — */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <StickyNote className="h-3.5 w-3.5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Notes</p>
+        </div>
+        <Textarea
+          rows={3}
+          value={form.remarks}
+          onChange={e => set('remarks', e.target.value)}
+          placeholder="e.g. Interested in A1 Fast Track, Planning for Summer 2027, Waiting for parents' approval..."
+          className="text-xs bg-background"
+        />
+      </div>
+
+      {/* — Actions — */}
+      <div className="flex justify-end gap-2 pt-3 border-t border-border">
+        {onCancel && (
+          <Button variant="ghost" onClick={onCancel} size="sm" className="h-8 text-xs">
+            Cancel
+          </Button>
+        )}
+        <Button onClick={submit} disabled={create.isPending} size="sm" className="h-8 text-xs px-4">
+          {create.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
           Create Referral
         </Button>
       </div>

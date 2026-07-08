@@ -521,26 +521,17 @@ export default function Contracts() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-3 max-w-4xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Contracts</h1>
-          <p className="text-muted-foreground">Create and manage service agreements</p>
+          <h1 className="text-base font-bold text-foreground">Contracts</h1>
+          <p className="text-[10px] text-muted-foreground">Create and manage service agreements</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="create">
-              <FileText className="h-4 w-4 mr-2" />
-              Create
-            </TabsTrigger>
-            <TabsTrigger value="drafts">
-              <Clock className="h-4 w-4 mr-2" />
-              All Contracts
-            </TabsTrigger>
-            <TabsTrigger value="signed">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Signed ({contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).length})
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-7 p-0.5">
+            <TabsTrigger value="create" className="text-[10px] h-6">Create</TabsTrigger>
+            <TabsTrigger value="drafts" className="text-[10px] h-6">All Contracts</TabsTrigger>
+            <TabsTrigger value="signed" className="text-[10px] h-6">Signed ({contractsHistory.filter(c => c.status === 'signed' || c.signed_document_url).length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="create" className="space-y-6">
@@ -558,15 +549,8 @@ export default function Contracts() {
               </Card>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Select Student
-                </CardTitle>
-                <CardDescription>Choose a student to generate a contract for</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Card className="shadow-none"><CardContent className="p-2.5 space-y-2">
+                <p className="text-[11px] font-semibold">Select Student</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Student</Label>

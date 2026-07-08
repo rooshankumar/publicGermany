@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import ResourceUpload from '@/components/admin/ResourceUpload';
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,14 +16,7 @@ import {
   Table as TableIcon,
   Loader2
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import { useToast } from "@/hooks/use-toast";
 
 const AdminResources = () => {
@@ -106,15 +99,14 @@ const AdminResources = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        <div className="flex justify-between items-center bg-card p-6 rounded-xl border shadow-sm">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold">Manage Resources</h1>
-            <p className="text-muted-foreground mt-1">Upload and manage study materials and external links</p>
+            <h1 className="text-base font-bold">Resources</h1>
+            <p className="text-[10px] text-muted-foreground">Upload and manage study materials</p>
           </div>
-          <Button onClick={() => setShowUpload(!showUpload)} variant={showUpload ? "outline" : "default"}>
-            {showUpload ? <Trash2 className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-            {showUpload ? "Cancel" : "Add New Resource"}
+          <Button size="sm" className="h-7 text-[10px]" onClick={() => setShowUpload(!showUpload)} variant={showUpload ? "outline" : "default"}>
+            {showUpload ? 'Cancel' : <><Plus className="h-3 w-3 mr-1" /> Add</>}
           </Button>
         </div>
 
@@ -128,92 +120,60 @@ const AdminResources = () => {
         )}
 
         <Tabs defaultValue="all" className="w-full">
-          <div className="flex justify-between items-center mb-6">
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="IELTS">IELTS</TabsTrigger>
-              <TabsTrigger value="German">German</TabsTrigger>
-              <TabsTrigger value="Additional">Additional</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="h-7 p-0.5">
+            <TabsTrigger value="all" className="text-[10px] h-6">All</TabsTrigger>
+            <TabsTrigger value="IELTS" className="text-[10px] h-6">IELTS</TabsTrigger>
+            <TabsTrigger value="German" className="text-[10px] h-6">German</TabsTrigger>
+            <TabsTrigger value="Additional" className="text-[10px] h-6">Additional</TabsTrigger>
+          </TabsList>
 
           {['all', 'IELTS', 'German', 'Additional'].map((category) => (
             <TabsContent key={category} value={category} className="mt-0">
               {loading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 </div>
               ) : (
-                <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Exam/Level</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div className="overflow-hidden rounded-lg border shadow-sm">
+                  <table className="w-full text-[11px]"><thead className="bg-muted/50 text-muted-foreground border-y"><tr>
+  <th className="text-left p-1.5 font-medium">Title</th><th className="text-left p-1.5 font-medium">Category</th><th className="text-left p-1.5 font-medium">Type</th><th className="text-left p-1.5 font-medium">Exam/Level</th><th className="text-left p-1.5 font-medium">Actions</th></tr></thead><tbody className="divide-y">
                       {resources
                         .filter(r => category === 'all' || r.category === category)
                         .map((resource) => (
-                          <TableRow key={resource.id}>
-                            <TableCell className="font-medium">
-                              <div>
-                                {resource.title}
-                                <div className="text-xs text-muted-foreground line-clamp-1">{resource.description}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{resource.category}</Badge>
-                            </TableCell>
-                            <TableCell>{resource.type}</TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                {resource.exam && <Badge variant="outline">{resource.exam}</Badge>}
-                                {resource.level && <Badge variant="outline">{resource.level}</Badge>}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                          <tr key={resource.id} className="border-b hover:bg-muted/30">
+                            <td className="p-1.5">
+                              <p className="text-[11px] font-medium truncate max-w-[160px]">{resource.title}</p>
+                              {resource.description && <p className="text-[9px] text-muted-foreground line-clamp-1">{resource.description}</p>}
+                            </td>
+                            <td className="p-1.5"><Badge className="text-[8px] px-1 py-0 h-4">{resource.category}</Badge></td>
+                            <td className="p-1.5 text-[10px]">{resource.type}</td>
+                            <td className="p-1.5">
+                              {resource.exam && <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">{resource.exam}</Badge>}
+                            </td>
+                            <td className="p-1.5">
+                              <div className="flex items-center gap-1">
                                 {resource.view_url && (
-                                  <Button variant="ghost" size="icon" asChild title="View">
-                                    <a href={resource.view_url} target="_blank" rel="noopener noreferrer">
-                                      <FileText className="h-4 w-4" />
-                                    </a>
-                                  </Button>
+                                  <a href={resource.view_url} target="_blank" className="p-1 rounded hover:bg-muted/60" title="View"><FileText className="h-3 w-3" /></a>
                                 )}
                                 {resource.external_url && (
-                                  <Button variant="ghost" size="icon" asChild title="Visit Link">
-                                    <a href={resource.external_url} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="h-4 w-4" />
-                                    </a>
-                                  </Button>
+                                  <a href={resource.external_url} target="_blank" className="p-1 rounded hover:bg-muted/60" title="Visit"><ExternalLink className="h-3 w-3" /></a>
                                 )}
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleDelete(resource.id, getFilePathFromUrl(resource.view_url))}
-                                  title="Delete"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <button onClick={() => handleDelete(resource.id, getFilePathFromUrl(resource.view_url))} className="p-1 rounded hover:bg-destructive/10 text-destructive" title="Delete">
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
                               </div>
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         ))}
                       {resources.filter(r => category === 'all' || r.category === category).length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                          <td colSpan={5} className="text-center py-6 text-[11px] text-muted-foreground">
                             No resources found in this category.
-                          </TableCell>
+                          </td>
                         </TableRow>
                       )}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </TabsContent>

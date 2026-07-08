@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ReviewForm } from '@/components/ReviewForm';
 import { ReviewList } from '@/components/ReviewList';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -46,28 +46,20 @@ export default function ReviewsPage() {
       <div className="w-full md:container mx-auto px-2 sm:px-4 py-4 md:py-8">
         {/* Main content (full width) */}
         <section>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Student Reviews</h1>
-                <p className="text-muted-foreground mt-2">Read what our students say about their experience</p>
+                <h1 className="text-base font-bold">Reviews</h1>
+                <p className="text-[10px] text-muted-foreground">Read what our students say</p>
               </div>
               {user && (
-                <Button onClick={() => setShowReviewForm(true)} className="md:self-end">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Write a Review
+                <Button size="sm" className="h-7 text-[10px]" onClick={() => setShowReviewForm(true)}>
+                  <Plus className="mr-1 h-3 w-3" />Write
                 </Button>
               )}
             </div>
 
             {showReviewForm && (
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle>Write a Review</CardTitle>
-                  <CardDescription>
-                    Share your experience to help other students
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+              <Card className="mb-3"><CardContent className="pt-3">
                   <ReviewForm 
                     onSubmitSuccess={() => {
                       setShowReviewForm(false);
@@ -79,26 +71,13 @@ export default function ReviewsPage() {
               </Card>
             )}
 
-            {/* Two columns: All students' reviews (approved) and My reviews with status */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="w-full">
-                <Card className="w-full">
-                  <CardHeader>
-                    <CardTitle>All Students' Reviews</CardTitle>
-                    <CardDescription>Recently approved reviews</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ReviewList />
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="w-full">
-                <Card className="w-full">
-                  <CardHeader>
-                    <CardTitle>My Reviews</CardTitle>
-                    <CardDescription>Your submitted reviews and their status</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Card className="shadow-none"><CardContent className="p-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">All Reviews</p>
+                <ReviewList />
+              </CardContent></Card>
+              <Card className="shadow-none"><CardContent className="p-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">My Reviews</p>
                     {myLoading ? (
                       <p className="text-sm text-muted-foreground">Loading…</p>
                     ) : myReviews.length === 0 ? (

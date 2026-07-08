@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Search, Eye, Download, Send, Calendar, User, Filter, Edit, Clock } from 'lucide-react';
@@ -196,39 +196,21 @@ export default function ContractHistory() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Contract History</h1>
-          <p className="text-muted-foreground">View and manage all generated contracts</p>
+          <h1 className="text-base font-bold text-foreground">Contract History</h1>
+          <p className="text-[10px] text-muted-foreground">View and manage all generated contracts</p>
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Filter className="h-4 w-4" />
-              Search & Filter
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, reference, or package..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
+        <Card className="shadow-none"><CardContent className="p-2.5">
+          <p className="text-[10px] font-semibold mb-1.5">Search & Filter</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <Input placeholder="Search name or reference..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-7 text-xs" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="signed_by_admin">Signed by Admin</SelectItem>
                   <SelectItem value="sent">Sent</SelectItem>
@@ -237,107 +219,53 @@ export default function ContractHistory() {
                 </SelectContent>
               </Select>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Showing {filteredContracts.length} of {contracts.length} contracts
-            </p>
-          </CardContent>
-        </Card>
+            <p className="text-[10px] text-muted-foreground mt-1">Showing {filteredContracts.length} of {contracts.length}</p>
+          </CardContent></Card>
 
         {/* Contracts Table */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Contracts ({filteredContracts.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="shadow-none"><CardContent className="p-0">
             {filteredContracts.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No contracts found</p>
+              <div className="text-center py-6">
+                <p className="text-[11px] text-muted-foreground">No contracts found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Package</TableHead>
-                      <TableHead>Fee</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <table className="w-full text-[11px]">
+                  <thead className="bg-muted/50 text-muted-foreground border-y">
+                    <tr>
+                      <th className="text-left p-1.5 font-medium">Ref</th>
+                      <th className="text-left p-1.5 font-medium">Student</th>
+                      <th className="text-left p-1.5 font-medium">Package</th>
+                      <th className="text-left p-1.5 font-medium">Fee</th>
+                      <th className="text-left p-1.5 font-medium">Status</th>
+                      <th className="text-left p-1.5 font-medium">Created</th>
+                      <th className="text-left p-1.5 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
                     {filteredContracts.map(contract => (
-                      <TableRow key={contract.id}>
-                        <TableCell className="font-mono text-sm">
-                          {contract.contract_reference}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span>{contract.student_name}</span>
+                      <tr key={contract.id} className="hover:bg-muted/30 border-b">
+                        <td className="p-1.5 font-mono text-[10px]">{contract.contract_reference}</td>
+                        <td className="p-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="text-[11px]">{contract.student_name}</span>
                           </div>
-                        </TableCell>
-                        <TableCell>{contract.service_package}</TableCell>
-                        <TableCell>{contract.service_fee}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[contract.status] || 'bg-muted'}>
-                            {statusLabels[contract.status] || contract.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(contract.created_at), 'MMM d, yyyy')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {contract.updated_at && contract.updated_at !== contract.created_at ? (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {format(new Date(contract.updated_at), 'MMM d, yyyy HH:mm')}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewContract(contract)}
-                              title="View"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                        </td>
+                        <td className="p-1.5 text-[11px]">{contract.service_package}</td>
+                        <td className="p-1.5 text-[11px]">{contract.service_fee}</td>
+                        <td className="p-1.5"><Badge className={`${statusColors[contract.status] || 'bg-muted'} text-[8px] px-1 py-0 h-4`}>{statusLabels[contract.status] || contract.status}</Badge></td>
+                        <td className="p-1.5 text-[10px] whitespace-nowrap">{format(new Date(contract.created_at), 'MMM d, yyyy')}</td>
+                        <td className="p-1.5">
+                          <div className="flex items-center gap-0.5">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleViewContract(contract)} title="View"><Eye className="h-3 w-3" /></Button>
                             {contract.status === 'draft' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditContract(contract)}
-                                title="Edit Draft"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleEditContract(contract)} title="Edit"><Edit className="h-3 w-3" /></Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownload(contract)}
-                              title="Download PDF"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDownload(contract)} title="Download"><Download className="h-3 w-3" /></Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
                   </TableBody>
                 </Table>

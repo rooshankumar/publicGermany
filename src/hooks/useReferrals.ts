@@ -23,6 +23,7 @@ export interface ReferralRow {
   current_status: string;
   priority: string;
   next_followup_date: string | null;
+  total_fees: string | null;
   remarks: string | null;
   commission_status: string;
   converted_student_id: string | null;
@@ -251,6 +252,26 @@ export function useUpdateTask() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['referral-tasks'] });
+    },
+  });
+}
+
+export function useDeleteReferral() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (referralId: string) => {
+      // Clean up child records first
+      await sb.from('referral_services').delete().eq('referral_id', referralId);
+      await sb.from('referral_activities').delete().eq('referral_id', referralId);
+      await sb.from('referral_tasks').delete().eq('referral_id', referralId);
+      await sb.from('referral_documents').delete().eq('referral_id', referralId);
+      // Delete the referral itself
+      const { error } = await sb.from('referrals').delete().eq('id', referralId).eq('owner_editor_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['referrals'] });
     },
   });
 }

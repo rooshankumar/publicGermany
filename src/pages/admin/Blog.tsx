@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -233,171 +233,99 @@ export default function AdminBlog() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="space-y-3 max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Blog Management</h1>
-            <p className="text-muted-foreground">Create and manage blog articles.</p>
+            <h1 className="text-base font-bold text-foreground">Blog Management</h1>
+            <p className="text-[10px] text-muted-foreground">Create and manage blog articles.</p>
           </div>
           <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Article
-              </Button>
+              <Button size="sm" className="h-7 text-[11px]"><Plus className="mr-1 h-3.5 w-3.5" /> New Article</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editing ? 'Edit Article' : 'Create New Article'}</DialogTitle>
-                <DialogDescription>Just add a title, write your content, and optionally upload an image.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formValues.title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    required
-                    placeholder="e.g., How to Apply for APS Certificate"
-                  />
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-4">
+              <DialogHeader><DialogTitle className="text-sm">{editing ? 'Edit Article' : 'Create New Article'}</DialogTitle></DialogHeader>
+              <form onSubmit={handleSave} className="space-y-3 mt-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Title</Label>
+                  <Input value={formValues.title} onChange={(e) => handleTitleChange(e.target.value)} required placeholder="e.g., How to Apply for APS Certificate" className="h-7 text-xs" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>URL Slug</Label>
-                    <Input
-                      value={formValues.slug}
-                      onChange={(e) => setFormValues((prev) => ({ ...prev, slug: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Category</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="space-y-1"><Label className="text-[11px]">URL Slug</Label><Input value={formValues.slug} onChange={(e) => setFormValues((prev) => ({ ...prev, slug: e.target.value }))} required className="h-7 text-xs" /></div>
+                  <div className="space-y-1"><Label className="text-[11px]">Category</Label>
                     <Select value={formValues.category} onValueChange={(v) => setFormValues((prev) => ({ ...prev, category: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORY_OPTIONS.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CATEGORY_OPTIONS.map((cat) => (<SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>))}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
+                  <div className="space-y-1"><Label className="text-[11px]">Status</Label>
                     <Select value={formValues.status} onValueChange={(v) => setFormValues((prev) => ({ ...prev, status: v as BlogRow['status'] }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>{STATUS_OPTIONS.map((s) => (<SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>))}</SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="content">Content (Markdown)</Label>
-                  <Textarea
-                    id="content"
-                    value={formValues.content_markdown}
-                    onChange={(e) => setFormValues((prev) => ({ ...prev, content_markdown: e.target.value }))}
-                    rows={14}
-                    required
-                    placeholder="Write your blog content here in Markdown..."
-                  />
+                <div className="space-y-1"><Label className="text-[11px]">Content (Markdown)</Label>
+                  <Textarea value={formValues.content_markdown} onChange={(e) => setFormValues((prev) => ({ ...prev, content_markdown: e.target.value }))} rows={10} required placeholder="Write your blog content here in Markdown..." className="text-xs" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Featured Image</Label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                    >
+                <div className="space-y-1"><Label className="text-[11px]">Featured Image</Label>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="h-7 text-[10px]">
                       {uploadingImage ? 'Uploading…' : formValues.featured_image_url ? 'Change Image' : 'Upload Image'}
                     </Button>
-                    {formValues.featured_image_url && (
-                      <img src={formValues.featured_image_url} alt="Featured" className="h-12 w-12 rounded object-cover border" />
-                    )}
+                    {formValues.featured_image_url && <img src={formValues.featured_image_url} alt="Featured" className="h-8 w-8 rounded object-cover border" />}
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFeaturedImageUpload} />
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => { setShowDialog(false); resetForm(); }}>Cancel</Button>
-                  <Button type="submit" disabled={saving}>
-                    {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Article'}
-                  </Button>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => { setShowDialog(false); resetForm(); }}>Cancel</Button>
+                  <Button type="submit" disabled={saving} size="sm" className="h-7 text-[11px]">{saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Article'}</Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Blog Articles</CardTitle>
-            <CardDescription>Draft, publish, and maintain all blog posts.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Loading articles…</p>
-            ) : blogs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No articles yet. Create your first one.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Published</TableHead>
-                      <TableHead>Actions</TableHead>
+        <Card className="shadow-none"><CardContent className="p-0">
+          {loading ? (
+            <p className="text-xs text-muted-foreground p-3">Loading articles…</p>
+          ) : blogs.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-3">No articles yet. Create your first one.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-[10px] py-1.5">Title</TableHead>
+                    <TableHead className="text-[10px] py-1.5">Category</TableHead>
+                    <TableHead className="text-[10px] py-1.5">Status</TableHead>
+                    <TableHead className="text-[10px] py-1.5">Published</TableHead>
+                    <TableHead className="text-[10px] py-1.5">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {blogs.map((blog) => (
+                    <TableRow key={blog.id}>
+                      <TableCell className="font-medium max-w-[200px] truncate text-[11px] py-1.5">{blog.title}</TableCell>
+                      <TableCell className="capitalize text-[10px] py-1.5">{blog.category.replace('-', ' ')}</TableCell>
+                      <TableCell className="py-1.5">
+                        <Badge variant={blog.status === 'published' ? 'default' : blog.status === 'scheduled' ? 'secondary' : 'outline'} className="text-[9px] px-1 py-0">{blog.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-[10px] text-muted-foreground py-1.5">{blog.published_at ? new Date(blog.published_at).toLocaleDateString() : '—'}</TableCell>
+                      <TableCell className="py-1.5">
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => openEditDialog(blog)} className="h-6 w-6"><Edit className="h-3 w-3" /></Button>
+                          <Button size="icon" variant="ghost" asChild className="h-6 w-6"><a href={`/blog/${blog.slug}`} target="_blank"><ExternalLink className="h-3 w-3" /></a></Button>
+                          <Button size="icon" variant="ghost" onClick={() => handleDelete(blog)} className="h-6 w-6"><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {blogs.map((blog) => {
-                      const published = blog.published_at
-                        ? new Date(blog.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : null;
-                      return (
-                        <TableRow key={blog.id}>
-                          <TableCell className="font-medium max-w-xs truncate">{blog.title}</TableCell>
-                          <TableCell className="capitalize text-xs">{blog.category.replace('-', ' ')}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={blog.status === 'published' ? 'default' : blog.status === 'scheduled' ? 'secondary' : 'outline'}
-                              className="text-[11px] capitalize"
-                            >
-                              {blog.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{published || '—'}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button size="icon" variant="ghost" onClick={() => openEditDialog(blog)} aria-label="Edit">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" asChild aria-label="Preview">
-                                <a href={`/blog/${blog.slug}`} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => handleDelete(blog)} aria-label="Delete">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent></Card>
       </div>
     </Layout>
   );

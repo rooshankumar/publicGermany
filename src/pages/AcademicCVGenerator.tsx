@@ -12,7 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout as LayoutIcon, CheckCircle2, Settings, Bell, LogOut, Home, FileText, Users, FileBarChart, Star, Shield, Menu, X } from "lucide-react";
+import { Plus, Trash2, Download, Loader2, ArrowLeft, Upload, Eye, EyeOff, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, ChevronUp, ChevronDown, User, GraduationCap, Briefcase, Languages, Award, Layout as LayoutIcon, CheckCircle2, Settings, Bell, LogOut, Home, FileText, Users, FileBarChart, Star, Shield, Menu, X, BookOpen, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildCVHtml, toLines, CVPersonalInfo, CVEducation, CVWorkExperience, CVLanguage, CVPublication, CVCertification, CVCustomSection, CVRecommendation, CVBuildOptions } from "@/lib/cvTemplateBuilder";
 import CVImportUpload from "@/components/CVImportUpload";
@@ -473,6 +473,7 @@ export default function AcademicCVGenerator() {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const isAdmin = profile?.role === 'admin';
+  const isEditor = profile?.role === 'editor';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const studentNavItems = [
@@ -497,7 +498,15 @@ export default function AcademicCVGenerator() {
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
   ];
 
-  const navItems = isAdmin ? adminNavItems : studentNavItems;
+  const editorNavItems = [
+    { href: '/editor', label: 'Dashboard', icon: Home },
+    { href: '/resources', label: 'Resources', icon: BookOpen },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
+    { href: '/german-course', label: 'German Course', icon: Youtube },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(!isMobile);

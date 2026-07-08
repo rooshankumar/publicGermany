@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import InlineLoader from '@/components/InlineLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -289,120 +289,67 @@ export default function StudentRequests() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/admin/requests')}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Students
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/requests')} className="h-7 w-7 p-0">
+            <ArrowLeft className="w-3.5 h-3.5" />
           </Button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{studentInfo?.name || 'Student'} - Service Requests</h1>
-            <p className="text-muted-foreground">{studentInfo?.email}</p>
+            <h1 className="text-base font-bold">{studentInfo?.name || 'Student'}</h1>
+            <p className="text-[10px] text-muted-foreground">{studentInfo?.email} · {requests.length} requests</p>
           </div>
         </div>
 
-        {/* Requests List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Requests ({requests.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
+        <Card className="shadow-none"><CardContent className="p-0">
             {loading ? (
               <InlineLoader label="Loading requests" />
             ) : requests.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No requests found for this student</p>
+              <div className="text-center py-6">
+                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-[11px] text-muted-foreground">No requests found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Service Type</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Timeline</th>
-                      <th className="text-left p-3 font-medium">Price</th>
-                      <th className="text-left p-3 font-medium">Created</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                <table className="w-full text-[11px]">
+                  <thead className="bg-muted/50 text-muted-foreground border-y">
+                    <tr>
+                      <th className="text-left p-1.5 font-medium">Service</th>
+                      <th className="text-left p-1.5 font-medium">Status</th>
+                      <th className="text-left p-1.5 font-medium">Timeline</th>
+                      <th className="text-left p-1.5 font-medium">Price</th>
+                      <th className="text-left p-1.5 font-medium">Created</th>
+                      <th className="text-left p-1.5 font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {requests.map((request) => (
-                      <tr key={request.id} className="border-b hover:bg-muted/30 transition-colors">
-                        <td className="p-3">
-                          <Badge variant="outline">
-                            {request.service_type?.replace('_', ' ').toUpperCase() || 'N/A'}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <Badge className={`${getStatusColor(request.status)} flex items-center gap-1 w-fit`}>
-                            {getStatusIcon(request.status)}
-                            {request.status?.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className={`text-sm ${getPriorityColor(request.preferred_timeline)}`}>
-                            {request.preferred_timeline || 'No timeline set'}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm font-medium">
-                            {request.service_price ? 
-                              `${request.service_currency || 'INR'} ${request.service_price}` : 
-                              'Not set'
-                            }
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {new Date(request.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
+                      <tr key={request.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="p-1.5"><span className="text-[11px] capitalize">{request.service_type?.replace(/_/g, ' ')}</span></td>
+                        <td className="p-1.5"><Badge className={`${getStatusColor(request.status)} text-[8px] px-1 py-0 h-4`}>{request.status}</Badge></td>
+                        <td className="p-1.5"><span className={`text-[10px] ${getPriorityColor(request.preferred_timeline)}`}>{request.preferred_timeline || '—'}</span></td>
+                        <td className="p-1.5 text-[10px]">{request.service_price ? `${request.service_currency || 'INR'} ${request.service_price}` : '—'}</td>
+                        <td className="p-1.5 text-[10px] whitespace-nowrap">{new Date(request.created_at).toLocaleDateString()}</td>
+                        <td className="p-1.5">
+                          <Button size="sm" variant="outline" className="h-6 text-[9px] px-1.5"
                             onClick={async () => {
                               setSelectedRequest(request);
                               setAdminResponse(request.admin_response || '');
                               setPendingStatus(request.status);
                               setDeliverableUrl(request.deliverable_url || null);
-                              
-                              // Load existing files
                               try {
                                 const { data, error } = await supabase.storage
                                   .from('documents')
                                   .list(`service_requests/${request.id}`, { limit: 10 });
-                                
                                 if (!error && data) {
-                                  const files = data.map(file => {
+                                  setExistingFiles(data.map(file => {
                                     const { data: publicUrl } = supabase.storage
                                       .from('documents')
                                       .getPublicUrl(`service_requests/${request.id}/${file.name}`);
-                                    return {
-                                      name: file.name,
-                                      url: publicUrl.publicUrl
-                                    };
-                                  });
-                                  setExistingFiles(files);
+                                    return { name: file.name, url: publicUrl.publicUrl };
+                                  }));
                                 }
-                              } catch (e) {
-                                console.error('Error loading existing files:', e);
-                              }
-                            }}
-                          >
+                              } catch (e) {}
+                            }}>
                             Manage
                           </Button>
                         </td>
@@ -412,103 +359,40 @@ export default function StudentRequests() {
                 </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </CardContent></Card>
 
-        {/* Request Management Panel */}
         {selectedRequest && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Request - {selectedRequest.service_type?.replace('_', ' ')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Request Details</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Service:</strong> {selectedRequest.service_type}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Timeline:</strong> {selectedRequest.preferred_timeline}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Details:</strong> {selectedRequest.request_details}
-                  </p>
+          <Card className="shadow-none">
+            <CardContent className="p-2.5 space-y-2">
+              <p className="text-[11px] font-semibold">Manage - {selectedRequest.service_type?.replace(/_/g, ' ')}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1 text-[10px] text-muted-foreground">
+                  <p><strong>Service:</strong> {selectedRequest.service_type}</p>
+                  <p><strong>Timeline:</strong> {selectedRequest.preferred_timeline}</p>
+                  <p><strong>Details:</strong> {selectedRequest.request_details}</p>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-2">Update Status</h4>
-                  <div className="space-y-3">
-                    <Select 
-                      value={pendingStatus}
-                      onValueChange={setPendingStatus}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Textarea
-                      placeholder="Add admin response or notes..."
-                      value={adminResponse}
-                      onChange={(e) => setAdminResponse(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Deliverable Files</label>
-                      <MultiFileUpload
-                        onFilesSelected={setPendingDeliverableFiles}
-                        maxFiles={5}
-                        existingFiles={existingFiles}
-                        onRemoveExisting={async (url) => {
-                          try {
-                            const urlParts = url.split('/documents/');
-                            if (urlParts.length < 2) {
-                              throw new Error('Invalid URL format');
-                            }
-                            const filePath = urlParts[1];
-                            
-                            const { error } = await supabase.storage.from('documents').remove([filePath]);
-                            if (error) throw error;
-                            
-                            setExistingFiles(files => files.filter(f => f.url !== url));
-                            toast({ title: 'File removed', description: 'File deleted successfully' });
-                          } catch (e: any) {
-                            toast({ title: 'Error', description: e.message || 'Failed to remove file', variant: 'destructive' });
-                          }
-                        }}
-                      />
-                      {deliverableUploading && (
-                        <p className="text-xs text-muted-foreground">Uploading files...</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Upload final documents that the student can access after completion
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => saveRequestChanges(selectedRequest.id, pendingStatus || selectedRequest.status, adminResponse)}
-                      >
-                        Save Response
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSelectedRequest(null);
-                          setAdminResponse('');
-                          setPendingStatus('');
-                          setDeliverableUrl(null);
-                          setPendingDeliverableFiles([]);
-                          setExistingFiles([]);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                <div className="space-y-1.5">
+                  <Select value={pendingStatus} onValueChange={setPendingStatus}>
+                    <SelectTrigger className="h-7 text-[10px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Textarea placeholder="Admin response..." value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} className="min-h-[60px] text-[10px]" />
+                  <MultiFileUpload onFilesSelected={setPendingDeliverableFiles} maxFiles={5} existingFiles={existingFiles}
+                    onRemoveExisting={async (url) => {
+                      const urlParts = url.split('/documents/');
+                      if (urlParts.length < 2) return;
+                      const { error } = await supabase.storage.from('documents').remove([urlParts[1]]);
+                      if (!error) { setExistingFiles(files => files.filter(f => f.url !== url)); toast({ title: 'File removed' }); }
+                    }}
+                  />
+                  <div className="flex gap-1">
+                    <Button size="sm" className="h-6 text-[9px]" onClick={() => saveRequestChanges(selectedRequest.id, pendingStatus || selectedRequest.status, adminResponse)}>Save</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[9px]" onClick={() => { setSelectedRequest(null); setAdminResponse(''); setPendingStatus(''); setDeliverableUrl(null); setPendingDeliverableFiles([]); setExistingFiles([]); }}>Cancel</Button>
                   </div>
                 </div>
               </div>
