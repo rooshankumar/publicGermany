@@ -30,6 +30,7 @@ const AdminDashboard = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => scheduleRefresh())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => scheduleRefresh())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => scheduleRefresh())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => scheduleRefresh())
       .subscribe();
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); supabase.removeChannel(channel); };
@@ -61,21 +62,43 @@ const AdminDashboard = () => {
         const { data: manualReceived } = await (supabase as any).from('manual_payments').select('amount').eq('status', 'received');
         totalRevenue += ((manualReceived || []) as any[]).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
       } catch {}
-      // Include verified referral revenue (10% commission of total_fees)
+      // Include verified referral revenue (10% commission of total_fees) + recent commission entries
+      let commissionEntries: any[] = [];
       try {
         const { data: verifiedReferrals } = await (supabase as any)
           .from('referrals')
-          .select('total_fees')
-          .eq('verified_by_admin', true);
+          .select('id, full_name, total_fees, verified_at')
+          .eq('verified_by_admin', true)
+          .not('verified_at', 'is', null)
+          .order('verified_at', { ascending: false })
+          .limit(10);
         if (verifiedReferrals) {
           const commissionSum = (verifiedReferrals as any[]).reduce((s: number, r: any) => {
             const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
-            return s + (isNaN(numericFee) ? 0 : numericFee * 0.1); // 10% commission
+            return s + (isNaN(numericFee) ? 0 : numericFee * 0.1);
           }, 0);
           totalRevenue += commissionSum;
+          commissionEntries = (verifiedReferrals as any[]).map((r: any) => {
+            const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+            const commissionAmount = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+            return {
+              id: `comm-${r.id}`,
+              amount: commissionAmount,
+              full_fees: r.total_fees,
+              status: 'commission',
+              created_at: r.verified_at,
+              full_name: r.full_name,
+              type: 'commission',
+            };
+          }).filter((r: any) => r.amount > 0);
         }
       } catch {}
-      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: recentPaymentsRes.data || [], urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
+      // Merge payments + commissions into one sorted feed
+      const mergedRecent = [
+        ...(recentPaymentsRes.data || []).map((p: any) => ({ ...p, type: 'payment' })),
+        ...commissionEntries,
+      ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
     } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
     finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }
   };
@@ -86,6 +109,7 @@ const AdminDashboard = () => {
     switch (status?.toLowerCase()) {
       case 'received': return <CheckCircle className="h-3.5 w-3.5 text-success" />;
       case 'pending': return <Clock className="h-3.5 w-3.5 text-warning" />;
+      case 'commission': return <TrendingUp className="h-3.5 w-3.5 text-purple-500" />;
       case 'cancelled': return <XCircle className="h-3.5 w-3.5 text-destructive" />;
       default: return <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />;
     }
@@ -120,8 +144,26 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-1.5 text-[11px] font-semibold"><TrendingUp className="h-3.5 w-3.5" /> Recent Payments</div>
             {stats.recentPayments.length === 0 ? <p className="text-center text-muted-foreground py-3 text-[11px]">No payments yet</p> : stats.recentPayments.map((p: any) => (
               <div key={p.id} className="flex items-center justify-between p-1.5 border rounded text-[11px]">
-                <div className="flex items-center gap-2"><SIC status={p.status} /><div><p className="font-medium text-[11px]">₹{p.amount?.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</p></div></div>
-                <Badge variant={p.status === 'received' ? 'default' : p.status === 'pending' ? 'secondary' : 'destructive'} className="text-[9px] px-1.5 py-0">{p.status}</Badge>
+                <div className="flex items-center gap-2 min-w-0">
+                  <SIC status={p.type === 'commission' ? 'commission' : p.status} />
+                  <div className="min-w-0">
+                    {p.type === 'commission' ? (
+                      <>
+                        <p className="font-medium text-[11px]">₹{p.amount?.toLocaleString()} <span className="text-[9px] text-purple-500 font-normal">commission</span></p>
+                        <p className="text-[9px] text-muted-foreground truncate">{p.full_name} · {p.full_fees}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-[11px]">₹{p.amount?.toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <Badge variant={p.status === 'received' ? 'default' : p.type === 'commission' ? 'secondary' : p.status === 'pending' ? 'secondary' : 'destructive'} 
+                  className={`text-[9px] px-1.5 py-0 ${p.type === 'commission' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' : ''}`}>
+                  {p.type === 'commission' ? 'Commission' : p.status}
+                </Badge>
               </div>
             ))}
           </CardContent></Card>

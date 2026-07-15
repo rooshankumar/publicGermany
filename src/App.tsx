@@ -282,7 +282,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/editor/referrals/:id" element={
-          <ProtectedRoute requiredRole="editor">
+          <ProtectedRoute allowRoles={['editor', 'admin']}>
             <ReferralDetails />
           </ProtectedRoute>
         } />

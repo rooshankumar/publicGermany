@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import {
   REFERRAL_SERVICES, REFERRAL_STATUSES, REFERRAL_PRIORITIES,
   ACTIVITY_TYPES, TRAINER_NAMES, serviceLabel, statusLabel, statusColor, priorityColor,
 } from '@/lib/referralConstants';
-import { ArrowLeft, Plus, Clock, User, FileText, ShieldCheck, Lock } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, User, FileText, ShieldCheck, Lock, Edit2, Save, X, Phone, Mail, MapPin, CalendarDays, IndianRupee, StickyNote, Globe, Tag } from 'lucide-react';
 import { MultiFileUpload } from '@/components/MultiFileUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,25 +39,114 @@ export default function ReferralDetails() {
   const addTask = useAddTask();
   const updateTask = useUpdateTask();
 
+  const [editing, setEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [activityType, setActivityType] = useState('note');
   const [activityBody, setActivityBody] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDue, setTaskDue] = useState('');
   const [uploading, setUploading] = useState(false);
 
+  // Edit form state
+  const [editForm, setEditForm] = useState<any>({});
+  const [editServices, setEditServices] = useState<string[]>([]);
+
+  // Init edit form when referral loads or when entering edit mode
+  useEffect(() => {
+    if (referral) {
+      setEditForm({
+        full_name: referral.full_name || '',
+        phone: referral.phone || '',
+        whatsapp: referral.whatsapp || '',
+        email: referral.email || '',
+        city: referral.city || '',
+        lead_source: referral.lead_source || '',
+        trainer_name: referral.trainer_name || '',
+        current_status: referral.current_status || 'new',
+        priority: referral.priority || 'medium',
+        next_followup_date: referral.next_followup_date || '',
+        total_fees: referral.total_fees || '',
+        remarks: referral.remarks || '',
+      });
+      setEditServices((referral.referral_services || []).map(s => s.service_key));
+    }
+  }, [referral]);
+
   if (isLoading) return <Layout><div className="flex items-center justify-center min-h-[40vh]"><p className="text-xs text-muted-foreground">Loading referral...</p></div></Layout>;
   if (!referral) return <Layout><div className="p-6 text-center text-xs text-muted-foreground">Referral not found</div></Layout>;
 
   const isAdmin = profile?.role === 'admin';
   const locked = !!(referral.verified_by_admin && !isAdmin);
+  const canEdit = !locked;
 
+  // View-mode services
   const activeServices = new Set((referral.referral_services || []).map(s => s.service_key));
 
-  const toggleService = async (k: string) => {
-    const next = new Set(activeServices);
-    if (next.has(k)) next.delete(k); else next.add(k);
-    await setServices.mutateAsync({ id: referral.id, services: Array.from(next) });
+  const toggleEditService = (k: string) => {
+    setEditServices(prev => prev.includes(k) ? prev.filter(s => s !== k) : [...prev, k]);
   };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.full_name.trim()) {
+      toast({ title: 'Name is required', variant: 'destructive' });
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      // Build patch with only changed fields
+      const patch: any = {};
+      const fields: (keyof typeof editForm)[] = [
+        'full_name', 'phone', 'whatsapp', 'email', 'city', 'lead_source',
+        'trainer_name', 'current_status', 'priority', 'next_followup_date', 'total_fees', 'remarks'
+      ];
+      for (const f of fields) {
+        const ref = (referral as any)[f];
+        const form = editForm[f];
+        if (String(form ?? '') !== String(ref ?? '')) {
+          patch[f] = form || null;
+        }
+      }
+      if (Object.keys(patch).length > 0) {
+        await update.mutateAsync({ id: referral.id, patch });
+      }
+      // Save services if changed
+      const currentServices = (referral.referral_services || []).map(s => s.service_key).sort().join(',');
+      const newServices = [...editServices].sort().join(',');
+      if (currentServices !== newServices) {
+        await setServices.mutateAsync({ id: referral.id, services: editServices });
+      }
+      toast({ title: 'Changes saved' });
+      setEditing(false);
+    } catch (e: any) {
+      toast({ title: 'Failed to save', description: e.message, variant: 'destructive' });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form to current referral data
+    if (referral) {
+      setEditForm({
+        full_name: referral.full_name || '',
+        phone: referral.phone || '',
+        whatsapp: referral.whatsapp || '',
+        email: referral.email || '',
+        city: referral.city || '',
+        lead_source: referral.lead_source || '',
+        trainer_name: referral.trainer_name || '',
+        current_status: referral.current_status || 'new',
+        priority: referral.priority || 'medium',
+        next_followup_date: referral.next_followup_date || '',
+        total_fees: referral.total_fees || '',
+        remarks: referral.remarks || '',
+      });
+      setEditServices((referral.referral_services || []).map(s => s.service_key));
+    }
+    setEditing(false);
+  };
+
+  const setEdit = (k: string, v: any) => setEditForm((f: any) => ({ ...f, [k]: v }));
 
   const submitActivity = async () => {
     if (!activityBody.trim()) return;
@@ -116,120 +205,275 @@ export default function ReferralDetails() {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto px-2 sm:px-4 py-3 space-y-3">
-        <button
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
-        </button>
+        {/* Back + Edit button row */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back
+          </button>
+          {canEdit && (
+            <div className="flex items-center gap-1.5">
+              {locked && (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 px-2 py-1 rounded">
+                  <Lock className="h-3 w-3" />
+                  <span>Editor editing locked</span>
+                </div>
+              )}
+              {editing ? (
+                <>
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={handleCancelEdit} disabled={savingEdit}>
+                    <X className="h-3 w-3 mr-1" /> Cancel
+                  </Button>
+                  <Button size="sm" className="h-7 text-[10px]" onClick={handleSaveEdit} disabled={savingEdit}>
+                    {savingEdit ? (
+                      <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-1" />
+                    ) : (
+                      <Save className="h-3 w-3 mr-1" />
+                    )}
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" className="h-7 text-[10px]" onClick={() => setEditing(true)}>
+                  <Edit2 className="h-3 w-3 mr-1" /> Edit
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
 
-        {/* Header */}
+        {/* Header Card */}
         <Card className="shadow-none border-border/60">
-          <CardContent className="p-3 space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <CardContent className="p-3 sm:p-4 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <h1 className="text-sm font-semibold truncate">{referral.full_name}</h1>
+                  <h1 className="text-sm sm:text-base font-semibold truncate">{referral.full_name}</h1>
                   <Badge variant="outline" className={`text-[8px] py-0 h-4 ${statusColor(referral.current_status)}`}>{statusLabel(referral.current_status)}</Badge>
                   <Badge variant="outline" className={`text-[8px] py-0 h-4 capitalize ${priorityColor(referral.priority)}`}>{referral.priority}</Badge>
                   {referral.converted_student_id && <Badge className="text-[8px] py-0 h-4 bg-emerald-600">Converted</Badge>}
                   {referral.verified_by_admin && <Badge className="text-[8px] py-0 h-4 bg-green-600 flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5" />Approved</Badge>}
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
+                <p className="text-[10px] text-muted-foreground mt-1">
                   {referral.phone || '—'} · {referral.email || '—'} · {referral.city || ''}
                   {referral.total_fees && <> · {referral.total_fees}</>}
                   {referral.trainer_name && <> · Trainer: {referral.trainer_name}</>}
                   {referral.verified_by_admin && <> · <span className="text-green-600 font-medium">✓ Verified</span></>}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {locked ? (
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 px-2 py-1 rounded">
-                    <Lock className="h-3 w-3" />
-                    <span>Verified by admin — editor editing locked</span>
-                  </div>
-                ) : (
-                  <>
-                    <Select value={referral.current_status} onValueChange={(v) => update.mutate({ id: referral.id, patch: { current_status: v } })}>
-                      <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key} className="text-[11px]">{s.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={referral.priority} onValueChange={(v) => update.mutate({ id: referral.id, patch: { priority: v } })}>
-                      <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key} className="text-[11px]">{p.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
-              </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Tabs */}
         <Tabs defaultValue="overview">
-          <TabsList className="h-7 p-0.5 bg-muted/60 gap-0.5">
-            <TabsTrigger value="overview" className="text-[10px] h-6 px-2 data-[state=active]:bg-background">Overview</TabsTrigger>
-            <TabsTrigger value="timeline" className="text-[10px] h-6 px-2 data-[state=active]:bg-background">Timeline ({activities.length})</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-[10px] h-6 px-2 data-[state=active]:bg-background">Tasks ({tasks.length})</TabsTrigger>
-            <TabsTrigger value="documents" className="text-[10px] h-6 px-2 data-[state=active]:bg-background">Docs ({docs.length})</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2">
+            <TabsList className="h-7 p-0.5 bg-muted/60 gap-0.5 w-full sm:w-auto inline-flex">
+              <TabsTrigger value="overview" className="text-[10px] h-6 px-2 sm:px-3 data-[state=active]:bg-background whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="timeline" className="text-[10px] h-6 px-2 sm:px-3 data-[state=active]:bg-background whitespace-nowrap">Timeline ({activities.length})</TabsTrigger>
+              <TabsTrigger value="tasks" className="text-[10px] h-6 px-2 sm:px-3 data-[state=active]:bg-background whitespace-nowrap">Tasks ({tasks.length})</TabsTrigger>
+              <TabsTrigger value="documents" className="text-[10px] h-6 px-2 sm:px-3 data-[state=active]:bg-background whitespace-nowrap">Docs ({docs.length})</TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* OVERVIEW */}
+          {/* ===== OVERVIEW ===== */}
           <TabsContent value="overview" className="space-y-2 pt-2">
-            <Card className="shadow-none border-border/60">
-              <CardContent className="p-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-2 text-xs">
-                <Info label="Full Name" value={referral.full_name} />
-                <Info label="Phone" value={referral.phone} />
-                <Info label="WhatsApp" value={referral.whatsapp} />
-                <Info label="Email" value={referral.email} />
-                <Info label="City" value={referral.city} />
-                <Info label="Lead Source" value={referral.lead_source} />
-                <Info label="Trainer" value={referral.trainer_name || '—'} />
-                <Info label="Next Follow-up" value={referral.next_followup_date} />
-                <Info label="Total Fees" value={referral.total_fees || '—'} />
-                <Info label="Status" value={referral.verified_by_admin ? '✓ Verified' : 'Pending'} />
-                <Info label="Created" value={new Date(referral.created_at).toLocaleString()} />
-              </CardContent>
-            </Card>
+            {editing ? (
+              /* ===== EDIT MODE ===== */
+              <div className="space-y-2">
+                {/* Personal Info */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-2.5 space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                      <User className="h-3 w-3" /> Personal Information
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground"><span className="text-destructive">*</span> Full Name</Label>
+                        <Input value={editForm.full_name} onChange={e => setEdit('full_name', e.target.value)} placeholder="Name" className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</Label>
+                        <Input value={editForm.phone} onChange={e => setEdit('phone', e.target.value)} placeholder="Phone" className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> WhatsApp</Label>
+                        <Input value={editForm.whatsapp} onChange={e => setEdit('whatsapp', e.target.value)} placeholder="WhatsApp" className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> Email</Label>
+                        <Input value={editForm.email} onChange={e => setEdit('email', e.target.value)} placeholder="Email" className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" /> City</Label>
+                        <Input value={editForm.city} onChange={e => setEdit('city', e.target.value)} placeholder="City" className="h-7 text-xs" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            <Card className="shadow-none border-border/60">
-              <CardContent className="p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Interested Services</p>
-                <div className="flex flex-wrap gap-1">
-                  {REFERRAL_SERVICES.map(s => {
-                    const active = activeServices.has(s.key);
-                    return (
-                      <button key={s.key} 
-                        disabled={locked}
-                        onClick={() => toggleService(s.key)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
-                          locked ? 'opacity-60 cursor-not-allowed' : ''
-                        } ${
-                          active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted border-border/60'}`}>
-                        {s.label}
-                      </button>
-                    );
-                  })}
+                {/* Services */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                      <Globe className="h-3 w-3" /> Interested Services
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {REFERRAL_SERVICES.map(s => {
+                        const active = editServices.includes(s.key);
+                        return (
+                          <button key={s.key} type="button" onClick={() => toggleEditService(s.key)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                              active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted border-border/60'
+                            }`}>
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lead & Fees */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-2.5 space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                      <Tag className="h-3 w-3" /> Lead &amp; Fees
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground">Lead Source</Label>
+                        <Select value={editForm.lead_source} onValueChange={v => setEdit('lead_source', v)}>
+                          <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="Select source" /></SelectTrigger>
+                          <SelectContent>
+                            {['Instagram','WhatsApp','Friend','Offline','College','Seminar','YouTube','Other'].map(s => (
+                              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground">Trainer Name</Label>
+                        <Select value={editForm.trainer_name} onValueChange={v => setEdit('trainer_name', v)}>
+                          <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="Select trainer" /></SelectTrigger>
+                          <SelectContent>
+                            {TRAINER_NAMES.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground">Status</Label>
+                        <Select value={editForm.current_status} onValueChange={v => setEdit('current_status', v)}>
+                          <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key} className="text-xs">{s.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground">Priority</Label>
+                        <Select value={editForm.priority} onValueChange={v => setEdit('priority', v)}>
+                          <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key} className="text-xs">{p.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Follow-up</Label>
+                        <Input type="date" value={editForm.next_followup_date} onChange={e => setEdit('next_followup_date', e.target.value)} className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+                        <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><IndianRupee className="h-3 w-3" /> Total Fees</Label>
+                        <Input value={editForm.total_fees} onChange={e => setEdit('total_fees', e.target.value)} placeholder="e.g. ₹5,000 or EUR 500" className="h-7 text-xs max-w-xs" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Notes */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                      <StickyNote className="h-3 w-3" /> Notes
+                    </p>
+                    <Textarea rows={3} value={editForm.remarks} onChange={e => setEdit('remarks', e.target.value)}
+                      placeholder="Add notes..." className="text-xs min-h-[40px]" />
+                  </CardContent>
+                </Card>
+
+                {/* Save/Cancel footer */}
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={handleCancelEdit} disabled={savingEdit}>
+                    <X className="h-3 w-3 mr-1" /> Cancel
+                  </Button>
+                  <Button size="sm" className="h-7 text-[10px]" onClick={handleSaveEdit} disabled={savingEdit}>
+                    {savingEdit ? (
+                      <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-1" />
+                    ) : (
+                      <Save className="h-3 w-3 mr-1" />
+                    )}
+                    Save Changes
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            ) : (
+              /* ===== VIEW MODE ===== */
+              <>
+                {/* Key Info Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
+                  <StatCard icon={<User className="h-3.5 w-3.5" />} label="Full Name" value={referral.full_name} />
+                  <StatCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={referral.phone || '—'} />
+                  <StatCard icon={<Phone className="h-3.5 w-3.5" />} label="WhatsApp" value={referral.whatsapp || '—'} />
+                  <StatCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={referral.email || '—'} />
+                  <StatCard icon={<MapPin className="h-3.5 w-3.5" />} label="City" value={referral.city || '—'} />
+                  <StatCard icon={<Tag className="h-3.5 w-3.5" />} label="Lead Source" value={referral.lead_source || '—'} />
+                  <StatCard icon={<User className="h-3.5 w-3.5" />} label="Trainer" value={referral.trainer_name || '—'} />
+                  <StatCard icon={<CalendarDays className="h-3.5 w-3.5" />} label="Next Follow-up" value={referral.next_followup_date || '—'} />
+                  <StatCard icon={<IndianRupee className="h-3.5 w-3.5" />} label="Total Fees" value={referral.total_fees || '—'} />
+                  <StatCard icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Verification" value={referral.verified_by_admin ? '✓ Verified' : 'Pending'} />
+                  <StatCard icon={<Clock className="h-3.5 w-3.5" />} label="Created" value={new Date(referral.created_at).toLocaleDateString()} />
+                </div>
 
-            <Card className="shadow-none border-border/60">
-              <CardContent className="p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notes</p>
-                <Textarea rows={2} defaultValue={referral.remarks || ''}
-                  placeholder={locked ? "Editing locked — referral verified by admin" : "Any relevant notes..."}
-                  className="text-[11px] min-h-[40px]"
-                  disabled={locked}
-                  onBlur={(e) => !locked && e.target.value !== (referral.remarks || '') && update.mutate({ id: referral.id, patch: { remarks: e.target.value || null } })} />
-              </CardContent>
-            </Card>
+                {/* Services */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <Globe className="h-3 w-3" /> Services
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {REFERRAL_SERVICES.map(s => {
+                        const active = activeServices.has(s.key);
+                        return (
+                          <span key={s.key} className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                            active ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted/30 text-muted-foreground border-border/40'
+                          }`}>
+                            {s.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Notes */}
+                {referral.remarks && (
+                  <Card className="shadow-none border-border/60">
+                    <CardContent className="p-2.5 space-y-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <StickyNote className="h-3 w-3" /> Notes
+                      </p>
+                      <p className="text-[11px] text-foreground/80 whitespace-pre-wrap">{referral.remarks}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
 
-          {/* TIMELINE */}
+          {/* ===== TIMELINE ===== */}
           <TabsContent value="timeline" className="space-y-2 pt-2">
             <Card className="shadow-none border-border/60">
               <CardContent className="p-2.5 space-y-1.5">
@@ -245,7 +489,6 @@ export default function ReferralDetails() {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="shadow-none border-border/60">
               <CardContent className="p-0">
                 {activities.length === 0 ? (
@@ -266,7 +509,7 @@ export default function ReferralDetails() {
             </Card>
           </TabsContent>
 
-          {/* TASKS */}
+          {/* ===== TASKS ===== */}
           <TabsContent value="tasks" className="space-y-2 pt-2">
             <Card className="shadow-none border-border/60">
               <CardContent className="p-2.5 flex flex-col sm:flex-row gap-1.5">
@@ -293,7 +536,7 @@ export default function ReferralDetails() {
             </Card>
           </TabsContent>
 
-          {/* DOCUMENTS */}
+          {/* ===== DOCUMENTS ===== */}
           <TabsContent value="documents" className="space-y-2 pt-2">
             <Card className="shadow-none border-border/60">
               <CardContent className="p-2.5">
@@ -323,11 +566,19 @@ export default function ReferralDetails() {
   );
 }
 
-function Info({ label, value }: { label: string; value: any }) {
+/* View-mode stat card */
+function StatCard({ icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="min-w-0">
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</p>
-      <p className="text-[11px] font-medium truncate" title={value || ''}>{value || '—'}</p>
-    </div>
+    <Card className="shadow-none border-border/60">
+      <CardContent className="p-2.5 flex items-start gap-2">
+        <div className="w-7 h-7 rounded-md bg-primary/5 text-primary flex items-center justify-center shrink-0 mt-0.5">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+          <p className="text-[12px] font-medium truncate" title={value}>{value}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
