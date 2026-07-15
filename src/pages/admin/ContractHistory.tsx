@@ -267,8 +267,8 @@ export default function ContractHistory() {
                         </td>
                       </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
