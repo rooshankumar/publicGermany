@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import {
   REFERRAL_STATUSES,
   REFERRAL_PRIORITIES,
@@ -114,7 +114,10 @@ export default function MyReferralsPanel() {
                 ) : filtered.map(r => (
                   <TableRow key={r.id} className="cursor-pointer" onClick={() => navigate(`/editor/referrals/${r.id}`)}>
                     <TableCell>
-                      <div className="font-medium">{r.full_name}</div>
+                      <div className="font-medium flex items-center gap-1">
+                        {r.full_name}
+                        {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600" />}
+                      </div>
                       <div className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</div>
                     </TableCell>
                     <TableCell>

@@ -61,6 +61,20 @@ const AdminDashboard = () => {
         const { data: manualReceived } = await (supabase as any).from('manual_payments').select('amount').eq('status', 'received');
         totalRevenue += ((manualReceived || []) as any[]).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
       } catch {}
+      // Include verified referral revenue (10% commission of total_fees)
+      try {
+        const { data: verifiedReferrals } = await (supabase as any)
+          .from('referrals')
+          .select('total_fees')
+          .eq('verified_by_admin', true);
+        if (verifiedReferrals) {
+          const commissionSum = (verifiedReferrals as any[]).reduce((s: number, r: any) => {
+            const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+            return s + (isNaN(numericFee) ? 0 : numericFee * 0.1); // 10% commission
+          }, 0);
+          totalRevenue += commissionSum;
+        }
+      } catch {}
       setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: recentPaymentsRes.data || [], urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
     } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
     finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }

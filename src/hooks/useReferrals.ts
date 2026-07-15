@@ -31,6 +31,10 @@ export interface ReferralRow {
   created_at: string;
   updated_at: string;
   referral_services?: { id: string; service_key: string }[];
+  trainer_name?: string | null;
+  verified_by_admin?: boolean;
+  verified_at?: string | null;
+  verified_by?: string | null;
 }
 
 export function useMyReferrals() {

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useReferralsByEditor, useUpdateReferral } from '@/hooks/useReferrals';
 import { QUALIFIED_STATUSES, serviceLabel, statusColor, statusLabel, priorityColor } from '@/lib/referralConstants';
-import { ArrowLeft, Users, UserPlus, Star, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Star, CheckCircle2, Clock, ShieldCheck, ShieldBan } from 'lucide-react';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useToast } from '@/hooks/use-toast';
 
@@ -67,6 +67,39 @@ export default function EditorProfile() {
     refetch();
   };
 
+  const verifyReferral = async (r: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await update.mutateAsync({
+        id: r.id,
+        patch: {
+          verified_by_admin: true,
+          verified_at: new Date().toISOString(),
+          verified_by: user?.id,
+          commission_status: 'earned',
+        },
+      });
+      toast({ title: 'Referral verified', description: 'Editor can no longer edit this referral. Revenue tracked.' });
+      refetch();
+    } catch (e: any) {
+      toast({ title: 'Verification failed', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const unverifyReferral = async (id: string) => {
+    await update.mutateAsync({
+      id,
+      patch: {
+        verified_by_admin: false,
+        verified_at: null,
+        verified_by: null,
+        commission_status: 'pending',
+      },
+    });
+    toast({ title: 'Verification removed', description: 'Editor can edit again. Revenue removed.' });
+    refetch();
+  };
+
   const convert = async (r: any) => {
     // lightweight linkage placeholder: mark as converted; admin still creates the student account manually
     await update.mutateAsync({ id: r.id, patch: { converted_at: new Date().toISOString(), current_status: 'completed' } });
@@ -89,19 +122,36 @@ export default function EditorProfile() {
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-sm text-muted-foreground">Loading...</TableCell></TableRow>
               : rows.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-sm text-muted-foreground">No referrals</TableCell></TableRow>
-              : rows.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell><div className="font-medium">{r.full_name}</div><div className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</div></TableCell>
+              : rows.map(r => (                  <TableRow key={r.id}>
+                  <TableCell>
+                    <div className="font-medium flex items-center gap-1">
+                      {r.full_name}
+                      {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600" />}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</div>
+                  </TableCell>
                   <TableCell><div className="flex flex-wrap gap-1 max-w-[220px]">
                     {(r.referral_services || []).slice(0, 3).map((s: any) => <Badge key={s.id} variant="secondary" className="text-[10px]">{serviceLabel(s.service_key)}</Badge>)}
                   </div></TableCell>
                   <TableCell><Badge variant="outline" className={`text-[10px] ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</Badge></TableCell>
                   <TableCell><Badge variant="outline" className={`text-[10px] capitalize ${priorityColor(r.priority)}`}>{r.priority}</Badge></TableCell>
                   <TableCell className="text-sm">{r.next_followup_date || '—'}</TableCell>
-                  <TableCell><div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => navigate(`/editor/referrals/${r.id}`)}>View</Button>
-                    {!r.converted_student_id && <Button size="sm" variant="ghost" onClick={() => convert(r)}>Convert</Button>}
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => reject(r.id)}>Reject</Button>
+                  <TableCell><div className="flex gap-1 items-center">
+                    {r.verified_by_admin ? (
+                      <>
+                        <Badge className="bg-green-600 text-[8px] h-5 px-1.5 flex items-center gap-0.5">
+                          <ShieldCheck className="h-2.5 w-2.5" />Approved
+                        </Badge>
+                        <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => unverifyReferral(r.id)}>Unverify</Button>
+                      </>
+                    ) : (
+                      <Button size="sm" variant="outline" className="text-[10px] h-6 text-green-600 border-green-300" onClick={() => verifyReferral(r)}>
+                        <ShieldCheck className="h-3 w-3 mr-0.5" />Verify
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => navigate(`/editor/referrals/${r.id}`)}>View</Button>
+                    {!r.converted_student_id && <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => convert(r)}>Convert</Button>}
+                    <Button size="sm" variant="ghost" className="text-[10px] h-6 text-destructive" onClick={() => reject(r.id)}>Reject</Button>
                   </div></TableCell>
                 </TableRow>
               ))}

@@ -10,6 +10,11 @@ export const REFERRAL_SERVICES = [
   { key: 'other', label: 'Other' },
 ] as const;
 
+export const TRAINER_NAMES = [
+  'Shalini Chauhan',
+  'Esha Chowdhury',
+] as const;
+
 export const REFERRAL_STATUSES = [
   { key: 'new', label: 'New' },
   { key: 'contacted', label: 'Contacted' },

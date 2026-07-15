@@ -9,6 +9,7 @@ import {
   REFERRAL_STATUSES,
   REFERRAL_PRIORITIES,
   LEAD_SOURCES,
+  TRAINER_NAMES,
 } from '@/lib/referralConstants';
 import { useCreateReferral } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,7 @@ const emptyForm = {
   priority: 'medium',
   next_followup_date: '',
   total_fees: '',
+  trainer_name: '',
   remarks: '',
 };
 
@@ -156,6 +158,15 @@ export default function AddReferralForm({ onCreated, onCancel }: Props) {
               <SelectTrigger className={`${inputClass} text-[11px]`}><SelectValue placeholder="Select source" /></SelectTrigger>
               <SelectContent>
                 {LEAD_SOURCES.map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] font-medium text-muted-foreground">Trainer Name</Label>
+            <Select value={form.trainer_name} onValueChange={v => set('trainer_name', v)}>
+              <SelectTrigger className={`${inputClass} text-[11px]`}><SelectValue placeholder="Select trainer" /></SelectTrigger>
+              <SelectContent>
+                {TRAINER_NAMES.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

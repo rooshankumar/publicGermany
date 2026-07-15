@@ -16,9 +16,9 @@ import {
 } from '@/hooks/useReferrals';
 import {
   REFERRAL_SERVICES, REFERRAL_STATUSES, REFERRAL_PRIORITIES,
-  ACTIVITY_TYPES, serviceLabel, statusLabel, statusColor, priorityColor,
+  ACTIVITY_TYPES, TRAINER_NAMES, serviceLabel, statusLabel, statusColor, priorityColor,
 } from '@/lib/referralConstants';
-import { ArrowLeft, Plus, Clock, User, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, User, FileText, ShieldCheck, Lock } from 'lucide-react';
 import { MultiFileUpload } from '@/components/MultiFileUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function ReferralDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const { data: referral, isLoading } = useReferral(id);
   const { data: activities = [] } = useReferralActivities(id);
@@ -47,6 +47,9 @@ export default function ReferralDetails() {
 
   if (isLoading) return <Layout><div className="flex items-center justify-center min-h-[40vh]"><p className="text-xs text-muted-foreground">Loading referral...</p></div></Layout>;
   if (!referral) return <Layout><div className="p-6 text-center text-xs text-muted-foreground">Referral not found</div></Layout>;
+
+  const isAdmin = profile?.role === 'admin';
+  const locked = !!(referral.verified_by_admin && !isAdmin);
 
   const activeServices = new Set((referral.referral_services || []).map(s => s.service_key));
 
@@ -130,25 +133,37 @@ export default function ReferralDetails() {
                   <Badge variant="outline" className={`text-[8px] py-0 h-4 ${statusColor(referral.current_status)}`}>{statusLabel(referral.current_status)}</Badge>
                   <Badge variant="outline" className={`text-[8px] py-0 h-4 capitalize ${priorityColor(referral.priority)}`}>{referral.priority}</Badge>
                   {referral.converted_student_id && <Badge className="text-[8px] py-0 h-4 bg-emerald-600">Converted</Badge>}
+                  {referral.verified_by_admin && <Badge className="text-[8px] py-0 h-4 bg-green-600 flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5" />Approved</Badge>}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {referral.phone || '—'} · {referral.email || '—'} · {referral.city || ''}
                   {referral.total_fees && <> · {referral.total_fees}</>}
+                  {referral.trainer_name && <> · Trainer: {referral.trainer_name}</>}
+                  {referral.verified_by_admin && <> · <span className="text-green-600 font-medium">✓ Verified</span></>}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <Select value={referral.current_status} onValueChange={(v) => update.mutate({ id: referral.id, patch: { current_status: v } })}>
-                  <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key} className="text-[11px]">{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={referral.priority} onValueChange={(v) => update.mutate({ id: referral.id, patch: { priority: v } })}>
-                  <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key} className="text-[11px]">{p.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {locked ? (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 px-2 py-1 rounded">
+                    <Lock className="h-3 w-3" />
+                    <span>Verified by admin — editor editing locked</span>
+                  </div>
+                ) : (
+                  <>
+                    <Select value={referral.current_status} onValueChange={(v) => update.mutate({ id: referral.id, patch: { current_status: v } })}>
+                      <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {REFERRAL_STATUSES.map(s => <SelectItem key={s.key} value={s.key} className="text-[11px]">{s.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={referral.priority} onValueChange={(v) => update.mutate({ id: referral.id, patch: { priority: v } })}>
+                      <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {REFERRAL_PRIORITIES.map(p => <SelectItem key={p.key} value={p.key} className="text-[11px]">{p.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -172,9 +187,10 @@ export default function ReferralDetails() {
                 <Info label="Email" value={referral.email} />
                 <Info label="City" value={referral.city} />
                 <Info label="Lead Source" value={referral.lead_source} />
+                <Info label="Trainer" value={referral.trainer_name || '—'} />
                 <Info label="Next Follow-up" value={referral.next_followup_date} />
                 <Info label="Total Fees" value={referral.total_fees || '—'} />
-                <Info label="Commission" value={referral.commission_status} />
+                <Info label="Status" value={referral.verified_by_admin ? '✓ Verified' : 'Pending'} />
                 <Info label="Created" value={new Date(referral.created_at).toLocaleString()} />
               </CardContent>
             </Card>
@@ -186,8 +202,12 @@ export default function ReferralDetails() {
                   {REFERRAL_SERVICES.map(s => {
                     const active = activeServices.has(s.key);
                     return (
-                      <button key={s.key} onClick={() => toggleService(s.key)}
+                      <button key={s.key} 
+                        disabled={locked}
+                        onClick={() => toggleService(s.key)}
                         className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                          locked ? 'opacity-60 cursor-not-allowed' : ''
+                        } ${
                           active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted border-border/60'}`}>
                         {s.label}
                       </button>
@@ -201,9 +221,10 @@ export default function ReferralDetails() {
               <CardContent className="p-2.5 space-y-1.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notes</p>
                 <Textarea rows={2} defaultValue={referral.remarks || ''}
-                  placeholder="Any relevant notes..."
+                  placeholder={locked ? "Editing locked — referral verified by admin" : "Any relevant notes..."}
                   className="text-[11px] min-h-[40px]"
-                  onBlur={(e) => e.target.value !== (referral.remarks || '') && update.mutate({ id: referral.id, patch: { remarks: e.target.value || null } })} />
+                  disabled={locked}
+                  onBlur={(e) => !locked && e.target.value !== (referral.remarks || '') && update.mutate({ id: referral.id, patch: { remarks: e.target.value || null } })} />
               </CardContent>
             </Card>
           </TabsContent>
