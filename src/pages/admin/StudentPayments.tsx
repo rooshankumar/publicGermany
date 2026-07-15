@@ -13,12 +13,16 @@ import { sendPaymentBillEmail } from '@/lib/paymentBillEmail';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, ExternalLink } from 'lucide-react';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function StudentPayments() {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentInfo, setStudentInfo] = useState<{ name: string; email: string } | null>(null);
+
+  const isValidUuid = studentId ? UUID_REGEX.test(studentId) : false;
   const { toast } = useToast();
   const [editState, setEditState] = useState<Record<string, {
     amount?: number | null;
@@ -114,8 +118,10 @@ export default function StudentPayments() {
   };
 
   useEffect(() => {
-    if (studentId) {
+    if (studentId && isValidUuid) {
       fetchPayments();
+    } else if (studentId && !isValidUuid) {
+      setLoading(false);
       
       const channel = supabase
         .channel('student-payments-changes')
@@ -128,10 +134,10 @@ export default function StudentPayments() {
         supabase.removeChannel(channel);
       };
     }
-  }, [studentId]);
+  }, [studentId, isValidUuid]);
 
   const fetchPayments = async () => {
-    if (!studentId) return;
+    if (!studentId || !isValidUuid) return;
     
     setLoading(true);
     const { data, error } = await supabase
@@ -297,11 +303,13 @@ export default function StudentPayments() {
             <ArrowLeft className="w-3.5 h-3.5" />
             Back
           </Button>
-        </div>
-
-        <div className="bg-muted/30 p-4 rounded-lg">
-          <h1 className="text-xl sm:text-3xl font-bold text-foreground truncate">{studentInfo?.name || 'Student'}</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{studentInfo?.email}</p>
+        </div>          <div className="bg-muted/30 p-4 rounded-lg">
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground truncate">
+            {isValidUuid ? (studentInfo?.name || 'Student') : 'Invalid Student'}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+            {isValidUuid ? (studentInfo?.email) : 'This referral commission entry does not have a student payment breakdown.'}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

@@ -22,6 +22,7 @@ interface StudentPaymentSummary {
   request_count: number;
   last_updated: string;
   is_manual?: boolean;
+  is_commission?: boolean;
 }
 
 export default function PaymentStudents() {
@@ -44,6 +45,9 @@ export default function PaymentStudents() {
         fetchStudentSummaries();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'manual_payments' }, () => {
+        fetchStudentSummaries();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => {
         fetchStudentSummaries();
       })
       .subscribe();
@@ -176,6 +180,39 @@ export default function PaymentStudents() {
         }
       } catch {}
 
+      // Add individual commission rows from verified referral leads (showing lead names/emails)
+      try {
+        const { data: verifiedRefs } = await (supabase as any)
+          .from('referrals')
+          .select('id, full_name, email, total_fees, verified_at')
+          .eq('verified_by_admin', true)
+          .not('verified_at', 'is', null)
+          .order('verified_at', { ascending: false });
+
+        for (const ref of (verifiedRefs || []) as any[]) {
+          const numericFee = parseFloat(String(ref.total_fees || '0').replace(/[^0-9.-]/g, ''));
+          const commission = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+          if (commission <= 0) continue;
+
+          const rowId = `commission::${ref.id}`;
+          if (!studentMap.has(rowId)) {
+            studentMap.set(rowId, {
+              user_id: rowId,
+              full_name: ref.full_name || 'Referral Lead',
+              email: ref.email || '',
+              total_amount: commission,
+              received_amount: commission,
+              pending_amount: 0,
+              currency: 'INR',
+              request_count: 1,
+              last_updated: ref.verified_at || new Date().toISOString(),
+              is_commission: true,
+              is_manual: false,
+            });
+          }
+        }
+      } catch {}
+
       setStudents(Array.from(studentMap.values()));
     } catch (error: any) {
       toast({
@@ -281,18 +318,24 @@ export default function PaymentStudents() {
                     {filteredStudents.map((student) => (
                       <tr 
                         key={student.user_id} 
-                        className={`hover:bg-muted/20 transition-colors group ${student.is_manual ? '' : 'cursor-pointer'}`}
+                        className={`hover:bg-muted/20 transition-colors group ${student.is_manual || student.is_commission ? '' : 'cursor-pointer'}`}
                         onClick={() => {
-                          if (!student.is_manual) navigate(`/admin/payments/${student.user_id}`);
+                          if (!student.is_manual && !student.is_commission) navigate(`/admin/payments/${student.user_id}`);
                         }}
                       >
                         <td className="px-3 py-2 min-w-[120px]">
                           <p className="font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{student.full_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-none">{student.email}</p>
                           <div className="flex items-center gap-1 mt-0.5">
+                            {student.is_commission ? (
+                            <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 font-normal bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300">
+                              Commission
+                            </Badge>
+                          ) : (
                             <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 font-normal">
                               {student.request_count} {student.request_count === 1 ? 'req' : 'reqs'}
                             </Badge>
+                          )}
                             {student.is_manual && (
                               <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 font-normal border-amber-400 text-amber-700 dark:text-amber-400">
                                 Offline
@@ -308,7 +351,7 @@ export default function PaymentStudents() {
                           </div>
                         </td>
                         <td className="px-3 py-2 text-right">
-                          {!student.is_manual && (
+                          {!student.is_manual && !student.is_commission && (
                             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors inline" />
                           )}
                         </td>
