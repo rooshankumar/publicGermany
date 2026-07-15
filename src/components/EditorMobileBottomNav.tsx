@@ -1,11 +1,14 @@
-import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Home, BookOpen, FileText, GraduationCap, Youtube, MoreHorizontal } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Home, BookOpen, FileText, GraduationCap, Youtube, MoreHorizontal, LogOut } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const EditorMobileBottomNav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
   const primary = [
@@ -76,6 +79,19 @@ const EditorMobileBottomNav = () => {
                       </Link>
                     );
                   })}
+                </div>
+                <div className="mt-4 pt-3 border-t">
+                  <button
+                    onClick={async () => {
+                      setOpen(false);
+                      await signOut();
+                      navigate('/auth');
+                    }}
+                    className="w-full p-3 border border-destructive/30 rounded-lg flex items-center gap-3 text-destructive hover:bg-destructive/5 transition-colors"
+                  >
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    <span className="text-sm font-medium">Sign Out</span>
+                  </button>
                 </div>
               </SheetContent>
             </Sheet>

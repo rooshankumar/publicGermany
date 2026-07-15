@@ -445,7 +445,8 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
-          {/* Student Top Navbar (Desktop) */}
+          {/* Student/Editor Top Navbar (Desktop) — hidden for editors (they have their own workspace header) */}
+          {!isEditor && (
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-2 md:px-3">
             <div className="mx-auto w-full max-w-7xl flex flex-wrap items-center justify-between gap-y-2">
               {/* Left: Brand */}
@@ -584,6 +585,7 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </header>
+          )}
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
@@ -596,92 +598,94 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Mobile Layout */}
       <div className="md:hidden">
-        {/* Mobile Header */}
-        <header className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b sticky top-0 z-50">
-          <div className="flex items-center justify-between h-12 px-2">
-            {/* Left: Bell + Avatar */}
-            <div className="flex items-center gap-1">
-              <div className="relative">
-                <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="h-8 w-8 relative">
-                  <Bell className="h-4 w-4" />
-                  {unseen > 0 && (
-                    <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground text-[8px] px-0.5">
-                      {unseen > 99 ? '99+' : unseen}
-                    </span>
+        {/* Mobile Header — hidden for editors (they have bottom nav instead) */}
+        {!isEditor && (
+          <header className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b sticky top-0 z-50">
+            <div className="flex items-center justify-between h-12 px-2">
+              {/* Left: Bell + Avatar */}
+              <div className="flex items-center gap-1">
+                <div className="relative">
+                  <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(v => !v); setUnseen(0); }} aria-label="Notifications" className="h-8 w-8 relative">
+                    <Bell className="h-4 w-4" />
+                    {unseen > 0 && (
+                      <span className="absolute top-1 right-1 inline-flex items-center justify-center min-w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground text-[8px] px-0.5">
+                        {unseen > 99 ? '99+' : unseen}
+                      </span>
+                    )}
+                  </Button>
+                  {notifOpen && (
+                    <div className="absolute left-0 mt-2 w-72 max-w-[85vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-lg">
+                      <div className="p-2 border-b text-xs font-bold uppercase tracking-tight text-muted-foreground">Notifications</div>
+                      <div className="max-h-60 overflow-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-3 text-xs text-muted-foreground italic">No notifications yet</div>
+                        ) : (
+                          notifications.map(n => {
+                            const onClick = () => {
+                              if (isAdmin) {
+                                if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
+                                else if (n.type === 'service_request') navigate('/admin/requests');
+                                else navigate('/admin');
+                              } else {
+                                if (n.type === 'application') navigate('/applications');
+                                else if (n.type === 'document') navigate('/documents');
+                                else if (n.type === 'service_request') navigate('/services');
+                                else navigate('/profile');
+                              }
+                              setNotifOpen(false);
+                            };
+                            return (
+                              <button key={n.id} onClick={onClick} className="w-full text-left p-2.5 text-xs border-b last:border-b-0 hover:bg-accent/30 transition-colors">
+                                <div className="font-semibold line-clamp-2">{n.title}</div>
+                                <div className="text-[10px] text-muted-foreground mt-0.5">{n.time}</div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="p-1.5 border-t flex items-center justify-between bg-muted/20">
+                        <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2" onClick={markAllAsRead}>Mark read</Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2" onClick={() => setNotifications([])}>Clear</Button>
+                      </div>
+                    </div>
                   )}
+                </div>
+                <Avatar className="h-7 w-7 border">
+                  <AvatarImage src={(profile as any)?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                    {profile?.full_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+
+              {/* Center: Brand */}
+              <div className="flex items-center gap-1.5">
+                <div className="h-6 w-6 rounded-sm overflow-hidden bg-white">
+                  <img src={logos} alt="logo" className="h-full w-full object-contain" />
+                </div>
+                <span className="font-bold text-xs tracking-tight text-foreground">publicgermany</span>
+              </div>
+
+              {/* Right: Theme + Sign Out */}
+              <div className="flex items-center gap-0.5">
+                <ThemeToggle variant="icon" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={async () => {
+                    if (window.confirm('Sign out?')) {
+                      await signOut();
+                      navigate('/auth');
+                    }
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
                 </Button>
-                {notifOpen && (
-                  <div className="absolute left-0 mt-2 w-72 max-w-[85vw] z-50 rounded-md border bg-popover text-popover-foreground shadow-lg">
-                    <div className="p-2 border-b text-xs font-bold uppercase tracking-tight text-muted-foreground">Notifications</div>
-                    <div className="max-h-60 overflow-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-3 text-xs text-muted-foreground italic">No notifications yet</div>
-                      ) : (
-                        notifications.map(n => {
-                          const onClick = () => {
-                            if (isAdmin) {
-                              if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
-                              else if (n.type === 'service_request') navigate('/admin/requests');
-                              else navigate('/admin');
-                            } else {
-                              if (n.type === 'application') navigate('/applications');
-                              else if (n.type === 'document') navigate('/documents');
-                              else if (n.type === 'service_request') navigate('/services');
-                              else navigate('/profile');
-                            }
-                            setNotifOpen(false);
-                          };
-                          return (
-                            <button key={n.id} onClick={onClick} className="w-full text-left p-2.5 text-xs border-b last:border-b-0 hover:bg-accent/30 transition-colors">
-                              <div className="font-semibold line-clamp-2">{n.title}</div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">{n.time}</div>
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-                    <div className="p-1.5 border-t flex items-center justify-between bg-muted/20">
-                      <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2" onClick={markAllAsRead}>Mark read</Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2" onClick={() => setNotifications([])}>Clear</Button>
-                    </div>
-                  </div>
-                )}
               </div>
-              <Avatar className="h-7 w-7 border">
-                <AvatarImage src={(profile as any)?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
             </div>
-
-            {/* Center: Brand */}
-            <div className="flex items-center gap-1.5">
-              <div className="h-6 w-6 rounded-sm overflow-hidden bg-white">
-                <img src={logos} alt="logo" className="h-full w-full object-contain" />
-              </div>
-              <span className="font-bold text-xs tracking-tight text-foreground">publicgermany</span>
-            </div>
-
-            {/* Right: Theme + Sign Out */}
-            <div className="flex items-center gap-0.5">
-              <ThemeToggle variant="icon" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={async () => {
-                  if (window.confirm('Sign out?')) {
-                    await signOut();
-                    navigate('/auth');
-                  }
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Mobile Main Content */}
         <main className="p-3 sm:p-4 max-w-full pb-[calc(env(safe-area-inset-bottom)+4.5rem)] overflow-x-hidden">

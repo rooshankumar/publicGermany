@@ -10,13 +10,16 @@ import { useMyReferrals, useMyTasks } from '@/hooks/useReferrals';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { QUALIFIED_STATUSES, statusColor, statusLabel } from '@/lib/referralConstants';
 import MyReferralsPanel from '@/components/referrals/MyReferralsPanel';
 import TasksInbox from '@/components/referrals/TasksInbox';
+import { PgLogoMark } from '@/components/PgLogo';
 import {
-  Users, MapPin, ArrowUpRight, Star, CheckCircle2, AlertTriangle,
-  CalendarClock, UserPlus, ClipboardList, BookOpen, Youtube,
-  FileText, GraduationCap, ExternalLink, BookMarked, Play
+  Users, ArrowUpRight, Star, CheckCircle2, AlertTriangle,
+  CalendarClock, Clock, UserPlus, ClipboardList, BookOpen, Youtube,
+  FileText, GraduationCap, ExternalLink, BookMarked, Play,
+  TrendingUp, CreditCard, IndianRupee, ShieldCheck, LogOut
 } from 'lucide-react';
 
 interface StudentSummary {
@@ -56,22 +59,30 @@ interface CourseVideo {
   order_index: number;
 }
 
+interface CommissionEntry {
+  id: string;
+  full_name: string;
+  total_fees: string;
+  commission_amount: number;
+  verified_at: string;
+}
+
 const StatCard = ({ label, value, icon: Icon }: any) => (
-  <Card className="shadow-none border-border/60">
-    <CardContent className="p-2.5 flex items-center gap-2.5">
-      <div className="h-7 w-7 rounded-md flex items-center justify-center bg-primary/10 text-primary shrink-0">
-        <Icon className="h-3.5 w-3.5" />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
-        <div className="text-sm font-semibold tabular-nums leading-tight">{value}</div>
+  <Card className="hover:shadow-md transition-shadow cursor-pointer shadow-none border-border/60">
+    <CardContent className="py-2 px-2.5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[9px] text-muted-foreground font-medium">{label}</p>
+          <p className="text-base font-bold">{value}</p>
+        </div>
+        <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
     </CardContent>
   </Card>
 );
 
 const EditorDashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { assignedStudentIds } = useEditorPermissions();
   const { data: referrals = [] } = useMyReferrals();
   const { data: tasks = [] } = useMyTasks();
@@ -83,6 +94,8 @@ const EditorDashboard = () => {
   const [loadingResources, setLoadingResources] = useState(true);
   const [videos, setVideos] = useState<CourseVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
+  const [commissionEntries, setCommissionEntries] = useState<CommissionEntry[]>([]);
+  const [loadingCommission, setLoadingCommission] = useState(true);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
@@ -134,6 +147,42 @@ const EditorDashboard = () => {
     })();
   }, []);
 
+  // Fetch verified referrals for commission calculation
+  useEffect(() => {
+    (async () => {
+      if (!user) return;
+      setLoadingCommission(true);
+      try {
+        const { data: verifiedRefs } = await (supabase as any)
+          .from('referrals')
+          .select('id, full_name, total_fees, verified_at')
+          .eq('owner_editor_id', user.id)
+          .eq('verified_by_admin', true)
+          .not('verified_at', 'is', null)
+          .order('verified_at', { ascending: false })
+          .limit(20);
+        if (verifiedRefs) {
+          const entries = (verifiedRefs as any[]).map((r: any) => {
+            const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+            const commissionAmount = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+            return {
+              id: r.id,
+              full_name: r.full_name || 'Unknown',
+              total_fees: r.total_fees || '—',
+              commission_amount: commissionAmount,
+              verified_at: r.verified_at,
+            };
+          }).filter((r: any) => r.commission_amount > 0);
+          setCommissionEntries(entries);
+        }
+      } catch (e) {
+        console.error('Error fetching commission data:', e);
+      } finally {
+        setLoadingCommission(false);
+      }
+    })();
+  }, [user?.id]);
+
   const today = new Date().toISOString().slice(0, 10);
   const stats = useMemo(() => {
     const todaysFollowups = referrals.filter(r => r.next_followup_date === today).length;
@@ -141,10 +190,21 @@ const EditorDashboard = () => {
     const qualified = referrals.filter(r => QUALIFIED_STATUSES.includes(r.current_status)).length;
     const converted = referrals.filter(r => !!r.converted_student_id).length;
     const pendingTasks = (tasks as any[]).filter(t => t.status === 'open').length;
-    return { assigned: students.length, referrals: referrals.length, todaysFollowups, overdue, qualified, converted, pendingTasks };
-  }, [referrals, tasks, students.length, today]);
-
-  const initials = (profile?.full_name || user?.email || '?').split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
+    const totalCommission = commissionEntries.reduce((s, e) => s + e.commission_amount, 0);
+    const verifiedCount = commissionEntries.length;
+    return { 
+      assigned: students.length, 
+      referrals: referrals.length, 
+      todaysFollowups, 
+      overdue, 
+      qualified, 
+      converted, 
+      pendingTasks,
+      totalCommission,
+      verifiedCount,
+      pendingVerification: referrals.filter(r => !r.verified_by_admin && r.total_fees).length,
+    };
+  }, [referrals, tasks, students.length, today, commissionEntries]);
 
   const categoryColors: Record<string, string> = {
     aps: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -158,15 +218,30 @@ const EditorDashboard = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-3 space-y-3">
-        {/* Header */}
-        <header className="flex items-center gap-3 pb-2 border-b border-border">
-          <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback></Avatar>
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Editor Workspace</p>
-            <h1 className="text-sm sm:text-base font-semibold truncate">{profile?.full_name || 'Editor'}</h1>
+      <div className="space-y-3">
+        <div className="german-stripe w-full" />
+        <div className="flex items-center justify-between gap-3 rounded-[12px] border border-pg-sep bg-pg-bg px-3 py-2">
+          <div className="flex items-center gap-2">
+            <PgLogoMark />
+            <div>
+              <h1 className="text-sm font-semibold text-pg-label tracking-tight">Editor Workspace</h1>
+              <p className="text-[10px] text-pg-label3">{profile?.full_name || 'Editor'}</p>
+            </div>
           </div>
-        </header>
+          <div className="flex items-center gap-1.5">
+            <span className="hidden sm:inline text-[9px] uppercase tracking-[0.15em] text-pg-label3">Editor</span>
+            <button
+              onClick={async () => {
+                await signOut();
+                navigate('/auth');
+              }}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams(v === 'dashboard' ? {} : { tab: v })}>
           <TabsList className="h-8 p-0.5 bg-muted/60 flex-nowrap overflow-x-auto no-scrollbar">
@@ -174,6 +249,7 @@ const EditorDashboard = () => {
             <TabsTrigger value="referrals" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Referrals</TabsTrigger>
             <TabsTrigger value="students" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Students</TabsTrigger>
             <TabsTrigger value="tasks" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Tasks</TabsTrigger>
+            <TabsTrigger value="revenue" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Revenue</TabsTrigger>
             <TabsTrigger value="blog" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Blog</TabsTrigger>
             <TabsTrigger value="resources" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Resources</TabsTrigger>
             <TabsTrigger value="german" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">German</TabsTrigger>
@@ -182,38 +258,215 @@ const EditorDashboard = () => {
 
           {/* DASHBOARD */}
           <TabsContent value="dashboard" className="pt-2 space-y-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1.5">
-              <StatCard label="Assigned" value={stats.assigned} icon={Users} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+              <StatCard label="Assigned Students" value={stats.assigned} icon={Users} />
               <StatCard label="My Referrals" value={stats.referrals} icon={UserPlus} />
-              <StatCard label="Follow-ups" value={stats.todaysFollowups} icon={CalendarClock} />
-              <StatCard label="Overdue" value={stats.overdue} icon={AlertTriangle} />
-              <StatCard label="Qualified" value={stats.qualified} icon={Star} />
-              <StatCard label="Converted" value={stats.converted} icon={CheckCircle2} />
+              <StatCard label="Commission Earned" value={`₹${stats.totalCommission.toLocaleString()}`} icon={IndianRupee} />
               <StatCard label="Pending Tasks" value={stats.pendingTasks} icon={ClipboardList} />
             </div>
-            <Card className="shadow-none border-border/60">
-              <CardContent className="p-0">
-                <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-                  <p className="text-[11px] font-semibold">Recent Referrals</p>
-                </div>
-                {referrals.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-muted-foreground">No referrals yet.</div>
-                ) : referrals.slice(0, 5).map(r => (
-                  <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
-                    className="w-full flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/40 text-left">
-                    <div className="min-w-0 flex-1 mr-2">
-                      <div className="text-[12px] font-medium truncate">{r.full_name}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{r.phone || r.email || '—'}</div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* Recent Referrals */}
+              <Card className="shadow-none border-border/60">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Users className="h-3.5 w-3.5" /> Recent Referrals</div>
+                  {referrals.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-3 text-[11px]">No referrals yet</p>
+                  ) : referrals.slice(0, 5).map(r => (
+                    <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
+                      className="w-full flex items-center justify-between p-1.5 border rounded text-[11px] hover:bg-muted/40 text-left">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <div className="flex items-center gap-1">
+                          <p className="font-medium text-[11px] truncate">{r.full_name}</p>
+                          {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600 shrink-0" />}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate">{r.phone || r.email || '—'}</p>
+                      </div>
+                      <Badge variant="outline" className={`text-[9px] shrink-0 ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</Badge>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* My Revenue Summary */}
+              <Card className="shadow-none border-border/60">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold"><TrendingUp className="h-3.5 w-3.5" /> My Revenue</div>
+                  {loadingCommission ? (
+                    <p className="text-center text-muted-foreground py-3 text-[11px]">Loading...</p>
+                  ) : commissionEntries.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-3 text-[11px]">No commission earned yet</p>
+                  ) : commissionEntries.slice(0, 5).map(e => (
+                    <div key={e.id} className="flex items-center justify-between p-1.5 border rounded text-[11px]">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <p className="font-medium text-[11px] truncate">{e.full_name}</p>
+                        <p className="text-[9px] text-muted-foreground truncate">{e.total_fees} · {new Date(e.verified_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold text-[11px] text-emerald-600">₹{e.commission_amount.toLocaleString()}</p>
+                        <p className="text-[8px] text-muted-foreground">10% commission</p>
+                      </div>
                     </div>
-                    <Badge variant="outline" className={`text-[9px] shrink-0 ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</Badge>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
+                  ))}
+                  {commissionEntries.length > 0 && (
+                    <button onClick={() => setSearchParams({ tab: 'revenue' })}
+                      className="w-full text-center text-[10px] text-primary hover:underline pt-1">
+                      View all revenue details →
+                    </button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
+                <CalendarClock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <div>
+                  <p className="text-[9px] text-muted-foreground font-medium">Today's Follow-ups</p>
+                  <p className="text-sm font-bold">{stats.todaysFollowups}</p>
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                <div>
+                  <p className="text-[9px] text-muted-foreground font-medium">Overdue</p>
+                  <p className="text-sm font-bold">{stats.overdue}</p>
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
+                <Star className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <div>
+                  <p className="text-[9px] text-muted-foreground font-medium">Qualified</p>
+                  <p className="text-sm font-bold">{stats.qualified}</p>
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <div>
+                  <p className="text-[9px] text-muted-foreground font-medium">Converted</p>
+                  <p className="text-sm font-bold">{stats.converted}</p>
+                </div>
+              </CardContent></Card>
+            </div>
           </TabsContent>
 
           {/* REFERRALS */}
           <TabsContent value="referrals" className="pt-2"><MyReferralsPanel /></TabsContent>
+
+          {/* REVENUE */}
+          <TabsContent value="revenue" className="pt-2 space-y-3">
+            {/* Revenue Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-medium">Total Commission</p>
+                    <p className="text-base font-bold text-emerald-600">₹{stats.totalCommission.toLocaleString()}</p>
+                  </div>
+                  <IndianRupee className="h-3.5 w-3.5 text-emerald-500" />
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-medium">Verified Leads</p>
+                    <p className="text-base font-bold">{stats.verifiedCount}</p>
+                  </div>
+                  <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-medium">Pending Verification</p>
+                    <p className="text-base font-bold">{stats.pendingVerification}</p>
+                  </div>
+                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                </div>
+              </CardContent></Card>
+              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-medium">Avg. per Lead</p>
+                    <p className="text-base font-bold">
+                      {stats.verifiedCount > 0 ? `₹${Math.round(stats.totalCommission / stats.verifiedCount).toLocaleString()}` : '—'}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                </div>
+              </CardContent></Card>
+            </div>
+
+            {/* Commission Breakdown */}
+            <Card className="shadow-none border-border/60">
+              <CardContent className="p-0">
+                <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+                  <p className="text-[11px] font-semibold">Commission Breakdown</p>
+                  {commissionEntries.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground">{commissionEntries.length} verified leads</p>
+                  )}
+                </div>
+                {loadingCommission ? (
+                  <p className="text-center py-6 text-[11px] text-muted-foreground">Loading commission data...</p>
+                ) : commissionEntries.length === 0 ? (
+                  <div className="p-6 text-center space-y-1">
+                    <CreditCard className="h-6 w-6 mx-auto text-muted-foreground/50" />
+                    <p className="text-xs text-muted-foreground">No commission earned yet</p>
+                    <p className="text-[10px] text-muted-foreground/60">Leads must be verified by admin to receive commission</p>
+                  </div>
+                ) : (
+                  commissionEntries.map(e => (
+                    <div key={e.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <div className="min-w-0 flex-1 mr-3">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[12px] font-medium truncate">{e.full_name}</p>
+                          <Badge className="text-[8px] py-0 h-4 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Verified</Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Fees: {e.total_fees}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[12px] font-semibold text-emerald-600">₹{e.commission_amount.toLocaleString()}</p>
+                        <p className="text-[8px] text-muted-foreground">{new Date(e.verified_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pending Verification */}
+            {referrals.filter(r => !r.verified_by_admin && r.total_fees).length > 0 && (
+              <Card className="shadow-none border-border/60">
+                <CardContent className="p-0">
+                  <div className="px-3 py-2 border-b border-border flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-[11px] font-semibold">Pending Verification</p>
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                      {referrals.filter(r => !r.verified_by_admin && r.total_fees).length}
+                    </Badge>
+                  </div>
+                  {referrals.filter(r => !r.verified_by_admin && r.total_fees).slice(0, 10).map(r => {
+                    const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+                    const potentialCommission = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+                    return (
+                      <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
+                        className="w-full flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors text-left">
+                        <div className="min-w-0 flex-1 mr-3">
+                          <p className="text-[12px] font-medium truncate">{r.full_name}</p>
+                          <p className="text-[10px] text-muted-foreground">{r.total_fees}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] font-medium text-amber-600">₹{potentialCommission.toLocaleString()}</p>
+                          <p className="text-[8px] text-muted-foreground">Potential commission</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* STUDENTS */}
           <TabsContent value="students" className="pt-2">

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
+import { PWAInstallButton } from '@/components/PWAInstallPrompt';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
 import { useServicePackages } from '@/hooks/useServiceData';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,7 @@ const Header: React.FC = () => {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <PWAInstallButton className="h-8 w-8 p-0 hidden sm:inline-flex" />
           <Link to="/auth" className="hidden sm:inline text-[14px] font-medium text-pg-label2 hover:text-pg-label">Sign in</Link>
           <Link to="/auth" className="pg-btn pg-btn-primary pg-btn-sm">Get started</Link>
           <button
