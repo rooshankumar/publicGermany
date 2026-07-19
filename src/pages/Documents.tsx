@@ -1,27 +1,32 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Upload, FileText, FileCheck, FileX, FileClock, Info, Trash2, Edit2, Plus } from 'lucide-react';
+import { FileText, FileCheck, FileX, FileClock, RotateCw } from 'lucide-react';
 import Layout from '@/components/Layout';
 import APSRequiredDocuments, { DOCUMENTS } from '@/components/APSRequiredDocuments';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import StudentNotes from '@/components/StudentNotes';
+
+// Debounce utility (defined outside component to avoid recreation on every render)
+const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
+  let t: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<F>) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delay);
+  };
+};
 
 const Documents = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [userDocs, setUserDocs] = useState<Record<string, any | null>>({});
-  // Tabs removed; simplifying to a single upload section
   const [documentStats, setDocumentStats] = useState({
     total: 0,
     uploaded: 0,
@@ -36,8 +41,6 @@ const Documents = () => {
   const [uploading, setUploading] = useState(false);
   const [additionalUploadProgress, setAdditionalUploadProgress] = useState(0);
   const [additionalDocs, setAdditionalDocs] = useState<any[]>([]);
-
-  const queryClient = useQueryClient();
 
   const fetchUserDocs = async () => {
     if (!profile?.user_id) return [] as any[];
@@ -66,15 +69,6 @@ const Documents = () => {
     setUserDocs(map);
   }, [docsQuery.data]);
 
-  // Debounce utility
-  const debounce = <F extends (...args: any[]) => void>(fn: F, delay = 300) => {
-    let t: any;
-    return (...args: Parameters<F>) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), delay);
-    };
-  };
-
   // Realtime refetch with debounce
   useEffect(() => {
     if (!profile?.user_id) return;
@@ -94,7 +88,7 @@ const Documents = () => {
     let rejected = 0;
     requiredKeys.forEach((k) => {
       const d = userDocs[k] as any | null;
-      if (!d) return; // not uploaded
+      if (!d) return;
       const st = (d.status || 'pending') as string;
       if (st === 'approved') approved += 1;
       else if (st === 'rejected') rejected += 1;
@@ -118,7 +112,7 @@ const Documents = () => {
     }
   };
 
-  // Fetch additional documents (documents table with module='additional_documents')
+  // Fetch additional documents
   useEffect(() => {
     if (!profile?.user_id) return;
     const fetchAdditionalDocs = async () => {
@@ -140,9 +134,7 @@ const Documents = () => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // Pre-fill with original filename (keep extension for display)
       setCustomFileName(file.name);
-      console.log('File selected:', file.name);
     }
   };
 
@@ -156,8 +148,6 @@ const Documents = () => {
 
   // Upload additional document
   const handleUploadAdditional = async () => {
-    console.log('Upload clicked:', { selectedFile, customFileName, userId: profile?.user_id });
-    
     if (!selectedFile) {
       toast({ title: 'Error', description: 'Please select a file', variant: 'destructive' });
       return;
@@ -178,10 +168,8 @@ const Documents = () => {
       setAdditionalUploadProgress(10);
       
       const fileExt = selectedFile.name.split('.').pop();
-      // Get user's first name from profile
       const firstName = profile?.full_name?.split(' ')[0] || 'user';
       
-      // If user's custom name already has extension, use it. Otherwise add the original extension
       let finalFileName = customFileName.trim();
       const hasExtension = /\.[a-zA-Z0-9]+$/.test(finalFileName);
       if (!hasExtension && fileExt) {
@@ -194,7 +182,6 @@ const Documents = () => {
 
       setAdditionalUploadProgress(30);
       
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, selectedFile);
@@ -203,14 +190,12 @@ const Documents = () => {
       
       setAdditionalUploadProgress(60);
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
       setAdditionalUploadProgress(75);
       
-      // Save to documents table with module='additional_documents'
       const { error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -231,8 +216,6 @@ const Documents = () => {
       
       toast({ title: 'Success', description: 'Document uploaded successfully' });
       
-      // Refresh list
-      // @ts-ignore - Supabase type inference issue with documents table
       const result = await supabase
         .from('documents')
         .select('id, user_id, file_name, upload_path, file_url, file_size, file_type, category, module, status, admin_notes, created_at, updated_at')
@@ -243,7 +226,6 @@ const Documents = () => {
 
       setAdditionalUploadProgress(100);
       
-      // Reset
       setSelectedFile(null);
       setCustomFileName('');
       setShowUploadDialog(false);
@@ -260,17 +242,12 @@ const Documents = () => {
     if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      // Delete from storage
       await supabase.storage.from('documents').remove([doc.upload_path]);
-
-      // Delete from database
       const { error } = await supabase
         .from('documents')
         .delete()
         .eq('id', doc.id);
-
       if (error) throw error;
-
       toast({ title: 'Success', description: 'Document deleted' });
       setAdditionalDocs(additionalDocs.filter(d => d.id !== doc.id));
     } catch (error: any) {
@@ -283,69 +260,55 @@ const Documents = () => {
     ? Math.round((documentStats.uploaded / documentStats.total) * 100) 
     : 0;
 
+  const statsItems = [
+    { icon: FileText, label: 'Total', value: documentStats.total, color: 'text-muted-foreground' },
+    { icon: FileCheck, label: 'Approved', value: documentStats.uploaded, color: 'text-pg-success' },
+    { icon: FileClock, label: 'Pending', value: documentStats.pending, color: 'text-pg-gold' },
+    { icon: FileX, label: 'Rejected', value: documentStats.rejected, color: 'text-pg-error' },
+  ];
+
   return (
-     <Layout>
-       <div className="space-y-3 pb-20 md:pb-0">
-         {/* German stripe */}
-         <div className="german-stripe w-full" />
+    <Layout>
+      <div className="space-y-3 pb-20 md:pb-0">
+        {/* German stripe */}
+        <div className="german-stripe w-full" />
 
-         <div className="flex items-center justify-between">
-           <h1 className="hidden md:block text-lg font-bold tracking-tight">My Documents</h1>
-           <Button 
-             variant="outline" 
-             size="sm" 
-             onClick={refreshDocuments}
-             disabled={loading}
-             className="text-xs h-7"
-           >
-             {loading ? 'Refreshing...' : 'Refresh'}
-           </Button>
-         </div>
+        {/* Header with inline stats */}
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-lg font-bold tracking-tight">My Documents</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground hidden sm:block">{uploadProgress}% complete</span>
+            <Button variant="outline" size="sm" onClick={refreshDocuments} disabled={loading} className="h-7 text-xs px-2">
+              <RotateCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? '' : 'Refresh'}
+            </Button>
+          </div>
+        </div>
 
-         {/* Compact Stats Bar */}
-         <Card>
-           <CardContent className="py-2 px-3">
-             <div className="flex items-center gap-3 flex-wrap text-xs">
-               <span className="flex items-center gap-1">
-                 <FileText className="h-3 w-3 text-muted-foreground" />
-                 <span className="font-medium">{documentStats.total}</span> total
-               </span>
-               <span className="text-border">|</span>
-               <span className="flex items-center gap-1">
-                 <FileCheck className="h-3 w-3 text-success" />
-                 <span className="font-medium">{documentStats.uploaded}</span> approved
-               </span>
-               <span className="text-border">|</span>
-               <span className="flex items-center gap-1">
-                 <FileClock className="h-3 w-3 text-warning" />
-                 <span className="font-medium">{documentStats.pending}</span> pending
-               </span>
-               <span className="text-border">|</span>
-               <span className="flex items-center gap-1">
-                 <FileX className="h-3 w-3 text-destructive" />
-                 <span className="font-medium">{documentStats.rejected}</span> rejected
-               </span>
-               <span className="ml-auto text-muted-foreground">{uploadProgress}%</span>
-             </div>
-             <Progress value={uploadProgress} className="h-1.5 rounded-full mt-2" />
-           </CardContent>
-         </Card>
-
-        {/* Student Notes Section */}
-        <StudentNotes />
-
-        {/* General Document Upload */}
-        <Card>
-          <CardContent>
-            <div className="pt-4 sm:pt-6">
-              <APSRequiredDocuments 
-                additionalDocs={additionalDocs}
-                onUploadAdditional={handleOpenDialog}
-                onDeleteAdditional={handleDeleteAdditional}
-              />
+        {/* Compact inline stats bar */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap bg-muted/30 rounded-lg px-2.5 sm:px-3 py-2 border">
+          {statsItems.map((item, i) => (
+            <div key={item.label} className="flex items-center gap-1">
+              <item.icon className={`h-3 w-3 ${item.color}`} />
+              <span className="text-[11px] sm:text-xs whitespace-nowrap">
+                <span className="font-semibold">{item.value}</span>
+                <span className="text-muted-foreground ml-0.5 hidden sm:inline">{item.label.toLowerCase()}</span>
+              </span>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+          <span className="text-border/50 mx-0.5 hidden sm:block">|</span>
+          <div className="flex-1 min-w-[60px] sm:min-w-[80px]">
+            <Progress value={uploadProgress} className="h-1 rounded-full" />
+          </div>
+        </div>
+
+        {/* Main Document Upload Section (includes notes inside) */}
+        <APSRequiredDocuments 
+          additionalDocs={additionalDocs}
+          onUploadAdditional={handleOpenDialog}
+          onDeleteAdditional={handleDeleteAdditional}
+          notesSlot={<StudentNotes variant="inline" />}
+        />
 
         {/* Upload Dialog */}
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
@@ -367,7 +330,7 @@ const Documents = () => {
                 />
                 {selectedFile && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                    {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
                   </p>
                 )}
               </div>
@@ -380,14 +343,10 @@ const Documents = () => {
                   onChange={(e) => setCustomFileName(e.target.value)}
                   disabled={uploading}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Give this document a descriptive name
-                </p>
               </div>
               
-              {/* Upload Progress */}
               {uploading && additionalUploadProgress > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Uploading...</span>
                     <span>{additionalUploadProgress}%</span>
@@ -397,10 +356,10 @@ const Documents = () => {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={uploading}>
+              <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={uploading} size="sm">
                 Cancel
               </Button>
-              <Button onClick={handleUploadAdditional} disabled={uploading || !selectedFile || !customFileName.trim()}>
+              <Button onClick={handleUploadAdditional} disabled={uploading || !selectedFile || !customFileName.trim()} size="sm">
                 {uploading ? 'Uploading...' : 'Upload'}
               </Button>
             </DialogFooter>
@@ -411,6 +370,7 @@ const Documents = () => {
         <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-4 py-3 flex items-center justify-center">
             <Button className="w-full" variant="outline" size="sm" onClick={refreshDocuments} disabled={loading}>
+              <RotateCw className={`h-3.5 w-3.5 mr-2 ${loading ? 'animate-spin' : ''}`} />
               {loading ? 'Refreshing…' : 'Refresh Status'}
             </Button>
           </div>

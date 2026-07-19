@@ -1,68 +1,85 @@
 import React, { useEffect, useRef, useState, DragEvent } from 'react';
-
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CheckCircle, Upload, Trash2, Eye, Plus, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { CheckCircle, Upload, Trash2, Eye, Plus, FileText, Loader2 } from 'lucide-react';
 import { sendEmail } from '@/lib/sendEmail';
 import { Badge } from '@/components/ui/badge';
 
+const DOCUMENT_GROUPS = [
+  { title: 'Personal', keys: ['passport_copy', 'passport_photo', 'signature'] },
+  { title: 'School', keys: ['class_x', 'class_xii'] },
+  { title: "Bachelor's Degree", keys: ['bachelor_degree_certificate', 'bachelor_degree_transcript', 'bachelor_all_sem_marksheets'] },
+  { title: "Master's Degree", keys: ['master_degree_certificate', 'master_degree_transcript', 'master_all_sem_marksheets'] },
+  { title: 'Language Certificates', keys: ['english_language_certificate', 'german_language_certificate'] },
+  { title: 'Recommendation Letters', keys: ['recommendation_letter_1', 'recommendation_letter_2'] },
+  { title: 'Work Experience', keys: ['work_experience_1', 'work_experience_2'] },
+  { title: 'Official Academic', keys: ['official_grading_certificate', 'ects_conversion_certificate'] },
+  { title: 'Application', keys: ['motivation_letter', 'cv'] },
+  { title: 'APS & Admission', keys: ['aps_certificate', 'admission_letter'] },
+  { title: 'Financial & Insurance', keys: ['financial_proof', 'health_insurance'] },
+];
+
 export const DOCUMENTS = [
   // Personal Documents
-  { key: 'passport_copy', label: '📄 Passport Copy', maxFiles: 1 },
-  { key: 'passport_photo', label: '📄 Passport Size Photograph (White Background)', maxFiles: 1 },
-  { key: 'signature', label: '📄 Signature', maxFiles: 1 },
+  { key: 'passport_copy', label: 'Passport Copy', maxFiles: 1 },
+  { key: 'passport_photo', label: 'Passport Size Photograph (White Background)', maxFiles: 1 },
+  { key: 'signature', label: 'Signature', maxFiles: 1, accept: 'image/*,application/pdf' },
   
   // School Documents
-  { key: 'class_x', label: '📄 Class X Marksheet and Certificate', maxFiles: 2 },
-  { key: 'class_xii', label: '📄 Class XII Marksheet and Certificate', maxFiles: 2 },
+  { key: 'class_x', label: 'Class X Marksheet and Certificate', maxFiles: 2 },
+  { key: 'class_xii', label: 'Class XII Marksheet and Certificate', maxFiles: 2 },
   
   // Bachelor's Degree Documents
-  { key: 'bachelor_degree_certificate', label: '📄 Bachelor Degree Certificate', maxFiles: 1 },
-  { key: 'bachelor_degree_transcript', label: '📄 Bachelor Degree Transcript', maxFiles: 1 },
-  { key: 'bachelor_all_sem_marksheets', label: '📄 Bachelor Degree All Semesters Marksheets', maxFiles: 10 },
+  { key: 'bachelor_degree_certificate', label: 'Bachelor Degree Certificate', maxFiles: 1 },
+  { key: 'bachelor_degree_transcript', label: 'Bachelor Degree Transcript', maxFiles: 1 },
+  { key: 'bachelor_all_sem_marksheets', label: 'Bachelor All Semesters Marksheets', maxFiles: 10 },
   
-  // Master's Degree Documents (if applicable)
-  { key: 'master_degree_certificate', label: '📄 Master Degree Certificate (if applicable)', maxFiles: 1 },
-  { key: 'master_degree_transcript', label: '📄 Master Degree Transcript (if applicable)', maxFiles: 1 },
-  { key: 'master_all_sem_marksheets', label: '📄 Master Degree All Semesters Marksheets (if applicable)', maxFiles: 10 },
+  // Master's Degree Documents
+  { key: 'master_degree_certificate', label: 'Master Degree Certificate (if applicable)', maxFiles: 1 },
+  { key: 'master_degree_transcript', label: 'Master Degree Transcript (if applicable)', maxFiles: 1 },
+  { key: 'master_all_sem_marksheets', label: 'Master All Semesters Marksheets (if applicable)', maxFiles: 10 },
   
   // Language Certificates
-  { key: 'english_language_certificate', label: '📄 English Language Certificate (IELTS/TOEFL)', maxFiles: 2 },
-  { key: 'german_language_certificate', label: '📄 German Language Certificate (Goethe/TestDaF)', maxFiles: 2 },
+  { key: 'english_language_certificate', label: 'English Language Certificate (IELTS/TOEFL)', maxFiles: 2 },
+  { key: 'german_language_certificate', label: 'German Language Certificate (Goethe/TestDaF)', maxFiles: 2 },
   
   // Recommendation Letters
-  { key: 'recommendation_letter_1', label: '📄 Recommendation Letter 1', maxFiles: 1 },
-  { key: 'recommendation_letter_2', label: '📄 Recommendation Letter 2', maxFiles: 1 },
+  { key: 'recommendation_letter_1', label: 'Recommendation Letter 1', maxFiles: 1 },
+  { key: 'recommendation_letter_2', label: 'Recommendation Letter 2', maxFiles: 1 },
   
   // Work Experience Documents
-  { key: 'work_experience_1', label: '📄 Work Experience - Offer & Experience Certificate 1', maxFiles: 2 },
-  { key: 'work_experience_2', label: '📄 Work Experience - Offer & Experience Certificate 2', maxFiles: 2 },
+  { key: 'work_experience_1', label: 'Work Experience - Offer & Experience Certificate 1', maxFiles: 2 },
+  { key: 'work_experience_2', label: 'Work Experience - Offer & Experience Certificate 2', maxFiles: 2 },
   
   // Official Academic Documents
-  { key: 'official_grading_certificate', label: '📄 Official Grading Certificate', maxFiles: 1 },
-  { key: 'ects_conversion_certificate', label: '📄 Official Credit Points to ECTS Conversion Certificate', maxFiles: 1 },
+  { key: 'official_grading_certificate', label: 'Official Grading Certificate', maxFiles: 1 },
+  { key: 'ects_conversion_certificate', label: 'Official Credit Points to ECTS Conversion Certificate', maxFiles: 1 },
   
   // Application Documents
-  { key: 'motivation_letter', label: '📄 Motivation Letter / SOP (LOM)', maxFiles: 2 },
-  { key: 'cv', label: '📄 CV / Resume', maxFiles: 1 },
+  { key: 'motivation_letter', label: 'Motivation Letter / SOP (LOM)', maxFiles: 2 },
+  { key: 'cv', label: 'CV / Resume', maxFiles: 1 },
   
   // APS & Admission
-  { key: 'aps_certificate', label: '📄 APS Certificate', maxFiles: 2 },
-  { key: 'admission_letter', label: '📄 Admission Letter', maxFiles: 1 },
+  { key: 'aps_certificate', label: 'APS Certificate', maxFiles: 2 },
+  { key: 'admission_letter', label: 'Admission Letter', maxFiles: 1 },
   
   // Financial & Insurance
-  { key: 'financial_proof', label: '📄 Financial Proof / Blocked Account', maxFiles: 3 },
-  { key: 'health_insurance', label: '📄 Proof of Health Insurance', maxFiles: 2 },
+  { key: 'financial_proof', label: 'Financial Proof / Blocked Account', maxFiles: 3 },
+  { key: 'health_insurance', label: 'Proof of Health Insurance', maxFiles: 2 },
 ];
 
 export type RequiredDocumentDef = {
   key: string;
   label: string;
   maxFiles: number;
+  accept?: string;
 };
 
 // Map document keys to standardized base filenames used when storing files.
@@ -92,7 +109,7 @@ const CATEGORY_BASE_FILENAME: Record<string, string> = {
   admission_letter: 'Admission_Letter',
   financial_proof: 'Financial_Proof',
   health_insurance: 'Health_Insurance',
-  // Legacy mappings for backward compatibility with existing uploads
+  // Legacy mappings for backward compatibility
   academic_transcripts: 'Academic_Transcripts',
   degree_certificate: 'Degree_Certificate',
   language_certificates: 'Language_Certificates',
@@ -117,17 +134,49 @@ interface APSProps {
   additionalDocs?: any[];
   onUploadAdditional?: () => void;
   onDeleteAdditional?: (doc: any) => void;
+  notesSlot?: React.ReactNode;
 }
 
-function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs = [], onUploadAdditional, onDeleteAdditional }: APSProps) {
+// Delete button with confirmation dialog (defined outside component to avoid recreation)
+function DeleteButton({ onDelete, loading }: { onDelete: () => void; loading: boolean }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-destructive hover:text-destructive/80" disabled={loading}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-sm">Delete this document?</AlertDialogTitle>
+          <AlertDialogDescription className="text-xs">
+            This action cannot be undone. The file will be permanently removed.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="h-8 text-xs">Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} className="h-8 text-xs bg-destructive hover:bg-destructive/90">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs = [], onUploadAdditional, onDeleteAdditional, notesSlot }: APSProps) {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [docs, setDocs] = useState<Record<string, DocumentMeta | null>>({});
-  const [loading, setLoading] = useState<string | null>(null);
-  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+  const [fetching, setFetching] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+  const initialLoadDone = useRef(false);
   const requiredList = requiredDocuments && requiredDocuments.length > 0 ? requiredDocuments : (DOCUMENTS as RequiredDocumentDef[]);
-  
-  // Helper to render a consistent, brand-styled status pill
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB (matches Supabase Storage default limit)
+
+  // Helper: status pill
   const renderStatusPill = (status?: string) => {
     const s = ((status || 'pending') as 'pending' | 'approved' | 'rejected');
     const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border';
@@ -143,45 +192,32 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
 
   const fetchDocs = async () => {
     if (!profile?.user_id) return;
-    
+    // Only show loading skeleton on first load, not on re-fetches
+    if (!initialLoadDone.current) setFetching(true);
     try {
       const { data, error } = await supabase
         .from('documents')
         .select('id, category, file_url, file_name, upload_path, status, admin_notes')
         .eq('user_id', profile.user_id);
-      
       if (error) throw error;
-      
-      // Initialize docMap with all document keys set to null first
       const docMap: Record<string, DocumentMeta | null> = {};
-      requiredList.forEach(doc => {
-        docMap[doc.key] = null; // Initialize all to null first
-      });
-      
-      // Then update with any existing documents
+      requiredList.forEach(doc => { docMap[doc.key] = null; });
       if (data && data.length > 0) {
         data.forEach((doc: any) => {
-          if (doc.category in docMap) {
-            docMap[doc.category] = doc;
-          }
+          if (doc.category in docMap) docMap[doc.category] = doc;
         });
       }
-      
       setDocs(docMap);
     } catch (error) {
       console.error('Error fetching documents:', error);
-      // Initialize with null values if there's an error
-      const docMap: Record<string, null> = {};
-      requiredList.forEach(doc => {
-        docMap[doc.key] = null;
-      });
-      setDocs(docMap);
+    } finally {
+      setFetching(false);
+      initialLoadDone.current = true;
     }
   };
 
   useEffect(() => {
     fetchDocs();
-    // Realtime subscription to reflect admin status updates immediately
     if (!profile?.user_id) return;
     const channel = supabase
       .channel(`docs-${profile.user_id}`)
@@ -192,61 +228,46 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
 
   const handleUpload = async (key: string, file: File) => {
     if (!profile?.user_id) {
-      alert('User not authenticated');
+      toast({ title: 'Authentication required', description: 'Please log in to upload documents.', variant: 'destructive' });
       return;
     }
     
-    setLoading(key);
-    
+    // Client-side file size validation
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: `File size must be under 5 MB. This file is ${(file.size / (1024 * 1024)).toFixed(1)} MB.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoadingDoc(key);
     try {
-      // Generate a standardized stored file name based on category + original extension
-      const originalExt = (() => {
-        const dot = file.name.lastIndexOf('.');
-        return dot >= 0 ? file.name.slice(dot) : '';
-      })();
+      const originalExt = (() => { const dot = file.name.lastIndexOf('.'); return dot >= 0 ? file.name.slice(dot) : ''; })();
       const base = CATEGORY_BASE_FILENAME[key] || key;
-      // Get user's first name from profile
       const firstName = profile?.full_name?.split(' ')[0] || 'user';
       const safeBaseName = base.replace(/[^a-zA-Z0-9-_ ()]/g, '_');
-      // Format: firstname_documentname.ext (e.g., "roshan_Passport.pdf")
       const storedFileName = `${firstName}_${safeBaseName}${originalExt || ''}`;
       const fileName = `${Date.now()}-${storedFileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `${profile.user_id}/${key}/${fileName}`;
-      
-      // Check if there's an existing document and delete old file from storage
-      const existingDoc = (docs[key] as any);
-      if (existingDoc?.upload_path) {
-        try {
-          await supabase.storage.from('documents').remove([existingDoc.upload_path]);
-        } catch (e) {
-          console.warn('Failed to delete old file:', e);
-        }
-      }
-      
-      // Upload the file to storage
+
+      // Upload new file FIRST (safe order: don't delete old until new succeeds)
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, file, { 
-          upsert: false,
-          cacheControl: '3600',
-        });
-      
+        .upload(filePath, file, { upsert: false, cacheControl: '3600' });
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        throw new Error('Failed to upload file to storage');
+        throw new Error(uploadError.message === 'The resource already exists'
+          ? 'A file with this name already exists. Please try again.'
+          : 'Failed to upload file. Please try again or contact support.');
       }
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
-      
-      if (!publicUrl) {
-        throw new Error('Failed to generate public URL');
-      }
-      
-      // Upsert document metadata in the database
-      const { data, error: dbError } = await supabase
+
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+      if (!publicUrl) throw new Error('Failed to generate public URL');
+
+      // Then upsert the database record
+      const { error: dbError } = await supabase
         .from('documents')
         .upsert({
           user_id: profile.user_id,
@@ -256,352 +277,252 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
           file_size: file.size,
           file_type: file.type,
           upload_path: filePath,
+          module: 'aps_documents',
           updated_at: new Date().toISOString(),
-          // Reset status to pending on new upload so admin can review again
           status: 'pending',
         })
         .select()
         .single();
-      
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error('Failed to save document metadata');
-      }
-      
-      // Refresh the documents list
-      await fetchDocs();
+      if (dbError) { console.error('Database error:', dbError); throw new Error('Failed to save document metadata'); }
 
-      // Fire-and-forget: email confirmation to the user
+      // Only NOW delete the old file (after new upload succeeded)
+      const existingDoc = docs[key] as any;
+      if (existingDoc?.upload_path) {
+        try { await supabase.storage.from('documents').remove([existingDoc.upload_path]); } catch (e) { console.warn('Failed to delete old file:', e); }
+      }
+
+      await fetchDocs();
+      toast({ title: 'Document uploaded', description: 'Your document has been submitted for review.' });
+
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const to = user?.email;
         if (to) {
-          const label = (requiredList.find(d => d.key === key)?.label || key).replace('📄 ', '');
+          const label = (requiredList.find(d => d.key === key)?.label || key);
           const { wrapInEmailTemplate, getPersonalizedGreeting, signOffs } = await import('@/lib/emailTemplate');
           const emailContent = `Your document <strong>${label}</strong> was uploaded successfully and is now <strong>pending</strong> review.<br/><br/>We will notify you once it is approved or if any changes are required.`;
-          const emailHtml = wrapInEmailTemplate(emailContent, {
-            customGreeting: getPersonalizedGreeting(profile?.full_name || ''),
-            signOff: signOffs.team
-          });
+          const emailHtml = wrapInEmailTemplate(emailContent, { customGreeting: getPersonalizedGreeting(profile?.full_name || ''), signOff: signOffs.team });
           await sendEmail(to, 'We received your document', emailHtml);
         }
-      } catch (_) {/* ignore email errors */}
-      
+      } catch (_) { /* ignore email errors */ }
     } catch (error) {
       console.error('Error in handleUpload:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(null);
-    }
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally { setLoadingDoc(null); }
   };
 
   const handleDelete = async (key: string) => {
     if (!profile?.user_id || !docs[key]) {
-      alert('User not authenticated or document not found');
+      toast({ title: 'Error', description: 'User not authenticated or document not found', variant: 'destructive' });
       return;
     }
-    
-    // Confirm before deletion
-    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
-      return;
-    }
-    
-    setLoading(key);
-    
+    setLoadingDoc(key);
     try {
       const doc = docs[key]!;
-      
-      // Remove from storage if upload_path exists
-      if (doc.upload_path) {
-        const { error: storageError } = await supabase.storage
-          .from('documents')
-          .remove([doc.upload_path]);
-          
-        if (storageError) {
-          console.error('Storage deletion error:', storageError);
-          // Continue with database deletion even if storage deletion fails
-        }
-      }
-      
-      // Remove from database
-      const { error: dbError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', doc.id);
-        
-      if (dbError) {
-        console.error('Database deletion error:', dbError);
-        throw new Error('Failed to remove document from database');
-      }
-      
-      // Update local state immediately for better UX
-      setDocs(prev => ({
-        ...prev,
-        [key]: null
-      }));
-      
-      // Refresh the documents list
+      if (doc.upload_path) { await supabase.storage.from('documents').remove([doc.upload_path]).catch(e => console.error(e)); }
+      const { error: dbError } = await supabase.from('documents').delete().eq('id', doc.id);
+      if (dbError) throw new Error('Failed to remove document from database');
+      setDocs(prev => ({ ...prev, [key]: null }));
       await fetchDocs();
-      
+      toast({ title: 'Document deleted' });
     } catch (error) {
       console.error('Error in handleDelete:', error);
-      alert(`Failed to delete document: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(null);
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred.',
+        variant: 'destructive',
+      });
+    } finally { setLoadingDoc(null); }
+  };
+
+  // Upload after selecting a file
+  const triggerUpload = (key: string) => {
+    if (selectedFiles[key]) {
+      handleUpload(key, selectedFiles[key]!);
+      setSelectedFiles(prev => ({ ...prev, [key]: null }));
     }
+  };
+
+  // Render a single document row
+  const renderDocRow = (doc: RequiredDocumentDef) => {
+    const docData = docs[doc.key];
+    const status = (docData as any)?.status;
+    const isApproved = status === 'approved';
+    const isRejected = status === 'rejected';
+    const adminNotes = (docData as any)?.admin_notes;
+    
+    return (
+      <div key={doc.key} className="py-2 px-2 rounded-lg hover:bg-muted/30 transition-colors">
+        <div className="flex items-center justify-between gap-1.5 min-h-[36px]">
+          {/* Left: label + status */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="text-[11px] sm:text-sm truncate leading-tight">{doc.label}</span>
+            {docData && <span className="flex-shrink-0">{renderStatusPill(status)}</span>}
+            {isApproved && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-pg-success/10 text-pg-success border border-pg-success/30 font-medium">
+                Verified
+              </Badge>
+            )}
+          </div>
+          {/* Right: actions */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {docData ? (
+              <>
+                <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]"
+                  onClick={async () => {
+                    const pathOrUrl = (docData as any).upload_path || docData.file_url;
+                    if (pathOrUrl) {
+                      try {
+                        const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60);
+                        if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                        else window.open(docData.file_url, '_blank');
+                      } catch { window.open(docData.file_url, '_blank'); }
+                    }
+                  }}
+                >
+                  <Eye className="h-3 w-3 mr-0.5" /> View
+                </Button>
+                {/* Show upload button for rejected so they can re-upload */}
+                {!isApproved && (
+                  <DocumentDropZone 
+                    docKey={doc.key}
+                    accept={doc.accept}
+                    onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
+                    onUpload={() => triggerUpload(doc.key)}
+                    selectedFile={selectedFiles[doc.key]} 
+                    loading={loadingDoc === doc.key} 
+                    maxFiles={doc.maxFiles}
+                    compact={true}
+                  />
+                )}
+                {!isApproved && (
+                  <DeleteButton onDelete={() => handleDelete(doc.key)} loading={loadingDoc === doc.key} />
+                )}
+              </>
+            ) : (
+              <DocumentDropZone 
+                docKey={doc.key}
+                accept={doc.accept}
+                onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
+                onUpload={() => triggerUpload(doc.key)}
+                selectedFile={selectedFiles[doc.key]} 
+                loading={loadingDoc === doc.key} 
+                maxFiles={doc.maxFiles}
+              />
+            )}
+          </div>
+        </div>
+        {/* Show admin rejection notes */}
+        {isRejected && adminNotes && (
+          <p className="text-[10px] text-destructive mt-1 px-1">Reason: {adminNotes}</p>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="w-full max-w-3xl mx-auto pb-16 md:pb-0">
       <div className="bg-card rounded-lg shadow-sm p-3 md:p-6 border border-border">
-        <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Document Upload</h2>
+        <h2 className="text-base md:text-lg font-semibold">Required Documents</h2>
+        <p className="text-xs text-muted-foreground mb-3">Upload clear, legible copies for review.</p>
 
-        {/* Desktop/Tablet: existing list */}
-        <div className="hidden md:flex flex-col gap-3">
-          {requiredList.map(doc => (
-            <div key={doc.key} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-2 rounded-lg border bg-background">
-              <div className="w-full md:w-1/3 flex flex-col items-start md:items-center text-sm md:text-base font-medium text-foreground">
-                <span>{doc.label}</span>
-                <span className="text-xs text-muted-foreground mt-1">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</span>
-              </div>
-              <div className="w-full md:w-2/3 flex flex-col gap-1">
-                {docs[doc.key] ? (
-                  <div className="flex items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-success h-5 w-5" />
-                      <span className="truncate max-w-[180px] text-sm font-medium">{docs[doc.key]!.file_name}</span>
-                      <span className="ml-1">{renderStatusPill((docs[doc.key] as any)?.status)}</span>
-                    </div>
-                    <div className="flex items-center gap-1 ml-auto">
-                      <Button size="sm" variant="outline" className="px-2"
-                        onClick={async () => {
-                          try {
-                            const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
-                            const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60);
-                            if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
-                          } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="px-2"
-                        onClick={async () => {
-                          try {
-                            const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
-                            const desiredName = docs[doc.key]!.file_name || 'document';
-                            const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60, { download: desiredName });
-                            const url = data?.signedUrl || docs[doc.key]!.file_url;
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = desiredName;
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                          } catch (_) {
-                            // fallback open
-                            window.open(docs[doc.key]!.file_url, '_blank');
-                          }
-                        }}
-                      >
-                        Download
-                      </Button>
-                      {(docs[doc.key] as any)?.status !== 'approved' && (
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key} className="px-2">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+        {/* Notes slot - integrated at the top of the card */}
+        {notesSlot && <div className="mb-4">{notesSlot}</div>}
 
-                    </div>
-                  </div>
-                ) : (
-                  <DocumentDropZone docKey={doc.key} onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
-                    onUpload={() => { if (selectedFiles[doc.key]) { handleUpload(doc.key, selectedFiles[doc.key]!); setSelectedFiles(prev => ({ ...prev, [doc.key]: null })); } }}
-                    selectedFile={selectedFiles[doc.key]} loading={loading === doc.key} maxFiles={doc.maxFiles}
-                  />
-                )}
-              </div>
+        {/* Loading state */}
+        {fetching ? (
+          <div className="space-y-3 py-6">
+            <div className="flex items-center gap-2 py-2 px-1">
+              <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-8 bg-muted rounded animate-pulse" />
             </div>
-          ))}
-        </div>
-
-        {/* Mobile: Accordion */}
-        <div className="md:hidden pb-24">
-          <Accordion type="single" collapsible className="w-full">
-            {requiredList.map(doc => (
-              <AccordionItem key={doc.key} value={doc.key}>
-                <AccordionTrigger className="text-left px-3">
-                  <div className="flex items-center justify-between w-full gap-2">
-                    <span className="font-medium break-words whitespace-normal">{doc.label}</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            {docs[doc.key] ? (
-                              renderStatusPill((docs[doc.key] as any)?.status)
-                            ) : (
-                              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-muted text-muted-foreground">Missing</span>
-                            )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[220px] text-xs">
-                          {docs[doc.key]
-                            ? ((docs[doc.key] as any)?.status === 'approved'
-                                ? 'Approved: Your document has been verified.'
-                                : (docs[doc.key] as any)?.status === 'rejected'
-                                  ? 'Rejected: Tap to expand and view reason and next steps.'
-                                  : 'Pending: Awaiting admin review.')
-                            : 'Missing: No file uploaded yet.'}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="text-xs text-muted-foreground mb-2">Accepted: PDF, DOC, DOCX, Images • Max {doc.maxFiles} file{doc.maxFiles > 1 ? 's' : ''}</div>
-                  {docs[doc.key] ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="text-green-500 h-5 w-5" />
-                        <span className="truncate text-sm font-medium">{docs[doc.key]!.file_name}</span>
-                      </div>
-                      {((docs[doc.key] as any)?.status === 'rejected') && (docs[doc.key] as any)?.admin_notes && (
-                        <div className="rounded-md border border-pg-error/30 bg-pg-error/5 text-sm text-pg-error p-3">
-                          <div className="font-medium mb-1">Why it was rejected</div>
-                          <div className="whitespace-pre-wrap break-words">{(docs[doc.key] as any).admin_notes}</div>
-                          <div className="text-xs text-muted-foreground mt-2">Please upload a corrected document and resubmit.</div>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" className="px-3"
-                          onClick={async () => {
-                            try {
-                              const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
-                              const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60);
-                              if (data?.signedUrl) window.open(data.signedUrl, '_blank'); else window.open(docs[doc.key]!.file_url, '_blank');
-                            } catch (error) { window.open(docs[doc.key]!.file_url, '_blank'); }
-                          }}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="px-3"
-                          onClick={async () => {
-                            try {
-                              const pathOrUrl = docs[doc.key]!.upload_path || docs[doc.key]!.file_url;
-                              const desiredName = docs[doc.key]!.file_name || 'document';
-                              const { data } = await supabase.storage.from('documents').createSignedUrl(pathOrUrl, 60, { download: desiredName });
-                              const url = data?.signedUrl || docs[doc.key]!.file_url;
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = desiredName;
-                              document.body.appendChild(a);
-                              a.click();
-                              a.remove();
-                            } catch (_) {
-                              window.open(docs[doc.key]!.file_url, '_blank');
-                            }
-                          }}
-                        >
-                          Download
-                        </Button>
-                        {(docs[doc.key] as any)?.status !== 'approved' && (
-                          <Button size="sm" variant="ghost" className="px-3" onClick={() => handleDelete(doc.key)} disabled={loading === doc.key}>Delete</Button>
-                        )}
-
-                      </div>
-                    </div>
-                  ) : (
-                    <DocumentDropZone docKey={doc.key} onFileSelect={file => setSelectedFiles(prev => ({ ...prev, [doc.key]: file }))}
-                      onUpload={() => { if (selectedFiles[doc.key]) { handleUpload(doc.key, selectedFiles[doc.key]!); setSelectedFiles(prev => ({ ...prev, [doc.key]: null })); } }}
-                      selectedFile={selectedFiles[doc.key]} loading={loading === doc.key} maxFiles={doc.maxFiles}
-                    />
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-
-        {/* Additional Documents Section - After Master's Degree */}
-        {onUploadAdditional && (
-          <div className="mt-6 pt-6 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base md:text-lg font-semibold flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Additional Documents
-                </h3>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  Upload any other documents you want to share (transcripts, certificates, etc.)
-                </p>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center justify-between py-3 px-2">
+                <div className="h-4 w-40 bg-muted rounded animate-pulse" />
+                <div className="h-6 w-16 bg-muted rounded animate-pulse" />
               </div>
-              <Button onClick={onUploadAdditional} size="sm" variant="default">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
+            ))}
+          </div>
+        ) : (
+        <div className="divide-y divide-border/60">
+          {DOCUMENT_GROUPS.map(group => {
+            const groupDocs = group.keys.map(key => requiredList.find(d => d.key === key)).filter(Boolean) as RequiredDocumentDef[];
+            if (groupDocs.length === 0) return null;
+            const uploaded = groupDocs.filter(d => docs[d.key]?.status === 'approved').length;
+            return (
+              <div key={group.title}>
+                {/* Category header */}
+                <div className="flex items-center gap-2 py-1.5 px-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.title}</span>
+                  <span className="text-[10px] text-muted-foreground/60">({uploaded}/{groupDocs.length})</span>
+                  {uploaded === groupDocs.length && <CheckCircle className="h-3 w-3 text-pg-success" />}
+                </div>
+                {/* Document rows */}
+                <div className="space-y-0.5 pb-1.5">
+                  {groupDocs.map(doc => renderDocRow(doc))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )}
+
+        {/* Additional Documents Section */}
+        {onUploadAdditional && (
+          <div className="mt-4 pt-3 border-t">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                Additional Documents
+              </h3>
+              <Button onClick={onUploadAdditional} size="sm" variant="default" className="h-7 text-xs px-2">
+                <Upload className="h-3 w-3 mr-1" /> Add
               </Button>
             </div>
 
             {additionalDocs.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">
-                <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No additional documents uploaded yet</p>
+              <div className="text-center py-4 text-muted-foreground border rounded-lg bg-muted/10">
+                <FileText className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                <p className="text-xs">No additional documents</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {additionalDocs.map((doc: any) => (
-                  <div key={doc.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 border rounded-lg bg-background">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-sm truncate">{doc.file_name}</p>
-                          <Badge 
-                            variant={
-                              doc.status === 'approved' ? 'secondary' : 
-                              doc.status === 'rejected' ? 'destructive' : 
-                              'outline'
-                            } 
-                            className="capitalize text-xs"
-                          >
-                            {doc.status || 'pending'}
-                          </Badge>
+                  <div key={doc.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg bg-background">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-medium truncate">{doc.file_name}</p>
+                          <Badge variant={doc.status === 'approved' ? 'secondary' : doc.status === 'rejected' ? 'destructive' : 'outline'} className="capitalize text-[10px] px-1.5 py-0">{doc.status || 'pending'}</Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Uploaded {new Date(doc.created_at).toLocaleDateString()}
-                        </p>
-                        {doc.admin_notes && doc.status === 'rejected' && (
-                          <p className="text-xs text-destructive mt-1">
-                            Admin: {doc.admin_notes}
-                          </p>
-                        )}
+                        {doc.admin_notes && doc.status === 'rejected' && <p className="text-[10px] text-destructive truncate">Admin: {doc.admin_notes}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const { data } = await supabase.storage
-                            .from('documents')
-                            .createSignedUrl(doc.upload_path, 300);
-                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-                        }}
-                      >
-                        <Eye className="h-4 w-4 md:mr-1" />
-                        <span className="hidden md:inline">View</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onDeleteAdditional?.(doc)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {doc.status === 'approved' ? (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-pg-success/10 text-pg-success border border-pg-success/30 font-medium">
+                          Verified
+                        </Badge>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]"
+                            onClick={async () => {
+                              const { data } = await supabase.storage.from('documents').createSignedUrl(doc.upload_path, 300);
+                              if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-destructive hover:text-destructive/80" onClick={() => onDeleteAdditional?.(doc)}>
+                            Delete
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -610,95 +531,104 @@ function APSRequiredDocuments({ displayName, requiredDocuments, additionalDocs =
           </div>
         )}
 
+        {/* Footer hint */}
+        <div className="mt-3 pt-2 border-t text-[10px] text-muted-foreground flex flex-wrap gap-x-3">
+          <span>Accepted: PDF, DOC, DOCX, Images</span>
+          <span>Signature: PDF &amp; Images</span>
+        </div>
       </div>
     </div>
   );
 }
 
-// Minimal drag-and-drop upload box for each document row
-
+// Minimal drag-and-drop upload box
 type DropZoneProps = {
   docKey: string;
+  accept?: string;
   onFileSelect: (file: File) => void;
   onUpload: () => void;
   selectedFile: File | null;
   loading: boolean;
   maxFiles: number;
+  compact?: boolean;
 };
 
-function DocumentDropZone({ docKey, onFileSelect, onUpload, selectedFile, loading, maxFiles }: DropZoneProps) {
+function DocumentDropZone({ docKey, accept, onFileSelect, onUpload, selectedFile, loading, maxFiles, compact }: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) onFileSelect(e.dataTransfer.files[0]);
   };
+
+  const acceptString = accept || "application/pdf,image/*,.doc,.docx";
+
+  if (compact) {
+    return (
+      <>
+        {!selectedFile ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[10px]"
+            onClick={() => inputRef.current?.click()}
+            disabled={loading}
+          >
+            <Upload className="h-3 w-3 mr-0.5" /> Re-upload
+          </Button>
+        ) : (
+          <div className="flex items-center gap-0.5">
+            <span className="text-[10px] text-primary truncate max-w-[50px] hidden sm:inline">{selectedFile.name}</span>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0"
+              onClick={e => { e.stopPropagation(); onFileSelect(null as any); }}
+              title="Cancel"
+            >✕</Button>
+            <Button size="sm" variant="default" className="h-6 px-1.5 text-[10px]"
+              onClick={e => { e.stopPropagation(); onUpload(); }}
+              disabled={loading}
+            ><Upload className="h-3 w-3" /></Button>
+          </div>
+        )}
+        <input ref={inputRef} type="file" accept={acceptString} className="hidden"
+          onChange={e => { if (e.target.files && e.target.files[0]) onFileSelect(e.target.files[0]); }}
+          disabled={loading}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="w-full">
       {!selectedFile ? (
         <div
-          className={
-            'flex items-center border-2 border-dashed rounded-md p-1 transition-colors ' +
-            (dragActive ? 'border-ring bg-accent/30' : 'border-border bg-background')
-          }
-          onDragOver={e => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={e => {
-            e.preventDefault();
-            setDragActive(false);
-          }}
+          className={'flex items-center border border-dashed rounded-md px-1.5 py-1 transition-colors gap-0.5 ' + (dragActive ? 'border-ring bg-accent/30' : 'border-border bg-background')}
+          onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+          onDragLeave={e => { e.preventDefault(); setDragActive(false); }}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          style={{ cursor: 'pointer', minHeight: 36, maxWidth: 260 }}
+          style={{ cursor: 'pointer' }}
+          title="Upload file"
         >
-          <span className="text-xs text-muted-foreground">Drag & drop or <span className="text-primary underline">click to upload</span></span>
-          <Upload className="h-4 w-4 text-muted-foreground ml-2" />
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf,image/*,.doc,.docx"
-            className="hidden"
-            onChange={e => {
-              if (e.target.files && e.target.files[0]) {
-                onFileSelect(e.target.files[0]);
-              }
-            }}
+          <Upload className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+          <span className="text-[10px] sm:text-[11px] text-muted-foreground whitespace-nowrap hidden sm:inline"><span className="text-primary underline">Click</span> or drop</span>
+          <input ref={inputRef} type="file" accept={acceptString} className="hidden"
+            onChange={e => { if (e.target.files && e.target.files[0]) onFileSelect(e.target.files[0]); }}
             disabled={loading}
           />
         </div>
       ) : (
-        <div className="flex items-center gap-2 mt-1">
-          <span className="truncate max-w-[180px] text-sm font-medium text-primary">{selectedFile.name}</span>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={e => {
-              e.stopPropagation();
-              onFileSelect(null as any);
-            }}
-            className="px-2"
-          >
-            Remove
-          </Button>
-          <Button
-            size="sm"
-            variant="default"
-            onClick={e => {
-              e.stopPropagation();
-              onUpload();
-            }}
+        <div className="flex items-center gap-0.5">
+          <span className="text-[10px] text-primary truncate max-w-[70px] hidden sm:inline">{selectedFile.name}</span>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-[10px]"
+            onClick={e => { e.stopPropagation(); onFileSelect(null as any); }}
+            title="Cancel"
+          >✕</Button>
+          <Button size="sm" variant="default" className="h-6 px-1.5 text-[10px] min-w-0"
+            onClick={e => { e.stopPropagation(); onUpload(); }}
             disabled={loading}
-            className="px-2"
-          >
-            Upload
-          </Button>
+          ><Upload className="h-3 w-3 sm:mr-0.5" /><span className="hidden sm:inline">Upload</span></Button>
         </div>
       )}
     </div>

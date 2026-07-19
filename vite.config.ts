@@ -23,6 +23,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'logo.png', 'logos.png'],
+      // Self-destruct in dev mode: registers a SW that immediately unregisters,
+      // replacing any stale SW from a previous build session
+      selfDestroying: mode === 'development',
       manifest: {
         name: 'publicgermany - Study in Germany Guide',
         short_name: 'publicgermany',
@@ -52,8 +55,20 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
+      // Enable SW in dev mode so the self-destroying SW can replace stale ones
+      devOptions: {
+        enabled: true,
+        suppressWarnings: true,
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Essential for SPA: serve index.html for all navigation requests
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/__\//,
+          /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|json|webmanifest)$/,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

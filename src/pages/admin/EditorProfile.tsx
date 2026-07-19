@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useReferralsByEditor, useUpdateReferral } from '@/hooks/useReferrals';
 import { QUALIFIED_STATUSES, serviceLabel, statusColor, statusLabel, priorityColor } from '@/lib/referralConstants';
-import { ArrowLeft, Users, UserPlus, Star, CheckCircle2, Clock, ShieldCheck, ShieldBan } from 'lucide-react';
+import {
+  ArrowLeft, Users, UserPlus, Star, CheckCircle2, Clock, ShieldCheck,
+  Mail, Calendar, ExternalLink, ChevronRight,
+} from 'lucide-react';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useToast } from '@/hooks/use-toast';
 
@@ -101,7 +107,6 @@ export default function EditorProfile() {
   };
 
   const convert = async (r: any) => {
-    // lightweight linkage placeholder: mark as converted; admin still creates the student account manually
     await update.mutateAsync({ id: r.id, patch: { converted_at: new Date().toISOString(), current_status: 'completed' } });
     toast({ title: 'Marked as converted', description: 'Create the student account in the Students module and link manually.' });
     refetch();
@@ -111,128 +116,231 @@ export default function EditorProfile() {
 
   const initials = (editor.full_name || 'E').split(' ').map((s: string) => s[0]).join('').slice(0, 2).toUpperCase();
 
-  const ReferralsTable = ({ rows }: { rows: any[] }) => (
-    <Card><CardContent className="p-0">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Services</TableHead><TableHead>Status</TableHead>
-            <TableHead>Priority</TableHead><TableHead>Next</TableHead><TableHead>Actions</TableHead>
-          </TableRow></TableHeader>
-          <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-sm text-muted-foreground">Loading...</TableCell></TableRow>
-              : rows.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-sm text-muted-foreground">No referrals</TableCell></TableRow>
-              : rows.map(r => (                  <TableRow key={r.id}>
-                  <TableCell>
-                    <div className="font-medium flex items-center gap-1">
-                      {r.full_name}
-                      {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600" />}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</div>
-                  </TableCell>
-                  <TableCell><div className="flex flex-wrap gap-1 max-w-[220px]">
-                    {(r.referral_services || []).slice(0, 3).map((s: any) => <Badge key={s.id} variant="secondary" className="text-[10px]">{serviceLabel(s.service_key)}</Badge>)}
-                  </div></TableCell>
-                  <TableCell><Badge variant="outline" className={`text-[10px] ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</Badge></TableCell>
-                  <TableCell><Badge variant="outline" className={`text-[10px] capitalize ${priorityColor(r.priority)}`}>{r.priority}</Badge></TableCell>
-                  <TableCell className="text-sm">{r.next_followup_date || '—'}</TableCell>
-                  <TableCell><div className="flex gap-1 items-center">
-                    {r.verified_by_admin ? (
-                      <>
-                        <Badge className="bg-green-600 text-[8px] h-5 px-1.5 flex items-center gap-0.5">
-                          <ShieldCheck className="h-2.5 w-2.5" />Approved
-                        </Badge>
-                        <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => unverifyReferral(r.id)}>Unverify</Button>
-                      </>
-                    ) : (
-                      <Button size="sm" variant="outline" className="text-[10px] h-6 text-green-600 border-green-300" onClick={() => verifyReferral(r)}>
-                        <ShieldCheck className="h-3 w-3 mr-0.5" />Verify
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => navigate(`/editor/referrals/${r.id}`)}>View</Button>
-                    {!r.converted_student_id && <Button size="sm" variant="ghost" className="text-[10px] h-6" onClick={() => convert(r)}>Convert</Button>}
-                    <Button size="sm" variant="ghost" className="text-[10px] h-6 text-destructive" onClick={() => reject(r.id)}>Reject</Button>
-                  </div></TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
+  const ReferralCard = ({ r }: { r: any }) => (
+    <div className="border rounded-lg p-3 bg-background">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium truncate">{r.full_name}</span>
+            {r.verified_by_admin && <ShieldCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+          </div>
+          <p className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</p>
+        </div>
+        <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColor(r.current_status)}`}>
+          {statusLabel(r.current_status)}
+        </Badge>
       </div>
-    </CardContent></Card>
+
+      <div className="flex flex-wrap gap-1 mb-2">
+        {(r.referral_services || []).slice(0, 3).map((s: any) => (
+          <Badge key={s.id} variant="secondary" className="text-[10px]">{serviceLabel(s.service_key)}</Badge>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+        {r.priority && (
+          <Badge variant="outline" className={`text-[9px] capitalize ${priorityColor(r.priority)}`}>{r.priority}</Badge>
+        )}
+        {r.next_followup_date && (
+          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(r.next_followup_date).toLocaleDateString()}</span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {r.verified_by_admin ? (
+          <>
+            <Badge className="bg-green-600 text-[10px] h-6 px-2 gap-1">
+              <ShieldCheck className="h-3 w-3" />Verified
+            </Badge>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] text-amber-600 border-amber-300">Unverify</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-sm">Remove verification?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs">The editor will be able to edit this referral again and commission will be unearned.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => unverifyReferral(r.id)} className="h-9 text-xs bg-amber-600 hover:bg-amber-700">Remove</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        ) : (
+          <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-600 border-green-300 gap-1" onClick={() => verifyReferral(r)}>
+            <ShieldCheck className="h-3 w-3" />Verify
+          </Button>
+        )}
+        <Button size="sm" variant="secondary" className="h-6 text-[10px] gap-1" onClick={() => navigate(`/editor/referrals/${r.id}`)}>
+          <ExternalLink className="h-3 w-3" />View
+        </Button>
+        {!r.converted_student_id && (
+          <Button size="sm" variant="secondary" className="h-6 text-[10px]" onClick={() => convert(r)}>Convert</Button>
+        )}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive">Reject</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-sm">Reject this referral?</AlertDialogTitle>
+              <AlertDialogDescription className="text-xs">This will mark the referral as 'Not Interested'.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => reject(r.id)} className="h-9 text-xs bg-destructive hover:bg-destructive/90">Reject</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
   );
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/editors')} className="gap-1"><ArrowLeft className="h-4 w-4" />Back to Editors</Button>
+      <div className="px-4 py-5 max-w-4xl mx-auto space-y-4">
+        {/* Back link */}
+        <button
+          type="button"
+          onClick={() => navigate('/admin/editors')}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Editors
+        </button>
 
-        <Card><CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-4">
-          <Avatar className="h-14 w-14"><AvatarFallback className="bg-primary/10 text-primary text-lg">{initials}</AvatarFallback></Avatar>
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">{editor.full_name || 'Editor'}</h1>
-            <p className="text-xs text-muted-foreground">{email || '—'}</p>
-            <p className="text-xs text-muted-foreground">Joined {new Date(editor.created_at).toLocaleDateString()}</p>
+        {/* Editor profile header */}
+        <div className="flex items-center gap-3 pb-2">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold truncate">{editor.full_name || 'Editor'}</h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+              {email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{email}</span>}
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Joined {new Date(editor.created_at).toLocaleDateString()}</span>
+              <Badge variant="outline" className="text-[9px] capitalize">{editor.role}</Badge>
+            </div>
           </div>
-          <Badge variant="outline" className="text-[10px] capitalize">{editor.role}</Badge>
-        </CardContent></Card>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
-            { l: 'Assigned Students', v: stats.assigned, i: Users },
-            { l: 'Manual Referrals', v: stats.referrals, i: UserPlus },
-            { l: 'Qualified Leads', v: stats.qualified, i: Star },
-            { l: 'Converted', v: stats.converted, i: CheckCircle2 },
+            { label: 'Assigned Students', value: stats.assigned, icon: Users },
+            { label: 'Manual Referrals', value: stats.referrals, icon: UserPlus },
+            { label: 'Qualified Leads', value: stats.qualified, icon: Star },
+            { label: 'Converted', value: stats.converted, icon: CheckCircle2 },
           ].map(s => (
-            <Card key={s.l}><CardContent className="p-3 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center"><s.i className="h-4 w-4" /></div>
-              <div><div className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.l}</div><div className="text-lg font-semibold tabular-nums">{s.v}</div></div>
-            </CardContent></Card>
+            <div key={s.label} className="border rounded-lg p-3 flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <s.icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{s.label}</p>
+                <p className="text-lg font-bold tabular-nums">{s.value}</p>
+              </div>
+            </div>
           ))}
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="referrals">
-          <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="referrals">Manual Referrals</TabsTrigger>
-            <TabsTrigger value="qualified">Qualified Leads</TabsTrigger>
-            <TabsTrigger value="students">Assigned Students</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsList className="w-full sm:w-auto bg-muted/50 p-0.5 h-auto">
+            <TabsTrigger value="referrals" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Referrals</TabsTrigger>
+            <TabsTrigger value="qualified" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Qualified</TabsTrigger>
+            <TabsTrigger value="students" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Students</TabsTrigger>
+            <TabsTrigger value="activity" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Activity</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="referrals" className="pt-3"><ReferralsTable rows={referrals} /></TabsContent>
-          <TabsContent value="qualified" className="pt-3"><ReferralsTable rows={qualified} /></TabsContent>
-
-          <TabsContent value="students" className="pt-3">
-            <Card><CardContent className="p-0">
-              <div className="overflow-x-auto"><Table>
-                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Country</TableHead><TableHead>Assigned</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {assigned.length === 0 ? <TableRow><TableCell colSpan={3} className="text-center py-6 text-sm text-muted-foreground">No students assigned</TableCell></TableRow>
-                    : assigned.map(s => (
-                      <TableRow key={s.user_id} className="cursor-pointer" onClick={() => navigate(`/admin/students/${s.user_id}`)}>
-                        <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
-                        <TableCell>{s.country_of_education || '—'}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{s.assigned_at ? new Date(s.assigned_at).toLocaleDateString() : '—'}</TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table></div>
-            </CardContent></Card>
+          {/* Referrals tab */}
+          <TabsContent value="referrals" className="pt-3">
+            {isLoading ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">Loading...</div>
+            ) : referrals.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">No referrals yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {referrals.map(r => <ReferralCard key={r.id} r={r} />)}
+              </div>
+            )}
           </TabsContent>
 
+          {/* Qualified tab */}
+          <TabsContent value="qualified" className="pt-3">
+            {qualified.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">No qualified leads yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {qualified.map(r => <ReferralCard key={r.id} r={r} />)}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Students tab */}
+          <TabsContent value="students" className="pt-3">
+            {assigned.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">No students assigned</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {assigned.map(s => (
+                  <button
+                    key={s.user_id}
+                    type="button"
+                    onClick={() => navigate(`/admin/students/${s.user_id}`)}
+                    className="w-full flex items-center justify-between border rounded-lg p-3 hover:bg-muted/40 active:bg-muted/60 transition-colors text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{s.full_name || '—'}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {s.country_of_education && <span>{s.country_of_education}</span>}
+                        {s.assigned_at && (
+                          <>
+                            <span className="text-muted-foreground/40">·</span>
+                            <span>Assigned {new Date(s.assigned_at).toLocaleDateString()}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Activity tab */}
           <TabsContent value="activity" className="pt-3">
-            <Card><CardContent className="p-0">
-              {activities.length === 0 ? <div className="p-6 text-center text-sm text-muted-foreground">No activity yet</div>
-                : activities.map(a => (
-                  <div key={a.id} className="flex gap-3 px-4 py-3 border-b border-border last:border-0">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Clock className="h-4 w-4" /></div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{a.title || a.type}</div>
-                      {a.body && <div className="text-sm text-muted-foreground mt-0.5">{a.body}</div>}
-                      <div className="text-[11px] text-muted-foreground mt-1">{new Date(a.created_at).toLocaleString()} · {a.type}</div>
+            {activities.length === 0 ? (
+              <div className="text-center py-8 border border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">No activity yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {activities.map(a => (
+                  <div key={a.id} className="flex gap-3 px-1 py-2.5 border-b border-border/50 last:border-0">
+                    <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{a.title || a.type}</p>
+                      {a.body && <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>}
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        {new Date(a.created_at).toLocaleString()} · {a.type}
+                      </p>
                     </div>
                   </div>
                 ))}
-            </CardContent></Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

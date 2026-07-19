@@ -12,9 +12,11 @@ interface StudentNotesProps {
   studentId?: string;
   // For admin view - read-only mode
   readOnly?: boolean;
+  // Compact inline variant - no Card wrapper, fits inside other cards
+  variant?: 'card' | 'inline';
 }
 
-const StudentNotes = ({ studentId, readOnly = false }: StudentNotesProps) => {
+const StudentNotes = ({ studentId, readOnly = false, variant = 'card' }: StudentNotesProps) => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [content, setContent] = useState('');
@@ -95,12 +97,61 @@ const StudentNotes = ({ studentId, readOnly = false }: StudentNotesProps) => {
   };
 
   if (loading) {
+    const Loader = () => (
+      <div className="flex items-center justify-center py-6">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+    if (variant === 'inline') return <Loader />;
+    return <Card><CardContent><Loader /></CardContent></Card>;
+  }
+
+  const NotesContent = () => (
+    <>
+      <div className="flex items-center gap-2 mb-2">
+        <MessageSquare className={`${variant === 'inline' ? 'h-3.5 w-3.5' : 'h-5 w-5'} text-muted-foreground`} />
+        <span className={`${variant === 'inline' ? 'text-xs' : 'text-base'} font-medium`}>
+          {readOnly ? 'Student Notes' : 'My Notes'}
+        </span>
+        
+      </div>
+      <Textarea
+        placeholder={readOnly ? 'No notes from student yet...' : 'Write notes for the admin team to review...'}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        disabled={readOnly}
+        className={`resize-y ${variant === 'inline' ? 'min-h-[60px] text-xs' : 'min-h-[120px]'}`}
+      />
+      {!readOnly && (
+        <div className="flex justify-end mt-2">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            size={variant === 'inline' ? 'sm' : 'sm'}
+            className={variant === 'inline' ? 'h-7 text-xs px-2' : ''}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className={`${variant === 'inline' ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
+                Save
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  if (variant === 'inline') {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border bg-muted/20 p-3">
+        <NotesContent />
+      </div>
     );
   }
 

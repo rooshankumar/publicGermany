@@ -164,11 +164,14 @@ export const DocumentUpload = ({
     if (!file) return;
 
     try {
-      // Delete from storage
-      const filePath = file.url.split('/').slice(-2).join('/'); // Get user_id/category/filename
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([filePath]);
+      // Delete from storage using the stored upload_path if available
+      // Fallback to extracting from URL if upload_path not stored
+      const filePath = file.url.includes('/documents/')
+        ? file.url.split('/documents/')[1]
+        : '';
+      const { error: storageError } = filePath
+        ? await supabase.storage.from('documents').remove([filePath])
+        : { error: null };
 
       // Delete from database using documents table
       const { error: dbError } = await supabase
