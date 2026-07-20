@@ -14,12 +14,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QUALIFIED_STATUSES, statusColor, statusLabel } from '@/lib/referralConstants';
 import MyReferralsPanel from '@/components/referrals/MyReferralsPanel';
 import TasksInbox from '@/components/referrals/TasksInbox';
-import { PgLogoMark } from '@/components/PgLogo';
+import { useToast } from '@/hooks/use-toast';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   Users, ArrowUpRight, Star, CheckCircle2, AlertTriangle,
   CalendarClock, Clock, UserPlus, ClipboardList, BookOpen, Youtube,
   FileText, GraduationCap, ExternalLink, BookMarked, Play,
-  TrendingUp, CreditCard, IndianRupee, ShieldCheck, LogOut
+  TrendingUp, CreditCard, IndianRupee, ShieldCheck,
+  Plus, Trash2, Edit2, Loader2, X, LogOut
 } from 'lucide-react';
 
 interface StudentSummary {
@@ -54,28 +56,32 @@ interface CourseVideo {
   title: string;
   level: string;
   youtube_url: string | null;
+  video_url: string | null;
   video_id: string | null;
   thumbnail_url: string | null;
   order_index: number;
+  created_at: string;
 }
 
 interface CommissionEntry {
   id: string;
   full_name: string;
   total_fees: string;
-  commission_amount: number;
+  total_fees_numeric: number;
+  admin_commission: number;
+  editor_share: number;
   verified_at: string;
 }
 
-const StatCard = ({ label, value, icon: Icon }: any) => (
+const StatCard = ({ label, value, icon: Icon, valueClassName, iconClassName }: any) => (
   <Card className="hover:shadow-md transition-shadow cursor-pointer shadow-none border-border/60">
     <CardContent className="py-2 px-2.5">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[9px] text-muted-foreground font-medium">{label}</p>
-          <p className="text-base font-bold">{value}</p>
+          <p className={`text-[9px] font-medium ${valueClassName ? 'text-emerald-600' : 'text-muted-foreground'}`}>{label}</p>
+          <p className={`text-base font-bold ${valueClassName || ''}`}>{value}</p>
         </div>
-        <Icon className="h-3.5 w-3.5 text-primary" />
+        <Icon className={`h-3.5 w-3.5 ${iconClassName || 'text-primary'}`} />
       </div>
     </CardContent>
   </Card>
@@ -96,7 +102,18 @@ const EditorDashboard = () => {
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [commissionEntries, setCommissionEntries] = useState<CommissionEntry[]>([]);
   const [loadingCommission, setLoadingCommission] = useState(true);
+  // Video management state
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<CourseVideo | null>(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoLevel, setVideoLevel] = useState('A1');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoThumbnailUrl, setVideoThumbnailUrl] = useState('');
+  const [videoType, setVideoType] = useState<'youtube' | 'direct'>('youtube');
+  const [videoOrderIndex, setVideoOrderIndex] = useState(0);
+  const [isSubmittingVideo, setIsSubmittingVideo] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
 
@@ -164,15 +181,18 @@ const EditorDashboard = () => {
         if (verifiedRefs) {
           const entries = (verifiedRefs as any[]).map((r: any) => {
             const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
-            const commissionAmount = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+            const isInvalid = isNaN(numericFee) || numericFee <= 0;
+            const adminCommission = isInvalid ? 0 : Math.round(numericFee * 0.1);
             return {
               id: r.id,
               full_name: r.full_name || 'Unknown',
               total_fees: r.total_fees || '—',
-              commission_amount: commissionAmount,
+              total_fees_numeric: isInvalid ? 0 : numericFee,
+              admin_commission: adminCommission,
+              editor_share: isInvalid ? 0 : numericFee - adminCommission,
               verified_at: r.verified_at,
             };
-          }).filter((r: any) => r.commission_amount > 0);
+          }).filter((r: any) => r.editor_share > 0);
           setCommissionEntries(entries);
         }
       } catch (e) {
@@ -183,6 +203,104 @@ const EditorDashboard = () => {
     })();
   }, [user?.id]);
 
+  const extractVideoId = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === 'youtu.be') {
+        return urlObj.pathname.slice(1).split(/[?#]/)[0];
+      }
+      if (urlObj.hostname.includes('youtube.com')) {
+        return urlObj.searchParams.get('v');
+      }
+      return null;
+    } catch (e) {
+      const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[7].length === 11) ? match[7] : null;
+    }
+  };
+
+  const resetVideoForm = () => {
+    setEditingVideo(null);
+    setVideoTitle('');
+    setVideoLevel('A1');
+    setVideoUrl('');
+    setVideoThumbnailUrl('');
+    setVideoType('youtube');
+    setVideoOrderIndex(0);
+    setShowUploadForm(false);
+  };
+
+  const startEditVideo = (video: CourseVideo) => {
+    setEditingVideo(video);
+    setVideoTitle(video.title);
+    setVideoLevel(video.level || 'A1');
+    setVideoUrl(video.youtube_url || video.video_url || '');
+    setVideoThumbnailUrl(video.thumbnail_url || '');
+    setVideoType(video.youtube_url ? 'youtube' : 'direct');
+    setVideoOrderIndex(video.order_index || 0);
+    setShowUploadForm(true);
+  };
+
+  const handleSaveVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoUrl.startsWith('http')) {
+      toast({ title: 'Invalid URL', description: 'Please provide a complete URL starting with http:// or https://', variant: 'destructive' });
+      return;
+    }
+    let videoData: any = {
+      title: videoTitle,
+      level: videoLevel,
+      order_index: videoOrderIndex,
+      thumbnail_url: videoThumbnailUrl || null,
+    };
+    if (videoType === 'youtube') {
+      const videoId = extractVideoId(videoUrl);
+      if (!videoId) {
+        toast({ title: 'Invalid YouTube URL', description: 'Please provide a valid YouTube link.', variant: 'destructive' });
+        return;
+      }
+      videoData.youtube_url = videoUrl;
+      videoData.video_id = videoId;
+      videoData.video_url = null;
+    } else {
+      videoData.video_url = videoUrl;
+      videoData.youtube_url = null;
+      videoData.video_id = null;
+    }
+    try {
+      setIsSubmittingVideo(true);
+      if (editingVideo) {
+        const { error } = await supabase.from('german_course_videos').update(videoData).eq('id', editingVideo.id);
+        if (error) throw error;
+        toast({ title: 'Video updated successfully' });
+      } else {
+        const { error } = await supabase.from('german_course_videos').insert([videoData]);
+        if (error) throw error;
+        toast({ title: 'Video added successfully' });
+      }
+      resetVideoForm();
+      const { data } = await supabase.from('german_course_videos').select('*').order('order_index', { ascending: true });
+      setVideos((data || []) as CourseVideo[]);
+    } catch (error: any) {
+      toast({ title: 'Error saving video', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSubmittingVideo(false);
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    try {
+      const { error } = await supabase.from('german_course_videos').delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Video deleted successfully' });
+      const { data } = await supabase.from('german_course_videos').select('*').order('order_index', { ascending: true });
+      setVideos((data || []) as CourseVideo[]);
+    } catch (error: any) {
+      toast({ title: 'Error deleting video', description: error.message, variant: 'destructive' });
+    }
+  };
+
   const today = new Date().toISOString().slice(0, 10);
   const stats = useMemo(() => {
     const todaysFollowups = referrals.filter(r => r.next_followup_date === today).length;
@@ -190,7 +308,9 @@ const EditorDashboard = () => {
     const qualified = referrals.filter(r => QUALIFIED_STATUSES.includes(r.current_status)).length;
     const converted = referrals.filter(r => !!r.converted_student_id).length;
     const pendingTasks = (tasks as any[]).filter(t => t.status === 'open').length;
-    const totalCommission = commissionEntries.reduce((s, e) => s + e.commission_amount, 0);
+    const totalEditorShare = commissionEntries.reduce((s, e) => s + e.editor_share, 0);
+    const totalAdminCommission = commissionEntries.reduce((s, e) => s + e.admin_commission, 0);
+    const totalFeesProcessed = commissionEntries.reduce((s, e) => s + e.total_fees_numeric, 0);
     const verifiedCount = commissionEntries.length;
     return { 
       assigned: students.length, 
@@ -200,7 +320,9 @@ const EditorDashboard = () => {
       qualified, 
       converted, 
       pendingTasks,
-      totalCommission,
+      totalEditorShare,
+      totalAdminCommission,
+      totalFeesProcessed,
       verifiedCount,
       pendingVerification: referrals.filter(r => !r.verified_by_admin && r.total_fees).length,
     };
@@ -219,49 +341,45 @@ const EditorDashboard = () => {
   return (
     <Layout>
       <div className="space-y-3">
-        <div className="german-stripe w-full" />
-        <div className="flex items-center justify-between gap-3 rounded-[12px] border border-pg-sep bg-pg-bg px-3 py-2">
-          <div className="flex items-center gap-2">
-            <PgLogoMark />
-            <div>
-              <h1 className="text-sm font-semibold text-pg-label tracking-tight">Editor Workspace</h1>
-              <p className="text-[10px] text-pg-label3">{profile?.full_name || 'Editor'}</p>
+        <div className="german-stripe w-full" />         <Tabs value={activeTab} onValueChange={(v) => setSearchParams(v === 'dashboard' ? {} : { tab: v })}>
+          <div className="flex items-center border-b border-border bg-muted/60 -mx-4 px-4 sticky top-0 z-30">
+            <TabsList className="h-11 p-1 bg-transparent flex-nowrap overflow-x-auto no-scrollbar flex-1 min-w-0 gap-1">
+              <TabsTrigger value="dashboard" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Dashboard</TabsTrigger>
+              <TabsTrigger value="referrals" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Referrals</TabsTrigger>
+              <TabsTrigger value="students" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Students</TabsTrigger>
+              <TabsTrigger value="tasks" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Tasks</TabsTrigger>
+              <TabsTrigger value="revenue" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Revenue</TabsTrigger>
+              <TabsTrigger value="blog" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Blog</TabsTrigger>
+              <TabsTrigger value="resources" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Resources</TabsTrigger>
+              <TabsTrigger value="german" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">German</TabsTrigger>
+              <TabsTrigger value="tools" className="text-xs h-9 px-4 shrink-0 data-[state=active]:bg-background font-medium">Tools</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2 shrink-0 pl-3 border-l border-border/50 ml-3">
+              <ThemeToggle variant="icon" />
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                  {profile?.full_name?.charAt(0) || 'E'}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                onClick={async () => {
+                  await signOut();
+                  navigate('/auth');
+                }}
+                className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="hidden sm:inline text-[9px] uppercase tracking-[0.15em] text-pg-label3">Editor</span>
-            <button
-              onClick={async () => {
-                await signOut();
-                navigate('/auth');
-              }}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-              title="Sign out"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={(v) => setSearchParams(v === 'dashboard' ? {} : { tab: v })}>
-          <TabsList className="h-8 p-0.5 bg-muted/60 flex-nowrap overflow-x-auto no-scrollbar">
-            <TabsTrigger value="dashboard" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Dashboard</TabsTrigger>
-            <TabsTrigger value="referrals" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Referrals</TabsTrigger>
-            <TabsTrigger value="students" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Students</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Tasks</TabsTrigger>
-            <TabsTrigger value="revenue" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Revenue</TabsTrigger>
-            <TabsTrigger value="blog" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Blog</TabsTrigger>
-            <TabsTrigger value="resources" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Resources</TabsTrigger>
-            <TabsTrigger value="german" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">German</TabsTrigger>
-            <TabsTrigger value="tools" className="text-[10px] h-7 px-2 shrink-0 data-[state=active]:bg-background">Tools</TabsTrigger>
-          </TabsList>
 
           {/* DASHBOARD */}
           <TabsContent value="dashboard" className="pt-2 space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
               <StatCard label="Assigned Students" value={stats.assigned} icon={Users} />
               <StatCard label="My Referrals" value={stats.referrals} icon={UserPlus} />
-              <StatCard label="Commission Earned" value={`₹${stats.totalCommission.toLocaleString()}`} icon={IndianRupee} />
+              <StatCard label="My Revenue (90%)" value={`₹${stats.totalEditorShare.toLocaleString()}`} icon={IndianRupee} valueClassName="text-emerald-600" iconClassName="text-emerald-500" />
               <StatCard label="Pending Tasks" value={stats.pendingTasks} icon={ClipboardList} />
             </div>
 
@@ -291,11 +409,11 @@ const EditorDashboard = () => {
               {/* My Revenue Summary */}
               <Card className="shadow-none border-border/60">
                 <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold"><TrendingUp className="h-3.5 w-3.5" /> My Revenue</div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600"><IndianRupee className="h-3.5 w-3.5 text-emerald-500" /> My Revenue</div>
                   {loadingCommission ? (
                     <p className="text-center text-muted-foreground py-3 text-[11px]">Loading...</p>
                   ) : commissionEntries.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-3 text-[11px]">No commission earned yet</p>
+                    <p className="text-center text-muted-foreground py-3 text-[11px]">No revenue earned yet</p>
                   ) : commissionEntries.slice(0, 5).map(e => (
                     <div key={e.id} className="flex items-center justify-between p-1.5 border rounded text-[11px]">
                       <div className="min-w-0 flex-1 mr-2">
@@ -303,8 +421,8 @@ const EditorDashboard = () => {
                         <p className="text-[9px] text-muted-foreground truncate">{e.total_fees} · {new Date(e.verified_at).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-semibold text-[11px] text-emerald-600">₹{e.commission_amount.toLocaleString()}</p>
-                        <p className="text-[8px] text-muted-foreground">10% commission</p>
+                        <p className="font-semibold text-[11px] text-emerald-600">₹{e.editor_share.toLocaleString()}</p>
+                        <p className="text-[8px] text-emerald-600/70">My 90% share</p>
                       </div>
                     </div>
                   ))}
@@ -361,8 +479,9 @@ const EditorDashboard = () => {
               <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] text-muted-foreground font-medium">Total Commission</p>
-                    <p className="text-base font-bold text-emerald-600">₹{stats.totalCommission.toLocaleString()}</p>
+                    <p className="text-[9px] font-medium text-emerald-600">My Revenue (90%)</p>
+                    <p className="text-base font-bold text-emerald-600">₹{stats.totalEditorShare.toLocaleString()}</p>
+                    <p className="text-[8px] text-muted-foreground">Admin gets ₹{stats.totalAdminCommission.toLocaleString()} (10%)</p>
                   </div>
                   <IndianRupee className="h-3.5 w-3.5 text-emerald-500" />
                 </div>
@@ -388,9 +507,9 @@ const EditorDashboard = () => {
               <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] text-muted-foreground font-medium">Avg. per Lead</p>
+                    <p className="text-[9px] text-muted-foreground font-medium">Avg. Share per Lead</p>
                     <p className="text-base font-bold">
-                      {stats.verifiedCount > 0 ? `₹${Math.round(stats.totalCommission / stats.verifiedCount).toLocaleString()}` : '—'}
+                      {stats.verifiedCount > 0 ? `₹${Math.round(stats.totalEditorShare / stats.verifiedCount).toLocaleString()}` : '—'}
                     </p>
                   </div>
                   <TrendingUp className="h-3.5 w-3.5 text-primary" />
@@ -402,33 +521,40 @@ const EditorDashboard = () => {
             <Card className="shadow-none border-border/60">
               <CardContent className="p-0">
                 <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-                  <p className="text-[11px] font-semibold">Commission Breakdown</p>
+                  <p className="text-[11px] font-semibold text-emerald-600">Revenue Breakdown</p>
                   {commissionEntries.length > 0 && (
                     <p className="text-[10px] text-muted-foreground">{commissionEntries.length} verified leads</p>
                   )}
                 </div>
                 {loadingCommission ? (
-                  <p className="text-center py-6 text-[11px] text-muted-foreground">Loading commission data...</p>
+                  <p className="text-center py-6 text-[11px] text-muted-foreground">Loading revenue data...</p>
                 ) : commissionEntries.length === 0 ? (
                   <div className="p-6 text-center space-y-1">
                     <CreditCard className="h-6 w-6 mx-auto text-muted-foreground/50" />
-                    <p className="text-xs text-muted-foreground">No commission earned yet</p>
-                    <p className="text-[10px] text-muted-foreground/60">Leads must be verified by admin to receive commission</p>
+                    <p className="text-xs text-muted-foreground">No revenue earned yet</p>
+                    <p className="text-[10px] text-muted-foreground/60">Leads must be verified by admin to receive your share</p>
                   </div>
                 ) : (
+                  <div className="hidden md:grid grid-cols-5 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    <span className="col-span-2">Lead</span>
+                    <span className="text-center">Total Fee</span>
+                    <span className="text-center">Admin (10%)</span>
+                    <span className="text-center text-emerald-600">My Share (90%)</span>
+                  </div>
+                )}
+                {!loadingCommission && commissionEntries.length > 0 && (
                   commissionEntries.map(e => (
-                    <div key={e.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <div className="min-w-0 flex-1 mr-3">
+                    <div key={e.id} className="grid grid-cols-2 md:grid-cols-5 items-center gap-2 px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <div className="col-span-2 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-[12px] font-medium truncate">{e.full_name}</p>
                           <Badge className="text-[8px] py-0 h-4 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Verified</Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">Fees: {e.total_fees}</p>
+                        <p className="text-[9px] text-muted-foreground">{new Date(e.verified_at).toLocaleDateString()}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[12px] font-semibold text-emerald-600">₹{e.commission_amount.toLocaleString()}</p>
-                        <p className="text-[8px] text-muted-foreground">{new Date(e.verified_at).toLocaleDateString()}</p>
-                      </div>
+                      <p className="text-[11px] font-medium text-center">₹{e.total_fees_numeric.toLocaleString()}</p>
+                      <p className="text-[11px] text-muted-foreground text-center">₹{e.admin_commission.toLocaleString()}</p>
+                      <p className="text-[12px] font-bold text-emerald-600 text-center">₹{e.editor_share.toLocaleString()}</p>
                     </div>
                   ))
                 )}
@@ -441,24 +567,30 @@ const EditorDashboard = () => {
                 <CardContent className="p-0">
                   <div className="px-3 py-2 border-b border-border flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-amber-500" />
-                    <p className="text-[11px] font-semibold">Pending Verification</p>
+                    <p className="text-[11px] font-semibold text-emerald-600">Pending Verification</p>
                     <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
                       {referrals.filter(r => !r.verified_by_admin && r.total_fees).length}
                     </Badge>
                   </div>
+                  <div className="hidden md:grid grid-cols-4 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    <span className="col-span-2">Lead</span>
+                    <span className="text-center">Total Fee</span>
+                    <span className="text-center text-emerald-600">My Share (90%)</span>
+                  </div>
                   {referrals.filter(r => !r.verified_by_admin && r.total_fees).slice(0, 10).map(r => {
                     const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
-                    const potentialCommission = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
+                    const potentialEditorShare = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.9);
                     return (
                       <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
-                        className="w-full flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors text-left">
-                        <div className="min-w-0 flex-1 mr-3">
+                        className="w-full grid grid-cols-2 md:grid-cols-4 items-center gap-2 px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors text-left">
+                        <div className="col-span-2 min-w-0">
                           <p className="text-[12px] font-medium truncate">{r.full_name}</p>
                           <p className="text-[10px] text-muted-foreground">{r.total_fees}</p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-[11px] font-medium text-amber-600">₹{potentialCommission.toLocaleString()}</p>
-                          <p className="text-[8px] text-muted-foreground">Potential commission</p>
+                        <p className="text-[11px] font-medium text-center">₹{numericFee.toLocaleString()}</p>
+                        <div className="text-right md:text-center shrink-0">
+                          <p className="text-[11px] font-medium text-emerald-600">₹{potentialEditorShare.toLocaleString()}</p>
+                          <p className="text-[8px] text-emerald-600/70">Your 90% share</p>
                         </div>
                       </button>
                     );
@@ -581,13 +713,82 @@ const EditorDashboard = () => {
           </TabsContent>
 
           {/* GERMAN COURSE */}
-          <TabsContent value="german" className="pt-2">
+          <TabsContent value="german" className="pt-2 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                size="sm"
+                variant={showUploadForm ? "ghost" : "default"}
+                onClick={() => { if (showUploadForm) resetVideoForm(); else setShowUploadForm(true); }}
+                className="h-7 text-[10px] font-bold px-2"
+              >
+                {showUploadForm ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                {showUploadForm ? 'Close' : 'Add Lecture'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/admin/german-course')}
+                className="h-7 text-[10px] px-2"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" /> Full Manager
+              </Button>
+            </div>
+
+            {showUploadForm && (
+              <Card className="border shadow-none bg-muted/30">
+                <CardContent className="p-2">
+                  <form onSubmit={handleSaveVideo} className="flex flex-wrap items-end gap-2">
+                    <div className="flex-1 min-w-[120px] space-y-1">
+                      <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Title</label>
+                      <input value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} required
+                        className="w-full h-7 text-[11px] px-2 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Lecture title" />
+                    </div>
+                    <div className="w-12 space-y-1">
+                      <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Ord</label>
+                      <input type="number" value={videoOrderIndex} onChange={(e) => setVideoOrderIndex(parseInt(e.target.value))}
+                        className="w-full h-7 text-[11px] px-1 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary" />
+                    </div>
+                    <div className="w-16 space-y-1">
+                      <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Level</label>
+                      <select value={videoLevel} onChange={(e) => setVideoLevel(e.target.value)}
+                        className="w-full h-7 px-1 rounded-md border border-input bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1">B1</option>
+                      </select>
+                    </div>
+                    <div className="w-20 space-y-1">
+                      <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Type</label>
+                      <select value={videoType} onChange={(e) => setVideoType(e.target.value as any)}
+                        className="w-full h-7 px-1 rounded-md border border-input bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="youtube">YouTube</option>
+                        <option value="direct">Direct</option>
+                      </select>
+                    </div>
+                    <div className="flex-[2] min-w-[150px] space-y-1">
+                      <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">URL</label>
+                      <input placeholder="Video Link" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} required
+                        className="w-full h-7 text-[11px] px-2 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary" />
+                    </div>
+                    <div className="flex gap-1">
+                      <Button type="button" variant="ghost" size="sm" onClick={resetVideoForm} className="h-7 text-[10px] px-2">X</Button>
+                      <Button type="submit" size="sm" disabled={isSubmittingVideo} className="h-7 text-[10px] px-3">
+                        {isSubmittingVideo ? <Loader2 className="h-3 w-3 animate-spin" /> : (editingVideo ? 'Update' : 'Save')}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
             {loadingVideos ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">Loading lectures...</div>
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : videos.length === 0 ? (
               <Card className="shadow-none border-border/60"><CardContent className="py-6 text-center space-y-1">
                 <Youtube className="h-6 w-6 mx-auto text-muted-foreground/50" />
                 <p className="text-xs text-muted-foreground">No course videos available</p>
+                <p className="text-[10px] text-muted-foreground/60">Click "Add Lecture" to add your first video.</p>
               </CardContent></Card>
             ) : (
               <div className="space-y-2">
@@ -599,26 +800,43 @@ const EditorDashboard = () => {
                       <div className="flex items-center gap-2 px-1 mb-1">
                         <div className="h-px flex-1 bg-border/50" />
                         <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{lvl}</span>
+                        <span className="text-[8px] text-muted-foreground">({lvlVideos.length})</span>
                         <div className="h-px flex-1 bg-border/50" />
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                      <div className="flex flex-col gap-1">
                         {lvlVideos.map(v => (
-                          <div key={v.id} className="rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-all overflow-hidden">
-                            <a href={v.youtube_url || v.video_url || '#'} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-2.5">
-                              <div className="w-12 h-8 rounded bg-black/10 flex items-center justify-center shrink-0 overflow-hidden relative">
+                          <Card key={v.id} className="p-1.5 border shadow-none hover:border-primary/30 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <div className="w-14 aspect-video bg-black/10 rounded overflow-hidden shrink-0 relative group">
                                 {v.youtube_url && v.video_id ? (
                                   <img src={`https://img.youtube.com/vi/${v.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" alt="" />
                                 ) : (
-                                  <Play className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <div className="w-full h-full flex items-center justify-center"><Play className="h-3.5 w-3.5 text-muted-foreground" /></div>
                                 )}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity rounded">
+                                  <a href={v.youtube_url || v.video_url || '#'} target="_blank" rel="noopener noreferrer"
+                                    className="h-6 w-6 flex items-center justify-center">
+                                    <Play className="h-3 w-3 text-white fill-white" />
+                                  </a>
+                                </div>
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-medium truncate">{v.title}</p>
-                                <p className="text-[8px] text-muted-foreground">#{v.order_index} · {v.level}</p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[9px] font-mono font-bold bg-muted px-1 rounded text-muted-foreground">#{v.order_index}</span>
+                                  <p className="text-[10px] font-bold truncate leading-tight">{v.title}</p>
+                                </div>
+                                <p className="text-[8px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</p>
                               </div>
-                            </a>
-                          </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEditVideo(v)}>
+                                  <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive" onClick={() => handleDeleteVideo(v.id)}>
+                                  <Trash2 className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
                         ))}
                       </div>
                     </div>
@@ -626,11 +844,6 @@ const EditorDashboard = () => {
                 })}
               </div>
             )}
-            <div className="text-center pt-2">
-              <a href="/german-course" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">
-                Open full course →
-              </a>
-            </div>
           </TabsContent>
 
           {/* TOOLS */}

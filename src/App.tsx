@@ -246,7 +246,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/admin/german-course" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowRoles={['admin', 'editor']}>
             <GermanCourseAdmin />
           </ProtectedRoute>
         } />

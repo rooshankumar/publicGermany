@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from '@/hooks/useAuth';
 
 interface Video {
   id: string;
@@ -44,6 +45,8 @@ interface StudentAccess {
 }
 
 const GermanCourseAdmin = () => {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const [videos, setVideos] = useState<Video[]>([]);
   const [students, setStudents] = useState<StudentAccess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,9 +358,9 @@ const GermanCourseAdmin = () => {
         </div>
 
         <Tabs defaultValue="videos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-8 p-0.5 bg-muted">
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'} h-8 p-0.5 bg-muted`}>
             <TabsTrigger value="videos" className="font-bold text-[10px] uppercase h-7">Lectures</TabsTrigger>
-            <TabsTrigger value="access" className="font-bold text-[10px] uppercase h-7">Students</TabsTrigger>
+            {isAdmin && <TabsTrigger value="access" className="font-bold text-[10px] uppercase h-7">Students</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="videos" className="space-y-2 pt-0">
@@ -493,6 +496,7 @@ const GermanCourseAdmin = () => {
             )}
           </TabsContent>
 
+          {isAdmin && (
           <TabsContent value="access" className="outline-none">
             <Card className="border shadow-none rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
               <CardHeader className="p-3 border-b border-zinc-100 dark:border-zinc-800">
@@ -676,6 +680,7 @@ const GermanCourseAdmin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
         </Tabs>
       </div>
     </Layout>

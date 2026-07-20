@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Home, BookOpen, FileText, GraduationCap, Youtube, MoreHorizontal, LogOut } from 'lucide-react';
+import { Home, BookOpen, FileText, GraduationCap, Youtube, MoreHorizontal, LogOut, Play } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,7 @@ const EditorMobileBottomNav = () => {
 
   const more = [
     { href: '/german-course', label: 'German Course', icon: Youtube },
+    { href: '/admin/german-course', label: 'Manage Lectures', icon: Play },
     { href: '/editor', label: 'Dashboard', icon: Home },
     { href: '/resources', label: 'Resources', icon: BookOpen },
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },

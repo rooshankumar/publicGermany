@@ -18,7 +18,8 @@ import {
   Bell,
   Star,
   Youtube,
-  BookOpen
+  BookOpen,
+  Play
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -106,6 +107,7 @@ const Layout = ({ children }: LayoutProps) => {
     { href: '/europass-cv', label: 'Europass CV', icon: FileText },
     { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
     { href: '/german-course', label: 'German Course', icon: Youtube },
+    { href: '/admin/german-course', label: 'Manage Lectures', icon: Play },
   ];
 
   const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
@@ -445,7 +447,7 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
-          {/* Student/Editor Top Navbar (Desktop) — hidden for editors (they have their own workspace header) */}
+          {/* Student/Editor Top Navbar (Desktop) — hidden for editors (they have page tabs) */}
           {!isEditor && (
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-2 md:px-3">
             <div className="mx-auto w-full max-w-7xl flex flex-wrap items-center justify-between gap-y-2">
@@ -598,9 +600,9 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Mobile Layout */}
       <div className="md:hidden">
-        {/* Mobile Header — hidden for editors (they have bottom nav instead) */}
+        {/* Mobile Header — hidden for editors (they have bottom nav) */}
         {!isEditor && (
-          <header className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b sticky top-0 z-50">
+        <header className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b sticky top-0 z-50">
             <div className="flex items-center justify-between h-12 px-2">
               {/* Left: Bell + Avatar */}
               <div className="flex items-center gap-1">
@@ -626,6 +628,8 @@ const Layout = ({ children }: LayoutProps) => {
                                 if (n.type === 'student' && n.ref_id) navigate(`/admin/students/${n.ref_id}`);
                                 else if (n.type === 'service_request') navigate('/admin/requests');
                                 else navigate('/admin');
+                              } else if (isEditor) {
+                                navigate('/editor');
                               } else {
                                 if (n.type === 'application') navigate('/applications');
                                 else if (n.type === 'document') navigate('/documents');
