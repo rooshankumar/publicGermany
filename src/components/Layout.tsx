@@ -19,7 +19,8 @@ import {
   Star,
   Youtube,
   BookOpen,
-  Play
+  Play,
+  Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -355,6 +356,36 @@ const Layout = ({ children }: LayoutProps) => {
                   );
                 })}
               </nav>
+
+              {/* Tools Dropdown */}
+              <div className="hidden lg:flex items-center">
+                <span className="mx-1.5 h-4 w-px bg-border/60" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger className={cn(
+                    "relative pb-0.5 text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1",
+                    location.pathname === '/converter' || location.pathname.startsWith('/europass-cv') || location.pathname.startsWith('/tools/')
+                      ? "text-primary" : "text-foreground/90 hover:text-primary"
+                  )}>
+                    <Wrench className="h-3.5 w-3.5" />
+                    <span>Tools</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate('/converter')}>
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      <span>Grade Converter</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/europass-cv')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span>Europass CV</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/tools/grade-converter')}>
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      <span>Grade & ECTS Converter</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               {/* Right: Theme, Notifications, Avatar, Sign out */}
               <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <ThemeToggle variant="icon" />
@@ -447,18 +478,30 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       ) : (
         <div className="hidden md:flex min-h-screen flex-col">
-          {/* Student/Editor Top Navbar (Desktop) — hidden for editors (they have page tabs) */}
-          {!isEditor && (
+          {/* Student/Editor Top Navbar (Desktop) */}
+          {isEditor ? (
+            <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-1.5 px-2 md:px-3">
+              <div className="mx-auto w-full max-w-7xl flex items-center">
+                <Link to="/editor" className="flex items-center gap-2 shrink-0" aria-label="Editor home">
+                  <div className="h-7 w-7 rounded-md overflow-hidden shrink-0">
+                    <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
+                  </div>
+                  <span className="font-bold text-sm text-foreground tracking-tight">publicgermany</span>
+                  <span className="text-[10px] text-muted-foreground ml-1.5">Editor</span>
+                </Link>
+              </div>
+            </header>
+          ) : (
           <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 py-2 px-2 md:px-3">
             <div className="mx-auto w-full max-w-7xl flex flex-wrap items-center justify-between gap-y-2">
               {/* Left: Brand */}
-              <Link to={homePath} className="flex items-center gap-2 shrink-0" aria-label={isEditor ? 'Editor home' : 'Student home'}>
+              <Link to={homePath} className="flex items-center gap-2 shrink-0" aria-label="Student home">
                 <div className="h-8 w-8 rounded-md overflow-hidden shrink-0">
                   <img src={logos} alt="publicgermany logo" className="h-full w-full object-contain object-center" />
                 </div>
                 <div className="hidden xl:flex flex-col leading-tight">
                   <span className="font-bold text-base text-foreground tracking-tight">publicgermany</span>
-                  <span className="text-[10px] text-muted-foreground">{roleLabel}</span>
+                  <span className="text-[10px] text-muted-foreground">Student</span>
                 </div>
               </Link>
 
@@ -600,8 +643,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Mobile Layout */}
       <div className="md:hidden">
-        {/* Mobile Header — hidden for editors (they have bottom nav) */}
-        {!isEditor && (
+        {/* Mobile Header */}
         <header className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b sticky top-0 z-50">
             <div className="flex items-center justify-between h-12 px-2">
               {/* Left: Bell + Avatar */}
@@ -689,7 +731,6 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </header>
-        )}
 
         {/* Mobile Main Content */}
         <main className="p-3 sm:p-4 max-w-full pb-[calc(env(safe-area-inset-bottom)+4.5rem)] overflow-x-hidden">

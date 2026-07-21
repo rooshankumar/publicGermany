@@ -40,7 +40,7 @@ const MobileNavigation = () => {
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
-  const adminNavItems = [
+  const adminNavMain = [
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
@@ -50,6 +50,12 @@ const MobileNavigation = () => {
     { href: '/admin/editors', label: 'Editors', icon: Users },
   ];
 
+  const adminNavTools = [
+    { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/tools/grade-converter', label: 'Grade & ECTS', icon: GraduationCap },
+  ];
+
   const editorNavItems = [
     { href: '/editor', label: 'Dashboard', icon: Home },
     { href: '/resources', label: 'Resources', icon: BookOpen },
@@ -57,7 +63,7 @@ const MobileNavigation = () => {
     { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
   ];
 
-  const navItems = isAdmin ? adminNavItems : isEditor ? editorNavItems : studentNavItems;
+  const navItems = isEditor ? editorNavItems : studentNavItems;
 
   const handleLinkClick = () => {
     setIsOpen(false);
@@ -89,9 +95,9 @@ const MobileNavigation = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4">
+          <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-2">
-              {navItems.map((item) => {
+              {(isAdmin ? adminNavMain : navItems).map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
                 
@@ -114,6 +120,39 @@ const MobileNavigation = () => {
                 );
               })}
             </ul>
+
+            {/* Tools Section for Admin */}
+            {isAdmin && (
+              <>
+                <div className="mt-4 mb-2 px-4 flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tools</span>
+                  <span className="h-px flex-1 bg-border/50" />
+                </div>
+                <ul className="space-y-2">
+                  {adminNavTools.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.href;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          to={item.href}
+                          onClick={handleLinkClick}
+                          className={cn(
+                            "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                            isActive 
+                              ? "bg-primary text-primary-foreground shadow-lg" 
+                              : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
           </nav>
 
           {/* User Section */}

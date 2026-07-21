@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, BookOpen, FileText, Clock, UserCheck, Globe } from 'lucide-react';
+import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, BookOpen, FileText, Clock, UserCheck, Globe, GraduationCap } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +63,12 @@ const AdminMobileBottomNav = () => {
     { href: '/admin/reviews', label: 'Reviews', icon: Star },
     { href: '/admin/resources', label: 'Resources', icon: BookOpen },
     { href: '/admin/blog', label: 'Blog', icon: BookOpen },
+  ];
+
+  const toolLinks = [
+    { href: '/converter', label: 'Grade Converter', icon: GraduationCap },
+    { href: '/europass-cv', label: 'Europass CV', icon: FileText },
+    { href: '/tools/grade-converter', label: 'Grade & ECTS', icon: GraduationCap },
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
@@ -128,6 +134,28 @@ const AdminMobileBottomNav = () => {
                             {pendingReviews > 99 ? '99+' : pendingReviews}
                           </span>
                         )}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Tools Section */}
+                <div className="mt-5 mb-2 flex items-center gap-2 px-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tools</span>
+                  <span className="h-px flex-1 bg-border/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {toolLinks.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        onClick={() => setOpen(false)}
+                        className="p-3 border rounded-lg flex items-center gap-3 hover:bg-accent/30 relative"
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium leading-tight break-words">{item.label}</span>
                       </Link>
                     );
                   })}
