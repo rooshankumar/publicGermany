@@ -17,7 +17,7 @@ declare global {
 const PWA_PROMPT_DISMISSED_KEY = 'pwa_prompt_dismissed';
 const PWA_PROMPT_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours
 
-export function PWAInstallButton({ className }: { className?: string }) {
+export function PWAInstallButton({ className, label }: { className?: string; label?: string }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
@@ -61,6 +61,20 @@ export function PWAInstallButton({ className }: { className?: string }) {
 
   // Don't show if installed or no prompt available
   if (isInstalled || !deferredPrompt) return null;
+
+  if (label) {
+    return (
+      <Button
+        onClick={handleInstall}
+        variant="outline"
+        className={className}
+        title="Install App"
+      >
+        <Download className="h-4 w-4 mr-2" />
+        {label}
+      </Button>
+    );
+  }
 
   return (
     <Button

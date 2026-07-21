@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, ClipboardList, Target, Plane, FileText, MessagesSquare, Luggage, Menu, X } from 'lucide-react';
-import { PWAInstallButton } from '@/components/PWAInstallPrompt';
+import { PWAInstallButton, PWAInstallPopup } from '@/components/PWAInstallPrompt';
 import PgLogo, { PgLogoMark } from '@/components/PgLogo';
 import { useServicePackages } from '@/hooks/useServiceData';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,7 +78,7 @@ const Header: React.FC = () => {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <PWAInstallButton className="h-8 w-8 p-0 hidden sm:inline-flex" />
+          <PWAInstallButton className="h-8 w-8 p-0 inline-flex" />
           <Link to="/auth" className="hidden sm:inline text-[14px] font-medium text-pg-label2 hover:text-pg-label">Sign in</Link>
           <Link to="/auth" className="pg-btn pg-btn-primary pg-btn-sm">Get started</Link>
           <button
@@ -133,6 +133,7 @@ const Hero: React.FC = () => {
         <div className="flex gap-2.5 justify-center flex-wrap mb-6">
           <Link to="/auth" className="pg-btn pg-btn-primary">Start free</Link>
           <a href="#features" className="pg-btn pg-btn-secondary">See how it works</a>
+          <PWAInstallButton label="📱 Install App" className="text-[15px] font-medium" />
         </div>
         <div className="flex items-center justify-center gap-4 text-[13px] text-pg-label3 flex-wrap">
           <span><b className="text-pg-label2 font-semibold">{studentsLabel}</b> students guided</span>
@@ -398,6 +399,7 @@ const Index: React.FC = () => {
         <FinalCTA />
       </main>
       <Footer />
+      <PWAInstallPopup />
     </div>
   );
 };
