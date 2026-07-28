@@ -3,7 +3,7 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +29,11 @@ import {
   X,
   ClipboardList,
   ScrollText,
-  StickyNote
+  StickyNote,
+  ChevronDown,
+  ChevronUp,
+  Key,
+  ExternalLink
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { DOCUMENTS } from '@/components/APSRequiredDocuments';
@@ -42,6 +46,7 @@ import { Upload, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
@@ -60,6 +65,8 @@ export default function StudentProfile() {
   const [updatingContractId, setUpdatingContractId] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState({ total: 0, received: 0, pending: 0 });
   const [showAddAppDialog, setShowAddAppDialog] = useState(false);
+  const [selectedAppIds, setSelectedAppIds] = useState<Set<string>>(new Set());
+  const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -74,6 +81,62 @@ export default function StudentProfile() {
       return aDate - bDate;
     });
   };
+
+  // ── Bulk selection helpers ──────────────────────────────────────────
+  const toggleAppSelection = (id: string) => {
+    setSelectedAppIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const isAllSelected = student?.applications && student.applications.length > 0 &&
+    student.applications.every(app => selectedAppIds.has(app.id));
+
+  const toggleSelectAll = () => {
+    if (!student?.applications) return;
+    if (isAllSelected) {
+      setSelectedAppIds(new Set());
+    } else {
+      setSelectedAppIds(new Set(student.applications.map(a => a.id)));
+    }
+  };
+
+  const deleteSelectedApps = async () => {
+    const count = selectedAppIds.size;
+    if (count === 0) return;
+    if (!confirm(`Delete ${count} selected application${count > 1 ? 's' : ''}? This cannot be undone.`)) return;
+    
+    let success = 0;
+    for (const id of selectedAppIds) {
+      const { error } = await supabase.from('applications').delete().eq('id', id);
+      if (!error) success++;
+    }
+    
+    setSelectedAppIds(new Set());
+    toast({ 
+      title: success === count ? 'All deleted' : 'Partial deletion', 
+      description: `${success} of ${count} application${count > 1 ? 's' : ''} removed`,
+      variant: success === count ? 'default' : 'destructive',
+    });
+    studentQuery.refetch();
+  };
+
+  const deleteAllApps = async () => {
+    const count = student?.applications?.length || 0;
+    if (count === 0) return;
+    if (!confirm(`Delete ALL ${count} applications? This cannot be undone.`)) return;
+    
+    for (const app of (student?.applications || [])) {
+      await supabase.from('applications').delete().eq('id', app.id);
+    }
+    
+    setSelectedAppIds(new Set());
+    toast({ title: 'All deleted', description: `${count} applications removed` });
+    studentQuery.refetch();
+  };
+  // ── End bulk helpers ────────────────────────────────────────────────
 
   const fetchStudentProfile = async () => {
     if (!studentId) return null;
@@ -543,116 +606,100 @@ export default function StudentProfile() {
           </Link>
         </div>
 
-        {/* Student Header with Quick Actions */}
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold text-foreground truncate">
-                {student.full_name || 'Unknown Student'}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm truncate max-w-[200px]">
-                    {email || `${student.user_id?.slice(0, 8)}…`}
-                  </span>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={resolveEmail} title="Retry">
-                    <RefreshCw className="h-3 w-3" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm">Joined {new Date(student.created_at).toLocaleDateString()}</span>
-                </div>
+        {/* ── Student Details: 2-Column Grid ── */}
+        <Card className="border shadow-sm">
+          <CardContent className="p-4 sm:p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 text-xs">
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Full Name</span>
+                <span className="font-semibold text-sm text-right">{student.full_name || 'Unknown Student'}</span>
               </div>
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Badge variant={student.aps_pathway ? 'default' : 'secondary'} className="text-[10px] sm:text-xs">
-                  {student.aps_pathway || 'No APS'}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] sm:text-xs">
-                  German: {student.german_level || 'None'}
-                </Badge>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Email</span>
+                <span className="font-medium text-right truncate max-w-[200px]">
+                  {email || `${student.user_id?.slice(0, 8)}…`}
+                  <button onClick={resolveEmail} className="text-muted-foreground/40 hover:text-foreground ml-1" title="Refresh email">
+                    <RefreshCw className="h-2.5 w-2.5 inline" />
+                  </button>
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Joined</span>
+                <span className="font-medium text-right">{new Date(student.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">APS Certificate</span>
+                <span className="font-medium text-right">{(() => { const apsDoc = (student.documents || []).find((d: any) => d.category === 'aps_certificate' && d.status === 'approved'); return apsDoc ? 'Provided' : (student.aps_pathway || 'Not provided'); })()}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">German Level</span>
+                <span className="font-medium text-right">{student.german_level || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Date of Birth</span>
+                <span className="font-medium text-right">{student.date_of_birth || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Country of Education</span>
+                <span className="font-medium text-right">{student.country_of_education || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Work Experience</span>
+                <span className="font-medium text-right">{student.work_experience_years ? `${student.work_experience_years} years${student.work_experience_field ? ` in ${student.work_experience_field}` : ''}` : 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Contract Reference</span>
+                <span className="font-medium text-right">{(student as any).contract_reference || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Class 10 & 12</span>
+                <span className="font-medium text-right break-words">10th: {student.class_10_marks || 'N/A'} | 12th: {student.class_12_marks || 'N/A'}{student.class_12_stream ? ` (${student.class_12_stream})` : ''}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Bachelor's Degree</span>
+                <span className="font-medium text-right break-words">{student.bachelor_degree_name ? `${student.bachelor_degree_name}${(student as any).bachelor_university ? ` at ${(student as any).bachelor_university}` : ''} - ${student.bachelor_cgpa_percentage || 'N/A'}` : 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Master's Degree</span>
+                <span className="font-medium text-right">{student.master_degree_name ? `${student.master_degree_name} - ${student.master_cgpa_percentage || 'N/A'}` : 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Intended Course</span>
+                <span className="font-medium text-right break-words">{(student as any).intended_master_course || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Language Score</span>
+                <span className="font-medium text-right">{student.ielts_toefl_score || 'Not provided'}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Applications</span>
+                <span className="font-medium text-right">{student.applications?.length || 0}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Documents</span>
+                <span className="font-medium text-right">{(student.documents || []).filter((d: any) => d.status === 'approved').length} / {DOCUMENTS.length}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Services</span>
+                <span className="font-medium text-right">{student.service_requests?.length || 0}</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20">
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Payments Received</span>
+                <span className="font-medium text-right text-green-600 dark:text-green-400">Rs. {paymentSummary.received.toLocaleString('en-IN')}</span>
               </div>
             </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/admin/payments/${studentId}`)}
-                className="flex-1 sm:flex-none gap-2 text-xs"
-              >
+            <div className="flex gap-2 mt-4 pt-4 border-t">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/payments/${studentId}`)} className="flex-1 gap-1.5 text-xs">
                 <DollarSign className="h-3.5 w-3.5" />
-                Payments
+                View Payments
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/admin/requests/${studentId}`)}
-                className="flex-1 sm:flex-none gap-2 text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/requests/${studentId}`)} className="flex-1 gap-1.5 text-xs">
                 <Briefcase className="h-3.5 w-3.5" />
-                Requests
+                View Requests
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Summary Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="shadow-sm">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Apps</p>
-                  <p className="text-lg sm:text-2xl font-bold">{student.applications?.length || 0}</p>
-                </div>
-                <BookOpen className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Docs</p>
-                  <p className="text-lg sm:text-2xl font-bold">
-                    {(student.documents || []).filter((d: any) => d.status === 'approved').length}/{DOCUMENTS.length}
-                  </p>
-                </div>
-                <FileCheck className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Services</p>
-                  <p className="text-lg sm:text-2xl font-bold">{student.service_requests?.length || 0}</p>
-                </div>
-                <Briefcase className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Payments</p>
-                  <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
-                    ₹{paymentSummary.received >= 1000 ? `${(paymentSummary.received / 1000).toFixed(1)}k` : paymentSummary.received}
-                  </p>
-                </div>
-                <DollarSign className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="w-full">
@@ -693,26 +740,27 @@ export default function StudentProfile() {
             </TabsList>
           </div>
 
-          {/* Overview Tab - Personal & Academic Info + Application Dates */}
-          <TabsContent value="overview" className="space-y-6 mt-2">
-            {/* Application Dates Summary - Excel like table on mobile */}
+          {/* ── Overview Tab ── */}
+          <TabsContent value="overview" className="space-y-4 mt-2">
+            {/* Application Timeline */}
             {student.applications && student.applications.length > 0 && (
-              <Card className="overflow-hidden border-none sm:border shadow-sm">
-                <CardHeader className="px-4 py-3 sm:px-6 sm:py-6">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
-                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Card className="overflow-hidden border shadow-sm">
+                <CardHeader className="px-4 py-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Calendar className="h-4 w-4 text-primary" />
                     Application Timeline
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 sm:p-6">
+                <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs sm:text-sm">
-                      <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-muted/40 text-muted-foreground font-medium border-y">
                         <tr>
-                          <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[120px]">University</th>
-                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Starts</th>
-                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Deadline</th>
-                          <th className="px-3 py-2 sm:px-4 sm:py-3">Status</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-2.5 min-w-[140px]">University</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap">Start</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap">Deadline</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap hidden sm:table-cell">Method</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-2.5">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -720,25 +768,28 @@ export default function StudentProfile() {
                           const isSubmitted = ['submitted', 'Applied'].includes(app.status);
                           const isOffer = app.status?.toLowerCase() === 'offer';
                           return (
-                            <tr key={app.id} className={`hover:bg-muted/30 transition-colors ${isOffer ? 'bg-orange-50/30' : ''}`}>
-                              <td className="px-3 py-2 sm:px-4 sm:py-3">
-                                <p className={`font-semibold text-foreground line-clamp-1 ${isOffer ? 'text-orange-900' : ''}`}>{app.university_name}</p>
-                                <p className="text-[10px] text-muted-foreground line-clamp-1">{app.program_name}</p>
+                            <tr key={app.id} className={`hover:bg-muted/20 transition-colors ${isOffer ? 'bg-orange-50/20' : ''}`}>
+                              <td className="px-3 py-2 sm:px-4 sm:py-2.5">
+                                <p className={`font-medium text-foreground line-clamp-1 ${isOffer ? 'text-orange-900' : ''}`}>{app.university_name}</p>
+                                <p className="text-[11px] text-muted-foreground line-clamp-1">{app.program_name}</p>
                               </td>
-                              <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
-                                <p className="text-foreground">
+                              <td className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap">
+                                <span className="text-foreground">
                                   {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
-                                </p>
+                                </span>
                               </td>
-                              <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
-                                <p className={`font-medium ${isOffer ? 'text-orange-700' : 'text-foreground'}`}>
+                              <td className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap">
+                                <span className={isOffer ? 'text-orange-700 font-medium' : 'text-foreground'}>
                                   {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
-                                </p>
+                                </span>
                               </td>
-                              <td className="px-3 py-2 sm:px-4 sm:py-3">
+                              <td className="px-3 py-2 sm:px-4 sm:py-2.5 whitespace-nowrap hidden sm:table-cell">
+                                <span className="text-muted-foreground">{app.application_method || '—'}</span>
+                              </td>
+                              <td className="px-3 py-2 sm:px-4 sm:py-2.5">
                                 <Badge 
                                   variant={isSubmitted ? 'default' : isOffer ? 'default' : 'outline'} 
-                                  className={`text-[9px] px-1.5 py-0 capitalize ${
+                                  className={`text-[10px] px-1.5 py-0 capitalize ${
                                     isSubmitted ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : 
                                     isOffer ? 'bg-orange-100 text-orange-700 hover:bg-orange-100 border-none' : ''
                                   }`}
@@ -756,83 +807,6 @@ export default function StudentProfile() {
               </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                      <p className="text-sm mt-1">{student.date_of_birth || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Country of Education</label>
-                      <p className="text-sm mt-1">{student.country_of_education || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                      <p className="text-sm mt-1">
-                        {student.work_experience_years ? `${student.work_experience_years} years` : 'Not provided'}
-                        {student.work_experience_field && ` in ${student.work_experience_field}`}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Contract Reference</label>
-                      <p className="text-sm mt-1">{(student as any).contract_reference || 'Not provided'}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Academic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5" />
-                    Academic Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Class 10 & 12</label>
-                      <p className="text-sm mt-1">
-                        10th: {student.class_10_marks || 'N/A'} | 12th: {student.class_12_marks || 'N/A'} ({student.class_12_stream || 'N/A'})
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Bachelor's Degree</label>
-                      <p className="text-sm mt-1">
-                        {student.bachelor_degree_name || 'N/A'} in {student.bachelor_field || 'N/A'}<br/>
-                        University: {(student as any).bachelor_university || 'N/A'}<br/>
-                        CGPA: {student.bachelor_cgpa_percentage || 'N/A'} | Credits: {student.bachelor_credits_ects || 'N/A'} | Duration: {student.bachelor_duration_years || 'N/A'} years
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Master's Degree</label>
-                      <p className="text-sm mt-1">
-                        {student.master_degree_name || 'N/A'} in {student.master_field || 'N/A'}<br/>
-                        CGPA: {student.master_cgpa_percentage || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Intended Master Course</label>
-                      <p className="text-sm mt-1">{(student as any).intended_master_course || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Language Score</label>
-                      <p className="text-sm mt-1">{student.ielts_toefl_score || 'Not provided'}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           {/* Applications Tab */}
@@ -844,6 +818,27 @@ export default function StudentProfile() {
                   <h2 className="text-lg font-bold">University Applications ({student.applications?.length || 0})</h2>
                 </div>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  {selectedAppIds.size > 0 && (
+                    <>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        className="h-8 px-3 text-xs"
+                        onClick={deleteSelectedApps}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        Delete ({selectedAppIds.size})
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 px-3 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={deleteAllApps}
+                      >
+                        Delete All
+                      </Button>
+                    </>
+                  )}
                   <ExcelUpload onUpload={async (data) => {
                     if (!studentId) return;
                     try {
@@ -962,36 +957,132 @@ export default function StudentProfile() {
               </div>
 
               {student.applications && student.applications.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3">
-                  {sortApplications(student.applications).map((app: any) => (
-                    <div key={app.id} className="relative group">
-                      <div className="absolute right-2 top-2 z-10 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!confirm(`Delete application for ${app.university_name}?`)) return;
-                            const { error } = await supabase.from('applications').delete().eq('id', app.id);
-                            if (error) {
-                              toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                            } else {
-                              toast({ title: 'Deleted', description: 'Application removed' });
-                              studentQuery.refetch();
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <ApplicationCredentialsCard 
-                        application={app}
-                        onUpdate={() => studentQuery.refetch()}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <Card className="overflow-hidden border-none sm:border shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs sm:text-sm">
+                      <thead className="bg-muted/50 text-muted-foreground font-medium border-y">
+                        <tr>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 w-8">
+                            <Checkbox 
+                              checked={isAllSelected}
+                              onCheckedChange={toggleSelectAll}
+                              className="h-3.5 w-3.5"
+                            />
+                          </th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 min-w-[160px]">University</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Starts</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Deadline</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell">Method</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3">Status</th>
+                          <th className="px-3 py-2 sm:px-4 sm:py-3 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {sortApplications(student.applications).map((app: any) => {
+                          const isSelected = selectedAppIds.has(app.id);
+                          const isExpanded = expandedAppId === app.id;
+                          const isSubmitted = ['submitted', 'Applied'].includes(app.status);
+                          const isOffer = app.status?.toLowerCase() === 'offer';
+                          const hasCreds = app.portal_link || app.portal_login_id || app.portal_password;
+                          return (
+                            <Fragment key={app.id}>
+                              <tr 
+                                className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                                  isSelected ? 'bg-primary/5' : ''
+                                } ${isOffer ? 'bg-orange-50/30' : ''}`}
+                                onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
+                              >
+                                <td className="px-3 py-2 sm:px-4 sm:py-3" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox 
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleAppSelection(app.id)}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3">
+                                  <div className="flex items-center gap-2">
+                                    {isSubmitted && <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />}
+                                    {isOffer && <GraduationCap className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
+                                    <div>
+                                      <p className={`font-semibold text-foreground line-clamp-1 ${isOffer ? 'text-orange-900' : ''}`}>{app.university_name}</p>
+                                      <p className="text-[10px] text-muted-foreground line-clamp-1">{app.program_name}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
+                                  <p className="text-foreground">
+                                    {app.application_start_date ? new Date(app.application_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+                                  </p>
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap">
+                                  <p className={`font-medium ${isOffer ? 'text-orange-700' : 'text-foreground'}`}>
+                                    {app.application_end_date ? new Date(app.application_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+                                  </p>
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell">
+                                  <span className="text-muted-foreground text-xs">
+                                    {app.application_method || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3">
+                                  <div className="flex items-center gap-1.5">
+                                    {hasCreds && (
+                                      <Key className="h-3 w-3 text-muted-foreground" />
+                                    )}
+                                    <Badge 
+                                      variant={isSubmitted ? 'default' : isOffer ? 'default' : 'outline'} 
+                                      className={`text-[9px] px-1.5 py-0 capitalize ${
+                                        isSubmitted ? 'bg-green-100 text-green-700 hover:bg-green-100 border-none' : 
+                                        isOffer ? 'bg-orange-100 text-orange-700 hover:bg-orange-100 border-none' : ''
+                                      }`}
+                                    >
+                                      {app.status}
+                                    </Badge>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!confirm(`Delete application for ${app.university_name}?`)) return;
+                                        const { error } = await supabase.from('applications').delete().eq('id', app.id);
+                                        if (error) {
+                                          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                                        } else {
+                                          toast({ title: 'Deleted', description: 'Application removed' });
+                                          studentQuery.refetch();
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                                  </div>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr>
+                                  <td colSpan={7} className="p-0 border-b bg-muted/10">
+                                    <div className="p-3 sm:p-4">
+                                      <ApplicationCredentialsCard 
+                                        application={app}
+                                        onUpdate={() => studentQuery.refetch()}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
               ) : (
                 <Card className="border-dashed">
                   <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">

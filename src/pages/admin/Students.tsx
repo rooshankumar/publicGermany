@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +20,8 @@ import {
   FileText,
   Calendar,
   Eye,
-  Edit3
+  Edit3,
+  DollarSign
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
@@ -49,6 +51,8 @@ export default function Students() {
   const [apsFilter, setApsFilter] = useState('all');
   const [germanFilter, setGermanFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' or 'oldest'
+  const [paidTab, setPaidTab] = useState('regular');
+  const [paidStudentIds, setPaidStudentIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Debounce search to limit filter recalculations while typing
@@ -75,7 +79,7 @@ export default function Students() {
 
   useEffect(() => {
     filterStudents();
-  }, [students, debouncedSearch, apsFilter, germanFilter, sortBy]);
+  }, [students, debouncedSearch, apsFilter, germanFilter, sortBy, paidTab, paidStudentIds]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -112,6 +116,24 @@ export default function Students() {
           if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
           docsByUser[d.user_id].push(d);
         });
+      }
+
+      // Fetch payments to determine paid students
+      if (userIds.length > 0) {
+        const { data: paymentsData } = await supabase
+          .from('service_requests' as any)
+          .select(`user_id, service_payments ( status )`)
+          .in('user_id', userIds);
+        
+        const paidIds = new Set<string>();
+        (paymentsData || []).forEach((sr: any) => {
+          if (sr.service_payments && Array.isArray(sr.service_payments)) {
+            sr.service_payments.forEach((p: any) => {
+              if (p.status === 'received') paidIds.add(sr.user_id);
+            });
+          }
+        });
+        setPaidStudentIds(paidIds);
       }
 
       // Safely set the data with proper type handling and attach documents
@@ -156,6 +178,13 @@ export default function Students() {
 
     if (germanFilter !== 'all') {
       filtered = filtered.filter(student => student.german_level === germanFilter);
+    }
+
+    // Filter by paid/regular
+    if (paidTab === 'paid') {
+      filtered = filtered.filter(student => paidStudentIds.has(student.user_id));
+    } else {
+      filtered = filtered.filter(student => !paidStudentIds.has(student.user_id));
     }
 
     // Sort by creation date
@@ -228,9 +257,28 @@ export default function Students() {
     <Layout>
       <div className="space-y-3 max-w-7xl mx-auto">
          <div className="german-stripe w-full" />
-         <div>
-           <h1 className="text-base font-bold text-foreground">Student Management</h1>
-           <p className="text-[10px] text-muted-foreground">Manage and track all student profiles</p>
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+           <div>
+             <h1 className="text-base font-bold text-foreground">Student Management</h1>
+             <p className="text-[10px] text-muted-foreground">Manage and track all student profiles</p>
+          </div>
+          <Tabs value={paidTab} onValueChange={(v) => setPaidTab(v)} className="w-full sm:w-auto">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="regular" className="text-xs gap-1.5">
+                Regular
+                <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-muted-foreground/15 text-[10px] font-medium">
+                  {students.filter(s => !paidStudentIds.has(s.user_id)).length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="paid" className="text-xs gap-1.5">
+                <DollarSign className="h-3 w-3" />
+                Paid
+                <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 text-[10px] font-medium">
+                  {students.filter(s => paidStudentIds.has(s.user_id)).length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <Card className="shadow-none"><CardContent className="p-2.5 space-y-2">

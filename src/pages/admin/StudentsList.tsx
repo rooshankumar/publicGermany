@@ -4,12 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, UserCheck, GraduationCap, FileText, Calendar, Star } from 'lucide-react';
+import { ArrowRight, ArrowLeft, UserCheck, GraduationCap, FileText, Calendar, Star, DollarSign, Users, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
@@ -17,6 +18,15 @@ type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
   service_requests?: Database['public']['Tables']['service_requests']['Row'][];
   email?: string;
 };
+
+interface EditorSummary {
+  user_id: string;
+  full_name: string;
+  email: string;
+  assigned_students: number;
+  verified_referrals: number;
+  created_at: string;
+}
 
 interface StudentSummary {
   user_id: string;
@@ -47,7 +57,9 @@ function useDebouncedValue<T>(value: T, delay = 300) {
 
 export default function StudentsList() {
   const [students, setStudents] = useState<StudentSummary[]>([]);
+  const [editors, setEditors] = useState<EditorSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryTab, setCategoryTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -59,6 +71,7 @@ export default function StudentsList() {
     if (!user?.id) return;
 
     fetchStudents();
+    fetchEditors();
     
     // Real-time subscription
     const channel = supabase
@@ -78,6 +91,49 @@ export default function StudentsList() {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  const fetchEditors = async () => {
+    try {
+      const [profilesRes, permsRes, verifiedRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name, created_at').eq('role', 'editor' as any),
+        supabase.from('editor_permissions').select('editor_user_id, student_user_id'),
+        (supabase as any).from('referrals').select('owner_editor_id, id').eq('verified_by_admin', true),
+      ]);
+
+      // Count assigned students per editor
+      const studentCounts: Record<string, number> = {};
+      (permsRes.data || []).forEach((p: any) => {
+        studentCounts[p.editor_user_id] = (studentCounts[p.editor_user_id] || 0) + 1;
+      });
+
+      // Count verified referrals per editor
+      const verifiedCounts: Record<string, number> = {};
+      ((verifiedRes.data || []) as any[]).forEach((ref: any) => {
+        verifiedCounts[ref.owner_editor_id] = (verifiedCounts[ref.owner_editor_id] || 0) + 1;
+      });
+
+      // Get emails
+      const editorsWithEmails = await Promise.all((profilesRes.data || []).map(async (editor: any) => {
+        let email = '';
+        try {
+          const { data: emailData } = await (supabase as any).rpc('get_user_email', { p_user_id: editor.user_id });
+          email = emailData || '';
+        } catch {}
+        return {
+          user_id: editor.user_id,
+          full_name: editor.full_name || 'Unnamed Editor',
+          email,
+          assigned_students: studentCounts[editor.user_id] || 0,
+          verified_referrals: verifiedCounts[editor.user_id] || 0,
+          created_at: editor.created_at,
+        };
+      }));
+
+      setEditors(editorsWithEmails);
+    } catch (error: any) {
+      console.error('Error fetching editors:', error);
+    }
+  };
 
   const fetchStudents = async () => {
     if (!user?.id) return;
@@ -221,7 +277,9 @@ export default function StudentsList() {
 
   const filteredStudents = students.filter(student => {
     const q = debouncedSearch.toLowerCase().trim();
-    return !q || student.full_name.toLowerCase().includes(q);
+    if (q && !student.full_name.toLowerCase().includes(q)) return false;
+    if (categoryTab !== 'all' && student.category !== categoryTab) return false;
+    return true;
   });
 
   filteredStudents.sort((a, b) => {
@@ -285,7 +343,7 @@ export default function StudentsList() {
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
           <div>
             <h1 className="text-base font-bold text-foreground">Student Management</h1>
             <p className="text-[10px] text-muted-foreground">Recently updated students appear first</p>
@@ -293,9 +351,77 @@ export default function StudentsList() {
           <Input placeholder="Search students by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-56 h-7 text-xs" />
         </div>
 
+        <Tabs value={categoryTab} onValueChange={(v) => setCategoryTab(v)} className="w-full">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="all" className="text-xs gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              All
+              <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-muted-foreground/15 text-[10px] font-medium">{students.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="regular" className="text-xs gap-1.5">
+              Regular
+              <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-muted-foreground/15 text-[10px] font-medium">{students.filter(s => s.category === 'regular').length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="paid" className="text-xs gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" />
+              Paid
+              <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 text-[10px] font-medium">{students.filter(s => s.category === 'paid').length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="editors" className="text-xs gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Editors
+              <span className="inline-flex items-center justify-center h-4 min-w-[18px] px-1 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 text-[10px] font-medium">{editors.length}</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <Card><CardContent className="p-0">
           {loading ? (
             <div className="p-4 text-center"><InlineLoader label="Loading students" /></div>
+          ) : categoryTab === 'editors' ? (
+            editors.length === 0 ? (
+              <div className="text-center py-6"><p className="text-xs text-muted-foreground">No editors found</p></div>
+            ) : (
+              <div className="divide-y">
+                {editors.map((editor) => (
+                  <div key={editor.user_id} onClick={() => navigate(`/admin/editors/${editor.user_id}`)}
+                    className="p-2.5 hover:bg-muted/20 transition-colors cursor-pointer group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 bg-purple-100 dark:bg-purple-950/30 rounded-full flex items-center justify-center shrink-0">
+                            <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[12px] truncate">{editor.full_name}</h3>
+                            <p className="text-[10px] text-muted-foreground truncate">{editor.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800 text-[9px]">
+                            Editor
+                          </Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
+                            {editor.assigned_students} student{editor.assigned_students !== 1 ? 's' : ''}
+                          </Badge>
+                          {editor.verified_referrals > 0 && (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 text-[8px] px-1 py-0 h-4">
+                              {editor.verified_referrals} verified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-3 text-[10px] text-muted-foreground mt-1.5">
+                          <span>Joined: {new Date(editor.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <ExternalLink className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : filteredStudents.length === 0 ? (
             <div className="text-center py-6"><p className="text-xs text-muted-foreground">No students found</p></div>
           ) : (
