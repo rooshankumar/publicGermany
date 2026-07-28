@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, UserCheck, GraduationCap, FileText, Calendar, Star, DollarSign, Users, ShieldCheck, ExternalLink } from 'lucide-react';
+import { ArrowRight, ArrowLeft, UserCheck, GraduationCap, FileText, Calendar, Star, DollarSign, Users, ShieldCheck, Eye } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 
 type StudentProfile = Database['public']['Tables']['profiles']['Row'] & {
@@ -32,6 +33,7 @@ interface StudentSummary {
   user_id: string;
   full_name: string;
   email: string;
+  photo_url: string | null;
   aps_pathway: string | null;
   german_level: string;
   applications_count: number;
@@ -168,6 +170,23 @@ export default function StudentsList() {
       );
 
       // Get emails for all students
+      // Fetch passport photos for all students
+      const userIds = (data || []).map((s: any) => s.user_id).filter(Boolean);
+      const photoUrlMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: photoDocs } = await supabase
+          .from('documents')
+          .select('user_id, upload_path')
+          .eq('category', 'passport_photo')
+          .in('user_id', userIds);
+        (photoDocs || []).forEach((d: any) => {
+          if (d.upload_path) {
+            const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(d.upload_path);
+            photoUrlMap[d.user_id] = publicUrl;
+          }
+        });
+      }
+
       const studentsWithEmails = await Promise.all((data || []).map(async (student: any) => {
         let email = '';
         try {
@@ -186,6 +205,7 @@ export default function StudentsList() {
           user_id: student.user_id,
           full_name: student.full_name || 'Unnamed Student',
           email: email,
+          photo_url: photoUrlMap[student.user_id] || null,
           aps_pathway: student.aps_pathway,
           german_level: student.german_level || 'none',
           applications_count: student.applications?.length || 0,
@@ -382,44 +402,51 @@ export default function StudentsList() {
             editors.length === 0 ? (
               <div className="text-center py-6"><p className="text-xs text-muted-foreground">No editors found</p></div>
             ) : (
-              <div className="divide-y">
-                {editors.map((editor) => (
-                  <div key={editor.user_id} onClick={() => navigate(`/admin/editors/${editor.user_id}`)}
-                    className="p-2.5 hover:bg-muted/20 transition-colors cursor-pointer group">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 bg-purple-100 dark:bg-purple-950/30 rounded-full flex items-center justify-center shrink-0">
-                            <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <div className="overflow-x-auto max-h-[70vh]">
+                <table className="w-full border-collapse text-[11px]">
+                  <thead className="sticky top-0 bg-card z-10">
+                    <tr className="border-b text-muted-foreground">
+                      <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Editor</th>
+                      <th className="text-right p-2 font-medium text-[10px] whitespace-nowrap">Students</th>
+                      <th className="text-right p-2 font-medium text-[10px] whitespace-nowrap">Referrals</th>
+                      <th className="text-left p-2 font-medium text-[10px] hidden sm:table-cell whitespace-nowrap">Joined</th>
+                      <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="align-middle">
+                    {editors.map((editor) => (
+                      <tr key={editor.user_id} className="border-b hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate(`/admin/editors/${editor.user_id}`)}>
+                        <td className="p-2 min-w-[160px]">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-purple-100 dark:bg-purple-950/30 rounded-full flex items-center justify-center shrink-0">
+                              <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-[11px] truncate leading-tight" title={editor.full_name}>{editor.full_name}</p>
+                              <p className="text-[9px] text-muted-foreground truncate">{editor.email}</p>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-[12px] truncate">{editor.full_name}</h3>
-                            <p className="text-[10px] text-muted-foreground truncate">{editor.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800 text-[9px]">
-                            Editor
-                          </Badge>
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
-                            {editor.assigned_students} student{editor.assigned_students !== 1 ? 's' : ''}
-                          </Badge>
-                          {editor.verified_referrals > 0 && (
-                            <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 text-[8px] px-1 py-0 h-4">
-                              {editor.verified_referrals} verified
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-3 text-[10px] text-muted-foreground mt-1.5">
-                          <span>Joined: {new Date(editor.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <ExternalLink className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                        </td>
+                        <td className="p-2 text-right">
+                          <span className="font-semibold text-xs">{editor.assigned_students}</span>
+                          <span className="text-muted-foreground text-[10px] ml-1">student{(editor.assigned_students) !== 1 ? 's' : ''}</span>
+                        </td>
+                        <td className="p-2 text-right">
+                          <span className={`font-semibold text-xs ${editor.verified_referrals > 0 ? 'text-green-600 dark:text-green-400' : ''}`}>{editor.verified_referrals}</span>
+                          <span className="text-muted-foreground text-[10px] ml-1">verified</span>
+                        </td>
+                        <td className="p-2 hidden sm:table-cell">
+                          <span className="text-[10px] text-muted-foreground">{new Date(editor.created_at).toLocaleDateString()}</span>
+                        </td>
+                        <td className="p-2">
+                          <Button size="sm" variant="outline" className="h-6 text-[9px] px-1.5" onClick={(e) => { e.stopPropagation(); navigate(`/admin/editors/${editor.user_id}`); }}>
+                            <Eye className="h-3 w-3 mr-0.5" />View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )
           ) : filteredStudents.length === 0 ? (
@@ -432,9 +459,12 @@ export default function StudentsList() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                          <UserCheck className="h-3.5 w-3.5 text-primary" />
-                        </div>
+                        <Avatar className="h-7 w-7 shrink-0">
+                          <AvatarImage src={student.photo_url || undefined} className="object-cover" />
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                            {(student.full_name || '?').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h3 className="font-semibold text-[12px] truncate">{student.full_name}</h3>

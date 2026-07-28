@@ -422,27 +422,64 @@ export default function ReferralDetails() {
             ) : (
               /* ===== VIEW MODE ===== */
               <>
-                {/* Key Info Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
-                  <StatCard icon={<User className="h-3.5 w-3.5" />} label="Full Name" value={referral.full_name} />
-                  <StatCard icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={referral.phone || '—'} />
-                  <StatCard icon={<Phone className="h-3.5 w-3.5" />} label="WhatsApp" value={referral.whatsapp || '—'} />
-                  <StatCard icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={referral.email || '—'} />
-                  <StatCard icon={<MapPin className="h-3.5 w-3.5" />} label="City" value={referral.city || '—'} />
-                  <StatCard icon={<Tag className="h-3.5 w-3.5" />} label="Lead Source" value={referral.lead_source || '—'} />
-                  <StatCard icon={<User className="h-3.5 w-3.5" />} label="Trainer" value={referral.trainer_name || '—'} />
-                  <StatCard icon={<CalendarDays className="h-3.5 w-3.5" />} label="Next Follow-up" value={referral.next_followup_date || '—'} />
-                  <StatCard icon={<IndianRupee className="h-3.5 w-3.5" />} label="Total Fees" value={referral.total_fees || '—'} />
-                  <StatCard icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Verification" value={referral.verified_by_admin ? '✓ Verified' : 'Pending'} />
-                  <StatCard icon={<Clock className="h-3.5 w-3.5" />} label="Created" value={new Date(referral.created_at).toLocaleDateString()} />
-                </div>
+                {/* Key Info Table */}
+                <Card className="shadow-none border-border/60">
+                  <CardContent className="p-0">
+                    <table className="w-full text-left text-xs">
+                      <tbody className="divide-y">
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium w-[140px]">Full Name</td>
+                          <td className="px-3 py-2 font-medium">{referral.full_name}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Phone</td>
+                          <td className="px-3 py-2">{referral.phone || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">WhatsApp</td>
+                          <td className="px-3 py-2">{referral.whatsapp || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Email</td>
+                          <td className="px-3 py-2">{referral.email || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">City</td>
+                          <td className="px-3 py-2">{referral.city || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Lead Source</td>
+                          <td className="px-3 py-2">{referral.lead_source || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Trainer</td>
+                          <td className="px-3 py-2">{referral.trainer_name || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Next Follow-up</td>
+                          <td className="px-3 py-2">{referral.next_followup_date || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Total Fees</td>
+                          <td className="px-3 py-2 font-medium">{referral.total_fees || '—'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Verification</td>
+                          <td className="px-3 py-2">{referral.verified_by_admin ? 'Verified' : 'Pending'}</td>
+                        </tr>
+                        <tr className="hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-2 text-muted-foreground font-medium">Created</td>
+                          <td className="px-3 py-2">{new Date(referral.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
 
                 {/* Services */}
                 <Card className="shadow-none border-border/60">
                   <CardContent className="p-2.5 space-y-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <Globe className="h-3 w-3" /> Services
-                    </p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Services</p>
                     <div className="flex flex-wrap gap-1">
                       {REFERRAL_SERVICES.map(s => {
                         const active = activeServices.has(s.key);
@@ -462,9 +499,7 @@ export default function ReferralDetails() {
                 {referral.remarks && (
                   <Card className="shadow-none border-border/60">
                     <CardContent className="p-2.5 space-y-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                        <StickyNote className="h-3 w-3" /> Notes
-                      </p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notes</p>
                       <p className="text-[11px] text-foreground/80 whitespace-pre-wrap">{referral.remarks}</p>
                     </CardContent>
                   </Card>
@@ -566,19 +601,4 @@ export default function ReferralDetails() {
   );
 }
 
-/* View-mode stat card */
-function StatCard({ icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <Card className="shadow-none border-border/60">
-      <CardContent className="p-2.5 flex items-start gap-2">
-        <div className="w-7 h-7 rounded-md bg-primary/5 text-primary flex items-center justify-center shrink-0 mt-0.5">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</p>
-          <p className="text-[12px] font-medium truncate" title={value}>{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+

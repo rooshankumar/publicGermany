@@ -15,7 +15,7 @@ import { useReferralsByEditor, useUpdateReferral } from '@/hooks/useReferrals';
 import { QUALIFIED_STATUSES, serviceLabel, statusColor, statusLabel, priorityColor } from '@/lib/referralConstants';
 import {
   ArrowLeft, Users, UserPlus, Star, CheckCircle2, Clock, ShieldCheck,
-  Mail, Calendar, ExternalLink, ChevronRight,
+  Mail, Calendar, ChevronRight,
 } from 'lucide-react';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useToast } from '@/hooks/use-toast';
@@ -116,85 +116,108 @@ export default function EditorProfile() {
 
   const initials = (editor.full_name || 'E').split(' ').map((s: string) => s[0]).join('').slice(0, 2).toUpperCase();
 
-  const ReferralCard = ({ r }: { r: any }) => (
-    <div className="border rounded-lg p-3 bg-background">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium truncate">{r.full_name}</span>
-            {r.verified_by_admin && <ShieldCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />}
-          </div>
-          <p className="text-xs text-muted-foreground">{r.phone || r.email || '—'}</p>
-        </div>
-        <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColor(r.current_status)}`}>
-          {statusLabel(r.current_status)}
-        </Badge>
-      </div>
-
-      <div className="flex flex-wrap gap-1 mb-2">
-        {(r.referral_services || []).slice(0, 3).map((s: any) => (
-          <Badge key={s.id} variant="secondary" className="text-[10px]">{serviceLabel(s.service_key)}</Badge>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-        {r.priority && (
-          <Badge variant="outline" className={`text-[9px] capitalize ${priorityColor(r.priority)}`}>{r.priority}</Badge>
-        )}
-        {r.next_followup_date && (
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(r.next_followup_date).toLocaleDateString()}</span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {r.verified_by_admin ? (
-          <>
-            <Badge className="bg-green-600 text-[10px] h-6 px-2 gap-1">
-              <ShieldCheck className="h-3 w-3" />Verified
-            </Badge>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-6 text-[10px] text-amber-600 border-amber-300">Unverify</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-sm">Remove verification?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-xs">The editor will be able to edit this referral again and commission will be unearned.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => unverifyReferral(r.id)} className="h-9 text-xs bg-amber-600 hover:bg-amber-700">Remove</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </>
-        ) : (
-          <Button size="sm" variant="outline" className="h-6 text-[10px] text-green-600 border-green-300 gap-1" onClick={() => verifyReferral(r)}>
-            <ShieldCheck className="h-3 w-3" />Verify
-          </Button>
-        )}
-        <Button size="sm" variant="secondary" className="h-6 text-[10px] gap-1" onClick={() => navigate(`/editor/referrals/${r.id}`)}>
-          <ExternalLink className="h-3 w-3" />View
+  const ReferralActions = ({ r }: { r: any }) => (
+    <div className="flex items-center gap-1 shrink-0">
+      {r.verified_by_admin ? (
+        <>
+          <Badge className="bg-green-600 text-[9px] h-5 px-1.5 gap-0.5 whitespace-nowrap">
+            <ShieldCheck className="h-2.5 w-2.5" />Verified
+          </Badge>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" className="h-5 text-[9px] px-1 text-amber-600 border-amber-300">Unverify</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-sm">Remove verification?</AlertDialogTitle>
+                <AlertDialogDescription className="text-xs">The editor will be able to edit this referral again and commission will be unearned.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => unverifyReferral(r.id)} className="h-9 text-xs bg-amber-600 hover:bg-amber-700">Remove</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : (
+        <Button size="sm" variant="outline" className="h-5 text-[9px] px-1 text-green-600 border-green-300 gap-0.5" onClick={() => verifyReferral(r)}>
+          <ShieldCheck className="h-2.5 w-2.5" />Verify
         </Button>
-        {!r.converted_student_id && (
-          <Button size="sm" variant="secondary" className="h-6 text-[10px]" onClick={() => convert(r)}>Convert</Button>
-        )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive">Reject</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-sm">Reject this referral?</AlertDialogTitle>
-              <AlertDialogDescription className="text-xs">This will mark the referral as 'Not Interested'.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => reject(r.id)} className="h-9 text-xs bg-destructive hover:bg-destructive/90">Reject</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      )}
+      <Button size="sm" variant="ghost" className="h-5 text-[9px] px-1" onClick={() => navigate(`/editor/referrals/${r.id}`)}>View</Button>
+      {!r.converted_student_id && (
+        <Button size="sm" variant="ghost" className="h-5 text-[9px] px-1" onClick={() => convert(r)}>Convert</Button>
+      )}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button size="sm" variant="ghost" className="h-5 text-[9px] px-1 text-destructive">Reject</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm">Reject this referral?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">This will mark the referral as 'Not Interested'.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-9 text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => reject(r.id)} className="h-9 text-xs bg-destructive hover:bg-destructive/90">Reject</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+
+  const ReferralTable = ({ data }: { data: any[] }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[11px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Name</th>
+            <th className="text-left p-2 font-medium text-[10px] hidden sm:table-cell whitespace-nowrap">Contact</th>
+            <th className="text-left p-2 font-medium text-[10px] hidden md:table-cell whitespace-nowrap">Services</th>
+            <th className="text-left p-2 font-medium text-[10px] hidden lg:table-cell whitespace-nowrap">Priority</th>
+            <th className="text-center p-2 font-medium text-[10px] whitespace-nowrap">Status</th>
+            <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="align-middle">
+          {data.map(r => (
+            <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
+              <td className="p-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-[11px] truncate max-w-[140px]">{r.full_name}</span>
+                  {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600 shrink-0" />}
+                </div>
+              </td>
+              <td className="p-2 hidden sm:table-cell">
+                <span className="text-[10px] text-muted-foreground">{r.phone || r.email || '—'}</span>
+              </td>
+              <td className="p-2 hidden md:table-cell">
+                <div className="flex flex-wrap gap-0.5">
+                  {(r.referral_services || []).slice(0, 2).map((s: any) => (
+                    <Badge key={s.id} variant="secondary" className="text-[8px] px-1 py-0 h-3.5">{serviceLabel(s.service_key)}</Badge>
+                  ))}
+                  {(r.referral_services || []).length > 2 && (
+                    <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5">+{r.referral_services.length - 2}</Badge>
+                  )}
+                </div>
+              </td>
+              <td className="p-2 hidden lg:table-cell">
+                {r.priority && (
+                  <Badge variant="outline" className={`text-[8px] capitalize px-1 py-0 ${priorityColor(r.priority)}`}>{r.priority}</Badge>
+                )}
+              </td>
+              <td className="p-2 text-center">
+                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${statusColor(r.current_status)}`}>
+                  {statusLabel(r.current_status)}
+                </Badge>
+              </td>
+              <td className="p-2">
+                <ReferralActions r={r} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 
@@ -264,8 +287,8 @@ export default function EditorProfile() {
                 <p className="text-sm text-muted-foreground">No referrals yet</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {referrals.map(r => <ReferralCard key={r.id} r={r} />)}
+              <div className="border rounded-lg overflow-hidden">
+                <ReferralTable data={referrals} />
               </div>
             )}
           </TabsContent>
@@ -277,8 +300,8 @@ export default function EditorProfile() {
                 <p className="text-sm text-muted-foreground">No qualified leads yet</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {qualified.map(r => <ReferralCard key={r.id} r={r} />)}
+              <div className="border rounded-lg overflow-hidden">
+                <ReferralTable data={qualified} />
               </div>
             )}
           </TabsContent>
@@ -290,29 +313,35 @@ export default function EditorProfile() {
                 <p className="text-sm text-muted-foreground">No students assigned</p>
               </div>
             ) : (
-              <div className="space-y-1.5">
-                {assigned.map(s => (
-                  <button
-                    key={s.user_id}
-                    type="button"
-                    onClick={() => navigate(`/admin/students/${s.user_id}`)}
-                    className="w-full flex items-center justify-between border rounded-lg p-3 hover:bg-muted/40 active:bg-muted/60 transition-colors text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{s.full_name || '—'}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {s.country_of_education && <span>{s.country_of_education}</span>}
-                        {s.assigned_at && (
-                          <>
-                            <span className="text-muted-foreground/40">·</span>
-                            <span>Assigned {new Date(s.assigned_at).toLocaleDateString()}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </button>
-                ))}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full border-collapse text-[11px]">
+                  <thead>
+                    <tr className="border-b text-muted-foreground bg-muted/30">
+                      <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Student</th>
+                      <th className="text-left p-2 font-medium text-[10px] hidden sm:table-cell whitespace-nowrap">Country</th>
+                      <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap">Assigned</th>
+                      <th className="text-left p-2 font-medium text-[10px] whitespace-nowrap"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="align-middle">
+                    {assigned.map(s => (
+                      <tr key={s.user_id} className="border-b hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate(`/admin/students/${s.user_id}`)}>
+                        <td className="p-2">
+                          <span className="font-medium text-[11px]">{s.full_name || '—'}</span>
+                        </td>
+                        <td className="p-2 hidden sm:table-cell">
+                          <span className="text-[10px] text-muted-foreground">{s.country_of_education || '—'}</span>
+                        </td>
+                        <td className="p-2">
+                          <span className="text-[10px] text-muted-foreground">{s.assigned_at ? new Date(s.assigned_at).toLocaleDateString() : '—'}</span>
+                        </td>
+                        <td className="p-2 text-right">
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground inline-block" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </TabsContent>

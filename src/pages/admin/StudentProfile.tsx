@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   ArrowLeft, 
   User, 
@@ -610,9 +611,29 @@ export default function StudentProfile() {
         <Card className="border shadow-sm">
           <CardContent className="p-4 sm:p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0 text-xs">
+              {/* Profile photo row spanning both columns */}
+              <div className="sm:col-span-2 flex items-center gap-3 py-2.5 px-2 rounded border-b mb-1">
+                <Avatar className="h-12 w-12 shrink-0 ring-2 ring-primary/10">
+                  <AvatarImage src={(() => {
+                    const photoDoc = (student.documents || []).find((d: any) => d.category === 'passport_photo');
+                    if (photoDoc?.upload_path) {
+                      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(photoDoc.upload_path);
+                      return publicUrl;
+                    }
+                    return undefined;
+                  })()} className="object-cover" />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+                    {(student.full_name || 'U').charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold truncate">{student.full_name || 'Unknown Student'}</p>
+                  <p className="text-[10px] text-muted-foreground">{email || `${student.user_id?.slice(0, 8)}…`}</p>
+                </div>
+              </div>
               <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
-                <span className="text-muted-foreground font-medium shrink-0 mr-2">Full Name</span>
-                <span className="font-semibold text-sm text-right">{student.full_name || 'Unknown Student'}</span>
+                <span className="text-muted-foreground font-medium shrink-0 mr-2">Joined</span>
+                <span className="font-medium text-right">{new Date(student.created_at).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between py-2.5 px-2 rounded hover:bg-muted/20 border-b">
                 <span className="text-muted-foreground font-medium shrink-0 mr-2">Email</span>
