@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => ({
       // replacing any stale SW from a previous build session
       selfDestroying: mode === 'development',
       manifest: {
-        name: 'publicgermany - Study in Germany Guide',
-        short_name: 'publicgermany',
+        name: 'Roshn - publicGermany',
+        short_name: 'publicGermany',
         description: 'Your complete guide to study in Germany. Navigate APS certification, university applications, and visa processes.',
         theme_color: '#1e3a5f',
         background_color: '#ffffff',
@@ -69,7 +69,10 @@ export default defineConfig(({ mode }) => ({
           /^\/__\//,
           /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|json|webmanifest)$/,
         ],
+        // Maximum cache storage safety limits
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
+          // ── Google Fonts (immutable, long TTL) ──
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -78,6 +81,69 @@ export default defineConfig(({ mode }) => ({
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          // ── Supabase API responses (NetworkFirst — fresh when online, cached when offline) ──
+          {
+            urlPattern: /^https:\/\/[a-z]+\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api-cache',
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              }
+            }
+          },
+          // ── Images & media (CacheFirst — never re-download unless cache expires) ──
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|gif|svg|ico|webp|avif)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          // ── PDF & document files (CacheFirst) ──
+          {
+            urlPattern: /\.(?:pdf|doc|docx|xlsx|csv)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'document-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          // ── Font files (CacheFirst) ──
+          {
+            urlPattern: /\.(?:woff2?|eot|ttf|otf)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          // ── App shell (StaleWhileRevalidate — instant from cache, update in bg) ──
+          // Only caches the actual index.html so it loads instantly on repeat visits.
+          // SPA route fallback is handled by navigateFallback above.
+          {
+            urlPattern: '/index.html',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'app-shell-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
               }
             }
           }

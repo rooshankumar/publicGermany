@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import {
@@ -81,20 +81,19 @@ export default function MyReferralsPanel() {
       </div>
 
       {adding && (
-        <Card>
-          <CardContent className="p-4">
+        <div className="border rounded-lg bg-card overflow-hidden">
+          <div className="p-4">
             <AddReferralForm
               onCreated={(id) => { setAdding(false); navigate(`/editor/referrals/${id}`); }}
               onCancel={() => setAdding(false)}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+      <div className="border rounded-lg bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
@@ -152,8 +151,7 @@ export default function MyReferralsPanel() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

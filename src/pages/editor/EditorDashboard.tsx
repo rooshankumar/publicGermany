@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';import { Button } from '@/components/ui/button';
 import { useEditorPermissions } from '@/hooks/useEditorPermissions';
 import { useMyReferrals, useMyTasks } from '@/hooks/useReferrals';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,18 +71,14 @@ interface CommissionEntry {
   verified_at: string;
 }
 
-const StatCard = ({ label, value, icon: Icon, valueClassName, iconClassName }: any) => (
-  <Card className="hover:shadow-md transition-shadow cursor-pointer shadow-none border-border/60">
-    <CardContent className="py-2 px-2.5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-[9px] font-medium ${valueClassName ? 'text-emerald-600' : 'text-muted-foreground'}`}>{label}</p>
-          <p className={`text-base font-bold ${valueClassName || ''}`}>{value}</p>
-        </div>
-        <Icon className={`h-3.5 w-3.5 ${iconClassName || 'text-primary'}`} />
-      </div>
-    </CardContent>
-  </Card>
+const StatCell = ({ label, value, icon: Icon, valueClassName }: any) => (
+  <div className="flex items-center gap-2 px-3 py-2">
+    <Icon className={`h-4 w-4 shrink-0 ${valueClassName || 'text-muted-foreground'}`} />
+    <div>
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">{label}</p>
+      <p className={`text-sm font-bold mt-px ${valueClassName || 'text-card-foreground'}`}>{value}</p>
+    </div>
+  </div>
 );
 
 const EditorDashboard = () => {
@@ -335,7 +329,7 @@ const EditorDashboard = () => {
     documents: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
     'language-exams': 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
     finance: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-    general: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300',
+    general: 'bg-muted text-card-foreground dark:bg-muted/300/15 dark:text-muted-foreground/40',
   };
 
   return (
@@ -376,96 +370,120 @@ const EditorDashboard = () => {
 
           {/* DASHBOARD */}
           <TabsContent value="dashboard" className="pt-2 space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-              <StatCard label="Assigned Students" value={stats.assigned} icon={Users} />
-              <StatCard label="My Referrals" value={stats.referrals} icon={UserPlus} />
-              <StatCard label="My Revenue (90%)" value={`₹${stats.totalEditorShare.toLocaleString()}`} icon={IndianRupee} valueClassName="text-emerald-600" iconClassName="text-emerald-500" />
-              <StatCard label="Pending Tasks" value={stats.pendingTasks} icon={ClipboardList} />
+            {/* Stats row - table-like */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+                <StatCell label="Assigned Students" value={stats.assigned} icon={Users} />
+                <StatCell label="My Referrals" value={stats.referrals} icon={UserPlus} />
+                <StatCell label="My Revenue (90%)" value={`₹${stats.totalEditorShare.toLocaleString()}`} icon={IndianRupee} valueClassName="text-emerald-600" />
+                <StatCell label="Pending Tasks" value={stats.pendingTasks} icon={ClipboardList} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {/* Recent Referrals */}
-              <Card className="shadow-none border-border/60">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Users className="h-3.5 w-3.5" /> Recent Referrals</div>
-                  {referrals.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-3 text-[11px]">No referrals yet</p>
-                  ) : referrals.slice(0, 5).map(r => (
-                    <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
-                      className="w-full flex items-center justify-between p-1.5 border rounded text-[11px] hover:bg-muted/40 text-left">
-                      <div className="min-w-0 flex-1 mr-2">
-                        <div className="flex items-center gap-1">
-                          <p className="font-medium text-[11px] truncate">{r.full_name}</p>
-                          {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-green-600 shrink-0" />}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground truncate">{r.phone || r.email || '—'}</p>
-                      </div>
-                      <Badge variant="outline" className={`text-[9px] shrink-0 ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</Badge>
-                    </button>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* My Revenue Summary */}
-              <Card className="shadow-none border-border/60">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600"><IndianRupee className="h-3.5 w-3.5 text-emerald-500" /> My Revenue</div>
-                  {loadingCommission ? (
-                    <p className="text-center text-muted-foreground py-3 text-[11px]">Loading...</p>
-                  ) : commissionEntries.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-3 text-[11px]">No revenue earned yet</p>
-                  ) : commissionEntries.slice(0, 5).map(e => (
-                    <div key={e.id} className="flex items-center justify-between p-1.5 border rounded text-[11px]">
-                      <div className="min-w-0 flex-1 mr-2">
-                        <p className="font-medium text-[11px] truncate">{e.full_name}</p>
-                        <p className="text-[9px] text-muted-foreground truncate">{e.total_fees} · {new Date(e.verified_at).toLocaleDateString()}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-semibold text-[11px] text-emerald-600">₹{e.editor_share.toLocaleString()}</p>
-                        <p className="text-[8px] text-emerald-600/70">My 90% share</p>
-                      </div>
+              {/* Recent Referrals - Table-like */}
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div className="px-3 py-2 border-b flex items-center gap-1.5 text-[11px] font-semibold text-card-foreground">
+                  <Users className="h-3.5 w-3.5" /> Recent Referrals
+                </div>
+                {referrals.length === 0 ? (
+                  <p className="text-center text-muted-foreground/70 py-6 text-[11px]">No referrals yet</p>
+                ) : (
+                  <>
+                    {/* Column headers */}
+                    <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr] gap-3 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20">
+                      <span>Name</span>
+                      <span>Contact</span>
+                      <span className="text-center">Status</span>
                     </div>
-                  ))}
-                  {commissionEntries.length > 0 && (
-                    <button onClick={() => setSearchParams({ tab: 'revenue' })}
-                      className="w-full text-center text-[10px] text-primary hover:underline pt-1">
-                      View all revenue details →
-                    </button>
-                  )}
-                </CardContent>
-              </Card>
+                    {referrals.slice(0, 5).map((r, idx) => (
+                      <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
+                        className={`w-full grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr] items-center gap-3 px-3 py-2 text-left text-[11px] hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                        <div className="flex items-center gap-1">
+                          <p className="font-medium text-card-foreground truncate">{r.full_name}</p>
+                          {r.verified_by_admin && <ShieldCheck className="h-3 w-3 text-emerald-600 shrink-0" />}
+                        </div>
+                        <p className="text-muted-foreground/70 truncate hidden sm:block">{r.phone || r.email || '—'}</p>
+                        <span className={`inline-flex items-center justify-self-center rounded-full px-2 py-0.5 text-[9px] font-medium ${statusColor(r.current_status)}`}>{statusLabel(r.current_status)}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* My Revenue Summary - Table-like */}
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div className="px-3 py-2 border-b flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+                  <IndianRupee className="h-3.5 w-3.5 text-emerald-500" /> My Revenue
+                </div>
+                {loadingCommission ? (
+                  <p className="text-center text-muted-foreground/70 py-6 text-[11px]">Loading...</p>
+                ) : commissionEntries.length === 0 ? (
+                  <p className="text-center text-muted-foreground/70 py-6 text-[11px]">No revenue earned yet</p>
+                ) : (
+                  <>
+                    {/* Column headers */}
+                    <div className="hidden sm:grid grid-cols-[1.5fr_1fr_1fr] gap-3 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20">
+                      <span>Lead</span>
+                      <span className="text-center">Total Fee</span>
+                      <span className="text-center text-emerald-600">My Share</span>
+                    </div>
+                    {commissionEntries.slice(0, 5).map((e, idx) => (
+                      <div key={e.id} className={`grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_1fr] items-center gap-3 px-3 py-2 text-[11px] ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                        <div className="min-w-0">
+                          <p className="font-medium text-card-foreground truncate">{e.full_name}</p>
+                          <p className="text-[9px] text-muted-foreground/70 truncate">{new Date(e.verified_at).toLocaleDateString()}</p>
+                        </div>
+                        <p className="text-card-foreground text-center hidden sm:block">₹{e.total_fees_numeric.toLocaleString()}</p>
+                        <div className="text-right sm:text-center shrink-0">
+                          <p className="font-semibold text-[11px] text-emerald-600">₹{e.editor_share.toLocaleString()}</p>
+                          <p className="text-[8px] text-emerald-600/70">90% share</p>
+                        </div>
+                      </div>
+                    ))}
+                    {commissionEntries.length > 0 && (
+                      <button onClick={() => setSearchParams({ tab: 'revenue' })}
+                        className="w-full text-center text-[10px] text-primary hover:underline py-2 border-t">
+                        View all revenue details →
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Quick Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
-                <CalendarClock className="h-3.5 w-3.5 text-primary shrink-0" />
-                <div>
-                  <p className="text-[9px] text-muted-foreground font-medium">Today's Follow-ups</p>
-                  <p className="text-sm font-bold">{stats.todaysFollowups}</p>
+            {/* Quick Stats Row - table-like */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <CalendarClock className="h-4 w-4 shrink-0 text-blue-500" />
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">Today's Follow-ups</p>
+                    <p className="text-sm font-bold text-card-foreground mt-px">{stats.todaysFollowups}</p>
+                  </div>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
-                <div>
-                  <p className="text-[9px] text-muted-foreground font-medium">Overdue</p>
-                  <p className="text-sm font-bold">{stats.overdue}</p>
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">Overdue</p>
+                    <p className="text-sm font-bold text-card-foreground mt-px">{stats.overdue}</p>
+                  </div>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
-                <Star className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                <div>
-                  <p className="text-[9px] text-muted-foreground font-medium">Qualified</p>
-                  <p className="text-sm font-bold">{stats.qualified}</p>
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <Star className="h-4 w-4 shrink-0 text-amber-500" />
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">Qualified</p>
+                    <p className="text-sm font-bold text-card-foreground mt-px">{stats.qualified}</p>
+                  </div>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5 flex items-center gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                <div>
-                  <p className="text-[9px] text-muted-foreground font-medium">Converted</p>
-                  <p className="text-sm font-bold">{stats.converted}</p>
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">Converted</p>
+                    <p className="text-sm font-bold text-card-foreground mt-px">{stats.converted}</p>
+                  </div>
                 </div>
-              </CardContent></Card>
+              </div>
             </div>
           </TabsContent>
 
@@ -474,156 +492,138 @@ const EditorDashboard = () => {
 
           {/* REVENUE */}
           <TabsContent value="revenue" className="pt-2 space-y-3">
-            {/* Revenue Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] font-medium text-emerald-600">My Revenue (90%)</p>
-                    <p className="text-base font-bold text-emerald-600">₹{stats.totalEditorShare.toLocaleString()}</p>
-                    <p className="text-[8px] text-muted-foreground">Admin gets ₹{stats.totalAdminCommission.toLocaleString()} (10%)</p>
-                  </div>
-                  <IndianRupee className="h-3.5 w-3.5 text-emerald-500" />
+            {/* Revenue Stats - table-like */}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+                <div className="px-3 py-2">
+                  <p className="text-[9px] font-medium text-emerald-600">My Revenue (90%)</p>
+                  <p className="text-base font-bold text-emerald-600">₹{stats.totalEditorShare.toLocaleString()}</p>
+                  <p className="text-[8px] text-muted-foreground/60">Admin gets ₹{stats.totalAdminCommission.toLocaleString()} (10%)</p>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] text-muted-foreground font-medium">Verified Leads</p>
-                    <p className="text-base font-bold">{stats.verifiedCount}</p>
-                  </div>
-                  <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+                <div className="px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/60 font-medium">Verified Leads</p>
+                  <p className="text-base font-bold text-card-foreground">{stats.verifiedCount}</p>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] text-muted-foreground font-medium">Pending Verification</p>
-                    <p className="text-base font-bold">{stats.pendingVerification}</p>
-                  </div>
-                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <div className="px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/60 font-medium">Pending Verification</p>
+                  <p className="text-base font-bold text-card-foreground">{stats.pendingVerification}</p>
                 </div>
-              </CardContent></Card>
-              <Card className="shadow-none border-border/60"><CardContent className="py-2 px-2.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] text-muted-foreground font-medium">Avg. Share per Lead</p>
-                    <p className="text-base font-bold">
-                      {stats.verifiedCount > 0 ? `₹${Math.round(stats.totalEditorShare / stats.verifiedCount).toLocaleString()}` : '—'}
-                    </p>
-                  </div>
-                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                <div className="px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/60 font-medium">Avg. Share per Lead</p>
+                  <p className="text-base font-bold text-card-foreground">
+                    {stats.verifiedCount > 0 ? `₹${Math.round(stats.totalEditorShare / stats.verifiedCount).toLocaleString()}` : '—'}
+                  </p>
                 </div>
-              </CardContent></Card>
+              </div>
             </div>
 
             {/* Commission Breakdown */}
-            <Card className="shadow-none border-border/60">
-              <CardContent className="p-0">
-                <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-                  <p className="text-[11px] font-semibold text-emerald-600">Revenue Breakdown</p>
-                  {commissionEntries.length > 0 && (
-                    <p className="text-[10px] text-muted-foreground">{commissionEntries.length} verified leads</p>
-                  )}
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <div className="px-3 py-2 border-b flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-emerald-600">Revenue Breakdown</p>
+                {commissionEntries.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground/70">{commissionEntries.length} verified leads</p>
+                )}
+              </div>
+              {loadingCommission ? (
+                <p className="text-center py-6 text-[11px] text-muted-foreground/70">Loading revenue data...</p>
+              ) : commissionEntries.length === 0 ? (
+                <div className="p-6 text-center space-y-1">
+                  <CreditCard className="h-6 w-6 mx-auto text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground">No revenue earned yet</p>
+                  <p className="text-[10px] text-muted-foreground/70/60">Leads must be verified by admin to receive your share</p>
                 </div>
-                {loadingCommission ? (
-                  <p className="text-center py-6 text-[11px] text-muted-foreground">Loading revenue data...</p>
-                ) : commissionEntries.length === 0 ? (
-                  <div className="p-6 text-center space-y-1">
-                    <CreditCard className="h-6 w-6 mx-auto text-muted-foreground/50" />
-                    <p className="text-xs text-muted-foreground">No revenue earned yet</p>
-                    <p className="text-[10px] text-muted-foreground/60">Leads must be verified by admin to receive your share</p>
-                  </div>
-                ) : (
-                  <div className="hidden md:grid grid-cols-5 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">
-                    <span className="col-span-2">Lead</span>
-                    <span className="text-center">Total Fee</span>
-                    <span className="text-center">Admin (10%)</span>
-                    <span className="text-center text-emerald-600">My Share (90%)</span>
-                  </div>
-                )}
-                {!loadingCommission && commissionEntries.length > 0 && (
-                  commissionEntries.map(e => (
-                    <div key={e.id} className="grid grid-cols-2 md:grid-cols-5 items-center gap-2 px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <div className="col-span-2 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-[12px] font-medium truncate">{e.full_name}</p>
-                          <Badge className="text-[8px] py-0 h-4 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Verified</Badge>
-                        </div>
-                        <p className="text-[9px] text-muted-foreground">{new Date(e.verified_at).toLocaleDateString()}</p>
+              ) : (
+                <div className="hidden md:grid grid-cols-5 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                  <span className="col-span-2">Lead</span>
+                  <span className="text-center">Total Fee</span>
+                  <span className="text-center">Admin (10%)</span>
+                  <span className="text-center text-emerald-600">My Share (90%)</span>
+                </div>
+              )}
+              {!loadingCommission && commissionEntries.length > 0 && (
+                commissionEntries.map(e => (
+                  <div key={e.id} className="grid grid-cols-2 md:grid-cols-5 items-center gap-2 px-3 py-2 border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <div className="col-span-2 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[12px] font-medium text-card-foreground truncate">{e.full_name}</p>
+                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[8px] font-medium bg-emerald-50 text-emerald-700">Verified</span>
                       </div>
-                      <p className="text-[11px] font-medium text-center">₹{e.total_fees_numeric.toLocaleString()}</p>
-                      <p className="text-[11px] text-muted-foreground text-center">₹{e.admin_commission.toLocaleString()}</p>
-                      <p className="text-[12px] font-bold text-emerald-600 text-center">₹{e.editor_share.toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground/70">{new Date(e.verified_at).toLocaleDateString()}</p>
                     </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                    <p className="text-[11px] font-medium text-card-foreground text-center">₹{e.total_fees_numeric.toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground/70 text-center">₹{e.admin_commission.toLocaleString()}</p>
+                    <p className="text-[12px] font-bold text-emerald-600 text-center">₹{e.editor_share.toLocaleString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
 
             {/* Pending Verification */}
             {referrals.filter(r => !r.verified_by_admin && r.total_fees).length > 0 && (
-              <Card className="shadow-none border-border/60">
-                <CardContent className="p-0">
-                  <div className="px-3 py-2 border-b border-border flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-amber-500" />
-                    <p className="text-[11px] font-semibold text-emerald-600">Pending Verification</p>
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
-                      {referrals.filter(r => !r.verified_by_admin && r.total_fees).length}
-                    </Badge>
-                  </div>
-                  <div className="hidden md:grid grid-cols-4 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">
-                    <span className="col-span-2">Lead</span>
-                    <span className="text-center">Total Fee</span>
-                    <span className="text-center text-emerald-600">My Share (90%)</span>
-                  </div>
-                  {referrals.filter(r => !r.verified_by_admin && r.total_fees).slice(0, 10).map(r => {
-                    const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
-                    const potentialEditorShare = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.9);
-                    return (
-                      <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
-                        className="w-full grid grid-cols-2 md:grid-cols-4 items-center gap-2 px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30 transition-colors text-left">
-                        <div className="col-span-2 min-w-0">
-                          <p className="text-[12px] font-medium truncate">{r.full_name}</p>
-                          <p className="text-[10px] text-muted-foreground">{r.total_fees}</p>
-                        </div>
-                        <p className="text-[11px] font-medium text-center">₹{numericFee.toLocaleString()}</p>
-                        <div className="text-right md:text-center shrink-0">
-                          <p className="text-[11px] font-medium text-emerald-600">₹{potentialEditorShare.toLocaleString()}</p>
-                          <p className="text-[8px] text-emerald-600/70">Your 90% share</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div className="px-3 py-2 border-b flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                  <p className="text-[11px] font-semibold text-emerald-600">Pending Verification</p>
+                  <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                    {referrals.filter(r => !r.verified_by_admin && r.total_fees).length}
+                  </span>
+                </div>
+                <div className="hidden md:grid grid-cols-4 gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                  <span className="col-span-2">Lead</span>
+                  <span className="text-center">Total Fee</span>
+                  <span className="text-center text-emerald-600">My Share (90%)</span>
+                </div>
+                {referrals.filter(r => !r.verified_by_admin && r.total_fees).slice(0, 10).map(r => {
+                  const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+                  const potentialEditorShare = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.9);
+                  return (
+                    <button key={r.id} onClick={() => navigate(`/editor/referrals/${r.id}`)}
+                      className="w-full grid grid-cols-2 md:grid-cols-4 items-center gap-2 px-3 py-2 border-b last:border-0 hover:bg-muted/30 transition-colors text-left">
+                      <div className="col-span-2 min-w-0">
+                        <p className="text-[12px] font-medium text-card-foreground truncate">{r.full_name}</p>
+                        <p className="text-[10px] text-muted-foreground/70">{r.total_fees}</p>
+                      </div>
+                      <p className="text-[11px] font-medium text-card-foreground text-center">₹{numericFee.toLocaleString()}</p>
+                      <div className="text-right md:text-center shrink-0">
+                        <p className="text-[11px] font-medium text-emerald-600">₹{potentialEditorShare.toLocaleString()}</p>
+                        <p className="text-[8px] text-emerald-600/70">Your 90% share</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
 
-          {/* STUDENTS */}
+          {/* STUDENTS - Table-like */}
           <TabsContent value="students" className="pt-2">
             {loadingStudents ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">Loading...</div>
+              <div className="text-center py-8 text-xs text-muted-foreground/70">Loading...</div>
             ) : students.length === 0 ? (
-              <Card className="shadow-none border-border/60"><CardContent className="py-6 text-center space-y-1">
-                <Users className="h-6 w-6 mx-auto text-muted-foreground/50" />
+              <div className="border rounded-lg bg-card py-6 text-center space-y-1">
+                <Users className="h-6 w-6 mx-auto text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">No students assigned yet</p>
-              </CardContent></Card>
+              </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
-                {students.map(s => {
+              <div className="border rounded-lg bg-card overflow-hidden">
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_1fr_40px] gap-3 px-3 py-2 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20 border-b">
+                  <span>Student Name</span>
+                  <span>Country</span>
+                  <span />
+                </div>
+                {students.map((s, idx) => {
                   const init = (s.full_name || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
                   return (
                     <button key={s.user_id} onClick={() => navigate(`/editor/students/${s.user_id}`)}
-                      className="group text-left rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-all p-2.5">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/10 text-primary text-[10px]">{init}</AvatarFallback></Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold truncate leading-tight">{s.full_name || 'Unnamed'}</p>
-                          <p className="text-[9px] text-muted-foreground truncate">{s.country_of_education || '—'}</p>
-                        </div>
-                        <ArrowUpRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                      className={`w-full grid grid-cols-[1fr_1fr_40px] gap-3 items-center px-3 py-2.5 text-left text-[11px] hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-6 w-6 shrink-0"><AvatarFallback className="bg-primary/10 text-primary text-[9px]">{init}</AvatarFallback></Avatar>
+                        <span className="font-medium text-card-foreground truncate">{s.full_name || 'Unnamed'}</span>
                       </div>
+                      <span className="text-muted-foreground/70 truncate">{s.country_of_education || '—'}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0 justify-self-end" />
                     </button>
                   );
                 })}
@@ -634,92 +634,101 @@ const EditorDashboard = () => {
           {/* TASKS */}
           <TabsContent value="tasks" className="pt-2"><TasksInbox /></TabsContent>
 
-          {/* BLOG */}
+          {/* BLOG - Table-like */}
           <TabsContent value="blog" className="pt-2">
             {loadingBlogs ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">Loading articles...</div>
+              <div className="text-center py-8 text-xs text-muted-foreground/70">Loading articles...</div>
             ) : blogs.length === 0 ? (
-              <Card className="shadow-none border-border/60"><CardContent className="py-6 text-center space-y-1">
-                <BookMarked className="h-6 w-6 mx-auto text-muted-foreground/50" />
+              <div className="border rounded-lg bg-card py-6 text-center space-y-1">
+                <BookMarked className="h-6 w-6 mx-auto text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">No published articles yet</p>
-              </CardContent></Card>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {blogs.map(blog => (
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div className="hidden sm:grid grid-cols-[1fr_80px_80px] gap-3 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20 border-b">
+                  <span>Article</span>
+                  <span className="text-center">Category</span>
+                  <span className="text-center">Date</span>
+                </div>
+                {blogs.map((blog, idx) => (
                   <a key={blog.id} href={`/blog/${blog.slug}`} target="_blank" rel="noopener noreferrer"
-                    className="block rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3">
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <Badge variant="outline" className={`text-[8px] px-1.5 py-0 h-4 font-normal ${categoryColors[blog.category] || categoryColors.general}`}>
-                        {blog.category.replace('-', ' ')}
-                      </Badge>
-                      {blog.read_time_minutes && (
-                        <span className="text-[9px] text-muted-foreground shrink-0">{blog.read_time_minutes} min</span>
+                    className={`grid grid-cols-1 sm:grid-cols-[1fr_80px_80px] items-center gap-3 px-3 py-2 text-[11px] hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[8px] font-medium ${categoryColors[blog.category] || categoryColors.general}`}>
+                          {blog.category.replace('-', ' ')}
+                        </span>
+                        {blog.read_time_minutes && (
+                          <span className="text-[8px] text-muted-foreground/60 shrink-0">{blog.read_time_minutes} min</span>
+                        )}
+                      </div>
+                      <h3 className="font-medium text-card-foreground truncate">{blog.title}</h3>
+                      {blog.excerpt && (
+                        <p className="text-[9px] text-muted-foreground/70 truncate mt-px">{blog.excerpt}</p>
                       )}
                     </div>
-                    <h3 className="text-[12px] font-semibold leading-snug line-clamp-2 mb-1">{blog.title}</h3>
-                    {blog.excerpt && (
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">{blog.excerpt}</p>
-                    )}
-                    <p className="text-[9px] text-muted-foreground mt-2">
+                    <p className="text-[9px] text-muted-foreground/70 text-center hidden sm:block capitalize">{blog.category.replace('-', ' ')}</p>
+                    <p className="text-[9px] text-muted-foreground/70 text-center hidden sm:block">
                       {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : ''}
                     </p>
                   </a>
                 ))}
-              </div>
-            )}
-            {blogs.length > 0 && (
-              <div className="text-center pt-2">
-                <a href="/blog" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">
-                  View all articles →
-                </a>
+                <div className="text-center py-2 border-t">
+                  <a href="/blog" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">View all articles →</a>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          {/* RESOURCES */}
+          {/* RESOURCES - Table-like */}
           <TabsContent value="resources" className="pt-2">
             {loadingResources ? (
-              <div className="text-center py-8 text-xs text-muted-foreground">Loading resources...</div>
+              <div className="text-center py-8 text-xs text-muted-foreground/70">Loading resources...</div>
             ) : resources.length === 0 ? (
-              <Card className="shadow-none border-border/60"><CardContent className="py-6 text-center space-y-1">
-                <BookOpen className="h-6 w-6 mx-auto text-muted-foreground/50" />
+              <div className="border rounded-lg bg-card py-6 text-center space-y-1">
+                <BookOpen className="h-6 w-6 mx-auto text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">No resources available</p>
-              </CardContent></Card>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {resources.map(r => (
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div className="hidden sm:grid grid-cols-[1fr_70px_70px] gap-3 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20 border-b">
+                  <span>Resource</span>
+                  <span className="text-center">Category</span>
+                  <span className="text-center">Type</span>
+                </div>
+                {resources.map((r, idx) => (
                   <a key={r.id} href={r.view_url || r.external_url || '#'} target="_blank" rel="noopener noreferrer"
-                    className="block rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
+                    className={`grid grid-cols-1 sm:grid-cols-[1fr_70px_70px] items-center gap-3 px-3 py-2 text-[11px] hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <FileText className="h-3 w-3" />
                       </div>
-                      <Badge variant="secondary" className="text-[8px] px-1.5 py-0 h-4">{r.category}</Badge>
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-card-foreground truncate">{r.title}</h3>
+                        {r.description && (
+                          <p className="text-[9px] text-muted-foreground/70 truncate mt-px">{r.description}</p>
+                        )}
+                      </div>
                     </div>
-                    <h3 className="text-[12px] font-semibold leading-snug truncate mb-0.5">{r.title}</h3>
-                    {r.description && (
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">{r.description}</p>
-                    )}
-                    <p className="text-[9px] text-muted-foreground mt-1.5 capitalize">{r.type}</p>
+                    <p className="text-[9px] text-muted-foreground/70 text-center hidden sm:block capitalize">{r.category}</p>
+                    <p className="text-[9px] text-muted-foreground/70 text-center hidden sm:block capitalize">{r.type}</p>
                   </a>
                 ))}
+                <div className="text-center py-2 border-t">
+                  <a href="/resources" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">Browse all resources →</a>
+                </div>
               </div>
             )}
-            <div className="text-center pt-2">
-              <a href="/resources" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-medium">
-                Browse all resources →
-              </a>
-            </div>
           </TabsContent>
 
-          {/* GERMAN COURSE */}
+          {/* GERMAN COURSE - Table-like */}
           <TabsContent value="german" className="pt-2 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Button
                 size="sm"
                 variant={showUploadForm ? "ghost" : "default"}
                 onClick={() => { if (showUploadForm) resetVideoForm(); else setShowUploadForm(true); }}
-                className="h-7 text-[10px] font-bold px-2"
+                className="h-7 text-[10px] font-bold px-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {showUploadForm ? <X className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
                 {showUploadForm ? 'Close' : 'Add Lecture'}
@@ -735,24 +744,24 @@ const EditorDashboard = () => {
             </div>
 
             {showUploadForm && (
-              <Card className="border shadow-none bg-muted/30">
-                <CardContent className="p-2">
+              <div className="border rounded-lg bg-muted/30">
+                <div className="p-2">
                   <form onSubmit={handleSaveVideo} className="flex flex-wrap items-end gap-2">
                     <div className="flex-1 min-w-[120px] space-y-1">
                       <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Title</label>
                       <input value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} required
-                        className="w-full h-7 text-[11px] px-2 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-7 text-[11px] px-2 rounded-md border border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Lecture title" />
                     </div>
                     <div className="w-12 space-y-1">
                       <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Ord</label>
                       <input type="number" value={videoOrderIndex} onChange={(e) => setVideoOrderIndex(parseInt(e.target.value))}
-                        className="w-full h-7 text-[11px] px-1 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="w-full h-7 text-[11px] px-1 rounded-md border border bg-card focus:outline-none focus:ring-1 focus:ring-primary" />
                     </div>
                     <div className="w-16 space-y-1">
                       <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Level</label>
                       <select value={videoLevel} onChange={(e) => setVideoLevel(e.target.value)}
-                        className="w-full h-7 px-1 rounded-md border border-input bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
+                        className="w-full h-7 px-1 rounded-md border border bg-card text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
                         <option value="A1">A1</option>
                         <option value="A2">A2</option>
                         <option value="B1">B1</option>
@@ -761,7 +770,7 @@ const EditorDashboard = () => {
                     <div className="w-20 space-y-1">
                       <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">Type</label>
                       <select value={videoType} onChange={(e) => setVideoType(e.target.value as any)}
-                        className="w-full h-7 px-1 rounded-md border border-input bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
+                        className="w-full h-7 px-1 rounded-md border border bg-card text-[11px] focus:outline-none focus:ring-1 focus:ring-primary">
                         <option value="youtube">YouTube</option>
                         <option value="direct">Direct</option>
                       </select>
@@ -769,76 +778,77 @@ const EditorDashboard = () => {
                     <div className="flex-[2] min-w-[150px] space-y-1">
                       <label className="text-[9px] uppercase font-bold text-muted-foreground ml-1">URL</label>
                       <input placeholder="Video Link" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} required
-                        className="w-full h-7 text-[11px] px-2 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary" />
+                        className="w-full h-7 text-[11px] px-2 rounded-md border border bg-card focus:outline-none focus:ring-1 focus:ring-primary" />
                     </div>
                     <div className="flex gap-1">
                       <Button type="button" variant="ghost" size="sm" onClick={resetVideoForm} className="h-7 text-[10px] px-2">X</Button>
-                      <Button type="submit" size="sm" disabled={isSubmittingVideo} className="h-7 text-[10px] px-3">
+                      <Button type="submit" size="sm" disabled={isSubmittingVideo} className="h-7 text-[10px] px-3 bg-primary text-primary-foreground hover:bg-primary/90">
                         {isSubmittingVideo ? <Loader2 className="h-3 w-3 animate-spin" /> : (editingVideo ? 'Update' : 'Save')}
                       </Button>
                     </div>
                   </form>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {loadingVideos ? (
               <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : videos.length === 0 ? (
-              <Card className="shadow-none border-border/60"><CardContent className="py-6 text-center space-y-1">
-                <Youtube className="h-6 w-6 mx-auto text-muted-foreground/50" />
+              <div className="border rounded-lg bg-card py-6 text-center space-y-1">
+                <Youtube className="h-6 w-6 mx-auto text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">No course videos available</p>
-                <p className="text-[10px] text-muted-foreground/60">Click "Add Lecture" to add your first video.</p>
-              </CardContent></Card>
+                <p className="text-[10px] text-muted-foreground/70/60">Click "Add Lecture" to add your first video.</p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {['A1', 'A2', 'B1'].map(lvl => {
                   const lvlVideos = videos.filter(v => v.level === lvl);
                   if (lvlVideos.length === 0) return null;
                   return (
-                    <div key={lvl}>
-                      <div className="flex items-center gap-2 px-1 mb-1">
-                        <div className="h-px flex-1 bg-border/50" />
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{lvl}</span>
-                        <span className="text-[8px] text-muted-foreground">({lvlVideos.length})</span>
-                        <div className="h-px flex-1 bg-border/50" />
+                    <div key={lvl} className="border rounded-lg bg-card overflow-hidden">
+                      {/* Level header */}
+                      <div className="px-3 py-1.5 border-b bg-muted/20 flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{lvl}</span>
+                        <span className="text-[8px] text-muted-foreground/70">({lvlVideos.length} lectures)</span>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        {lvlVideos.map(v => (
-                          <Card key={v.id} className="p-1.5 border shadow-none hover:border-primary/30 transition-colors">
-                            <div className="flex items-center gap-2">
-                              <div className="w-14 aspect-video bg-black/10 rounded overflow-hidden shrink-0 relative group">
-                                {v.youtube_url && v.video_id ? (
-                                  <img src={`https://img.youtube.com/vi/${v.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" alt="" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center"><Play className="h-3.5 w-3.5 text-muted-foreground" /></div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity rounded">
-                                  <a href={v.youtube_url || v.video_url || '#'} target="_blank" rel="noopener noreferrer"
-                                    className="h-6 w-6 flex items-center justify-center">
-                                    <Play className="h-3 w-3 text-white fill-white" />
-                                  </a>
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[9px] font-mono font-bold bg-muted px-1 rounded text-muted-foreground">#{v.order_index}</span>
-                                  <p className="text-[10px] font-bold truncate leading-tight">{v.title}</p>
-                                </div>
-                                <p className="text-[8px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</p>
-                              </div>
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEditVideo(v)}>
-                                  <Edit2 className="h-3 w-3 text-muted-foreground" />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive" onClick={() => handleDeleteVideo(v.id)}>
-                                  <Trash2 className="h-3 w-3 text-muted-foreground" />
-                                </Button>
+                      {/* Column headers */}
+                      <div className="hidden sm:grid grid-cols-[32px_1fr_80px_60px] gap-2 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                        <span>#</span>
+                        <span>Title</span>
+                        <span className="text-center">Date</span>
+                        <span className="text-center">Actions</span>
+                      </div>
+                      {lvlVideos.map((v, idx) => (
+                        <div key={v.id} className={`grid grid-cols-[32px_1fr_60px] sm:grid-cols-[32px_1fr_80px_60px] items-center gap-2 px-3 py-2 text-[11px] hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? 'bg-muted/10' : ''}`}>
+                          <div className="flex items-center">
+                            <div className="w-7 aspect-video bg-black/10 rounded overflow-hidden shrink-0 relative group">
+                              {v.youtube_url && v.video_id ? (
+                                <img src={`https://img.youtube.com/vi/${v.video_id}/default.jpg`} className="w-full h-full object-cover opacity-80" alt="" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"><Play className="h-2.5 w-2.5 text-muted-foreground/70" /></div>
+                              )}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity rounded">
+                                <a href={v.youtube_url || v.video_url || '#'} target="_blank" rel="noopener noreferrer" className="h-4 w-4 flex items-center justify-center">
+                                  <Play className="h-2 w-2 text-white fill-white" />
+                                </a>
                               </div>
                             </div>
-                          </Card>
-                        ))}
-                      </div>
+                          </div>
+                          <div className="min-w-0 flex items-center gap-1.5">
+                            <span className="text-[8px] font-mono font-bold text-muted-foreground/70">#{v.order_index}</span>
+                            <p className="text-card-foreground font-medium truncate">{v.title}</p>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground/70 text-center hidden sm:block">{new Date(v.created_at).toLocaleDateString()}</p>
+                          <div className="flex items-center justify-center gap-0.5">
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEditVideo(v)}>
+                              <Edit2 className="h-3 w-3 text-muted-foreground/70" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-primary" onClick={() => handleDeleteVideo(v.id)}>
+                              <Trash2 className="h-3 w-3 text-muted-foreground/70" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
@@ -846,34 +856,37 @@ const EditorDashboard = () => {
             )}
           </TabsContent>
 
-          {/* TOOLS */}
+          {/* TOOLS - Table-like */}
           <TabsContent value="tools" className="pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="border rounded-lg bg-card overflow-hidden">
+              <div className="hidden sm:grid grid-cols-[1fr_1fr] gap-3 px-3 py-1.5 text-[8px] uppercase tracking-wider text-muted-foreground/70 font-semibold bg-muted/20 border-b">
+                <span>Tool</span>
+                <span>Description</span>
+              </div>
               <button onClick={() => navigate('/europass-cv')}
-                className="rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:shadow-sm transition-all p-4 text-left">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <FileText className="h-4 w-4" />
+                className={`w-full grid grid-cols-1 sm:grid-cols-[1fr_1fr] items-center gap-3 px-3 py-2 text-left text-[11px] hover:bg-muted/30 transition-colors bg-muted/10`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <FileText className="h-3.5 w-3.5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold">Europass CV Generator</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Create Europass-format CVs for student applications</p>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="font-medium text-card-foreground">Europass CV Generator</p>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] text-muted-foreground/70">Create Europass-format CVs for student applications</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                 </div>
               </button>
-
               <button onClick={() => navigate('/converter')}
-                className="rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:shadow-sm transition-all p-4 text-left">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <GraduationCap className="h-4 w-4" />
+                className={`w-full grid grid-cols-1 sm:grid-cols-[1fr_1fr] items-center gap-3 px-3 py-2 text-left text-[11px] hover:bg-muted/30 transition-colors`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <GraduationCap className="h-3.5 w-3.5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold">Grade Converter</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Convert academic grades to German grading system</p>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="font-medium text-card-foreground">Grade Converter</p>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] text-muted-foreground/70">Convert academic grades to German grading system</p>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                 </div>
               </button>
             </div>

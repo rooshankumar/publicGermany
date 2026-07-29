@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-  DialogFooter, DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import InlineLoader from '@/components/InlineLoader';
 import {
   Plus, Loader2, Trash2, UserPlus, UserMinus, Check, ChevronDown, ChevronUp,
+  Users, ShieldCheck, UserCheck, Mail, Calendar, ArrowRight,
 } from 'lucide-react';
 
 interface EditorProfile {
@@ -182,7 +183,7 @@ export default function Editors() {
 
   return (
     <Layout>
-      <div className="px-4 py-5 max-w-2xl mx-auto">
+      <div className="px-4 py-5 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -201,25 +202,35 @@ export default function Editors() {
         {loading ? (
           <InlineLoader />
         ) : editors.length === 0 ? (
-          <div className="text-center py-12 border border-dashed rounded-lg">
+          <div className="text-center py-12 border border-dashed rounded-lg bg-card">
+            <Users className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">No editors yet.</p>
             <p className="text-xs text-muted-foreground/60 mt-1">Add your first editor to get started.</p>
           </div>
         ) : (
-          /* Editor list */
-          <div className="space-y-2">
+          /* Editor table */
+          <div className="border rounded-lg overflow-hidden bg-card">
+            {/* Column headers */}
+            <div className="grid grid-cols-[1fr_1.2fr_0.8fr_0.9fr_32px] gap-3 px-4 py-2.5 bg-muted/30 border-b text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+              <div>Editor</div>
+              <div>Assigned Students</div>
+              <div>Verified Referrals</div>
+              <div>Actions</div>
+              <div />
+            </div>
+
             {editors.map(editor => {
               const perms = editorPerms(editor.user_id);
               const verifiedCount = verifiedCounts[editor.user_id] || 0;
               const isExpanded = expandedEditor === editor.user_id;
 
               return (
-                <div key={editor.user_id} className="border rounded-lg overflow-hidden">
+                <div key={editor.user_id} className="border-b last:border-b-0">
                   {/* Editor header row */}
                   <button
                     type="button"
                     onClick={() => setExpandedEditor(isExpanded ? null : editor.user_id)}
-                    className="w-full flex items-center justify-between px-3.5 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors text-left"
+                    className="grid grid-cols-[1fr_1.2fr_0.8fr_0.9fr_32px] gap-3 w-full items-center px-4 py-3 hover:bg-muted/30 transition-colors text-left"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Avatar className="h-8 w-8 shrink-0">
@@ -228,46 +239,46 @@ export default function Editors() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{editor.full_name || 'Editor'}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {perms.length} student{perms.length !== 1 ? 's' : ''}
-                          {verifiedCount > 0 && (
-                            <span className="text-green-600 font-medium ml-1.5">
-                              · {verifiedCount} verified
-                            </span>
-                          )}
-                        </p>
+                        <p className="text-sm font-medium text-card-foreground truncate">{editor.full_name || 'Editor'}</p>
+                        <p className="text-[11px] text-muted-foreground/70">Editor</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs"
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-card-foreground">{perms.length}</span>
+                      <span className="text-xs text-muted-foreground/70">student{perms.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-sm font-medium text-card-foreground">{verifiedCount}</span>
+                      <span className="text-xs text-muted-foreground/70">verified</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
                         onClick={e => { e.stopPropagation(); window.location.assign(`/admin/editors/${editor.user_id}`); }}
+                        className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/30 transition-colors"
                       >
-                        Profile
-                      </Button>
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      )}
+                        Profile <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="flex justify-center">
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
 
                   {/* Expanded content */}
                   {isExpanded && (
-                    <div className="border-t bg-muted/10">
+                    <div className="border-t bg-muted/20 px-4 py-3">
                       {/* Students list */}
-                      <div className="px-3.5 py-2.5">
+                      <div className="mb-3">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5" />
                             Assigned Students
                           </span>
                           <Button
                             size="sm"
-                            variant="secondary"
+                            variant="outline"
                             className="h-7 text-xs gap-1"
                             onClick={() => { setAssignEditorId(editor.user_id); setAssignStudentId(''); }}
                           >
@@ -277,40 +288,40 @@ export default function Editors() {
                         </div>
 
                         {perms.length === 0 ? (
-                          <p className="text-xs text-muted-foreground/60 text-center py-3">
+                          <p className="text-xs text-muted-foreground text-center py-3 bg-card rounded-md border border-dashed">
                             No students assigned yet
                           </p>
                         ) : (
-                          <div className="space-y-1.5">
+                          <div className="space-y-2">
                             {perms.map(perm => (
-                              <div key={perm.id} className="border rounded-md px-3 py-2 bg-background">
-                                {/* Student name + remove */}
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-medium truncate">
+                              <div key={perm.id} className="border rounded-md bg-card overflow-hidden">
+                                {/* Table header for this student's permissions */}
+                                <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 border-b">
+                                  <span className="text-sm font-medium text-card-foreground truncate">
                                     {getStudentName(perm.student_user_id)}
                                   </span>
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-primary shrink-0"
                                     onClick={() => removeAssignment(perm.id)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                                 {/* Permission toggles */}
-                                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                                <div className="grid grid-cols-5 gap-0 px-3 py-2">
                                   {PERMISSION_FIELDS.map(field => (
                                     <label
                                       key={field}
-                                      className="flex items-center gap-1.5 cursor-pointer py-0.5"
+                                      className="flex items-center gap-1.5 cursor-pointer py-1"
                                     >
                                       <Switch
                                         checked={(perm as any)[field]}
                                         onCheckedChange={() => togglePermission(perm, field)}
                                         className="data-[state=checked]:bg-primary"
                                       />
-                                      <span className="text-xs text-muted-foreground select-none">
+                                      <span className="text-xs text-muted-foreground select-none whitespace-nowrap">
                                         {PERMISSION_LABELS[field]}
                                       </span>
                                     </label>
@@ -323,10 +334,10 @@ export default function Editors() {
                       </div>
 
                       {/* Remove editor */}
-                      <div className="px-3.5 py-2 border-t flex justify-end">
+                      <div className="flex justify-end pt-1">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive gap-1">
+                            <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive gap-1 hover:bg-destructive/10">
                               <UserMinus className="h-3.5 w-3.5" />
                               Remove Editor
                             </Button>

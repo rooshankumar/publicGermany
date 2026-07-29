@@ -228,54 +228,73 @@ export default function EditorProfile() {
         <button
           type="button"
           onClick={() => navigate('/admin/editors')}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Editors
         </button>
 
-        {/* Editor profile header */}
-        <div className="flex items-center gap-3 pb-2">
-          <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold truncate">{editor.full_name || 'Editor'}</h1>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{email}</span>}
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Joined {new Date(editor.created_at).toLocaleDateString()}</span>
-              <Badge variant="outline" className="text-[9px] capitalize">{editor.role}</Badge>
+        {/* Editor profile header - table-like */}
+        <div className="border rounded-lg overflow-hidden bg-card">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base font-semibold text-card-foreground truncate">{editor.full_name || 'Editor'}</h1>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                {email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{email}</span>}
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Joined {new Date(editor.created_at).toLocaleDateString()}</span>
+                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">{editor.role}</span>
+              </div>
+            </div>
+          </div>
+          {/* Detail fields */}
+          <div className="border-t">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-4 py-2 odd:bg-muted/30">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Full Name</div>
+              <div className="text-sm text-card-foreground">{editor.full_name || '—'}</div>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-4 py-2 odd:bg-muted/30">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Email</div>
+              <div className="text-sm text-card-foreground">{email || '—'}</div>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-4 py-2 odd:bg-muted/30">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Role</div>
+              <div className="text-sm text-card-foreground capitalize">{editor.role}</div>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4 px-4 py-2 odd:bg-muted/30">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Joined</div>
+              <div className="text-sm text-card-foreground">{new Date(editor.created_at).toLocaleDateString()}</div>
             </div>
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {/* Stats grid - clean table-like stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Assigned Students', value: stats.assigned, icon: Users },
             { label: 'Manual Referrals', value: stats.referrals, icon: UserPlus },
             { label: 'Qualified Leads', value: stats.qualified, icon: Star },
             { label: 'Converted', value: stats.converted, icon: CheckCircle2 },
           ].map(s => (
-            <div key={s.label} className="border rounded-lg p-3 flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <s.icon className="h-4 w-4" />
+            <div key={s.label} className="border rounded-lg p-3 bg-card">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary mb-2">
+                <s.icon className="h-3.5 w-3.5" />
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{s.label}</p>
-                <p className="text-lg font-bold tabular-nums">{s.value}</p>
-              </div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">{s.label}</p>
+              <p className="text-xl font-semibold text-card-foreground tabular-nums mt-0.5">{s.value}</p>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="referrals">
-          <TabsList className="w-full sm:w-auto bg-muted/50 p-0.5 h-auto">
-            <TabsTrigger value="referrals" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Referrals</TabsTrigger>
-            <TabsTrigger value="qualified" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Qualified</TabsTrigger>
-            <TabsTrigger value="students" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Students</TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs py-1.5 px-3 data-[state=active]:bg-background">Activity</TabsTrigger>
+          <TabsList className="w-full sm:w-auto bg-muted/50 p-0.5 h-auto rounded-lg gap-0.5">
+            <TabsTrigger value="referrals" className="text-xs py-1.5 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">Referrals</TabsTrigger>
+            <TabsTrigger value="qualified" className="text-xs py-1.5 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">Qualified</TabsTrigger>
+            <TabsTrigger value="students" className="text-xs py-1.5 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">Students</TabsTrigger>
+            <TabsTrigger value="activity" className="text-xs py-1.5 px-3 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">Activity</TabsTrigger>
           </TabsList>
 
           {/* Referrals tab */}
@@ -283,11 +302,11 @@ export default function EditorProfile() {
             {isLoading ? (
               <div className="text-center py-8 text-sm text-muted-foreground">Loading...</div>
             ) : referrals.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-lg">
+              <div className="text-center py-8 border border-dashed rounded-lg bg-card">
                 <p className="text-sm text-muted-foreground">No referrals yet</p>
               </div>
             ) : (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden bg-card">
                 <ReferralTable data={referrals} />
               </div>
             )}
@@ -296,11 +315,11 @@ export default function EditorProfile() {
           {/* Qualified tab */}
           <TabsContent value="qualified" className="pt-3">
             {qualified.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-lg">
+              <div className="text-center py-8 border border-dashed rounded-lg bg-card">
                 <p className="text-sm text-muted-foreground">No qualified leads yet</p>
               </div>
             ) : (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden bg-card">
                 <ReferralTable data={qualified} />
               </div>
             )}
@@ -309,11 +328,11 @@ export default function EditorProfile() {
           {/* Students tab */}
           <TabsContent value="students" className="pt-3">
             {assigned.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-lg">
+              <div className="text-center py-8 border border-dashed rounded-lg bg-card">
                 <p className="text-sm text-muted-foreground">No students assigned</p>
               </div>
             ) : (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden bg-card">
                 <table className="w-full border-collapse text-[11px]">
                   <thead>
                     <tr className="border-b text-muted-foreground bg-muted/30">
@@ -349,18 +368,18 @@ export default function EditorProfile() {
           {/* Activity tab */}
           <TabsContent value="activity" className="pt-3">
             {activities.length === 0 ? (
-              <div className="text-center py-8 border border-dashed rounded-lg">
+              <div className="text-center py-8 border border-dashed rounded-lg bg-card">
                 <p className="text-sm text-muted-foreground">No activity yet</p>
               </div>
             ) : (
               <div className="space-y-1">
                 {activities.map(a => (
-                  <div key={a.id} className="flex gap-3 px-1 py-2.5 border-b border-border/50 last:border-0">
+                  <div key={a.id} className="flex gap-3 px-1 py-2.5 border-b last:border-0">
                     <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
                       <Clock className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{a.title || a.type}</p>
+                      <p className="text-sm font-medium text-card-foreground">{a.title || a.type}</p>
                       {a.body && <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>}
                       <p className="text-[10px] text-muted-foreground/60 mt-1">
                         {new Date(a.created_at).toLocaleString()} · {a.type}
