@@ -180,7 +180,7 @@ const ServicesNew: React.FC = () => {
             `<p>New service request from ${studentName}</p>
              <p><strong>Email:</strong> ${studentEmail}<br/>
              <strong>Services:</strong> ${serviceNames}<br/>
-             <strong>Total:</strong> \u20B9${totalAmount.toLocaleString()}<br/>
+             <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
              <strong>Timeline:</strong> ${timeline}</p>`,
           ),
           studentEmail
@@ -191,7 +191,7 @@ const ServicesNew: React.FC = () => {
                    <p>Hi ${studentName},</p>
                    <p>We've received your service request. Our team will reach out shortly.</p>
                    <p><strong>Services:</strong> ${serviceNames}<br/>
-                   <strong>Total:</strong> \u20B9${totalAmount.toLocaleString()}<br/>
+                   <strong>Total:</strong> ₹${totalAmount.toLocaleString()}<br/>
                    <strong>Timeline:</strong> ${timeline}</p>
                    <p>\u2014 publicgermany</p>
                  </div>`,
@@ -470,7 +470,7 @@ const ServicesNew: React.FC = () => {
               <div className="sticky bottom-4 mt-5 bg-pg-label text-pg-bg rounded-[14px] px-4 py-3 flex items-center justify-between gap-3 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35)]">
                 <div>
                   <div className="text-[11px] text-pg-label3">{selectedServices.length} selected</div>
-                  <div className="text-[17px] font-bold">\u20B9{extrasTotal.toLocaleString('en-IN')}</div>
+                  <div className="text-[17px] font-bold">₹{extrasTotal.toLocaleString('en-IN')}</div>
                 </div>
                 <button
                   onClick={() => setShowRequestDialog(true)}
@@ -847,7 +847,7 @@ const ServicesNew: React.FC = () => {
               )}
               <div className="flex justify-between items-center pt-2 border-t border-pg-sep">
                 <div className="text-[12.5px] text-pg-label2">Estimated total</div>
-                <div className="text-[18px] font-bold text-pg-label">\u20B9{totalAmount.toLocaleString()}</div>
+                <div className="text-[18px] font-bold text-pg-label">₹{totalAmount.toLocaleString()}</div>
               </div>
             </div>
 
