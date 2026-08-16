@@ -670,9 +670,6 @@ export default function AcademicCVGenerator() {
   const handleCVImport = useCallback((data: ImportedCVData) => {
     // Sanitize description fields — they may contain raw HTML blobs from rich-text
     // editors (e.g. Tailwind-styled <h1 style="--tw-*:..."> wrappers).
-    // toLines() strips all tags/attrs and returns clean text; join with \n for textarea.
-    const cleanLines = (v: unknown) => toLines(v).join("\n");
-
     if (data.personal) {
       setPersonal(prev => ({
         ...prev,
@@ -697,32 +694,35 @@ export default function AcademicCVGenerator() {
       const lines = toLines(v);
       return lines.map(l => `<p>${l}</p>`).join("");
     };
-    if (data.educations) setEducations(data.educations.map(e => ({
+    // Only replace sections that actually contain entries — empty arrays from
+    // an unfilled template shouldn't wipe what's already on the form.
+    if (Array.isArray(data.educations) && data.educations.length > 0) setEducations(data.educations.map(e => ({
       ...e,
-      description: toDescHtml((e as any).description ?? e.key_subjects),
+      // Prefer a non-empty rich description; fall back to the key_subjects list.
+      description: toDescHtml((e as any).description && String((e as any).description).trim() ? (e as any).description : e.key_subjects),
       key_subjects: [],
     })));
-    if (data.workExperiences) setWorkExperiences(data.workExperiences.map(w => ({
+    if (Array.isArray(data.workExperiences) && data.workExperiences.length > 0) setWorkExperiences(data.workExperiences.map(w => ({
       ...w,
       description: toDescHtml(w.description),
     })));
-    if (data.languages) setLanguages(data.languages);
-    if (data.certifications) setCertifications(data.certifications.map(c => ({
+    if (Array.isArray(data.languages) && data.languages.length > 0) setLanguages(data.languages);
+    if (Array.isArray(data.certifications) && data.certifications.length > 0) setCertifications(data.certifications.map(c => ({
       ...c,
       description: toDescHtml((c as any).description),
     })));
-    if (data.publications) setPublications(data.publications.map(p => ({
+    if (Array.isArray(data.publications) && data.publications.length > 0) setPublications(data.publications.map(p => ({
       ...p,
       description: toDescHtml((p as any).description),
     })));
-    if (data.customSections) setCustomSections(data.customSections.map(s => ({
+    if (Array.isArray(data.customSections) && data.customSections.length > 0) setCustomSections(data.customSections.map(s => ({
       ...s,
       items: s.items?.map((item: any) => ({
         ...item,
         description: toDescHtml(item.description),
       })) ?? s.items,
     })));
-    if (data.recommendations) setRecommendations(data.recommendations);
+    if (Array.isArray(data.recommendations) && data.recommendations.length > 0) setRecommendations(data.recommendations);
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
@@ -741,7 +741,7 @@ export default function AcademicCVGenerator() {
     } else {
       toast({
         title: "CV imported — photos not included",
-        description: "All text data restored. Profile photo and signature are not stored in PDFs — please re-upload them. Use 'Download JSON' next time for a full backup.",
+        description: "All text data restored. Profile photo and signature were not included in this file — please re-upload them. Use 'Download JSON' in the app for a backup that includes photos.",
         duration: 8000,
       });
     }

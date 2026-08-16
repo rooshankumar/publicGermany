@@ -212,7 +212,7 @@ function fmtDOB(v?: string): string {
 
 function fmtGrade(grade?: string, max?: number, system?: string): string {
   if (!grade) return "";
-  const n = Number(grade);
+  const n = Number(String(grade).replace(/%/g, ""));
   const pct = (system ?? "").toLowerCase().includes("percent") || max === 100;
   if (pct && !isNaN(n)) return `${Math.min(Math.max(n, 0), 100)}%`;
   if (max && max > 0) return `${escapeHtml(grade)} / ${max}`;
