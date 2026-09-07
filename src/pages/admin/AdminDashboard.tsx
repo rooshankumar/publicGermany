@@ -10,18 +10,40 @@ import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
 import { PgLogoMark } from '@/components/PgLogo';
 
+interface RevenueRow { amount: number; date: string }
+
 interface DashboardStats {
   totalStudents: number; activeApplications: number; pendingRequests: number; totalRevenue: number;
   recentPayments: any[]; urgentTasks: any[]; pendingPayments: number; receivedPayments: number;
   pendingDocuments: number; recentStudents: any[];
+  revenueRows: RevenueRow[]; pendingAmount: number;
 }
 
+const buildPeriods = (size: number) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthName = (m: number) => new Date(year, m, 1).toLocaleString('en-US', { month: 'short' });
+  const out: { label: string; start: Date; end: Date }[] = [];
+  for (let y = year - 1; y <= year; y++) {
+    for (let m = 0; m < 12; m += size) {
+      const start = new Date(y, m, 1);
+      const end = new Date(y, m + size, 1);
+      if (start > now) continue;
+      out.push({ label: `${monthName(m)}–${monthName(Math.min(m + size - 1, 11))} ${y}`, start, end });
+    }
+  }
+  return out.reverse();
+};
+
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[]});
+  const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[],revenueRows:[],pendingAmount:0});
   const [loading, setLoading] = useState(true);
+  const [bucketSize, setBucketSize] = useState<4 | 6>(4);
+  const [periodKey, setPeriodKey] = useState<string>('all');
   const initialLoadDoneRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
   const { toast } = useToast();
+
 
   useEffect(() => {
     fetchDashboardData(true);
