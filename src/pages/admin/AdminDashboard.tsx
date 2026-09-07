@@ -10,18 +10,40 @@ import BulkEmailPanel from '@/components/admin/BulkEmailPanel';
 import UpcomingDeadlineReminders from '@/components/admin/UpcomingDeadlineReminders';
 import { PgLogoMark } from '@/components/PgLogo';
 
+interface RevenueRow { amount: number; date: string }
+
 interface DashboardStats {
   totalStudents: number; activeApplications: number; pendingRequests: number; totalRevenue: number;
   recentPayments: any[]; urgentTasks: any[]; pendingPayments: number; receivedPayments: number;
   pendingDocuments: number; recentStudents: any[];
+  revenueRows: RevenueRow[]; pendingAmount: number;
 }
 
+const buildPeriods = (size: number) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthName = (m: number) => new Date(year, m, 1).toLocaleString('en-US', { month: 'short' });
+  const out: { label: string; start: Date; end: Date }[] = [];
+  for (let y = year - 1; y <= year; y++) {
+    for (let m = 0; m < 12; m += size) {
+      const start = new Date(y, m, 1);
+      const end = new Date(y, m + size, 1);
+      if (start > now) continue;
+      out.push({ label: `${monthName(m)}–${monthName(Math.min(m + size - 1, 11))} ${y}`, start, end });
+    }
+  }
+  return out.reverse();
+};
+
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[]});
+  const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[],revenueRows:[],pendingAmount:0});
   const [loading, setLoading] = useState(true);
+  const [bucketSize, setBucketSize] = useState<4 | 6>(4);
+  const [periodKey, setPeriodKey] = useState<string>('all');
   const initialLoadDoneRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
   const { toast } = useToast();
+
 
   useEffect(() => {
     fetchDashboardData(true);
@@ -45,23 +67,45 @@ const AdminDashboard = () => {
     try {
       if (showSpinner) setLoading(true);
       const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
-      const [studentsCountRes, applicationsCountRes, requestsCountRes, receivedRowsRes, pendingPaymentsCountRes, receivedPaymentsCountRes, recentPaymentsRes, urgentAppsRes, pendingDocsRes, recentStudentsRes] = await Promise.all([
+      const [studentsCountRes, applicationsCountRes, requestsCountRes, receivedRowsRes, pendingRowsRes, receivedPaymentsCountRes, recentPaymentsRes, urgentAppsRes, pendingDocsRes, recentStudentsRes] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('applications').select('id', { count: 'exact', head: true }).neq('status', 'rejected'),
         supabase.from('service_requests').select('id', { count: 'exact', head: true }).in('status', ['new', 'in_progress']),
-        supabase.from('service_payments' as any).select('amount').eq('status', 'received'),
-        supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('service_payments' as any).select('amount, target_total_amount, paid_at, created_at').eq('status', 'received'),
+        supabase.from('service_payments' as any).select('amount, target_total_amount, created_at').eq('status', 'pending'),
         supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'received'),
         supabase.from('service_payments' as any).select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(5),
         supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(5),
         supabase.from('documents' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('id, full_name, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
       ]);
-      let totalRevenue = (receivedRowsRes.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      const revenueRows: RevenueRow[] = ((receivedRowsRes.data || []) as any[]).map((p: any) => ({
+        amount: Number(p.amount) || 0,
+        date: p.paid_at || p.created_at,
+      }));
+      // Dues = unpaid pending payments + outstanding balance on partially paid records
+      let pendingAmount = ((pendingRowsRes.data || []) as any[]).reduce((s: number, p: any) => {
+        const target = Number(p.target_total_amount) || 0;
+        return s + Math.max(Number(p.amount) || 0, target ? target : 0);
+      }, 0);
+      pendingAmount += ((receivedRowsRes.data || []) as any[]).reduce((s: number, p: any) => {
+        const target = Number(p.target_total_amount) || 0;
+        return s + Math.max(0, target - (Number(p.amount) || 0));
+      }, 0);
+      let totalRevenue = revenueRows.reduce((sum, p) => sum + p.amount, 0);
       try {
-        const { data: manualReceived } = await (supabase as any).from('manual_payments').select('amount').eq('status', 'received');
-        totalRevenue += ((manualReceived || []) as any[]).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
+        const { data: manualRows } = await (supabase as any).from('manual_payments').select('amount, status, paid_at, created_at');
+        for (const p of ((manualRows || []) as any[])) {
+          const amt = Number(p?.amount) || 0;
+          if (p?.status === 'received') {
+            totalRevenue += amt;
+            revenueRows.push({ amount: amt, date: p.paid_at || p.created_at });
+          } else if (p?.status === 'pending') {
+            pendingAmount += amt;
+          }
+        }
       } catch {}
+
       // Include verified referral revenue (10% commission of total_fees) + recent commission entries
       let commissionEntries: any[] = [];
       try {
@@ -78,6 +122,11 @@ const AdminDashboard = () => {
             return s + (isNaN(numericFee) ? 0 : numericFee * 0.1);
           }, 0);
           totalRevenue += commissionSum;
+          for (const r of (verifiedReferrals as any[])) {
+            const fee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+            if (!isNaN(fee) && fee > 0) revenueRows.push({ amount: fee * 0.1, date: r.verified_at });
+          }
+
           commissionEntries = (verifiedReferrals as any[]).map((r: any) => {
             const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
             const commissionAmount = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
@@ -98,12 +147,23 @@ const AdminDashboard = () => {
         ...(recentPaymentsRes.data || []).map((p: any) => ({ ...p, type: 'payment' })),
         ...commissionEntries,
       ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
-      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
+      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: ((pendingRowsRes.data || []) as any[]).length, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [], revenueRows, pendingAmount });
     } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
     finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }
   };
 
   const getDaysUntilDeadline = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+  const periods = buildPeriods(bucketSize);
+  const activePeriod = periods.find((p) => p.label === periodKey);
+  const shownRevenue = activePeriod
+    ? stats.revenueRows.reduce((s, r) => {
+        const d = r.date ? new Date(r.date) : null;
+        if (!d || isNaN(d.getTime())) return s;
+        return d >= activePeriod.start && d < activePeriod.end ? s + r.amount : s;
+      }, 0)
+    : stats.totalRevenue;
+
 
   const SIC = ({ status }: { status: string }) => {
     switch (status?.toLowerCase()) {
@@ -133,7 +193,39 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
           <Link to="/admin/students"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Students</p><p className="text-base font-bold">{stats.totalStudents}</p></div><Users className="h-3.5 w-3.5 text-primary" /></div></CardContent></Card></Link>
           <Link to="/admin/requests"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Pending</p><p className="text-base font-bold">{stats.pendingRequests}</p></div><GraduationCap className="h-3.5 w-3.5 text-warning" /></div></CardContent></Card></Link>
-          <Link to="/admin/payments"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Revenue</p><p className="text-base font-bold text-success">₹{stats.totalRevenue.toLocaleString()}</p></div><CreditCard className="h-3.5 w-3.5 text-success" /></div><p className="text-[9px] text-muted-foreground mt-0.5">{stats.pendingPayments} pending</p></CardContent></Card></Link>
+          <Card>
+            <CardContent className="py-2 px-2.5">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[9px] text-muted-foreground font-medium">Revenue</p>
+                  <Link to="/admin/payments"><p className="text-base font-bold text-success">₹{Math.round(shownRevenue).toLocaleString()}</p></Link>
+                </div>
+                <CreditCard className="h-3.5 w-3.5 text-success shrink-0" />
+              </div>
+              <p className="text-[9px] text-warning mt-0.5">₹{Math.round(stats.pendingAmount).toLocaleString()} pending ({stats.pendingPayments})</p>
+              <div className="flex items-center gap-1 mt-1">
+                <select
+                  aria-label="Bucket size"
+                  className="h-5 rounded border border-border bg-background text-[9px] px-1"
+                  value={bucketSize}
+                  onChange={(e) => { setBucketSize(Number(e.target.value) as 4 | 6); setPeriodKey('all'); }}
+                >
+                  <option value={4}>4-month</option>
+                  <option value={6}>6-month</option>
+                </select>
+                <select
+                  aria-label="Revenue period"
+                  className="h-5 flex-1 min-w-0 rounded border border-border bg-background text-[9px] px-1"
+                  value={periodKey}
+                  onChange={(e) => setPeriodKey(e.target.value)}
+                >
+                  <option value="all">All time</option>
+                  {periods.map((p) => <option key={p.label} value={p.label}>{p.label}</option>)}
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Docs Pending</p><p className="text-base font-bold">{stats.pendingDocuments}</p></div><FileText className="h-3.5 w-3.5 text-primary" /></div></CardContent></Card>
         </div>
 
