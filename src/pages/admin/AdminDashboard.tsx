@@ -193,7 +193,39 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
           <Link to="/admin/students"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Students</p><p className="text-base font-bold">{stats.totalStudents}</p></div><Users className="h-3.5 w-3.5 text-primary" /></div></CardContent></Card></Link>
           <Link to="/admin/requests"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Pending</p><p className="text-base font-bold">{stats.pendingRequests}</p></div><GraduationCap className="h-3.5 w-3.5 text-warning" /></div></CardContent></Card></Link>
-          <Link to="/admin/payments"><Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Revenue</p><p className="text-base font-bold text-success">₹{stats.totalRevenue.toLocaleString()}</p></div><CreditCard className="h-3.5 w-3.5 text-success" /></div><p className="text-[9px] text-muted-foreground mt-0.5">{stats.pendingPayments} pending</p></CardContent></Card></Link>
+          <Card>
+            <CardContent className="py-2 px-2.5">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[9px] text-muted-foreground font-medium">Revenue</p>
+                  <Link to="/admin/payments"><p className="text-base font-bold text-success">₹{Math.round(shownRevenue).toLocaleString()}</p></Link>
+                </div>
+                <CreditCard className="h-3.5 w-3.5 text-success shrink-0" />
+              </div>
+              <p className="text-[9px] text-warning mt-0.5">₹{Math.round(stats.pendingAmount).toLocaleString()} pending ({stats.pendingPayments})</p>
+              <div className="flex items-center gap-1 mt-1">
+                <select
+                  aria-label="Bucket size"
+                  className="h-5 rounded border border-border bg-background text-[9px] px-1"
+                  value={bucketSize}
+                  onChange={(e) => { setBucketSize(Number(e.target.value) as 4 | 6); setPeriodKey('all'); }}
+                >
+                  <option value={4}>4-month</option>
+                  <option value={6}>6-month</option>
+                </select>
+                <select
+                  aria-label="Revenue period"
+                  className="h-5 flex-1 min-w-0 rounded border border-border bg-background text-[9px] px-1"
+                  value={periodKey}
+                  onChange={(e) => setPeriodKey(e.target.value)}
+                >
+                  <option value="all">All time</option>
+                  {periods.map((p) => <option key={p.label} value={p.label}>{p.label}</option>)}
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card><CardContent className="py-2 px-2.5"><div className="flex items-center justify-between"><div><p className="text-[9px] text-muted-foreground font-medium">Docs Pending</p><p className="text-base font-bold">{stats.pendingDocuments}</p></div><FileText className="h-3.5 w-3.5 text-primary" /></div></CardContent></Card>
         </div>
 
