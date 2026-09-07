@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 const DOCUMENT_GROUPS = [
   { title: 'Personal', keys: ['passport_copy', 'passport_photo', 'signature'] },
   { title: 'School', keys: ['class_x', 'class_xii'] },
-  { title: "Bachelor's Degree", keys: ['bachelor_degree_certificate', 'bachelor_degree_transcript', 'bachelor_all_sem_marksheets'] },
+  { title: "Bachelor's Degree", keys: ['bachelor_degree_certificate', 'bachelor_degree_transcript', 'bachelor_all_sem_marksheets', 'bachelor_module_handbook', 'bachelor_thesis', 'project_major', 'project_minor'] },
   { title: "Master's Degree", keys: ['master_degree_certificate', 'master_degree_transcript', 'master_all_sem_marksheets'] },
   { title: 'Language Certificates', keys: ['english_language_certificate', 'german_language_certificate'] },
   { title: 'Recommendation Letters', keys: ['recommendation_letter_1', 'recommendation_letter_2'] },
