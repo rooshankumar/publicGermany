@@ -147,7 +147,7 @@ const AdminDashboard = () => {
         ...(recentPaymentsRes.data || []).map((p: any) => ({ ...p, type: 'payment' })),
         ...commissionEntries,
       ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
-      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: pendingPaymentsCountRes.count || 0, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [] });
+      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: ((pendingRowsRes.data || []) as any[]).length, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [], revenueRows, pendingAmount });
     } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
     finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }
   };
