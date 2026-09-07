@@ -184,6 +184,43 @@ const Stars: React.FC<{ n: number }> = ({ n }) => (
 
 const initialOf = (name?: string | null) => (name?.trim()?.[0] || 'S').toUpperCase();
 
+const ReviewCard: React.FC<{ r: LiveReview }> = ({ r }) => {
+  const [expanded, setExpanded] = useState(false);
+  const name = r.profiles?.full_name || 'Student';
+  const text = r.review_text || '';
+  const isLong = text.length > 180;
+  return (
+    <div className={`snap-start shrink-0 w-[260px] bg-pg-bg2 rounded-[14px] p-[18px] flex flex-col gap-2 ${expanded ? 'self-start' : ''}`}>
+      <div className="flex items-center gap-2.5">
+        {r.profiles?.avatar_url ? (
+          <img src={r.profiles.avatar_url} alt={name} className="w-[34px] h-[34px] rounded-full object-cover" />
+        ) : (
+          <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-pg-bg flex items-center justify-center font-semibold text-[13px]">
+            {initialOf(name)}
+          </div>
+        )}
+        <div>
+          <div className="font-semibold text-[13.5px] text-pg-label">{name}</div>
+          <div className="text-[11.5px] text-pg-label3">
+            {r.service_type && r.service_type !== 'general' ? r.service_type : 'Student'}
+          </div>
+        </div>
+      </div>
+      <Stars n={Math.max(1, Math.min(5, Math.round(r.rating)))} />
+      <p className={`text-[13px] text-pg-label2 leading-[1.45] whitespace-pre-line ${expanded ? '' : 'line-clamp-5'}`}>{text}</p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="self-start text-[12px] font-semibold text-pg-accent hover:underline"
+        >
+          {expanded ? 'Show less' : 'Read full review'}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Testimonials: React.FC = () => {
   const reviews = useLiveReviews(8);
   if (reviews.length === 0) return null;
@@ -193,33 +230,11 @@ const Testimonials: React.FC = () => {
         <div className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-pg-accent mb-1.5">Testimonials</div>
         <h2 className="text-[clamp(24px,4vw,32px)]">Students who made it</h2>
       </div>
-      <div className="pg-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-2">
-        {reviews.map((r) => {
-          const name = r.profiles?.full_name || 'Student';
-          return (
-            <div key={r.id} className="snap-start shrink-0 w-[260px] bg-pg-bg2 rounded-[14px] p-[18px] flex flex-col gap-2">
-              <div className="flex items-center gap-2.5">
-                {r.profiles?.avatar_url ? (
-                  <img src={r.profiles.avatar_url} alt={name} className="w-[34px] h-[34px] rounded-full object-cover" />
-                ) : (
-                  <div className="w-[34px] h-[34px] rounded-full bg-pg-label text-pg-bg flex items-center justify-center font-semibold text-[13px]">
-                    {initialOf(name)}
-                  </div>
-                )}
-                <div>
-                  <div className="font-semibold text-[13.5px] text-pg-label">{name}</div>
-                  <div className="text-[11.5px] text-pg-label3">
-                    {r.service_type && r.service_type !== 'general' ? r.service_type : 'Student'}
-                  </div>
-                </div>
-              </div>
-              <Stars n={Math.max(1, Math.min(5, Math.round(r.rating)))} />
-              <p className="text-[13px] text-pg-label2 leading-[1.45] line-clamp-5">{r.review_text}</p>
-            </div>
-          );
-        })}
+      <div className="pg-carousel flex items-start gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-2">
+        {reviews.map((r) => <ReviewCard key={r.id} r={r} />)}
       </div>
     </section>
+
   );
 };
 
