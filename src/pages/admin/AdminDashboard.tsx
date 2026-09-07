@@ -67,23 +67,45 @@ const AdminDashboard = () => {
     try {
       if (showSpinner) setLoading(true);
       const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
-      const [studentsCountRes, applicationsCountRes, requestsCountRes, receivedRowsRes, pendingPaymentsCountRes, receivedPaymentsCountRes, recentPaymentsRes, urgentAppsRes, pendingDocsRes, recentStudentsRes] = await Promise.all([
+      const [studentsCountRes, applicationsCountRes, requestsCountRes, receivedRowsRes, pendingRowsRes, receivedPaymentsCountRes, recentPaymentsRes, urgentAppsRes, pendingDocsRes, recentStudentsRes] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('applications').select('id', { count: 'exact', head: true }).neq('status', 'rejected'),
         supabase.from('service_requests').select('id', { count: 'exact', head: true }).in('status', ['new', 'in_progress']),
-        supabase.from('service_payments' as any).select('amount').eq('status', 'received'),
-        supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('service_payments' as any).select('amount, target_total_amount, paid_at, created_at').eq('status', 'received'),
+        supabase.from('service_payments' as any).select('amount, target_total_amount, created_at').eq('status', 'pending'),
         supabase.from('service_payments' as any).select('id', { count: 'exact', head: true }).eq('status', 'received'),
         supabase.from('service_payments' as any).select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(5),
         supabase.from('applications').select('id, university_name, application_end_date, profiles!applications_user_id_fkey(full_name)').lte('application_end_date', nextWeek.toISOString()).neq('status', 'submitted').order('application_end_date', { ascending: true }).limit(5),
         supabase.from('documents' as any).select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('id, full_name, created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(5),
       ]);
-      let totalRevenue = (receivedRowsRes.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      const revenueRows: RevenueRow[] = ((receivedRowsRes.data || []) as any[]).map((p: any) => ({
+        amount: Number(p.amount) || 0,
+        date: p.paid_at || p.created_at,
+      }));
+      // Dues = unpaid pending payments + outstanding balance on partially paid records
+      let pendingAmount = ((pendingRowsRes.data || []) as any[]).reduce((s: number, p: any) => {
+        const target = Number(p.target_total_amount) || 0;
+        return s + Math.max(Number(p.amount) || 0, target ? target : 0);
+      }, 0);
+      pendingAmount += ((receivedRowsRes.data || []) as any[]).reduce((s: number, p: any) => {
+        const target = Number(p.target_total_amount) || 0;
+        return s + Math.max(0, target - (Number(p.amount) || 0));
+      }, 0);
+      let totalRevenue = revenueRows.reduce((sum, p) => sum + p.amount, 0);
       try {
-        const { data: manualReceived } = await (supabase as any).from('manual_payments').select('amount').eq('status', 'received');
-        totalRevenue += ((manualReceived || []) as any[]).reduce((s: number, p: any) => s + (Number(p?.amount) || 0), 0);
+        const { data: manualRows } = await (supabase as any).from('manual_payments').select('amount, status, paid_at, created_at');
+        for (const p of ((manualRows || []) as any[])) {
+          const amt = Number(p?.amount) || 0;
+          if (p?.status === 'received') {
+            totalRevenue += amt;
+            revenueRows.push({ amount: amt, date: p.paid_at || p.created_at });
+          } else if (p?.status === 'pending') {
+            pendingAmount += amt;
+          }
+        }
       } catch {}
+
       // Include verified referral revenue (10% commission of total_fees) + recent commission entries
       let commissionEntries: any[] = [];
       try {
