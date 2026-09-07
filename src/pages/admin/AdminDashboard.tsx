@@ -122,6 +122,11 @@ const AdminDashboard = () => {
             return s + (isNaN(numericFee) ? 0 : numericFee * 0.1);
           }, 0);
           totalRevenue += commissionSum;
+          for (const r of (verifiedReferrals as any[])) {
+            const fee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
+            if (!isNaN(fee) && fee > 0) revenueRows.push({ amount: fee * 0.1, date: r.verified_at });
+          }
+
           commissionEntries = (verifiedReferrals as any[]).map((r: any) => {
             const numericFee = parseFloat(String(r.total_fees || '0').replace(/[^0-9.-]/g, ''));
             const commissionAmount = isNaN(numericFee) ? 0 : Math.round(numericFee * 0.1);
