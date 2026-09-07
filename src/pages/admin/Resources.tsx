@@ -166,11 +166,11 @@ const AdminResources = () => {
                           </tr>
                         ))}
                       {resources.filter(r => category === 'all' || r.category === category).length === 0 && (
-                        <TableRow>
+                        <tr>
                           <td colSpan={5} className="text-center py-6 text-[11px] text-muted-foreground">
                             No resources found in this category.
                           </td>
-                        </TableRow>
+                        </tr>
                       )}
                     </tbody>
                   </table>

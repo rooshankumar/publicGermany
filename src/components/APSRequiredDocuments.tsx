@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 const DOCUMENT_GROUPS = [
   { title: 'Personal', keys: ['passport_copy', 'passport_photo', 'signature'] },
   { title: 'School', keys: ['class_x', 'class_xii'] },
-  { title: "Bachelor's Degree", keys: ['bachelor_degree_certificate', 'bachelor_degree_transcript', 'bachelor_all_sem_marksheets'] },
+  { title: "Bachelor's Degree", keys: ['bachelor_degree_certificate', 'bachelor_degree_transcript', 'bachelor_all_sem_marksheets', 'bachelor_module_handbook', 'bachelor_thesis', 'project_major', 'project_minor'] },
   { title: "Master's Degree", keys: ['master_degree_certificate', 'master_degree_transcript', 'master_all_sem_marksheets'] },
   { title: 'Language Certificates', keys: ['english_language_certificate', 'german_language_certificate'] },
   { title: 'Recommendation Letters', keys: ['recommendation_letter_1', 'recommendation_letter_2'] },
@@ -40,6 +40,10 @@ export const DOCUMENTS = [
   { key: 'bachelor_degree_certificate', label: 'Bachelor Degree Certificate', maxFiles: 1 },
   { key: 'bachelor_degree_transcript', label: 'Bachelor Degree Transcript', maxFiles: 1 },
   { key: 'bachelor_all_sem_marksheets', label: 'Bachelor All Semesters Marksheets', maxFiles: 10 },
+  { key: 'bachelor_module_handbook', label: 'Bachelor Module Handbook / Coursework PDF', maxFiles: 3 },
+  { key: 'bachelor_thesis', label: 'Bachelor Final Year Project / Thesis PDF', maxFiles: 2 },
+  { key: 'project_major', label: 'Project Major', maxFiles: 2 },
+  { key: 'project_minor', label: 'Project Minor', maxFiles: 2 },
   
   // Master's Degree Documents
   { key: 'master_degree_certificate', label: 'Master Degree Certificate (if applicable)', maxFiles: 1 },
@@ -92,6 +96,10 @@ const CATEGORY_BASE_FILENAME: Record<string, string> = {
   bachelor_degree_certificate: 'Bachelor_Degree_Certificate',
   bachelor_degree_transcript: 'Bachelor_Degree_Transcript',
   bachelor_all_sem_marksheets: 'Bachelor_All_Semester_Marksheets',
+  bachelor_module_handbook: 'Bachelor_Module_Handbook',
+  bachelor_thesis: 'Bachelor_Final_Year_Project_Thesis',
+  project_major: 'Project_Major',
+  project_minor: 'Project_Minor',
   master_degree_certificate: 'Master_Degree_Certificate',
   master_degree_transcript: 'Master_Degree_Transcript',
   master_all_sem_marksheets: 'Master_All_Semester_Marksheets',
