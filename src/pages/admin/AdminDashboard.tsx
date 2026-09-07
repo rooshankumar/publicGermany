@@ -154,6 +154,17 @@ const AdminDashboard = () => {
 
   const getDaysUntilDeadline = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
+  const periods = buildPeriods(bucketSize);
+  const activePeriod = periods.find((p) => p.label === periodKey);
+  const shownRevenue = activePeriod
+    ? stats.revenueRows.reduce((s, r) => {
+        const d = r.date ? new Date(r.date) : null;
+        if (!d || isNaN(d.getTime())) return s;
+        return d >= activePeriod.start && d < activePeriod.end ? s + r.amount : s;
+      }, 0)
+    : stats.totalRevenue;
+
+
   const SIC = ({ status }: { status: string }) => {
     switch (status?.toLowerCase()) {
       case 'received': return <CheckCircle className="h-3.5 w-3.5 text-success" />;
