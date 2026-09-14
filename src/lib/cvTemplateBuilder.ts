@@ -90,13 +90,104 @@ export interface CVRecommendation {
   contact?: string;
 }
 
+export type CVLanguageCode = "en" | "de";
+
 export interface CVBuildOptions {
   headerBgColor?: string;
+  language?: CVLanguageCode;
   density?: "compact" | "standard" | "expanded";
   sectionOrder?: string[];
 }
 
 const CUSTOM_SECTION_PREFIX = "custom-";
+
+// ─── i18n labels (English default, German optional) ─────────────────────────
+const CV_LABELS = {
+  en: {
+    docTitle: "Curriculum Vitae",
+    photo: "Photo",
+    passport: "Passport",
+    dob: "Date of birth",
+    nationality: "Nationality",
+    gender: "Gender",
+    pob: "Place of birth",
+    phone: "Phone",
+    email: "Email",
+    linkedin: "LinkedIn",
+    address: "Address",
+    present: "Present",
+    secEducation: "Education and Training",
+    secWork: "Work Experience",
+    secPublications: "Research Publications",
+    secCertifications: "Certificates & Achievements",
+    secLanguages: "Language Skills",
+    secRecommendations: "Recommendations",
+    secSkills: "Skills",
+    finalGrade: "Final Grade",
+    credits: "Credits",
+    coreAreas: "Core Areas",
+    thesis: "Thesis",
+    journal: "Journal",
+    year: "Year",
+    issuedBy: "Issued by",
+    date: "Date",
+    motherTongue: "Mother tongue",
+    language: "Language",
+    listening: "Listening",
+    reading: "Reading",
+    writing: "Writing",
+    speaking: "Speaking",
+    langNote: "A1–A2: Basic · B1–B2: Independent · C1–C2: Proficient",
+    signature: "Signature",
+  },
+  de: {
+    docTitle: "Lebenslauf",
+    photo: "Foto",
+    passport: "Reisepass",
+    dob: "Geburtsdatum",
+    nationality: "Staatsangehörigkeit",
+    gender: "Geschlecht",
+    pob: "Geburtsort",
+    phone: "Telefon",
+    email: "E-Mail",
+    linkedin: "LinkedIn",
+    address: "Anschrift",
+    present: "Heute",
+    secEducation: "Ausbildung und Weiterbildung",
+    secWork: "Berufserfahrung",
+    secPublications: "Wissenschaftliche Veröffentlichungen",
+    secCertifications: "Zertifikate & Auszeichnungen",
+    secLanguages: "Sprachkenntnisse",
+    secRecommendations: "Referenzen",
+    secSkills: "Kenntnisse",
+    finalGrade: "Abschlussnote",
+    credits: "Leistungspunkte",
+    coreAreas: "Schwerpunkte",
+    thesis: "Abschlussarbeit",
+    journal: "Fachzeitschrift",
+    year: "Jahr",
+    issuedBy: "Ausgestellt von",
+    date: "Datum",
+    motherTongue: "Muttersprache",
+    language: "Sprache",
+    listening: "Hören",
+    reading: "Lesen",
+    writing: "Schreiben",
+    speaking: "Sprechen",
+    langNote: "A1–A2: Grundkenntnisse · B1–B2: Selbstständige Sprachverwendung · C1–C2: Kompetente Sprachverwendung",
+    signature: "Unterschrift",
+  },
+} as const;
+
+type CVLabels = typeof CV_LABELS["en"];
+
+function getLabels(lang?: CVLanguageCode): CVLabels {
+  return (lang === "de" ? CV_LABELS.de : CV_LABELS.en) as CVLabels;
+}
+
+function localeOf(lang?: CVLanguageCode): string {
+  return lang === "de" ? "de-DE" : "en-GB";
+}
 const TOP_LEVEL_SECTION_KEYS = ["education", "work", "publications", "languages", "certifications", "recommendations"] as const;
 
 function normalizeSectionOrder(order: string[] = [], customCount: number): string[] {
@@ -172,19 +263,21 @@ export function toLines(value: unknown): string[] {
   return text.split(/\r?\n/).map(l => l.replace(/^\s*[-*•·]\s*/, "").trim()).filter(Boolean);
 }
 
-function fmtMonthYear(dateStr?: string | number): string {
+function fmtMonthYear(dateStr?: string | number, lang?: CVLanguageCode): string {
   if (!dateStr) return "";
   const d = new Date(String(dateStr));
   if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  return d.toLocaleDateString(localeOf(lang), { month: "short", year: "numeric" });
 }
 
 function fmtYearRange(startYear?: number | string, endYear?: number | string,
-                     startDate?: string, endDate?: string, isCurrent?: boolean): string {
+                     startDate?: string, endDate?: string, isCurrent?: boolean,
+                     lang?: CVLanguageCode): string {
+  const presentLabel = getLabels(lang).present;
   // Prefer full date formatting if dates are provided
   if (startDate || endDate) {
-    const s = fmtMonthYear(startDate) || (startYear ? String(new Date(String(startYear)).getFullYear()) : "");
-    const e = isCurrent ? "Present" : (fmtMonthYear(endDate) || (endYear ? String(new Date(String(endYear)).getFullYear()) : ""));
+    const s = fmtMonthYear(startDate, lang) || (startYear ? String(new Date(String(startYear)).getFullYear()) : "");
+    const e = isCurrent ? presentLabel : (fmtMonthYear(endDate, lang) || (endYear ? String(new Date(String(endYear)).getFullYear()) : ""));
     if (!s && !e) return "";
     if (s && e) return `${s} – ${e}`;
     return s || e;
@@ -197,17 +290,17 @@ function fmtYearRange(startYear?: number | string, endYear?: number | string,
     return m ? m[1] : "";
   };
   const s = yr(startYear);
-  const e = isCurrent ? "Present" : yr(endYear);
+  const e = isCurrent ? presentLabel : yr(endYear);
   if (!s && !e) return "";
   if (s && e) return `${s} – ${e}`;
   return s || e;
 }
 
-function fmtDOB(v?: string): string {
+function fmtDOB(v?: string, lang?: CVLanguageCode): string {
   if (!v) return "";
   const d = new Date(v);
   if (isNaN(d.getTime())) return escapeHtml(v);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString(localeOf(lang), { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function fmtGrade(grade?: string, max?: number, system?: string): string {
@@ -220,20 +313,21 @@ function fmtGrade(grade?: string, max?: number, system?: string): string {
 }
 
 // ─── Header ─────────────────────────────────────────────────────────────────
-function buildHeader(p: any): string {
+function buildHeader(p: any, lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const items: string[] = [];
   const add = (label: string, val?: string) => {
     if (val) items.push(`<span class="hd-item"><span class="hd-label">${label}:</span> ${val}</span>`);
   };
-  add("Passport", escapeHtml(p.passport_number));
-  add("Date of birth", fmtDOB(p.date_of_birth));
-  add("Nationality", escapeHtml(p.nationality));
-  add("Gender", escapeHtml(p.gender));
-  add("Place of birth", escapeHtml(p.place_of_birth));
-  add("Phone", escapeHtml(p.phone));
-  if (p.email) add("Email", `<a href="mailto:${escapeHtml(p.email)}">${escapeHtml(p.email)}</a>`);
-  if (p.linkedin_url) add("LinkedIn", `<a href="${escapeHtml(p.linkedin_url)}">${escapeHtml(p.linkedin_url)}</a>`);
-  add("Address", escapeHtml(p.address));
+  add(t.passport, escapeHtml(p.passport_number));
+  add(t.dob, fmtDOB(p.date_of_birth, lang));
+  add(t.nationality, escapeHtml(p.nationality));
+  add(t.gender, escapeHtml(p.gender));
+  add(t.pob, escapeHtml(p.place_of_birth));
+  add(t.phone, escapeHtml(p.phone));
+  if (p.email) add(t.email, `<a href="mailto:${escapeHtml(p.email)}">${escapeHtml(p.email)}</a>`);
+  if (p.linkedin_url) add(t.linkedin, `<a href="${escapeHtml(p.linkedin_url)}">${escapeHtml(p.linkedin_url)}</a>`);
+  add(t.address, escapeHtml(p.address));
 
   // Distribute across rows of ~2 items for compactness
   const rows: string[] = [];
@@ -244,7 +338,7 @@ function buildHeader(p: any): string {
 
   const photo = p.avatar_url
     ? `<img src="${escapeHtml(p.avatar_url)}" alt="${escapeHtml(p.full_name)}" />`
-    : `<div class="photo-empty">Photo</div>`;
+    : `<div class="photo-empty">${escapeHtml(t.photo)}</div>`;
 
   return `
 <div class="header">
@@ -266,29 +360,30 @@ function sectionWrap(title: string, body: string): string {
 }
 
 // ─── Education ──────────────────────────────────────────────────────────────
-function buildEducation(eds: any[]): string {
+function buildEducation(eds: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (eds || []).filter(e => e && (e.degree_title || e.institution || e.field_of_study));
   if (!filtered.length) return "";
   const body = filtered.map(edu => {
     const titleParts = [edu.degree_title, edu.field_of_study].filter(Boolean).map(escapeHtml);
     const title = titleParts.join(" – ");
-    const dates = fmtYearRange(edu.start_year, edu.end_year, edu.start_date, edu.end_date);
+    const dates = fmtYearRange(edu.start_year, edu.end_year, edu.start_date, edu.end_date, false, lang);
     const inst = [edu.institution, edu.city, edu.country].filter(Boolean).map(escapeHtml).join(", ");
 
     const metaBits: string[] = [];
     const grade = fmtGrade(edu.final_grade, edu.max_scale, edu.credit_system);
-    if (grade) metaBits.push(`<b>Final Grade:</b> ${grade}`);
+    if (grade) metaBits.push(`<b>${escapeHtml(t.finalGrade)}:</b> ${grade}`);
     if (edu.total_credits) {
       const sys = edu.credit_system ? ` (${escapeHtml(edu.credit_system)})` : "";
-      metaBits.push(`<b>Credits:</b> ${escapeHtml(String(edu.total_credits))}${sys}`);
+      metaBits.push(`<b>${escapeHtml(t.credits)}:</b> ${escapeHtml(String(edu.total_credits))}${sys}`);
     }
     const subjects = Array.isArray(edu.key_subjects)
       ? edu.key_subjects.join(" · ")
       : (edu.key_subjects || "");
     const subjectsLine = subjects
-      ? `<b>Core Areas:</b> ${escapeHtml(subjects)}`
+      ? `<b>${escapeHtml(t.coreAreas)}:</b> ${escapeHtml(subjects)}`
       : "";
-    const thesis = edu.thesis_title ? `<b>Thesis:</b> <i>${escapeHtml(edu.thesis_title)}</i>` : "";
+    const thesis = edu.thesis_title ? `<b>${escapeHtml(t.thesis)}:</b> <i>${escapeHtml(edu.thesis_title)}</i>` : "";
     const descHtml = sanitizeRichHtml(edu.description);
     const descBlock = descHtml ? `<div class="rich-desc">${descHtml}</div>` : "";
 
@@ -304,15 +399,16 @@ function buildEducation(eds: any[]): string {
   ${metaLines ? `<div class="row-meta">${metaLines}</div>` : ""}
 </div>`;
   }).join("");
-  return sectionWrap("Education and Training", body);
+  return sectionWrap(t.secEducation, body);
 }
 
 // ─── Work ───────────────────────────────────────────────────────────────────
-function buildWork(works: any[]): string {
+function buildWork(works: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (works || []).filter(w => w && (w.job_title || w.organisation));
   if (!filtered.length) return "";
   const body = filtered.map(w => {
-    const dates = fmtYearRange(undefined, undefined, w.start_date, w.end_date, w.is_current);
+    const dates = fmtYearRange(undefined, undefined, w.start_date, w.end_date, w.is_current, lang);
     const location = [w.city, w.country].filter(Boolean).join(", ") || w.city_country || "";
     const inst = [w.organisation, location].filter(Boolean).map(escapeHtml).join(", ");
     const descHtml = sanitizeRichHtml(w.description);
@@ -326,17 +422,18 @@ function buildWork(works: any[]): string {
   ${descHtml ? `<div class="rich-desc">${descHtml}</div>` : ""}
 </div>`;
   }).join("");
-  return sectionWrap("Work Experience", body);
+  return sectionWrap(t.secWork, body);
 }
 
 // ─── Publications ───────────────────────────────────────────────────────────
-function buildPublications(pubs: any[]): string {
+function buildPublications(pubs: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (pubs || []).filter(p => p && (p.title || p.journal));
   if (!filtered.length) return "";
   const body = filtered.map(p => {
     const meta: string[] = [];
-    if (p.journal) meta.push(`<b>Journal:</b> ${escapeHtml(p.journal)}`);
-    if (p.year) meta.push(`<b>Year:</b> ${escapeHtml(String(p.year))}`);
+    if (p.journal) meta.push(`<b>${escapeHtml(t.journal)}:</b> ${escapeHtml(p.journal)}`);
+    if (p.year) meta.push(`<b>${escapeHtml(t.year)}:</b> ${escapeHtml(String(p.year))}`);
     if (p.doi_url) meta.push(`<a href="${escapeHtml(p.doi_url)}">${escapeHtml(p.doi_url)}</a>`);
     return `
 <div class="row-entry">
@@ -347,17 +444,18 @@ function buildPublications(pubs: any[]): string {
   ${meta.length ? `<div class="row-meta">${meta.join(" &nbsp;|&nbsp; ")}</div>` : ""}
 </div>`;
   }).join("");
-  return sectionWrap("Research Publications", body);
+  return sectionWrap(t.secPublications, body);
 }
 
 // ─── Certifications ─────────────────────────────────────────────────────────
-function buildCertifications(certs: any[]): string {
+function buildCertifications(certs: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (certs || []).filter(c => c && (c.title || c.institution));
   if (!filtered.length) return "";
   const body = filtered.map(c => {
     const meta: string[] = [];
-    if (c.institution) meta.push(`<b>Issued by:</b> ${escapeHtml(c.institution)}`);
-    if (c.date) meta.push(`<b>Date:</b> ${escapeHtml(c.date)}`);
+    if (c.institution) meta.push(`<b>${escapeHtml(t.issuedBy)}:</b> ${escapeHtml(c.institution)}`);
+    if (c.date) meta.push(`<b>${escapeHtml(t.date)}:</b> ${escapeHtml(c.date)}`);
     if (c.description) meta.push(escapeHtml(c.description));
     return `
 <div class="cert-item">
@@ -365,11 +463,12 @@ function buildCertifications(certs: any[]): string {
   ${meta.length ? `<div class="cert-meta">${meta.join(" &nbsp;|&nbsp; ")}</div>` : ""}
 </div>`;
   }).join("");
-  return sectionWrap("Certificates & Achievements", body);
+  return sectionWrap(t.secCertifications, body);
 }
 
 // ─── Languages ──────────────────────────────────────────────────────────────
-function buildLanguages(langs: any[]): string {
+function buildLanguages(langs: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (langs || []).filter(l => l && l.language_name);
   if (!filtered.length) return "";
   const mothers = filtered.filter(l => l.mother_tongue).map(l => escapeHtml(l.language_name)).join(", ");
@@ -387,25 +486,26 @@ function buildLanguages(langs: any[]): string {
 <table class="lang-table">
   <thead>
     <tr>
-      <th class="lang-name-col">Language</th>
-      <th>Listening</th>
-      <th>Reading</th>
-      <th>Writing</th>
-      <th>Speaking</th>
+      <th class="lang-name-col">${escapeHtml(t.language)}</th>
+      <th>${escapeHtml(t.listening)}</th>
+      <th>${escapeHtml(t.reading)}</th>
+      <th>${escapeHtml(t.writing)}</th>
+      <th>${escapeHtml(t.speaking)}</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="lang-note">A1–A2: Basic · B1–B2: Independent · C1–C2: Proficient</div>` : "";
+<div class="lang-note">${escapeHtml(t.langNote)}</div>` : "";
 
   const body = `
-${mothers ? `<div class="row-meta" style="margin-bottom:4px;"><b>Mother tongue:</b> ${mothers}</div>` : ""}
+${mothers ? `<div class="row-meta" style="margin-bottom:4px;"><b>${escapeHtml(t.motherTongue)}:</b> ${mothers}</div>` : ""}
 ${table}`;
-  return sectionWrap("Language Skills", body);
+  return sectionWrap(t.secLanguages, body);
 }
 
 // ─── Custom (Skills, etc) ───────────────────────────────────────────────────
-function buildCustomSection(section: any): string {
+function buildCustomSection(section: any, lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const validItems = (section.items || []).filter((it: any) => it && (it.label || (Array.isArray(it.description) ? it.description.length : it.description)));
   if (!validItems.length) return "";
   const groups = validItems.map((item: any, i: number) => {
@@ -415,7 +515,7 @@ function buildCustomSection(section: any): string {
   ${descHtml ? `<div class="rich-desc">${descHtml}</div>` : ""}
 </div>`;
   }).join("");
-  return sectionWrap(section.title || "Skills", groups);
+  return sectionWrap(section.title || t.secSkills, groups);
 }
 
 function buildCustomSections(sections: any[]): string {
@@ -424,7 +524,8 @@ function buildCustomSections(sections: any[]): string {
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
-function buildRecommendations(recs: any[]): string {
+function buildRecommendations(recs: any[], lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   const filtered = (recs || []).filter(r => r && (r.name || r.email || r.institution));
   if (!filtered.length) return "";
   const cells = filtered.map(r => {
@@ -440,15 +541,16 @@ function buildRecommendations(recs: any[]): string {
   ${contactBits.join(" &nbsp;|&nbsp; ")}
 </div>`;
   }).join("");
-  return sectionWrap("Recommendations", `<div class="ref-row">${cells}</div>`);
+  return sectionWrap(t.secRecommendations, `<div class="ref-row">${cells}</div>`);
 }
 
-function buildSignature(p: any): string {
+function buildSignature(p: any, lang?: CVLanguageCode): string {
+  const t = getLabels(lang);
   if (!p.signature_url && !p.full_name) return "";
   return `
 <div class="sig-wrap">
   <div class="sig-box">
-    ${p.signature_url ? `<img src="${escapeHtml(p.signature_url)}" alt="Signature" />` : ""}
+    ${p.signature_url ? `<img src="${escapeHtml(p.signature_url)}" alt="${escapeHtml(t.signature)}" />` : ""}
     <div class="sig-label">${escapeHtml(p.full_name || "")}</div>
   </div>
 </div>`;
@@ -625,32 +727,34 @@ export function buildCVHtml(
   recommendations: any[] = [],
   options: CVBuildOptions = {},
 ): string {
+  const lang: CVLanguageCode = options.language === "de" ? "de" : "en";
+  const t = getLabels(lang);
   const order = normalizeSectionOrder(options.sectionOrder, customSections.length);
   const map: Record<string, string> = {
-    education:       buildEducation(educations),
-    work:            buildWork(workExperiences),
-    publications:    buildPublications(publications),
-    certifications:  buildCertifications(certifications),
-    languages:       buildLanguages(languages),
-    recommendations: buildRecommendations(recommendations),
+    education:       buildEducation(educations, lang),
+    work:            buildWork(workExperiences, lang),
+    publications:    buildPublications(publications, lang),
+    certifications:  buildCertifications(certifications, lang),
+    languages:       buildLanguages(languages, lang),
+    recommendations: buildRecommendations(recommendations, lang),
   };
   customSections.forEach((section, idx) => {
-    map[`${CUSTOM_SECTION_PREFIX}${idx}`] = buildCustomSection(section);
+    map[`${CUSTOM_SECTION_PREFIX}${idx}`] = buildCustomSection(section, lang);
   });
   const body = order.map(k => map[k] || "").filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
 <meta charset="UTF-8">
-<title>${escapeHtml(personal.full_name || "Curriculum Vitae")} – Curriculum Vitae</title>
+<title>${escapeHtml(personal.full_name || t.docTitle)} – ${escapeHtml(t.docTitle)}</title>
 ${buildCSS(options)}
 </head>
 <body>
 <div class="page">
-  ${buildHeader(personal)}
+  ${buildHeader(personal, lang)}
   ${body}
-  ${buildSignature(personal)}
+  ${buildSignature(personal, lang)}
 </div>
 </body>
 </html>`;
