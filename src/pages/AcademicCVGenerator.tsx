@@ -526,6 +526,7 @@ export default function AcademicCVGenerator() {
 
   const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
   const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
+  const [cvLanguage, setCvLanguage] = useState<NonNullable<CVBuildOptions["language"]>>("en");
   const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
     ["education", "work", "publications", "languages", "certifications", "custom", "recommendations"],
   );
@@ -587,8 +588,8 @@ export default function AcademicCVGenerator() {
   ];
 
   const buildOptions = useMemo<CVBuildOptions>(
-    () => ({ headerBgColor, density, sectionOrder }),
-    [headerBgColor, density, sectionOrder],
+    () => ({ headerBgColor, density, sectionOrder, language: cvLanguage }),
+    [headerBgColor, density, sectionOrder, cvLanguage],
   );
 
   const rawHtml = useMemo(() =>
@@ -726,6 +727,7 @@ export default function AcademicCVGenerator() {
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
+      if (data.buildOptions.language) setCvLanguage(data.buildOptions.language);
       if (data.buildOptions.sectionOrder?.length) {
         const customCount = data.customSections?.length ?? 0;
         setSectionOrder(normalizeSectionOrder(data.buildOptions.sectionOrder, customCount));
@@ -1400,6 +1402,26 @@ export default function AcademicCVGenerator() {
                   <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-muted hover:scale-110 transition-all">
                     <input type="color" value={headerBgColor} onChange={e => setHeaderBgColor(e.target.value)} className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer bg-transparent border-none" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px]">🎨</div>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <Label className="text-xs mb-3 block">CV Language</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { value: "en" as const, label: "English", hint: "Standard international CV" },
+                      { value: "de" as const, label: "Deutsch", hint: "German labels & date format" },
+                    ]).map(option => (
+                      <button key={option.value} type="button" onClick={() => setCvLanguage(option.value)}
+                        aria-pressed={cvLanguage === option.value}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${cvLanguage === option.value ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-muted bg-muted/20 hover:border-muted-foreground/30"}`}>
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background border shadow-sm">
+                          <Languages className={`w-4 h-4 ${cvLanguage === option.value ? "text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="text-[11px] font-bold uppercase tracking-tight">{option.label}</div>
+                        <div className="text-[9px] text-muted-foreground leading-tight text-center px-1">{option.hint}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
