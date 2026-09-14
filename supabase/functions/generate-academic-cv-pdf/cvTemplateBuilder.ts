@@ -518,9 +518,9 @@ function buildCustomSection(section: any, lang?: CVLanguageCode): string {
   return sectionWrap(section.title || t.secSkills, groups);
 }
 
-function buildCustomSections(sections: any[]): string {
+function buildCustomSections(sections: any[], lang?: CVLanguageCode): string {
   if (!sections?.length) return "";
-  return sections.map(buildCustomSection).filter(Boolean).join("");
+  return sections.map(section => buildCustomSection(section, lang)).filter(Boolean).join("");
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
