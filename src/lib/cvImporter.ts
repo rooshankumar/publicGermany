@@ -359,6 +359,7 @@ export function parseImportedCVJson(text: string): ImportedCVData | null {
     buildOptions = {
       headerBgColor: str(raw.headerBgColor) || undefined,
       density: str(raw.density) as CVBuildOptions["density"] | undefined,
+      language: str(raw.language) === "de" ? "de" : undefined,
       sectionOrder,
     };
   }
