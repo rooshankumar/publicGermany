@@ -45,6 +45,12 @@ const DENSITY_OPTIONS: Array<{ label: string; value: CVBuildOptions["density"]; 
   { label: "Expanded", value: "expanded", hint: "Slightly larger text and spacing to fill short CVs." },
 ];
 
+const FONT_SIZE_OPTIONS: Array<{ label: string; value: NonNullable<CVBuildOptions["fontSize"]>; size: string }> = [
+  { label: "Small", value: "small", size: "9 pt" },
+  { label: "Standard", value: "standard", size: "10 pt" },
+  { label: "Large", value: "large", size: "11 pt" },
+];
+
 const CUSTOM_SECTION_PREFIX = "custom-";
 const TOP_LEVEL_SECTION_KEYS = ["education", "work", "publications", "languages", "certifications", "recommendations"] as const;
 
@@ -526,6 +532,7 @@ export default function AcademicCVGenerator() {
 
   const [headerBgColor, setHeaderBgColor] = useState("#154a8a");
   const [density, setDensity] = useState<CVBuildOptions["density"]>("standard");
+  const [fontSize, setFontSize] = useState<NonNullable<CVBuildOptions["fontSize"]>>("standard");
   const [cvLanguage, setCvLanguage] = useState<NonNullable<CVBuildOptions["language"]>>("en");
   const [sectionOrder, setSectionOrder] = useState<NonNullable<CVBuildOptions["sectionOrder"]>>(
     ["education", "work", "publications", "languages", "certifications", "custom", "recommendations"],
@@ -588,8 +595,8 @@ export default function AcademicCVGenerator() {
   ];
 
   const buildOptions = useMemo<CVBuildOptions>(
-    () => ({ headerBgColor, density, sectionOrder, language: cvLanguage }),
-    [headerBgColor, density, sectionOrder, cvLanguage],
+    () => ({ headerBgColor, density, fontSize, sectionOrder, language: cvLanguage }),
+    [headerBgColor, density, fontSize, sectionOrder, cvLanguage],
   );
 
   const rawHtml = useMemo(() =>
@@ -727,6 +734,7 @@ export default function AcademicCVGenerator() {
     if (data.buildOptions) {
       if (data.buildOptions.headerBgColor) setHeaderBgColor(data.buildOptions.headerBgColor);
       if (data.buildOptions.density) setDensity(data.buildOptions.density);
+      if (data.buildOptions.fontSize) setFontSize(data.buildOptions.fontSize);
       if (data.buildOptions.language) setCvLanguage(data.buildOptions.language);
       if (data.buildOptions.sectionOrder?.length) {
         const customCount = data.customSections?.length ?? 0;
@@ -1423,6 +1431,20 @@ export default function AcademicCVGenerator() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <Label className="text-xs mb-3 block">Font Size</Label>
+                  <div className="grid grid-cols-3 gap-2" role="group" aria-label="CV font size">
+                    {FONT_SIZE_OPTIONS.map(option => (
+                      <Button key={option.value} type="button" variant={fontSize === option.value ? "default" : "outline"}
+                        className="h-auto flex-col gap-1 py-3" onClick={() => setFontSize(option.value)} aria-pressed={fontSize === option.value}>
+                        <span className="font-semibold">{option.label}</span>
+                        <span className={fontSize === option.value ? "text-primary-foreground/80 text-[10px]" : "text-muted-foreground text-[10px]"}>{option.size}</span>
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-muted-foreground">The CV reflows automatically, and the downloaded PDF uses the same size.</p>
                 </div>
 
                 <div className="mt-6">
