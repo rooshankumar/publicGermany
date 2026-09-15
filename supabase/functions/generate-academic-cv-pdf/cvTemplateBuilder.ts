@@ -96,7 +96,7 @@ export interface CVBuildOptions {
   headerBgColor?: string;
   language?: CVLanguageCode;
   density?: "compact" | "standard" | "expanded";
-  fontSize?: "small" | "standard" | "large";
+  fontSize?: "small" | "standard" | "large" | "extra-large" | "very-large" | "ultra-large";
   sectionOrder?: string[];
 }
 
@@ -564,7 +564,12 @@ function buildCSS(opts: CVBuildOptions = {}): string {
     ? (raw.startsWith("#") ? raw : `#${raw}`)
     : "#003399";
   const density = opts.density || "standard";
-  const fontScale = opts.fontSize === "small" ? 0.92 : opts.fontSize === "large" ? 1.12 : 1;
+  const fontScale = opts.fontSize === "small" ? 0.9
+    : opts.fontSize === "large" ? 1.1
+    : opts.fontSize === "extra-large" ? 1.2
+    : opts.fontSize === "very-large" ? 1.3
+    : opts.fontSize === "ultra-large" ? 1.4
+    : 1;
   const dens = density === "compact"
     ? { fs: "9.2px",  lh: "1.40", padX: "20px", padY: "12px", entryGap: "5px" }
     : density === "expanded"

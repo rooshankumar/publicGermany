@@ -359,7 +359,7 @@ export function parseImportedCVJson(text: string): ImportedCVData | null {
     buildOptions = {
       headerBgColor: str(raw.headerBgColor) || undefined,
       density: str(raw.density) as CVBuildOptions["density"] | undefined,
-      fontSize: (["small", "standard", "large"] as const).includes(str(raw.fontSize) as "small" | "standard" | "large")
+      fontSize: (["small", "standard", "large", "extra-large", "very-large", "ultra-large"] as const).includes(str(raw.fontSize) as NonNullable<CVBuildOptions["fontSize"]>)
         ? str(raw.fontSize) as CVBuildOptions["fontSize"]
         : undefined,
       language: str(raw.language) === "de" ? "de" : undefined,
