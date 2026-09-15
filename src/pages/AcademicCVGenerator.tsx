@@ -49,6 +49,9 @@ const FONT_SIZE_OPTIONS: Array<{ label: string; value: NonNullable<CVBuildOption
   { label: "Small", value: "small", size: "9 pt" },
   { label: "Standard", value: "standard", size: "10 pt" },
   { label: "Large", value: "large", size: "11 pt" },
+  { label: "Extra Large", value: "extra-large", size: "12 pt" },
+  { label: "Very Large", value: "very-large", size: "13 pt" },
+  { label: "Ultra Large", value: "ultra-large", size: "14 pt" },
 ];
 
 const CUSTOM_SECTION_PREFIX = "custom-";
@@ -1435,7 +1438,7 @@ export default function AcademicCVGenerator() {
 
                 <div className="mt-6">
                   <Label className="text-xs mb-3 block">Font Size</Label>
-                  <div className="grid grid-cols-3 gap-2" role="group" aria-label="CV font size">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="group" aria-label="CV font size">
                     {FONT_SIZE_OPTIONS.map(option => (
                       <Button key={option.value} type="button" variant={fontSize === option.value ? "default" : "outline"}
                         className="h-auto flex-col gap-1 py-3" onClick={() => setFontSize(option.value)} aria-pressed={fontSize === option.value}>
