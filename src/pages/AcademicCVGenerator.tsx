@@ -968,7 +968,10 @@ export default function AcademicCVGenerator() {
         const printWindow = window.open("", "_blank");
         if (printWindow) {
           const metaPayload = buildMetadataPayload();
-          const htmlWithMeta = embedCvMetaIntoHtml(previewHtml, metaPayload);
+          const htmlWithMeta = embedCvMetaIntoHtml(previewHtml, metaPayload, {
+            avatar_url: personal.avatar_url,
+            signature_url: personal.signature_url,
+          });
           printWindow.document.write(htmlWithMeta);
           printWindow.document.close();
           printWindow.onload = () => setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
