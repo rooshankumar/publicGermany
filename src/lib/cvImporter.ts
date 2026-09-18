@@ -40,9 +40,12 @@ const URI_SUFFIX  = "-ENDPGCVMETA";
 const TEXT_PREFIX = "PGCVMETA:";
 const TEXT_SUFFIX = ":ENDPGCVMETA";
 
-// Separate annotation for profile avatar (too large for main PGCVMETA payload)
+// Separate annotations for profile avatar and signature
+// (too large for the main PGCVMETA payload)
 const AVATAR_PREFIX = "PGCVAVATAR-";
 const AVATAR_SUFFIX = "-ENDPGCVAVATAR";
+const SIGN_PREFIX = "PGCVSIGN-";
+const SIGN_SUFFIX = "-ENDPGCVSIGN";
 
 function normalizeRawBytes(text: string): string {
   // PDF literal strings encode some chars as octal escapes (\072 = ':').
