@@ -64,12 +64,13 @@ function normalizeRawBytes(text: string): string {
   return decoded;
 }
 
-function extractPayload(text: string, prefix: string, suffix: string): string | null {
+function extractPayload(text: string, prefix: string, suffix: string, maxLen = 20000): string | null {
   const start = text.indexOf(prefix);
   if (start === -1) return null;
-  // Search up to 20000 chars ahead — rich HTML descriptions + 80px avatar thumbnail
+  // Search up to maxLen chars ahead — rich HTML descriptions + 80px avatar thumbnail
   // can push the payload to ~14000-16000 chars when both are present.
-  const searchEnd = Math.min(text.length, start + prefix.length + 20000);
+  // Image annotations (photo / signature) use a much larger window.
+  const searchEnd = Math.min(text.length, start + prefix.length + maxLen);
   const end = text.slice(0, searchEnd).indexOf(suffix, start + prefix.length);
   if (end === -1) return null;
   // Keep only base64url-safe chars in the payload itself
