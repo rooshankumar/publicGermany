@@ -269,11 +269,32 @@ function encodeCvPayloadBase64(payload: unknown): string {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function embedCvMetaIntoHtml(html: string, data: ImportedCVData): string {
+// Encodes a data URI (ASCII) into a base64url payload for PDF embedding.
+function encodeImagePayload(dataUri: string): string | null {
+  try {
+    return btoa(dataUri).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  } catch {
+    return null;
+  }
+}
+
+function embedCvMetaIntoHtml(html: string, data: ImportedCVData, images?: { avatar_url?: string; signature_url?: string }): string {
   const wrapper = { generator: "publicgermany-cv", version: 1, data };
   const encoded = encodeCvPayloadBase64(wrapper);
   const metaText = `PGCVMETA:${encoded}:ENDPGCVMETA`;
-  const metaBlock = `\n<div id="pgcvmeta" style="display:block;position:fixed;left:0;bottom:0;opacity:0.01;font-size:2px;line-height:2px;color:#000000;background:transparent;white-space:pre-wrap;word-break:break-all;">${metaText}</div>\n`;
+  let metaBlock = `\n<div id="pgcvmeta" style="display:block;position:fixed;left:0;bottom:0;opacity:0.01;font-size:2px;line-height:2px;color:#000000;background:transparent;white-space:pre-wrap;word-break:break-all;">${metaText}</div>\n`;
+
+  // Profile photo and signature go into their own invisible link annotations so
+  // re-importing the printed PDF restores them too.
+  const addImage = (raw: string | undefined, prefix: string, suffix: string) => {
+    if (!raw || !raw.startsWith("data:image")) return;
+    const payload = encodeImagePayload(raw);
+    if (!payload || payload.length > 300000) return;
+    metaBlock += `<a href="https://pgcv.app/?i=${prefix}${payload}${suffix}" style="position:fixed;left:0;bottom:0;width:1px;height:1px;font-size:1px;line-height:1px;color:#fff;text-decoration:none;overflow:hidden;opacity:0.01;" aria-hidden="true">.</a>`;
+  };
+  addImage(images?.avatar_url, "PGCVAVATAR-", "-ENDPGCVAVATAR");
+  addImage(images?.signature_url, "PGCVSIGN-", "-ENDPGCVSIGN");
+
   if (html.includes("</body>")) return html.replace("</body>", `${metaBlock}</body>`);
   return `${html}${metaBlock}`;
 }
