@@ -34,6 +34,42 @@ function embedMeta(html: string, data: unknown): string {
   return html.includes("</body>") ? html.replace("</body>", `${tag}</body>`) : html + tag;
 }
 
+// ── Embed profile photo + signature as their own URI annotations ───────────
+// Images are kept out of the main PGCVMETA payload (they would blow past the
+// payload size that survives PDF text extraction). Each image data URI is
+// base64url encoded into its own invisible <a href> annotation so re-import
+// can restore the photo and the signature.
+function encodeAscii(value: string): string {
+  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function embedImages(html: string, personal: Record<string, unknown>): string {
+  const MAX_ENCODED = 300_000; // ~220KB source image — beyond this skip embedding
+  const parts: string[] = [];
+
+  const add = (raw: unknown, prefix: string, suffix: string) => {
+    if (typeof raw !== "string" || !raw.startsWith("data:image")) return;
+    let encoded: string;
+    try {
+      encoded = encodeAscii(raw);
+    } catch {
+      return;
+    }
+    if (encoded.length > MAX_ENCODED) return;
+    const href = `https://pgcv.app/?i=${prefix}${encoded}${suffix}`;
+    parts.push(
+      `<a href="${href}" style="position:fixed;left:0;bottom:0;width:1px;height:1px;font-size:1px;line-height:1px;color:#fff;text-decoration:none;overflow:hidden;opacity:0.01;" aria-hidden="true">.</a>`,
+    );
+  };
+
+  add(personal?.avatar_url, "PGCVAVATAR-", "-ENDPGCVAVATAR");
+  add(personal?.signature_url, "PGCVSIGN-", "-ENDPGCVSIGN");
+
+  if (!parts.length) return html;
+  const tag = parts.join("");
+  return html.includes("</body>") ? html.replace("</body>", `${tag}</body>`) : html + tag;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST")    return jsonError("Method not allowed", 405);
@@ -71,7 +107,7 @@ serve(async (req) => {
       certifications, customSections, recommendations, buildOptions,
     };
 
-    const finalHtml = embedMeta(html, metaData);
+    const finalHtml = embedImages(embedMeta(html, metaData), personal ?? {});
     console.log(`Final HTML with Meta length: ${finalHtml.length} characters`);
     console.log("HTML Preview (first 500 chars):", finalHtml.slice(0, 500));
 

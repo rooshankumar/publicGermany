@@ -269,11 +269,32 @@ function encodeCvPayloadBase64(payload: unknown): string {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function embedCvMetaIntoHtml(html: string, data: ImportedCVData): string {
+// Encodes a data URI (ASCII) into a base64url payload for PDF embedding.
+function encodeImagePayload(dataUri: string): string | null {
+  try {
+    return btoa(dataUri).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  } catch {
+    return null;
+  }
+}
+
+function embedCvMetaIntoHtml(html: string, data: ImportedCVData, images?: { avatar_url?: string; signature_url?: string }): string {
   const wrapper = { generator: "publicgermany-cv", version: 1, data };
   const encoded = encodeCvPayloadBase64(wrapper);
   const metaText = `PGCVMETA:${encoded}:ENDPGCVMETA`;
-  const metaBlock = `\n<div id="pgcvmeta" style="display:block;position:fixed;left:0;bottom:0;opacity:0.01;font-size:2px;line-height:2px;color:#000000;background:transparent;white-space:pre-wrap;word-break:break-all;">${metaText}</div>\n`;
+  let metaBlock = `\n<div id="pgcvmeta" style="display:block;position:fixed;left:0;bottom:0;opacity:0.01;font-size:2px;line-height:2px;color:#000000;background:transparent;white-space:pre-wrap;word-break:break-all;">${metaText}</div>\n`;
+
+  // Profile photo and signature go into their own invisible link annotations so
+  // re-importing the printed PDF restores them too.
+  const addImage = (raw: string | undefined, prefix: string, suffix: string) => {
+    if (!raw || !raw.startsWith("data:image")) return;
+    const payload = encodeImagePayload(raw);
+    if (!payload || payload.length > 300000) return;
+    metaBlock += `<a href="https://pgcv.app/?i=${prefix}${payload}${suffix}" style="position:fixed;left:0;bottom:0;width:1px;height:1px;font-size:1px;line-height:1px;color:#fff;text-decoration:none;overflow:hidden;opacity:0.01;" aria-hidden="true">.</a>`;
+  };
+  addImage(images?.avatar_url, "PGCVAVATAR-", "-ENDPGCVAVATAR");
+  addImage(images?.signature_url, "PGCVSIGN-", "-ENDPGCVSIGN");
+
   if (html.includes("</body>")) return html.replace("</body>", `${metaBlock}</body>`);
   return `${html}${metaBlock}`;
 }
@@ -648,8 +669,21 @@ export default function AcademicCVGenerator() {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      if (field === 'avatar_url') { setTempImageUrl(result); setIsCropperOpen(true); }
-      else updatePersonal(field, result);
+      if (field === 'avatar_url') { setTempImageUrl(result); setIsCropperOpen(true); return; }
+      // Signature: downscale to ≤600px wide PNG so it stays small enough to be
+      // embedded in the exported PDF and restored on re-import.
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 600;
+        let w = img.width, h = img.height;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        updatePersonal(field, canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => updatePersonal(field, result);
+      img.src = result;
     };
     reader.readAsDataURL(file);
   };
@@ -947,7 +981,10 @@ export default function AcademicCVGenerator() {
         const printWindow = window.open("", "_blank");
         if (printWindow) {
           const metaPayload = buildMetadataPayload();
-          const htmlWithMeta = embedCvMetaIntoHtml(previewHtml, metaPayload);
+          const htmlWithMeta = embedCvMetaIntoHtml(previewHtml, metaPayload, {
+            avatar_url: personal.avatar_url,
+            signature_url: personal.signature_url,
+          });
           printWindow.document.write(htmlWithMeta);
           printWindow.document.close();
           printWindow.onload = () => setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);

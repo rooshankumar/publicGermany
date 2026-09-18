@@ -40,9 +40,12 @@ const URI_SUFFIX  = "-ENDPGCVMETA";
 const TEXT_PREFIX = "PGCVMETA:";
 const TEXT_SUFFIX = ":ENDPGCVMETA";
 
-// Separate annotation for profile avatar (too large for main PGCVMETA payload)
+// Separate annotations for profile avatar and signature
+// (too large for the main PGCVMETA payload)
 const AVATAR_PREFIX = "PGCVAVATAR-";
 const AVATAR_SUFFIX = "-ENDPGCVAVATAR";
+const SIGN_PREFIX = "PGCVSIGN-";
+const SIGN_SUFFIX = "-ENDPGCVSIGN";
 
 function normalizeRawBytes(text: string): string {
   // PDF literal strings encode some chars as octal escapes (\072 = ':').
@@ -61,12 +64,13 @@ function normalizeRawBytes(text: string): string {
   return decoded;
 }
 
-function extractPayload(text: string, prefix: string, suffix: string): string | null {
+function extractPayload(text: string, prefix: string, suffix: string, maxLen = 20000): string | null {
   const start = text.indexOf(prefix);
   if (start === -1) return null;
-  // Search up to 20000 chars ahead — rich HTML descriptions + 80px avatar thumbnail
+  // Search up to maxLen chars ahead — rich HTML descriptions + 80px avatar thumbnail
   // can push the payload to ~14000-16000 chars when both are present.
-  const searchEnd = Math.min(text.length, start + prefix.length + 20000);
+  // Image annotations (photo / signature) use a much larger window.
+  const searchEnd = Math.min(text.length, start + prefix.length + maxLen);
   const end = text.slice(0, searchEnd).indexOf(suffix, start + prefix.length);
   if (end === -1) return null;
   // Keep only base64url-safe chars in the payload itself
@@ -152,27 +156,30 @@ export function extractEmbeddedCVDataFromText(text: string): ImportedCVData | nu
   return null;
 }
 
-// ── Avatar extraction ─────────────────────────────────────────────────────────
-// Avatar is stored in a separate PGCVAVATAR-...-ENDPGCVAVATAR URI annotation
-// so it doesn't inflate the main PGCVMETA payload.
-// The avatar payload is a base64url-encoded UTF-8 string of the data URI
-// (e.g. "data:image/jpeg;base64,/9j/...").
-function extractAndMergeAvatar(normalized: string, data: ImportedCVData): void {
+// ── Image extraction (profile photo + signature) ─────────────────────────────
+// Each image is stored in its own URI annotation (PGCVAVATAR-… / PGCVSIGN-…)
+// so it doesn't inflate the main PGCVMETA payload. The payload is a base64url
+// encoded copy of the data URI (e.g. "data:image/jpeg;base64,/9j/…").
+const IMAGE_SCAN_WINDOW = 400_000;
+
+function decodeImagePayload(normalized: string, prefix: string, suffix: string): string | null {
   try {
-    const avatarPayload = extractPayload(normalized, AVATAR_PREFIX, AVATAR_SUFFIX);
-    if (!avatarPayload) return;
-    const b64 = base64UrlToBase64(avatarPayload);
-    // Decode bytes back to the original data URI string
-    const binaryStr = atob(b64);
-    // The binary string IS the original data URI (UTF-8 encoded, but data URIs are ASCII-safe)
-    const avatarDataUri = binaryStr;
-    if (avatarDataUri.startsWith("data:image")) {
-      if (!data.personal) data.personal = {} as any;
-      (data.personal as any).avatar_url = avatarDataUri;
-    }
+    const payload = extractPayload(normalized, prefix, suffix, IMAGE_SCAN_WINDOW);
+    if (!payload) return null;
+    const dataUri = atob(base64UrlToBase64(payload));
+    return dataUri.startsWith("data:image") ? dataUri : null;
   } catch {
-    // Avatar extraction failure is non-fatal — rest of CV data is still valid
+    return null;
   }
+}
+
+function extractAndMergeAvatar(normalized: string, data: ImportedCVData): void {
+  const avatar = decodeImagePayload(normalized, AVATAR_PREFIX, AVATAR_SUFFIX);
+  const signature = decodeImagePayload(normalized, SIGN_PREFIX, SIGN_SUFFIX);
+  if (!avatar && !signature) return;
+  if (!data.personal) data.personal = {} as any;
+  if (avatar) (data.personal as any).avatar_url = avatar;
+  if (signature) (data.personal as any).signature_url = signature;
 }
 
 export async function extractEmbeddedCVDataFromPDF(file: File): Promise<ImportedCVData | null> {
