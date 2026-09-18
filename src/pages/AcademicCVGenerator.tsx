@@ -669,8 +669,21 @@ export default function AcademicCVGenerator() {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      if (field === 'avatar_url') { setTempImageUrl(result); setIsCropperOpen(true); }
-      else updatePersonal(field, result);
+      if (field === 'avatar_url') { setTempImageUrl(result); setIsCropperOpen(true); return; }
+      // Signature: downscale to ≤600px wide PNG so it stays small enough to be
+      // embedded in the exported PDF and restored on re-import.
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 600;
+        let w = img.width, h = img.height;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        updatePersonal(field, canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => updatePersonal(field, result);
+      img.src = result;
     };
     reader.readAsDataURL(file);
   };
