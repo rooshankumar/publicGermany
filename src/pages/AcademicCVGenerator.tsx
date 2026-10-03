@@ -26,8 +26,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import logos from "@/assets/logos.png";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const SUGGESTED_SECTIONS = ["Academic Research", "Technical Skills", "Academic Projects", "Digital & Research Skills"];
@@ -950,6 +948,7 @@ export default function AcademicCVGenerator() {
         const container = iframe.contentDocument.body.querySelector('.page') as HTMLElement;
         if (!container) throw new Error("CV container not found in preview");
 
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
         const canvas = await html2canvas(container, {
           scale: 2, useCORS: true, allowTaint: true, logging: false,
           backgroundColor: "#ffffff", windowWidth: 794,
