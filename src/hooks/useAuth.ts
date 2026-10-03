@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,7 +47,7 @@ export interface Profile {
   documents?: Document[];
 }
 
-export const useAuth = () => {
+const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -62,6 +63,7 @@ export const useAuth = () => {
       const parsed = JSON.parse(cached) as Profile;
       if (parsed?.user_id === userId) {
         setProfile(parsed);
+        setLoading(false); // render instantly from cache; fresh profile loads in background
       }
     } catch {
       // ignore malformed cache
@@ -393,4 +395,15 @@ export const useAuth = () => {
     resetPasswordForEmail,
     refetchProfile: () => user && fetchProfile(user.id),
   };
+};
+type AuthValue = ReturnType<typeof useAuthState>;
+const AuthContext = React.createContext<AuthValue | null>(null);
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(AuthContext.Provider, { value: useAuthState() }, children);
+
+export const useAuth = (): AuthValue => {
+  const ctx = React.useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 };
