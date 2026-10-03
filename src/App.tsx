@@ -59,7 +59,7 @@ const AdminEditorProfile = lazy(() => import("./pages/admin/EditorProfile"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60, // 1 minute
+      staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes
       refetchOnWindowFocus: false,
       retry: 1,
@@ -118,15 +118,10 @@ const AppRoutes = () => {
     }
   }, [loading, user, profile?.role]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+  // Only block on auth for routes that depend on it; public pages render immediately.
+  const authDependentPaths = ['/', '/auth'];
+  if (loading && authDependentPaths.includes(window.location.pathname)) {
+    return <AppShellFallback />;
   }
 
   return (
