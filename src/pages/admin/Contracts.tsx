@@ -16,8 +16,6 @@ import { format } from 'date-fns';
 import { generateContractHTML, generateContractReference, validateContractData, downloadContractPDF, generateContractPDFBlob } from '@/lib/contractGenerator';
 import { sendEmail } from '@/lib/sendEmail';
 import { getContractSignedUrl } from '@/lib/signedUrl';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 interface Student {
   user_id: string;
