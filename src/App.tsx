@@ -98,24 +98,24 @@ const AppRoutes = () => {
       import('./pages/admin/RequestStudents');
     };
 
-    // Use requestIdleCallback to preload without blocking the main thread
-    if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(() => {
+    // Skip on slow / data-saver connections
+    const conn = (navigator as any).connection;
+    if (conn?.saveData || /2g/.test(conn?.effectiveType || '')) return;
+
+    const run = () => {
+      if (user) {
+        if (profile?.role === 'admin') preloadAdmin();
+        else if (profile?.role !== 'editor') preloadStudent();
+      } else {
         preloadPublic();
-        if (user) {
-          if (profile?.role === 'admin') preloadAdmin();
-          else preloadStudent();
-        }
-      });
-    } else {
-      setTimeout(() => {
-        preloadPublic();
-        if (user) {
-          if (profile?.role === 'admin') preloadAdmin();
-          else preloadStudent();
-        }
-      }, 2000);
-    }
+      }
+    };
+    // Wait until the current page has fully settled before fetching others
+    const t = window.setTimeout(() => {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 5000 });
+      else run();
+    }, 3000);
+    return () => window.clearTimeout(t);
   }, [loading, user, profile?.role]);
 
   // Only block on auth for routes that depend on it; public pages render immediately.
