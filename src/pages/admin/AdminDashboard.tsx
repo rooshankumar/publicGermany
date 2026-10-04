@@ -121,10 +121,42 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         ...(recentPaymentsRes.data || []).map((p: any) => ({ ...p, type: 'payment' })),
         ...commissionEntries,
       ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
-      setStats({ totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: ((pendingRowsRes.data || []) as any[]).length, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [], revenueRows, pendingAmount });
-    } catch (error: any) { toast({ title: "Error loading dashboard", description: error.message, variant: "destructive" }); }
-    finally { if (showSpinner || !initialLoadDoneRef.current) { setLoading(false); initialLoadDoneRef.current = true; } }
+      return { totalStudents: studentsCountRes.count || 0, activeApplications: applicationsCountRes.count || 0, pendingRequests: requestsCountRes.count || 0, totalRevenue, recentPayments: mergedRecent, urgentTasks: urgentAppsRes.data || [], pendingPayments: ((pendingRowsRes.data || []) as any[]).length, receivedPayments: receivedPaymentsCountRes.count || 0, pendingDocuments: pendingDocsRes.count || 0, recentStudents: recentStudentsRes.data || [], revenueRows, pendingAmount };
+    } catch (error: any) {
+      console.error('Error loading dashboard:', error);
+      return emptyStats;
+    }
   };
+
+const AdminDashboard = () => {
+  const [bucketSize, setBucketSize] = useState<4 | 6>(4);
+  const [periodKey, setPeriodKey] = useState<string>('all');
+  const debounceRef = useRef<number | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: stats = emptyStats } = useQuery({
+    queryKey: ['admin-dashboard'],
+    queryFn: fetchDashboardData,
+  });
+
+  const scheduleRefresh = () => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+    }, 400);
+  };
+
+  useEffect(() => {
+    const channel = supabase.channel('admin-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => scheduleRefresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => scheduleRefresh())
+      .subscribe();
+    return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); supabase.removeChannel(channel); };
+  }, []);
 
   const getDaysUntilDeadline = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
