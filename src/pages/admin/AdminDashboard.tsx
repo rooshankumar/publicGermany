@@ -36,37 +36,10 @@ const buildPeriods = (size: number) => {
   return out.reverse();
 };
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[],revenueRows:[],pendingAmount:0});
-  const [loading, setLoading] = useState(true);
-  const [bucketSize, setBucketSize] = useState<4 | 6>(4);
-  const [periodKey, setPeriodKey] = useState<string>('all');
-  const initialLoadDoneRef = useRef(false);
-  const debounceRef = useRef<number | null>(null);
-  const { toast } = useToast();
+const emptyStats: DashboardStats = {totalStudents:0,activeApplications:0,pendingRequests:0,totalRevenue:0,recentPayments:[],urgentTasks:[],pendingPayments:0,receivedPayments:0,pendingDocuments:0,recentStudents:[],revenueRows:[],pendingAmount:0};
 
-
-  useEffect(() => {
-    fetchDashboardData(true);
-    const channel = supabase.channel('admin-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => scheduleRefresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => scheduleRefresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => scheduleRefresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_payments' }, () => scheduleRefresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => scheduleRefresh())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => scheduleRefresh())
-      .subscribe();
-    return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); supabase.removeChannel(channel); };
-  }, []);
-
-  const scheduleRefresh = () => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => fetchDashboardData(false), 400);
-  };
-
-  const fetchDashboardData = async (showSpinner: boolean) => {
+const fetchDashboardData = async (): Promise<DashboardStats> => {
     try {
-      if (showSpinner) setLoading(true);
       const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
       const [studentsCountRes, applicationsCountRes, requestsCountRes, receivedRowsRes, pendingRowsRes, receivedPaymentsCountRes, recentPaymentsRes, urgentAppsRes, pendingDocsRes, recentStudentsRes] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
