@@ -2,6 +2,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, FileText, GraduationCap, CreditCard, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
