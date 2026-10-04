@@ -25,90 +25,101 @@ import {
   MessageCircle,
 } from 'lucide-react';
 
+interface DashboardData {
+  profileCompletion: number;
+  docsCount: number;
+  appsCount: number;
+  nearestDeadline: { name: string; date: string; days: number } | null;
+  contracts: any[];
+  recentEvents: { action: string; entity_type: string; created_at: string }[];
+  pendingAmount: number;
+  pendingCurrency: string;
+}
+
+const fetchDashboardData = async (userId: string): Promise<DashboardData> => {
+  const [
+    profResult,
+    { count: dCount },
+    { data: apps },
+    { data: ctrData },
+    { data: events },
+    { data: requests },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('user_id', userId).single(),
+    supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('applications').select('id, status, university_name, application_end_date').eq('user_id', userId),
+    supabase.from('contracts').select('*').eq('student_id', userId).neq('status', 'draft').order('sent_at', { ascending: false }),
+    supabase.from('events').select('action, entity_type, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
+    supabase.from('service_requests').select('id, service_price, target_total_amount, target_currency, service_currency, service_payments(amount, status)').eq('user_id', userId),
+  ]);
+
+  const prof = profResult.data;
+  const fields = [
+    !!prof?.full_name, !!prof?.date_of_birth, !!prof?.country_of_education,
+    !!prof?.class_12_marks, !!prof?.bachelor_degree_name,
+    !!(prof?.ielts_toefl_score || prof?.german_level),
+  ];
+  const profileCompletion = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  const appsList = apps || [];
+
+  let nearestDeadline: DashboardData['nearestDeadline'] = null;
+  const now = new Date();
+  const upcoming = appsList
+    .filter(a => a.application_end_date && new Date(a.application_end_date) > now)
+    .sort((a, b) => new Date(a.application_end_date!).getTime() - new Date(b.application_end_date!).getTime());
+  if (upcoming.length > 0) {
+    const d = new Date(upcoming[0].application_end_date!);
+    nearestDeadline = {
+      name: upcoming[0].university_name,
+      date: d.toLocaleDateString(),
+      days: Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    };
+  }
+
+  let totalPending = 0;
+  let currency = 'INR';
+  (requests || []).forEach((r: any) => {
+    const target = Number(r.target_total_amount ?? r.service_price ?? 0) || 0;
+    const received = (r.service_payments || [])
+      .filter((p: any) => (p.status || '').toLowerCase() === 'received')
+      .reduce((acc: number, p: any) => acc + (Number(p.amount) || 0), 0);
+    totalPending += Math.max(0, target - received);
+    currency = r.target_currency || r.service_currency || currency;
+  });
+
+  return {
+    profileCompletion,
+    docsCount: dCount || 0,
+    appsCount: appsList.length,
+    nearestDeadline,
+    contracts: ctrData || [],
+    recentEvents: events || [],
+    pendingAmount: totalPending,
+    pendingCurrency: currency,
+  };
+};
+
 const Dashboard = () => {
   const { user, profile } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [profileCompletion, setProfileCompletion] = useState(0);
-  const [docsCount, setDocsCount] = useState(0);
-  const [appsCount, setAppsCount] = useState(0);
-  const [submittedApps, setSubmittedApps] = useState(0);
-  const [nearestDeadline, setNearestDeadline] = useState<{ name: string; date: string; days: number } | null>(null);
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [recentEvents, setRecentEvents] = useState<{ action: string; entity_type: string; created_at: string }[]>([]);
-  const [pendingAmount, setPendingAmount] = useState(0);
-  const [pendingCurrency, setPendingCurrency] = useState('INR');
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['student-dashboard', user?.id],
+    queryFn: () => fetchDashboardData(user!.id),
+    enabled: !!user,
+  });
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [
-          profResult,
-          { count: dCount },
-          { data: apps },
-          { data: ctrData },
-          { data: events },
-          { data: requests },
-        ] = await Promise.all([
-          supabase.from('profiles').select('*').eq('user_id', user.id).single(),
-          supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('applications').select('id, status, university_name, application_end_date').eq('user_id', user.id),
-          supabase.from('contracts').select('*').eq('student_id', user.id).neq('status', 'draft').order('sent_at', { ascending: false }),
-          supabase.from('events').select('action, entity_type, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-          supabase.from('service_requests').select('id, service_price, target_total_amount, target_currency, service_currency, service_payments(amount, status)').eq('user_id', user.id),
-        ]);
+  const {
+    profileCompletion = 0,
+    docsCount = 0,
+    appsCount = 0,
+    nearestDeadline = null,
+    contracts = [],
+    recentEvents = [],
+    pendingAmount = 0,
+    pendingCurrency = 'INR',
+  } = data || {};
 
-        const prof = profResult.data;
-        const fields = [
-          !!prof?.full_name, !!prof?.date_of_birth, !!prof?.country_of_education,
-          !!prof?.class_12_marks, !!prof?.bachelor_degree_name,
-          !!(prof?.ielts_toefl_score || prof?.german_level),
-        ];
-        setProfileCompletion(Math.round((fields.filter(Boolean).length / fields.length) * 100));
-        setDocsCount(dCount || 0);
-        const appsList = apps || [];
-        setAppsCount(appsList.length);
-        setSubmittedApps(appsList.filter(a => ['submitted', 'Applied'].includes(a.status)).length);
-
-        const now = new Date();
-        const upcoming = appsList
-          .filter(a => a.application_end_date && new Date(a.application_end_date) > now)
-          .sort((a, b) => new Date(a.application_end_date!).getTime() - new Date(b.application_end_date!).getTime());
-        if (upcoming.length > 0) {
-          const d = new Date(upcoming[0].application_end_date!);
-          setNearestDeadline({
-            name: upcoming[0].university_name,
-            date: d.toLocaleDateString(),
-            days: Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-          });
-        }
-
-        setContracts(ctrData || []);
-        setRecentEvents(events || []);
-
-        let totalPending = 0;
-        let currency = 'INR';
-        (requests || []).forEach((r: any) => {
-          const target = Number(r.target_total_amount ?? r.service_price ?? 0) || 0;
-          const received = (r.service_payments || [])
-            .filter((p: any) => (p.status || '').toLowerCase() === 'received')
-            .reduce((acc: number, p: any) => acc + (Number(p.amount) || 0), 0);
-          totalPending += Math.max(0, target - received);
-          currency = r.target_currency || r.service_currency || currency;
-        });
-        setPendingAmount(totalPending);
-        setPendingCurrency(currency);
-      } catch (e) {
-        console.error('Dashboard load error:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center p-12">
