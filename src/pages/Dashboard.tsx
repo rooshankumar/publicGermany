@@ -328,8 +328,7 @@ const Dashboard = () => {
                   contract={contract}
                   userId={user?.id}
                   onStatusChange={async () => {
-                    const { data } = await supabase.from('contracts').select('*').eq('student_id', user?.id).neq('status', 'draft').order('sent_at', { ascending: false });
-                    if (data) setContracts(data);
+                    queryClient.invalidateQueries({ queryKey: ['student-dashboard', user?.id] });
                   }}
                 />
               ))}
