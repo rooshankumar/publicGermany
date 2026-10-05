@@ -275,6 +275,20 @@ const Dashboard = () => {
           </section>
         )}
 
+        {/* Review prompt — shown once an application is accepted and no review yet */}
+        {showReviewPrompt && (
+          <section className="bg-pg-green/10 border border-pg-green/30 rounded-[16px] p-5">
+            <div className="flex items-start gap-2.5">
+              <Star className="w-4 h-4 text-pg-green shrink-0 mt-0.5" />
+              <div className="text-[13px]">
+                <div className="font-semibold text-pg-label">Congratulations on your admission! 🎉</div>
+                <div className="text-pg-label2">Share your experience to help other students — it takes less than a minute.</div>
+                <Link to="/reviews" className="inline-block mt-2 pg-btn pg-btn-secondary pg-btn-sm">Write a review</Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Community */}
         <section className="bg-pg-bg rounded-[16px] border border-pg-sep p-5">
           <div className="flex items-center gap-2 mb-3">
