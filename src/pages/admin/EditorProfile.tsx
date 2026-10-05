@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useToast } from '@/hooks/use-toast';
+import { sendEmail } from '@/lib/sendEmail';
+import { wrapInEmailTemplate } from '@/lib/emailTemplate';
 
 const sb = supabase as any;
 
@@ -67,9 +69,24 @@ export default function EditorProfile() {
 
   const qualified = referrals.filter(r => QUALIFIED_STATUSES.includes(r.current_status));
 
+  // Best-effort email alert to the editor when admin changes a referral
+  const notifyEditor = (subject: string, content: string) => {
+    if (!email) return;
+    void sendEmail(
+      email,
+      subject,
+      wrapInEmailTemplate(content, { customGreeting: `Hi ${editor?.full_name || 'there'},` })
+    ).catch(() => { /* email is best-effort */ });
+  };
+
   const reject = async (id: string) => {
     await update.mutateAsync({ id, patch: { current_status: 'not_interested' } });
     toast({ title: 'Referral rejected' });
+    const r = referrals.find((x: any) => x.id === id);
+    notifyEditor(
+      'Update on your referral — publicGermany',
+      `Your referral <strong>${r?.full_name || ''}</strong> has been marked as <strong>Not Interested</strong> by our team.<br><br>You can view the full timeline in your editor dashboard.`
+    );
     refetch();
   };
 
@@ -86,6 +103,10 @@ export default function EditorProfile() {
         },
       });
       toast({ title: 'Referral verified', description: 'Editor can no longer edit this referral. Revenue tracked.' });
+      notifyEditor(
+        'Your referral was verified — publicGermany',
+        `Good news! Your referral <strong>${r.full_name || ''}</strong> has been <strong>verified</strong> by our team and your commission is now marked as earned.<br><br>Commission is settled offline as per your agreement.`
+      );
       refetch();
     } catch (e: any) {
       toast({ title: 'Verification failed', description: e.message, variant: 'destructive' });
@@ -109,6 +130,10 @@ export default function EditorProfile() {
   const convert = async (r: any) => {
     await update.mutateAsync({ id: r.id, patch: { converted_at: new Date().toISOString(), current_status: 'completed' } });
     toast({ title: 'Marked as converted', description: 'Create the student account in the Students module and link manually.' });
+    notifyEditor(
+      'Your referral converted — publicGermany',
+      `Congratulations! Your referral <strong>${r.full_name || ''}</strong> has been <strong>converted to a student</strong>.<br><br>Thank you for growing the publicGermany family.`
+    );
     refetch();
   };
 

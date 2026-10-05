@@ -23,6 +23,7 @@ import {
   BarChart3,
   Lightbulb,
   MessageCircle,
+  Star,
 } from 'lucide-react';
 
 interface DashboardData {
