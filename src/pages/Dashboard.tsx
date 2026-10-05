@@ -34,6 +34,7 @@ interface DashboardData {
   recentEvents: { action: string; entity_type: string; created_at: string }[];
   pendingAmount: number;
   pendingCurrency: string;
+  showReviewPrompt: boolean;
 }
 
 const fetchDashboardData = async (userId: string): Promise<DashboardData> => {
@@ -44,6 +45,7 @@ const fetchDashboardData = async (userId: string): Promise<DashboardData> => {
     { data: ctrData },
     { data: events },
     { data: requests },
+    { data: myReviews },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('user_id', userId).single(),
     supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', userId),
@@ -51,6 +53,7 @@ const fetchDashboardData = async (userId: string): Promise<DashboardData> => {
     supabase.from('contracts').select('*').eq('student_id', userId).neq('status', 'draft').order('sent_at', { ascending: false }),
     supabase.from('events').select('action, entity_type, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
     supabase.from('service_requests').select('id, service_price, target_total_amount, target_currency, service_currency, service_payments(amount, status)').eq('user_id', userId),
+    (supabase as any).from('reviews').select('id').eq('user_id', userId).limit(1),
   ]);
 
   const prof = profResult.data;
@@ -96,6 +99,7 @@ const fetchDashboardData = async (userId: string): Promise<DashboardData> => {
     recentEvents: events || [],
     pendingAmount: totalPending,
     pendingCurrency: currency,
+    showReviewPrompt: appsList.some(a => a.status === 'accepted') && !(myReviews || []).length,
   };
 };
 
@@ -117,6 +121,7 @@ const Dashboard = () => {
     recentEvents = [],
     pendingAmount = 0,
     pendingCurrency = 'INR',
+    showReviewPrompt = false,
   } = data || {};
 
   if (isLoading) {
