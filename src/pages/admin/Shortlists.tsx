@@ -157,7 +157,7 @@ export default function Shortlists() {
   const loading = loadingProfiles || loadingApps;
 
   return (
-    <Layout_default>
+    <Layout>
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
@@ -300,6 +300,6 @@ export default function Shortlists() {
           </div>
         )}
       </div>
-    </Layout_default>
+    </Layout>
   );
 }
