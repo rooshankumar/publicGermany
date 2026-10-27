@@ -200,6 +200,12 @@ const AppRoutes = () => {
         } />
         {/* Backward compatibility: redirect old admin applications path */}
         <Route path="/admin/applications" element={<Navigate to="/admin" replace />} />
+
+        <Route path="/admin/shortlists" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminShortlists />
+          </ProtectedRoute>
+        } />
         
         <Route path="/admin/payments" element={
           <ProtectedRoute requiredRole="admin">

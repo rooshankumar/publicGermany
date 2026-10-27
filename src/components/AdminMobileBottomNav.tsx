@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, BookOpen, FileText, Clock, UserCheck, Globe, GraduationCap } from 'lucide-react';
+import { Home, Users, FileBarChart, CreditCard, MoreHorizontal, Settings, Star, BookOpen, FileText, Clock, UserCheck, Globe, GraduationCap, ListChecks } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +54,7 @@ const AdminMobileBottomNav = () => {
   ];
 
   const more = [
+    { href: '/admin/shortlists', label: 'Shortlists', icon: ListChecks },
     { href: '/admin/german-course', label: 'German Course', icon: BookOpen },
     { href: '/admin/editors', label: 'Editors', icon: UserCheck },
     { href: '/admin/contracts', label: 'Contracts', icon: FileText },

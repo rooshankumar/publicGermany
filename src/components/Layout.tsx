@@ -20,7 +20,8 @@ import {
   Youtube,
   BookOpen,
   Play,
-  Wrench
+  Wrench,
+  ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -91,6 +92,7 @@ const Layout = ({ children }: LayoutProps) => {
   const adminNavItems = [
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
+    { href: '/admin/shortlists', label: 'Shortlists', icon: ListChecks },
     { href: '/admin/german-course', label: 'German Course', icon: Youtube },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
