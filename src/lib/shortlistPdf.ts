@@ -52,11 +52,11 @@ function fmtDeadline(d: string | null): string {
   return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export function buildShortlistPdfDoc(
+export async function buildShortlistPdfDoc(
   students: ShortlistStudent[],
   opts?: { singleStudent?: boolean }
 ) {
-  const { jsPDF } = require('jspdf');
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   const M = 14; // page margin
@@ -183,6 +183,14 @@ export function buildShortlistPdfDoc(
   }
 
   footer();
+  return doc;
+}
+
+export async function generateShortlistPdf(
+  students: ShortlistStudent[],
+  opts?: { singleStudent?: boolean }
+) {
+  const doc = await buildShortlistPdfDoc(students, opts);
   const stamp = new Date().toISOString().slice(0, 10);
   const name = opts?.singleStudent && students[0]
     ? `Shortlist_${(students[0].full_name || 'student').replace(/\s+/g, '_')}_${stamp}.pdf`
