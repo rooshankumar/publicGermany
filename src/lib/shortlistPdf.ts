@@ -52,11 +52,11 @@ function fmtDeadline(d: string | null): string {
   return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export async function generateShortlistPdf(
+export function buildShortlistPdfDoc(
   students: ShortlistStudent[],
   opts?: { singleStudent?: boolean }
 ) {
-  const { jsPDF } = await import('jspdf');
+  const { jsPDF } = require('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   const M = 14; // page margin
