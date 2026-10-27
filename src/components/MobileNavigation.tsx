@@ -15,7 +15,8 @@ import {
   FileBarChart,
   LogOut,
   Star,
-  BookOpen
+  BookOpen,
+  ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +44,7 @@ const MobileNavigation = () => {
   const adminNavMain = [
     { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/students', label: 'Students', icon: Users },
+    { href: '/admin/shortlists', label: 'Shortlists', icon: ListChecks },
     { href: '/admin/requests', label: 'Requests', icon: FileBarChart },
     { href: '/admin/payments', label: 'Payments', icon: FileText },
     { href: '/admin/exports', label: 'Exports', icon: Settings },
