@@ -26,6 +26,7 @@ const UpcomingDeadlineReminders = () => {
   const [reminders, setReminders] = useState<UpcomingReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { fetchUpcomingReminders(); }, []);
