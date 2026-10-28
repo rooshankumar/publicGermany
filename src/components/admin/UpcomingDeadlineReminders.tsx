@@ -107,31 +107,47 @@ const UpcomingDeadlineReminders = () => {
   const openingReminders = reminders.filter(r => r.type === 'opening');
   const closingReminders = reminders.filter(r => r.type === 'closing');
 
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return dateStr; }
+  };
+
+  const ReminderRow = ({ reminder, detailed = false }: { reminder: UpcomingReminder; detailed?: boolean }) => (
+    <div className="flex items-center justify-between p-2 border rounded-lg text-sm">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+          <span className="font-medium truncate">{reminder.full_name}</span>
+        </div>
+        <div className="text-xs text-muted-foreground truncate">
+          {reminder.university_name} • {reminder.program_name}
+        </div>
+        {detailed && (
+          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+            <Calendar className="h-3 w-3 flex-shrink-0" />
+            {reminder.type === 'opening' ? 'Starts' : 'Ends'} {formatDate(reminder.date)}
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <Badge variant={getUrgencyVariant(reminder.days_until)} className="text-xs">
+          {reminder.type === 'opening' ? 'Opens' : 'Closes'} {getDaysLabel(reminder.days_until)}
+        </Badge>
+        {reminder.reminder_days.length > 0 && (
+          <span className="text-xs text-muted-foreground">📧 D-{reminder.reminder_days.join('/')}</span>
+        )}
+      </div>
+    </div>
+  );
+
   const ReminderList = ({ items }: { items: UpcomingReminder[] }) => (
     items.length === 0 ? (
       <div className="text-center py-4 text-muted-foreground text-sm">No upcoming reminders</div>
     ) : (
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {items.slice(0, 8).map((reminder) => (
-          <div key={reminder.id} className="flex items-center justify-between p-2 border rounded-lg text-sm">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                <span className="font-medium truncate">{reminder.full_name}</span>
-              </div>
-              <div className="text-xs text-muted-foreground truncate">
-                {reminder.university_name} • {reminder.program_name}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              <Badge variant={getUrgencyVariant(reminder.days_until)} className="text-xs">
-                {reminder.type === 'opening' ? 'Opens' : 'Closes'} {getDaysLabel(reminder.days_until)}
-              </Badge>
-              {reminder.reminder_days.length > 0 && (
-                <span className="text-xs text-muted-foreground">📧 D-{reminder.reminder_days.join('/')}</span>
-              )}
-            </div>
-          </div>
+          <ReminderRow key={reminder.id} reminder={reminder} />
         ))}
         {items.length > 8 && <div className="text-center text-xs text-muted-foreground pt-2">+{items.length - 8} more</div>}
       </div>
