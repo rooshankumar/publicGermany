@@ -166,7 +166,8 @@ export async function buildShortlistPdfDoc(students: ShortlistStudent[], opts?: 
       if (y + rowH > PH - 10) { newPage(); tableHeader(); }
       if (idx % 2 === 1) { doc.setFillColor(250, 250, 251); doc.rect(M, y, W, rowH, 'F'); }
       wrapped.forEach((w, i) => {
-        doc.setFont('helvetica', i === 1 || i === 8 ? 'bold' : 'normal').setTextColor(...(i === 2 ? MUTED : INK));
+        const col = i === 2 ? MUTED : INK;
+        doc.setFont('helvetica', i === 1 || i === 8 ? 'bold' : 'normal').setTextColor(col[0], col[1], col[2]);
         doc.text(w, colX[i] + 1.5, y + 3.2);
       });
       doc.setDrawColor(...LINE); doc.setLineWidth(0.15);
