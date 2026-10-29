@@ -168,6 +168,14 @@ const UpcomingDeadlineReminders = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFullPreviewOpen(true)}
+              title="Full view"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
             <Button size="sm" variant="outline" onClick={fetchUpcomingReminders} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
@@ -200,6 +208,58 @@ const UpcomingDeadlineReminders = () => {
           </Tabs>
         )}
       </CardContent>
+
+      <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              All Deadline Reminders ({reminders.length})
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Opening + Closing • Next 14 days • Auto-sends D-14/10/7/5/2/1 unless already submitted
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 min-h-0 pr-2">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
+            ) : reminders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">No upcoming reminders in the next 14 days</div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    📂 Opening ({openingReminders.length})
+                  </div>
+                  {openingReminders.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-1">None</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {openingReminders.map((reminder) => (
+                        <ReminderRow key={reminder.id} reminder={reminder} detailed />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    🔒 Closing ({closingReminders.length})
+                  </div>
+                  {closingReminders.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-1">None</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {closingReminders.map((reminder) => (
+                        <ReminderRow key={reminder.id} reminder={reminder} detailed />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
