@@ -220,7 +220,7 @@ const UpcomingDeadlineReminders = () => {
               Opening + Closing • Next 14 days • Auto-sends D-14/10/7/5/2/1 unless already submitted
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 min-h-0 pr-2">
+          <div className="overflow-y-auto max-h-[60vh] pr-1">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
             ) : reminders.length === 0 ? (
@@ -257,7 +257,7 @@ const UpcomingDeadlineReminders = () => {
                 </div>
               </div>
             )}
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
