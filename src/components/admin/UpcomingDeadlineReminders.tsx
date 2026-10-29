@@ -168,6 +168,14 @@ const UpcomingDeadlineReminders = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFullPreviewOpen(true)}
+              title="Full view"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
             <Button size="sm" variant="outline" onClick={fetchUpcomingReminders} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
