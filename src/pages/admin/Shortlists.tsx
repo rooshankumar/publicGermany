@@ -212,10 +212,14 @@ export default function Shortlists() {
               <Card key={s.user_id} className="shadow-none overflow-hidden">
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/40">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold truncate flex items-center gap-1.5">
+                    <Link
+                      to={`/admin/students/${s.user_id}`}
+                      className="text-sm font-bold truncate flex items-center gap-1.5 hover:text-primary hover:underline underline-offset-2"
+                      title="Open full profile"
+                    >
                       {s.is_favorite && <Star className="h-3 w-3 fill-primary text-primary shrink-0" />}
                       {s.full_name || 'Unnamed student'}
-                    </p>
+                    </Link>
                     <p className="text-[10px] text-muted-foreground truncate">
                       {[s.email, s.phone].filter(Boolean).join(' · ') || '—'}
                     </p>
@@ -250,7 +254,7 @@ export default function Shortlists() {
                     </thead>
                     <tbody>
                       {s.applications.map((a, i) => (
-                        <tr key={i} className="border-b last:border-0 even:bg-muted/20">
+                        <tr key={i} className={`border-b last:border-0 ${a.status === 'submitted' ? 'bg-success/10' : 'even:bg-muted/20'}`}>
                           <td className={`${td} text-muted-foreground`}>{i + 1}</td>
                           <td className={`${td} font-semibold min-w-[140px]`}>{a.university_name}</td>
                           <td className={`${td} text-muted-foreground min-w-[160px]`}>{a.program_name}</td>
