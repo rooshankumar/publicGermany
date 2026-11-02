@@ -31,7 +31,8 @@ type Student = ProfileRow & { email: string; applications: AppRow[]; is_favorite
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case 'submitted': return 'bg-primary/10 text-primary';
+    // Applied — green highlight so submitted applications stand out.
+    case 'submitted': return 'bg-success text-success-foreground font-semibold';
     case 'under_review': return 'bg-warning/10 text-warning';
     case 'accepted': return 'bg-success/10 text-success';
     case 'rejected': return 'bg-destructive/10 text-destructive';
@@ -97,7 +98,19 @@ export default function Shortlists() {
         } catch { /* ignore */ }
         return { ...p, email, applications: byUser.get(p.user_id)!, is_favorite: favs.has(p.user_id) };
       }));
-      return withEmail.sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite));
+      return withEmail.sort((a, b) => {
+        const appliedA = isApplied(a), appliedB = isApplied(b);
+        // Applied students first; within a group, starred students lead.
+        if (appliedA !== appliedB) return appliedA ? -1 : 1;
+        if (appliedA) {
+          if (a.is_favorite !== b.is_favorite) return Number(b.is_favorite) - Number(a.is_favorite);
+          return (a.full_name || '').localeCompare(b.full_name || '');
+        }
+        // Not applied yet: closest upcoming opening date first.
+        const openDiff = nextOpening(a.applications) - nextOpening(b.applications);
+        if (openDiff !== 0) return openDiff;
+        return Number(b.is_favorite) - Number(a.is_favorite);
+      });
     },
   });
 
