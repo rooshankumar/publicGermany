@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +31,29 @@ type Student = ProfileRow & { email: string; applications: AppRow[]; is_favorite
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case 'submitted': return 'bg-primary/10 text-primary';
+    // Applied — green highlight so submitted applications stand out.
+    case 'submitted': return 'bg-success text-success-foreground font-semibold';
     case 'under_review': return 'bg-warning/10 text-warning';
     case 'accepted': return 'bg-success/10 text-success';
     case 'rejected': return 'bg-destructive/10 text-destructive';
     default: return 'bg-muted/20 text-muted-foreground';
   }
+};
+
+// A student counts as "applied" once any shortlisted application has moved past draft.
+const isAppliedStatus = (status: string) => status !== 'draft';
+const isApplied = (s: { applications: AppRow[] }) => s.applications.some((a) => isAppliedStatus(a.status));
+
+// Soonest upcoming application opening date; falls back to most recent past opening.
+const nextOpening = (apps: AppRow[]): number => {
+  const now = Date.now();
+  const times = apps
+    .map((a) => (a.application_start_date ? new Date(a.application_start_date).getTime() : NaN))
+    .filter((t) => !isNaN(t));
+  const upcoming = times.filter((t) => t >= now);
+  if (upcoming.length) return Math.min(...upcoming);
+  if (times.length) return Math.max(...times);
+  return Number.POSITIVE_INFINITY;
 };
 
 export default function Shortlists() {
@@ -80,7 +98,19 @@ export default function Shortlists() {
         } catch { /* ignore */ }
         return { ...p, email, applications: byUser.get(p.user_id)!, is_favorite: favs.has(p.user_id) };
       }));
-      return withEmail.sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite));
+      return withEmail.sort((a, b) => {
+        const appliedA = isApplied(a), appliedB = isApplied(b);
+        // Applied students first; within a group, starred students lead.
+        if (appliedA !== appliedB) return appliedA ? -1 : 1;
+        if (appliedA) {
+          if (a.is_favorite !== b.is_favorite) return Number(b.is_favorite) - Number(a.is_favorite);
+          return (a.full_name || '').localeCompare(b.full_name || '');
+        }
+        // Not applied yet: closest upcoming opening date first.
+        const openDiff = nextOpening(a.applications) - nextOpening(b.applications);
+        if (openDiff !== 0) return openDiff;
+        return Number(b.is_favorite) - Number(a.is_favorite);
+      });
     },
   });
 
@@ -182,10 +212,14 @@ export default function Shortlists() {
               <Card key={s.user_id} className="shadow-none overflow-hidden">
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/40">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold truncate flex items-center gap-1.5">
+                    <Link
+                      to={`/admin/students/${s.user_id}`}
+                      className="text-sm font-bold truncate flex items-center gap-1.5 hover:text-primary hover:underline underline-offset-2"
+                      title="Open full profile"
+                    >
                       {s.is_favorite && <Star className="h-3 w-3 fill-primary text-primary shrink-0" />}
                       {s.full_name || 'Unnamed student'}
-                    </p>
+                    </Link>
                     <p className="text-[10px] text-muted-foreground truncate">
                       {[s.email, s.phone].filter(Boolean).join(' · ') || '—'}
                     </p>
@@ -220,7 +254,7 @@ export default function Shortlists() {
                     </thead>
                     <tbody>
                       {s.applications.map((a, i) => (
-                        <tr key={i} className="border-b last:border-0 even:bg-muted/20">
+                        <tr key={i} className={`border-b last:border-0 ${a.status === 'submitted' ? 'bg-success/10' : 'even:bg-muted/20'}`}>
                           <td className={`${td} text-muted-foreground`}>{i + 1}</td>
                           <td className={`${td} font-semibold min-w-[140px]`}>{a.university_name}</td>
                           <td className={`${td} text-muted-foreground min-w-[160px]`}>{a.program_name}</td>
