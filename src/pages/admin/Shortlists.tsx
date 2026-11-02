@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +37,22 @@ const getStatusBadge = (status: string) => {
     case 'rejected': return 'bg-destructive/10 text-destructive';
     default: return 'bg-muted/20 text-muted-foreground';
   }
+};
+
+// A student counts as "applied" once any shortlisted application has moved past draft.
+const isAppliedStatus = (status: string) => status !== 'draft';
+const isApplied = (s: { applications: AppRow[] }) => s.applications.some((a) => isAppliedStatus(a.status));
+
+// Soonest upcoming application opening date; falls back to most recent past opening.
+const nextOpening = (apps: AppRow[]): number => {
+  const now = Date.now();
+  const times = apps
+    .map((a) => (a.application_start_date ? new Date(a.application_start_date).getTime() : NaN))
+    .filter((t) => !isNaN(t));
+  const upcoming = times.filter((t) => t >= now);
+  if (upcoming.length) return Math.min(...upcoming);
+  if (times.length) return Math.max(...times);
+  return Number.POSITIVE_INFINITY;
 };
 
 export default function Shortlists() {
