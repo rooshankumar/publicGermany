@@ -29,20 +29,35 @@ interface ProfileRow {
 type AppRow = ShortlistApp & { user_id: string };
 type Student = ProfileRow & { email: string; applications: AppRow[]; is_favorite: boolean };
 
+const isAppliedStatus = (status: string | null) => ['applied', 'submitted'].includes((status || '').toLowerCase());
+
 const getStatusBadge = (status: string) => {
-  switch (status) {
-    // Applied — green highlight so submitted applications stand out.
-    case 'submitted': return 'bg-success text-success-foreground font-semibold';
+  if (isAppliedStatus(status)) return 'bg-success text-success-foreground font-semibold';
+  switch ((status || '').toLowerCase()) {
     case 'under_review': return 'bg-warning/10 text-warning';
-    case 'accepted': return 'bg-success/10 text-success';
+    case 'accepted': case 'offer': return 'bg-success/10 text-success';
     case 'rejected': return 'bg-destructive/10 text-destructive';
     default: return 'bg-muted/20 text-muted-foreground';
   }
 };
 
-// A student counts as "applied" once any shortlisted application has moved past draft.
-const isAppliedStatus = (status: string) => status !== 'draft';
 const isApplied = (s: { applications: AppRow[] }) => s.applications.some((a) => isAppliedStatus(a.status));
+
+// Applied first, then nearest upcoming opening date, then past/undated.
+const sortApps = (apps: AppRow[]): AppRow[] => {
+  const now = Date.now();
+  const key = (a: AppRow) => {
+    const t = a.application_start_date ? new Date(a.application_start_date).getTime() : NaN;
+    if (isNaN(t)) return [2, 0];
+    return t >= now ? [0, t] : [1, -t];
+  };
+  return [...apps].sort((a, b) => {
+    const ap = isAppliedStatus(a.status), bp = isAppliedStatus(b.status);
+    if (ap !== bp) return ap ? -1 : 1;
+    const ka = key(a), kb = key(b);
+    return ka[0] - kb[0] || ka[1] - kb[1];
+  });
+};
 
 // Soonest upcoming application opening date; falls back to most recent past opening.
 const nextOpening = (apps: AppRow[]): number => {
@@ -96,7 +111,7 @@ export default function Shortlists() {
           const { data } = await (supabase as any).rpc('get_user_email', { p_user_id: p.user_id });
           email = data || '';
         } catch { /* ignore */ }
-        return { ...p, email, applications: byUser.get(p.user_id)!, is_favorite: favs.has(p.user_id) };
+        return { ...p, email, applications: sortApps(byUser.get(p.user_id)!), is_favorite: favs.has(p.user_id) };
       }));
       return withEmail.sort((a, b) => {
         const appliedA = isApplied(a), appliedB = isApplied(b);
@@ -254,7 +269,7 @@ export default function Shortlists() {
                     </thead>
                     <tbody>
                       {s.applications.map((a, i) => (
-                        <tr key={i} className={`border-b last:border-0 ${a.status === 'submitted' ? 'bg-success/10' : 'even:bg-muted/20'}`}>
+                        <tr key={i} className={`border-b last:border-0 ${isAppliedStatus(a.status) ? 'bg-success/15' : 'even:bg-muted/20'}`}>
                           <td className={`${td} text-muted-foreground`}>{i + 1}</td>
                           <td className={`${td} font-semibold min-w-[140px]`}>{a.university_name}</td>
                           <td className={`${td} text-muted-foreground min-w-[160px]`}>{a.program_name}</td>
