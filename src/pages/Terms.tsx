@@ -17,10 +17,11 @@ const Terms: React.FC = () => {
           </Button>
         </div>
         <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-muted-foreground mb-8">Effective Date: September 2025</p>
+        <p className="text-muted-foreground mb-8">Updated: November 2026</p>
 
         <p className="mb-6">
-          Welcome to <strong>publicgermany</strong>. By accessing or using
+          Public Germany is the trade name of <strong>ROSHN GLOBAL</strong>, a sole proprietorship registered in Patna, Bihar, India
+          (Udyam Registration Number: <strong>UDYAM-BR-26-0260208</strong>). By accessing or using
           <a className="text-primary hover:underline ml-1" href="https://publicgermany.vercel.app" target="_blank" rel="noreferrer">https://publicgermany.vercel.app</a>
           {" "}("Service"), you agree to these Terms of Service ("Terms").
         </p>
@@ -35,14 +36,20 @@ const Terms: React.FC = () => {
         <h2 className="text-2xl font-semibold mt-10 mb-3">Services Provided</h2>
         <ul className="list-disc pl-6 space-y-3">
           <li>publicgermany offers free access to checklists, guidance resources, document management, and progress tracking.</li>
+          <li>Paid educational support may include university admission guidance, application assistance, student visa documentation support, Statement of Purpose preparation, and related services for higher education in Germany.</li>
           <li>Personalized counseling and document review services are available for a fee.</li>
           <li>We reserve the right to modify or discontinue parts of the service at any time.</li>
         </ul>
 
+        <h2 className="text-2xl font-semibold mt-10 mb-3">Digital Service Delivery</h2>
+        <p className="mb-6">
+          Services are delivered digitally through access to the website portal, email, and/or scheduled video sessions, depending on the service purchased. Any service-specific scope and timing will be shared during the request or purchase process.
+        </p>
+
         <h2 className="text-2xl font-semibold mt-10 mb-3">Payment and Refunds</h2>
         <ul className="list-disc pl-6 space-y-3">
           <li>Fees for personalized services are clearly stated. Payments are processed securely.</li>
-          <li>Refund policies are described separately during purchase. Generally, fees are non-refundable once services are rendered.</li>
+          <li>Cancellation and refund terms are described in our <Link to="/refund-policy" className="text-primary hover:underline">Refund and Cancellation Policy</Link>. Fees are generally non-refundable after personalized consultation or customized work has begun, subject to that policy and applicable law.</li>
         </ul>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Intellectual Property</h2>
@@ -63,7 +70,7 @@ const Terms: React.FC = () => {
         </ul>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Governing Law</h2>
-        <p className="mb-6">These Terms are governed by the laws of Germany. Any disputes shall be resolved in the jurisdiction of German courts.</p>
+        <p className="mb-6">These Terms are governed by the laws of India. Subject to applicable law, courts located in Patna, Bihar, India shall have jurisdiction over disputes arising from these Terms or the Service.</p>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Changes to Terms</h2>
         <p className="mb-6">We reserve the right to update these Terms. Changes will be posted on this page with an updated effective date.</p>
@@ -72,6 +79,7 @@ const Terms: React.FC = () => {
         <p className="mb-6">
           For any questions regarding these Terms, email
           <a className="text-primary hover:underline ml-1" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>.
+          {
         </p>
       </div>
     </div>

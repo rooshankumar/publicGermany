@@ -1,0 +1,4 @@
+- [ ] Update public business details, contact information, and social links.
+- [ ] Publish terms, privacy, refund/cancellation, and digital-delivery disclosures.
+- [ ] Add policy links to the main public footers.
+- [ ] Validate the public pages in the preview.
