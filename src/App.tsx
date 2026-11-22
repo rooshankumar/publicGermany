@@ -49,6 +49,7 @@ const Documents = lazy(() => import("./pages/Documents"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const AcademicCVGenerator = lazy(() => import("./pages/AcademicCVGenerator"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -136,6 +137,7 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/converter" element={<Converter />} />
         <Route path="/europass-cv" element={<AcademicCVGenerator />} />
         <Route path="/academic-cv-generator" element={<Navigate to="/europass-cv" replace />} />

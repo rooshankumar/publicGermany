@@ -807,9 +807,16 @@ const Footer: React.FC = () => (
           <Link to="/blog" className="text-[13px] text-pg-label2 hover:text-pg-label">Blog</Link>
           <Link to="/contact" className="text-[13px] text-pg-label2 hover:text-pg-label">Contact</Link>
           <Link to="/privacy" className="text-[13px] text-pg-label2 hover:text-pg-label">Privacy</Link>
+          <Link to="/terms" className="text-[13px] text-pg-label2 hover:text-pg-label">Terms</Link>
+          <Link to="/refund-policy" className="text-[13px] text-pg-label2 hover:text-pg-label">Refunds</Link>
+          <a href="https://www.instagram.com/publicgermany/" target="_blank" rel="noreferrer" className="text-[13px] text-pg-label2 hover:text-pg-label">Instagram</a>
+          <a href="https://t.me/publicgermany" target="_blank" rel="noreferrer" className="text-[13px] text-pg-label2 hover:text-pg-label">Telegram</a>
         </div>
       </div>
-      <div className="text-[12.5px] text-pg-label3 mt-4.5">© {new Date().getFullYear()} publicgermany. All rights reserved.</div>
+      <div className="text-[12.5px] text-pg-label3 mt-4.5">
+        <p>© {new Date().getFullYear()} Public Germany · Operated by ROSHN GLOBAL, sole proprietorship · Udyam: UDYAM-BR-26-0260208 · Patna, Bihar, India</p>
+        <a href="mailto:publicgermany@outlook.com" className="inline-block mt-1 hover:text-pg-label">publicgermany@outlook.com</a>
+      </div>
     </div>
   </footer>
 );

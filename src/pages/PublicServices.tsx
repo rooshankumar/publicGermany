@@ -120,8 +120,19 @@ const PublicServices: React.FC = () => {
         <LandingFAQ />
       </main>
 
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} publicgermany · <Link to="/privacy" className="hover:underline">Privacy</Link> · <Link to="/terms" className="hover:underline">Terms</Link> · <Link to="/contact" className="hover:underline">Contact</Link>
+      <footer className="border-t border-border py-6 text-xs text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-2">
+          <p>© {new Date().getFullYear()} Public Germany · Operated by ROSHN GLOBAL · Udyam: UDYAM-BR-26-0260208 · Patna, Bihar, India</p>
+          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+            <Link to="/privacy" className="hover:underline">Privacy</Link>
+            <Link to="/terms" className="hover:underline">Terms</Link>
+            <Link to="/refund-policy" className="hover:underline">Refund &amp; Cancellation</Link>
+            <Link to="/contact" className="hover:underline">Contact</Link>
+            <a href="mailto:publicgermany@outlook.com" className="hover:underline">Email</a>
+            <a href="https://www.instagram.com/publicgermany/" target="_blank" rel="noreferrer" className="hover:underline">Instagram</a>
+            <a href="https://t.me/publicgermany" target="_blank" rel="noreferrer" className="hover:underline">Telegram</a>
+          </nav>
+        </div>
       </footer>
     </div>
   );

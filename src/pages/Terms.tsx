@@ -79,8 +79,9 @@ const Terms: React.FC = () => {
         <p className="mb-6">
           For any questions regarding these Terms, email
           <a className="text-primary hover:underline ml-1" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>.
-          {
         </p>
+        <p className="mb-6">Public Germany is operated by ROSHN GLOBAL, a sole proprietorship registered in Patna, Bihar, India (Udyam Registration Number: UDYAM-BR-26-0260208).</p>
+        <p className="mb-6">Read our <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and <Link to="/refund-policy" className="text-primary hover:underline">Refund and Cancellation Policy</Link>.</p>
       </div>
     </div>
   );
