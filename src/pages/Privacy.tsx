@@ -50,23 +50,24 @@ const Privacy: React.FC = () => {
         <h2 className="text-2xl font-semibold mt-10 mb-3">Service Providers and Sharing</h2>
         <ul className="list-disc pl-6 space-y-3">
           <li><strong>Supabase:</strong> Receives and stores account, profile, application, service-request, and uploaded-file data to provide sign-in and app features.</li>
-          <li><strong>EmailJS:</strong> Processes the name, email, inquiry type, and message entered in the contact form so the message and confirmation can be sent.</li>
+          <li><strong>EmailJS:</strong> Processes the name, email address, inquiry type, and message submitted through the contact form so the message and confirmation can be sent. The contact submission is also stored in Supabase.</li>
           <li><strong>Brevo:</strong> Processes recipient email addresses and message content to deliver service and account emails.</li>
-          <li><strong>Vercel and Lovable analytics:</strong> Receive website usage and performance information to provide analytics, as described below.</li>
-          <li>Some course content may be embedded from YouTube or Google Drive. When you open that content, those providers receive information from your browser under their own privacy notices.</li>
+          <li><strong>Vercel Analytics:</strong> Receives page-view and performance information to provide website analytics.</li>
+          <li><strong>Lovable analytics:</strong> Receives the visitor measurements described below. Lovable collects this data for us. <a className="text-primary hover:underline" href="https://lovable.dev/privacy" target="_blank" rel="noreferrer">Lovable's privacy policy</a> explains how it handles it.</li>
+          <li>Some course content may be embedded from YouTube or Google Drive. When you open an embedded video or document, those providers receive information from your browser under their own privacy notices.</li>
           <li>We do not sell personal information. We may share information with service providers needed to operate the site, people helping deliver a service, or authorities when legally required.</li>
         </ul>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Visitor Analytics</h2>
         <p className="mb-6">
-          Visitor analytics and click tracking are enabled on the published site. Lovable analytics records pages visited, referral source, country, browser, operating system, device type, time on page, page speed, errors, and clicks. It uses no cookies, stores nothing on your device, does not retain IP addresses, and does not identify visitors. Detailed data is kept for 90 days and daily summaries for one year. There is no consent banner connected to this analytics, so the listed measurements are recorded for every visitor. Vercel Analytics also receives page-view and performance information to provide website analytics.
+          Click tracking is enabled, so clicks on buttons and links are recorded for every visitor. The app does not send custom analytics events. Page visits, referral source, country, browser, operating system, device type, time on page, page speed, and errors are also recorded for every visitor. Lovable analytics uses no cookies, stores nothing on your device, does not keep IP addresses, and does not identify visitors. Detailed data is kept for 90 days and daily summaries for one year. There is no consent banner connected to this analytics. Vercel Analytics separately receives page-view and performance information to provide website analytics.
         </p>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Your Choices and Requests</h2>
         <ul className="list-disc pl-6 space-y-3">
           <li>You may ask us to access, correct, or delete personal information by contacting us. We may need to retain some records where required by law or for legitimate service and accounting purposes.</li>
           <li>You can manage browser storage through your browser settings; blocking essential storage may affect sign-in or site preferences.</li>
-          <li>Privacy rules differ by country; please consult an adviser familiar with the rules where your visitors are located.</li>
+          <li>Privacy rules differ by country; please check with someone familiar with the rules where your visitors are located.</li>
         </ul>
 
         <h2 className="text-2xl font-semibold mt-10 mb-3">Data Security</h2>
@@ -88,7 +89,6 @@ const Privacy: React.FC = () => {
         <p className="mb-6">
           For privacy questions, contact ROSHN GLOBAL at
           <a className="text-primary hover:underline ml-1" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>.
-          {
         </p>
       </div>
     </div>

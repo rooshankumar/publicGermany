@@ -20,5 +20,31 @@ const RefundPolicy: React.FC = () => (
 
       <h2 className="text-xl font-semibold mt-8 mb-3">Cancellation requests</h2>
       <p className="mb-6">
-        Contact us at <a className="text-primary hover:underline" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>
-        {
+        If you want to cancel, contact us as soon as possible at{' '}
+        <a className="text-primary hover:underline" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>{' '}
+        with your name, the service purchased, and the payment or order reference. Requests made before personalized consultation or customized work begins may be eligible for cancellation and a refund. We will confirm the outcome by email.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">Refund eligibility</h2>
+      <ul className="list-disc pl-6 space-y-3 mb-6">
+        <li>Fees are generally non-refundable after personalized consultation or customized work has begun, subject to applicable law.</li>
+        <li>If we are unable to deliver the service you purchased, contact us so we can review the request and any appropriate refund.</li>
+        <li>Approved refunds are processed to the original payment method within 5–7 business days. Your bank or payment provider may take additional time to show the funds.</li>
+      </ul>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">Contact</h2>
+      <p className="mb-6">
+        For a cancellation or refund request, email{' '}
+        <a className="text-primary hover:underline" href="mailto:publicgermany@outlook.com">publicgermany@outlook.com</a>.
+        Public Germany is operated by ROSHN GLOBAL in Patna, Bihar, India.
+      </p>
+
+      <p className="mb-6">
+        See also our <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and{' '}
+        <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+      </p>
+    </main>
+  </div>
+);
+
+export default RefundPolicy;
